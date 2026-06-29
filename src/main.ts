@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
@@ -36,7 +36,15 @@ async function bootstrap(): Promise<void> {
   // ─── Security Middleware ───────────────────────────────────────────────────
   app.use(
     helmet({
-      contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          scriptSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
     }),
   );
   app.use(cookieParser());
@@ -88,6 +96,7 @@ async function bootstrap(): Promise<void> {
 
   // ─── Global Prefix ────────────────────────────────────────────────────────
   app.setGlobalPrefix('api');
+  app.enableVersioning({ type: VersioningType.URI });
 
   // ─── Global Validation Pipe ───────────────────────────────────────────────
   app.useGlobalPipes(
@@ -103,9 +112,11 @@ async function bootstrap(): Promise<void> {
 
   const { HttpExceptionFilter } =
     await import('./common/filters/http-exception.filter');
+  const { PrismaExceptionFilter } =
+    await import('./common/filters/prisma-exception.filter');
   const { TransformInterceptor } =
     await import('./common/interceptors/transform.interceptor');
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
 
   app.useGlobalInterceptors(
     new TransformInterceptor(),

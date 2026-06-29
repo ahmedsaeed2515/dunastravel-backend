@@ -12,7 +12,8 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction): void {
     const correlationId =
-      (req.headers[CORRELATION_ID_HEADER.toLowerCase()] as string) || crypto.randomUUID();
+      (req.headers[CORRELATION_ID_HEADER.toLowerCase()] as string) ||
+      crypto.randomUUID();
 
     res.setHeader(CORRELATION_ID_HEADER, correlationId);
 

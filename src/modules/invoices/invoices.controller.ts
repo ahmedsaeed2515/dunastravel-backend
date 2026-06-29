@@ -1,4 +1,4 @@
-import { Controller, Get, Param, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -8,6 +8,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
+import { ParseInvoiceNumberPipe } from '../../common/pipes';
 
 @ApiTags('Invoices')
 @Controller('invoices')
@@ -20,10 +21,9 @@ export class InvoicesController {
   @ApiBadRequestResponse({ description: 'Invalid invoice number format' })
   @ApiNotFoundResponse({ description: 'Invoice not found' })
   @ApiParam({ name: 'invoiceNumber', example: 'INV-2026-001' })
-  async findByInvoiceNumber(@Param('invoiceNumber') invoiceNumber: string) {
-    if (!/^INV-\d{4}-\d+$/.test(invoiceNumber)) {
-      throw new BadRequestException('Invalid invoice number format');
-    }
+  async findByInvoiceNumber(
+    @Param('invoiceNumber', ParseInvoiceNumberPipe) invoiceNumber: string,
+  ) {
     return this.invoicesService.findByInvoiceNumber(invoiceNumber);
   }
 }

@@ -23,19 +23,17 @@ enum UserRole {
 enum BookingStatus {
   PENDING
   CONFIRMED
+  PAID
+  PARTIALLY_PAID
   CANCELLED
+  REFUNDED
   COMPLETED
+  ARCHIVED
 }
 
 enum InvoiceType {
   PERSONAL
   COMPANY
-}
-
-enum InquiryStatus {
-  NEW
-  IN_PROGRESS
-  RESOLVED
 }
 
 // ─── USERS ───────────────────────────────────────────────────
@@ -49,16 +47,117 @@ model User {
   email        String    @unique @db.VarChar(255)
   phone        String?   @db.VarChar(50)
   passwordHash String    @map("password_hash") @db.VarChar(255)
+  refreshToken String?   @map("refresh_token")
   role         UserRole  @default(USER)
+  isVerified   Boolean   @default(false) @map("is_verified")
+  resetToken   String?   @map("reset_token") @db.VarChar(255)
+  resetTokenExp DateTime? @map("reset_token_exp")
+  verifyToken  String?   @map("verify_token") @db.VarChar(255)
+
+  // ─── ENTERPRISE CRM FIELDS (PHASE 5) ────────────────────────
+  customerNumber       String?   @unique @map("customer_number") @db.VarChar(50)
+  isVip                Boolean   @default(false) @map("is_vip")
+  tags                 String[]  @default([])
+  segments             String[]  @default([])
+  status               String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, INACTIVE, BLOCKED
+  passportNumber       String?   @map("passport_number") @db.VarChar(100)
+  nationality          String?   @db.VarChar(100)
+  gender               String?   @db.VarChar(50)
+  dateOfBirth          DateTime? @map("date_of_birth") @db.Date
+  emergencyContact     Json?     @map("emergency_contact") // name, relationship, phone
+  address              Json?     // street, city, state, postalCode, country
+  preferredLanguage    String?   @default("en") @map("preferred_language") @db.VarChar(10)
+  preferredCurrency    String?   @default("USD") @map("preferred_currency") @db.VarChar(10)
+  preferredDestination String?   @map("preferred_destination") @db.VarChar(100)
+  preferredTravelType  String?   @map("preferred_travel_type") @db.VarChar(100)
+  familyMembers        Json?     @map("family_members") // names, relationships, ages
+  travelCompanions     Json?     @map("travel_companions") // past travel companions
+  marketingConsent     Boolean   @default(true) @map("marketing_consent")
+  phoneVerified        Boolean   @default(false) @map("phone_verified")
+  customerSource       String?   @map("customer_source") @db.VarChar(50) // WEB, REFERRAL, AGENT, DIRECT
+  referralSource       String?   @map("referral_source") @db.VarChar(100)
+  futureCompanyId      String?   @map("future_company_id") @db.VarChar(100)
+  futureWalletId       String?   @map("future_wallet_id") @db.VarChar(100)
+  futureCommissionPlan String?   @map("future_commission_plan") @db.VarChar(100)
+
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  bookings Booking[]
+  bookings          Booking[] @relation("BookingCustomer")
+  assignedBookings  Booking[] @relation("BookingAssignee")
+  activityLogs      BookingActivityLog[]
+  notes             BookingNote[]
 
-  @@index([email])
+  customerNotes     CustomerNote[]        @relation("CustomerNotesTarget")
+  authoredNotes     CustomerNote[]        @relation("CustomerNotesAuthor")
+  customerDocuments CustomerDocument[]    @relation("CustomerDocuments")
+  customerActivityLogs CustomerActivityLog[] @relation("CustomerActivityLogsTarget")
+  authoredCustomerLogs CustomerActivityLog[] @relation("CustomerActivityLogsAuthor")
+
   @@index([deletedAt])
+  @@index([customerNumber])
+  @@index([isVip])
+  @@index([status])
   @@map("users")
+}
+
+// ─── CUSTOMER NOTES ───────────────────────────────────────────
+// Internal staff comments, sales notes, and operations notes on a customer.
+
+model CustomerNote {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  userId     String   @map("user_id") // Admin who wrote the note
+  noteType   String   @default("INTERNAL") @map("note_type") @db.VarChar(50) // INTERNAL, SALES, OPERATIONS
+  content    String   @db.Text
+  isPinned   Boolean  @default(false) @map("is_pinned")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  customer User @relation("CustomerNotesTarget", fields: [customerId], references: [id], onDelete: Cascade)
+  user     User @relation("CustomerNotesAuthor", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([userId])
+  @@index([isPinned])
+  @@map("customer_notes")
+}
+
+// ─── CUSTOMER DOCUMENTS ───────────────────────────────────────
+// Document records (Passport scans, visas, insurance, tickets) linked to a customer.
+
+model CustomerDocument {
+  id           String   @id @default(uuid())
+  customerId   String   @map("customer_id")
+  mediaAssetId String   @map("media_asset_id")
+  documentType String   @default("OTHER") @map("document_type") @db.VarChar(50) // PASSPORT, VISA, NATIONAL_ID, INSURANCE, TICKET, INVOICE, OTHER
+  title        String   @db.VarChar(255)
+  uploadedBy   String?  @map("uploaded_by") // Admin userId
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  customer User @relation("CustomerDocuments", fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_documents")
+}
+
+// ─── CUSTOMER ACTIVITY LOGS ───────────────────────────────────
+// Chronological timeline of events on a customer profile.
+
+model CustomerActivityLog {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  userId     String?  @map("user_id") // Admin who performed action, null if system
+  action     String   @db.VarChar(255) // CUSTOMER_CREATED, NOTE_ADDED, DOCUMENT_UPLOADED, VIP_STATUS_CHANGED, etc.
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  customer User  @relation("CustomerActivityLogsTarget", fields: [customerId], references: [id], onDelete: Cascade)
+  user     User? @relation("CustomerActivityLogsAuthor", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@map("customer_activity_logs")
 }
 
 // ─── TOURS ───────────────────────────────────────────────────
@@ -68,25 +167,57 @@ model User {
 // The booking engine reads this — never trusts the client.
 
 model Tour {
-  id            String   @id @default(uuid())
-  slug          String   @unique @db.VarChar(255)
-  titleJsonb    Json     @map("title_jsonb")
-  category      String?  @db.VarChar(100)
-  basePriceUsd  Decimal  @map("base_price_usd") @db.Decimal(10, 2)
-  durationJsonb Json?    @map("duration_jsonb")
-  overviewJsonb Json?    @map("overview_jsonb")
-  minPaxJsonb   Json?    @map("min_pax_jsonb")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                      String   @id @default(uuid())
+  slug                    String   @unique @db.VarChar(255)
+  titleJsonb              Json     @map("title_jsonb")
+  category                String?  @db.VarChar(100)
+  basePriceUsd            Decimal  @map("base_price_usd") @db.Decimal(10, 2)
+  durationJsonb           Json?    @map("duration_jsonb")
+  overviewJsonb           Json?    @map("overview_jsonb")
+  minPaxJsonb             Json?    @map("min_pax_jsonb")
+  isActive                Boolean  @default(true) @map("is_active")
+  country                 String?  @db.VarChar(100)
+  city                    String?  @db.VarChar(100)
+  region                  String?  @db.VarChar(100)
+  meetingPoint            String?  @map("meeting_point") @db.VarChar(255)
+  departureTime           String?  @map("departure_time") @db.VarChar(50)
+  returnTime              String?  @map("return_time") @db.VarChar(50)
+  isFeatured              Boolean  @default(false) @map("is_featured")
+  status                  String   @default("PUBLISHED") @db.VarChar(50) // DRAFT, PUBLISHED, ARCHIVED
+  deletedAt               DateTime? @map("deleted_at")
+  seoTitle                String?  @map("seo_title") @db.VarChar(255)
+  seoDescription          String?  @map("seo_description") @db.Text
+  includedServicesJsonb   Json?    @map("included_services_jsonb")
+  excludedServicesJsonb   Json?    @map("excluded_services_jsonb")
+  hotelInfoJsonb          Json?    @map("hotel_info_jsonb")
+  transportationJsonb     Json?    @map("transportation_jsonb")
+  pickupLocationsJsonb    Json?    @map("pickup_locations_jsonb")
+  languages               String[] @default(["en"])
+  difficultyLevel         String?  @map("difficulty_level") @db.VarChar(50)
+  ageRestrictions         String?  @map("age_restrictions") @db.VarChar(100)
+  cancellationPolicyJsonb Json?    @map("cancellation_policy_jsonb")
+  termsJsonb              Json?    @map("terms_jsonb")
+  tags                    String[] @default([])
+  capacity                Int      @default(30)
+  remainingSeats          Int      @default(30) @map("remaining_seats")
+  seasonPricingJsonb      Json?    @map("season_pricing_jsonb")
+  currency                String   @default("USD") @db.VarChar(10)
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
-  itineraries TourItinerary[]
-  images      TourImage[]
-  bookings    Booking[]
+  itineraries  TourItinerary[]
+  images       TourImage[]
+  bookings     Booking[]
+  reviews      TourReview[]
+  activityLogs TourActivityLog[]
 
-  @@index([slug])
   @@index([isActive])
   @@index([category])
+  @@index([country])
+  @@index([city])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([deletedAt])
   @@map("tours")
 }
 
@@ -95,13 +226,17 @@ model Tour {
 // sortOrder determines display sequence.
 
 model TourItinerary {
-  id               String   @id @default(uuid())
-  tourId           String   @map("tour_id")
-  dayLabel         String?  @map("day_label") @db.VarChar(50)
-  descriptionJsonb Json     @map("description_jsonb")
-  mealsJsonb       Json?    @map("meals_jsonb")
-  sortOrder        Int      @map("sort_order")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id                  String   @id @default(uuid())
+  tourId              String   @map("tour_id")
+  dayLabel            String?  @map("day_label") @db.VarChar(50)
+  descriptionJsonb    Json     @map("description_jsonb")
+  mealsJsonb          Json?    @map("meals_jsonb")
+  activitiesJsonb     Json?    @map("activities_jsonb")
+  hotelsJsonb         Json?    @map("hotels_jsonb")
+  transportationJsonb Json?    @map("transportation_jsonb")
+  notesJsonb          Json?    @map("notes_jsonb")
+  sortOrder           Int      @map("sort_order")
+  createdAt           DateTime @default(now()) @map("created_at")
 
   tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
@@ -119,6 +254,8 @@ model TourImage {
   tourId    String   @map("tour_id")
   imageUrl  String   @map("image_url") @db.Text
   isHero    Boolean  @default(false) @map("is_hero")
+  isVideo   Boolean  @default(false) @map("is_video")
+  videoUrl  String?  @map("video_url") @db.Text
   altText   String?  @map("alt_text") @db.VarChar(255)
   sortOrder Int      @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")
@@ -128,6 +265,44 @@ model TourImage {
   @@index([tourId])
   @@index([isHero])
   @@map("tour_images")
+}
+
+// ─── TOUR REVIEWS ─────────────────────────────────────────────
+// Customer reviews per tour for rating aggregation.
+
+model TourReview {
+  id           String    @id @default(uuid())
+  tourId       String    @map("tour_id")
+  rating       Int       @default(5)
+  reviewerName String    @map("reviewer_name") @db.VarChar(255)
+  comment      String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@index([tourId])
+  @@index([rating])
+  @@index([deletedAt])
+  @@map("tour_reviews")
+}
+
+// ─── TOUR ACTIVITY LOGS ───────────────────────────────────────
+// Audit timeline of admin actions on a tour.
+
+model TourActivityLog {
+  id        String   @id @default(uuid())
+  tourId    String   @map("tour_id")
+  userId    String?  @map("user_id") // Admin User ID
+  action    String   @db.VarChar(255)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@index([tourId])
+  @@map("tour_activity_logs")
 }
 
 // ─── BOOKINGS ────────────────────────────────────────────────
@@ -140,8 +315,11 @@ model Booking {
   id              String        @id @default(uuid())
   referenceCode   String        @unique @map("reference_code") @db.VarChar(20)
   userId          String?       @map("user_id")
+  assigneeId      String?       @map("assignee_id") // Assigned staff
   tourId          String        @map("tour_id")
   status          BookingStatus @default(PENDING)
+  priority        String        @default("MEDIUM") @db.VarChar(20)
+  tags            String[]
   arrivalDate     DateTime      @map("arrival_date") @db.Date
   departureDate   DateTime?     @map("departure_date") @db.Date
   transportChoice String?       @map("transport_choice") @db.VarChar(100)
@@ -150,20 +328,29 @@ model Booking {
   infants         Int           @default(0)
   totalAmountUsd  Decimal       @map("total_amount_usd") @db.Decimal(10, 2)
   notes           String?       @db.Text
+  cancellationReason String?    @map("cancellation_reason") @db.Text
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
 
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?       @relation("BookingCustomer", fields: [userId], references: [id], onDelete: SetNull)
+  assignee    User?       @relation("BookingAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   tour        Tour        @relation(fields: [tourId], references: [id], onDelete: Restrict)
   passengers  Passenger[]
   invoice     Invoice?
   billingInfo BillingInfo?
+  payments    Payment[]
+  activityLogs BookingActivityLog[]
+  notesList   BookingNote[]
+  attachments BookingAttachment[]
 
   @@index([userId])
+  @@index([assigneeId])
   @@index([tourId])
-  @@index([referenceCode])
   @@index([status])
+  @@index([priority])
   @@index([createdAt])
+  @@index([deletedAt])
   @@map("bookings")
 }
 
@@ -176,6 +363,10 @@ model Passenger {
   bookingId     String  @map("booking_id")
   passengerType String  @map("passenger_type") @db.VarChar(20)
   fullName      String  @map("full_name") @db.VarChar(255)
+  passportNumber String? @map("passport_number") @db.VarChar(100)
+  passportExpiry DateTime? @map("passport_expiry") @db.Date
+  dateOfBirth   DateTime? @map("date_of_birth") @db.Date
+  nationality   String? @db.VarChar(100)
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -218,33 +409,7 @@ model Invoice {
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 
-  @@index([invoiceNumber])
   @@map("invoices")
-}
-
-// ─── INQUIRIES ────────────────────────────────────────────────
-// Tailor-made tour requests and contact form submissions.
-// Rate-limited at the API layer (3 per hour per IP).
-// destinations stored as string array (PostgreSQL native).
-
-model Inquiry {
-  id           String        @id @default(uuid())
-  fullName     String        @map("full_name") @db.VarChar(255)
-  email        String        @db.VarChar(255)
-  phone        String?       @db.VarChar(50)
-  destinations String[]
-  travelDate   DateTime?     @map("travel_date") @db.Date
-  adults       Int?
-  children     Int?
-  budget       String?       @db.VarChar(100)
-  message      String?       @db.Text
-  status       InquiryStatus @default(NEW)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-
-  @@index([status])
-  @@index([createdAt])
-  @@map("inquiries")
 }
 
 // ─── TAILOR-MADE INQUIRIES ────────────────────────────────────
@@ -276,7 +441,6 @@ model TailorMadeInquiry {
   createdAt        DateTime                @default(now()) @map("created_at")
   updatedAt        DateTime                @updatedAt @map("updated_at")
 
-  @@index([referenceCode])
   @@index([status])
   @@index([createdAt])
   @@map("tailor_made_inquiries")
@@ -385,4 +549,77 @@ model MediaAsset {
   @@index([deletedAt])
   @@index([providerName])
   @@map("media_assets")
+}
+
+// ─── PAYMENTS ──────────────────────────────────────────────────
+// Financial transactions related to a booking.
+
+model Payment {
+  id            String   @id @default(uuid())
+  bookingId     String   @map("booking_id")
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD") @db.VarChar(10)
+  method        String   @db.VarChar(100)
+  transactionId String?  @map("transaction_id") @db.VarChar(255)
+  status        String   @default("COMPLETED") @db.VarChar(50)
+  isRefund      Boolean  @default(false) @map("is_refund")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+// ─── BOOKING ACTIVITY LOGS ────────────────────────────────────
+// Timeline of actions on a booking.
+
+model BookingActivityLog {
+  id        String   @id @default(uuid())
+  bookingId String   @map("booking_id")
+  userId    String?  @map("user_id") // Null if system generated
+  action    String   @db.VarChar(255)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@map("booking_activity_logs")
+}
+
+// ─── BOOKING NOTES ────────────────────────────────────────────
+// Internal staff comments on a booking.
+
+model BookingNote {
+  id        String   @id @default(uuid())
+  bookingId String   @map("booking_id")
+  userId    String   @map("user_id") // Admin who wrote the note
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId])
+  @@map("booking_notes")
+}
+
+// ─── BOOKING ATTACHMENTS ──────────────────────────────────────
+// Files (like passport scans, flight tickets) attached to a booking.
+
+model BookingAttachment {
+  id           String   @id @default(uuid())
+  bookingId    String   @map("booking_id")
+  mediaAssetId String   @map("media_asset_id")
+  uploadedBy   String?  @map("uploaded_by") // Admin userId
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  @@index([bookingId])
+  @@map("booking_attachments")
 }

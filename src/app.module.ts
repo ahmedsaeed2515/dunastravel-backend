@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MiddlewareConsumer, NestModule } from '@nestjs/common';
@@ -20,6 +23,11 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ContactSubmissionsModule } from './modules/contact-submissions/contact-submissions.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
+import { CsrfGuard } from './common/guards/csrf.guard';
+
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -29,7 +37,7 @@ import { MediaModule } from './modules/media/media.module';
       load: [configuration],
       validationSchema: envValidationSchema,
       validationOptions: {
-        allowUnknown: false,
+        allowUnknown: true,
         abortEarly: false,
       },
     }),
@@ -41,6 +49,37 @@ import { MediaModule } from './modules/media/media.module';
         limit: 100,
       },
     ]),
+
+    // Structured Logging
+    WinstonModule.forRoot({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/error.log',
+          level: 'error',
+        }),
+        new winston.transports.File({
+          filename: 'logs/combined.log',
+        }),
+      ],
+    }),
+
+    // Redis Caching
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async (config: ConfigService) => ({
+        store: redisStore,
+        host: config.get<string>('REDIS_HOST', 'localhost'),
+        port: config.get<number>('REDIS_PORT', 6379),
+        ttl: 300, // 5 minutes default
+      }),
+      inject: [ConfigService],
+    }),
 
     // Cron jobs — needed by CurrencyModule (Phase 10)
     ScheduleModule.forRoot(),
@@ -61,6 +100,9 @@ import { MediaModule } from './modules/media/media.module';
     // Health check
     HealthModule,
 
+    // Prometheus Metrics
+    PrometheusModule.register(),
+
     // Feature modules — added in later phases:
     AdminModule,
     AuthModule,
@@ -75,7 +117,18 @@ import { MediaModule } from './modules/media/media.module';
     // AiModule        ← Phase 9
     // CurrencyModule  ← Phase 10
   ],
-  providers: [AsyncContextService, JsonLoggerService],
+  providers: [
+    AsyncContextService,
+    JsonLoggerService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

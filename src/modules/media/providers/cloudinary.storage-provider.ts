@@ -46,81 +46,99 @@ export class CloudinaryStorageProvider implements StorageProvider {
     );
 
     return new Promise((resolve) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'image',
-          folder: folderPath,
-          use_filename: false,
-          unique_filename: true,
-          overwrite: false,
-          eager: options.eager,
-          eager_async: false,
-          tags: tags,
-          context: options.altText ? `alt=${options.altText}` : undefined,
-        },
-        (error, result) => {
-          const duration_ms = Date.now() - start;
-          if (error) {
-            this.logger.error(
-              `SDK error { operation: 'upload', errorCode: ${error.http_code || 'UNKNOWN'}, message: '${error.message}' }`,
-            );
-            return resolve({
-              success: false,
-              publicId: '',
-              url: '',
-              secureUrl: '',
-              format: '',
-              bytes: 0,
-              width: null,
-              height: null,
-              error: error.message,
-            });
-          }
+      const uploadOptions = {
+        resource_type: 'image' as const,
+        folder: folderPath,
+        use_filename: false,
+        unique_filename: true,
+        overwrite: false,
+        eager: options.eager,
+        eager_async: false,
+        tags: tags,
+        context: options.altText ? `alt=${options.altText}` : undefined,
+      };
 
-          if (!result) {
-            this.logger.error(
-              `SDK error { operation: 'upload', errorCode: 'UNKNOWN', message: 'No result returned from Cloudinary' }`,
-            );
-            return resolve({
-              success: false,
-              publicId: '',
-              url: '',
-              secureUrl: '',
-              format: '',
-              bytes: 0,
-              width: null,
-              height: null,
-              error: 'Unknown error occurred during upload',
-            });
-          }
-
-          this.logger.debug(
-            `Upload SDK call completed { publicId: ${result.public_id}, duration_ms: ${duration_ms} }`,
+      const callback = (error: any, result: any) => {
+        const duration_ms = Date.now() - start;
+        if (error) {
+          this.logger.error(
+            `SDK error { operation: 'upload', errorCode: ${error.http_code || 'UNKNOWN'}, message: '${error.message}' }`,
           );
-
-          // Find the transformed version if available
-          let finalUrl = result.url;
-          let finalSecureUrl = result.secure_url;
-          if (result.eager && result.eager.length > 0) {
-            finalUrl = result.eager[0].url;
-            finalSecureUrl = result.eager[0].secure_url;
-          }
-
-          resolve({
-            success: true,
-            publicId: result.public_id,
-            url: finalUrl,
-            secureUrl: finalSecureUrl,
-            format: result.format,
-            bytes: result.bytes,
-            width: result.width || null,
-            height: result.height || null,
-            error: null,
+          return resolve({
+            success: false,
+            publicId: '',
+            url: '',
+            secureUrl: '',
+            format: '',
+            bytes: 0,
+            width: null,
+            height: null,
+            error: error.message,
           });
-        },
-      );
+        }
 
-      uploadStream.end(file.buffer);
+        if (!result) {
+          this.logger.error(
+            `SDK error { operation: 'upload', errorCode: 'UNKNOWN', message: 'No result returned from Cloudinary' }`,
+          );
+          return resolve({
+            success: false,
+            publicId: '',
+            url: '',
+            secureUrl: '',
+            format: '',
+            bytes: 0,
+            width: null,
+            height: null,
+            error: 'Unknown error occurred during upload',
+          });
+        }
+
+        this.logger.debug(
+          `Upload SDK call completed { publicId: ${result.public_id}, duration_ms: ${duration_ms} }`,
+        );
+
+        let finalUrl = result.url;
+        let finalSecureUrl = result.secure_url;
+        if (result.eager && result.eager.length > 0) {
+          finalUrl = result.eager[0].url;
+          finalSecureUrl = result.eager[0].secure_url;
+        }
+
+        resolve({
+          success: true,
+          publicId: result.public_id,
+          url: finalUrl,
+          secureUrl: finalSecureUrl,
+          format: result.format,
+          bytes: result.bytes,
+          width: result.width || null,
+          height: result.height || null,
+          error: null,
+        });
+      };
+
+      if (file.path) {
+        cloudinary.uploader.upload(file.path, uploadOptions, callback);
+      } else if (file.buffer) {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          callback,
+        );
+        uploadStream.end(file.buffer);
+      } else {
+        resolve({
+          success: false,
+          publicId: '',
+          url: '',
+          secureUrl: '',
+          format: '',
+          bytes: 0,
+          width: null,
+          height: null,
+          error: 'No buffer or path provided',
+        });
+      }
     });
   }
 

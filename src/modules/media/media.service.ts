@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import {
   Injectable,
   Logger,
@@ -7,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -69,17 +71,28 @@ export class MediaService {
     const maxAttempts = 3;
     let result;
 
-    while (attempt < maxAttempts) {
-      result = await this.storageProvider.upload(file, options);
-      if (result.success) {
-        break;
+    try {
+      while (attempt < maxAttempts) {
+        result = await this.storageProvider.upload(file, options);
+        if (result.success) {
+          break;
+        }
+        attempt++;
+        if (attempt < maxAttempts) {
+          this.logger.warn(
+            `Upload retry { attempt: ${attempt}, error: ${result.error}, entityType: ${dto.entityType} }`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        }
       }
-      attempt++;
-      if (attempt < maxAttempts) {
-        this.logger.warn(
-          `Upload retry { attempt: ${attempt}, error: ${result.error}, entityType: ${dto.entityType} }`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    } finally {
+      if (file.path) {
+        fs.unlink(file.path, (err) => {
+          if (err)
+            this.logger.error(
+              `Failed to delete temp file ${file.path}: ${err.message}`,
+            );
+        });
       }
     }
 
@@ -280,5 +293,46 @@ export class MediaService {
       `Tour assets queried { tourId: ${tourId}, count: ${assets.length} }`,
     );
     return assets;
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cleanupOrphanedAssets(): Promise<void> {
+    this.logger.log(
+      'Starting scheduled cleanup of orphaned MediaAsset records...',
+    );
+    try {
+      // Find all MediaAssets associated with TOUR that are not deleted
+      const tourAssets = await this.prisma.mediaAsset.findMany({
+        where: {
+          entityType: MediaEntityType.TOUR,
+          deletedAt: null,
+          entityId: { not: null },
+        },
+      });
+
+      let count = 0;
+      for (const asset of tourAssets) {
+        if (asset.entityId) {
+          const tour = await this.prisma.tour.findUnique({
+            where: { id: asset.entityId },
+          });
+          if (!tour) {
+            this.logger.warn(
+              `Found orphaned MediaAsset { id: ${asset.id}, entityId: ${asset.entityId} }, soft-deleting...`,
+            );
+            await this.deleteAsset(asset.id);
+            count++;
+          }
+        }
+      }
+      this.logger.log(
+        `Completed scheduled cleanup. Orphaned assets removed: ${count}`,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Error during scheduled cleanup of orphaned assets: ${error.message}`,
+        error.stack,
+      );
+    }
   }
 }

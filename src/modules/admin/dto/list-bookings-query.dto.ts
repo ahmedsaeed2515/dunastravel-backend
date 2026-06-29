@@ -58,6 +58,21 @@ export class ListBookingsQueryDto {
   dateTo?: string;
 
   @ApiPropertyOptional({
+    description: 'Search term for customer name, email, or reference code',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)',
+  })
+  @IsOptional()
+  @IsString()
+  paymentStatus?: string;
+
+  @ApiPropertyOptional({
     description: 'Sort field',
     enum: ['createdAt', 'totalAmount', 'referenceCode'],
   })

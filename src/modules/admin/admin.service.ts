@@ -1,13 +1,27 @@
 /* eslint-disable */
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TailorMadeInquiryStatus, ContactSubmissionStatus } from '@prisma/client';
 import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto';
+import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
+import { AddPaymentDto } from './dto/add-payment.dto';
+import { AddBookingNoteDto } from './dto/add-booking-note.dto';
+import { AddBookingAttachmentDto } from './dto/add-booking-attachment.dto';
 import { ListInquiriesQueryDto } from './dto/list-inquiries-query.dto';
 import { ListContactSubmissionsQueryDto } from './dto/list-contact-submissions-query.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
 import { UpdateInquiryStatusDto } from './dto/update-inquiry-status.dto';
 import { UpdateContactSubmissionStatusDto } from './dto/update-contact-submission-status.dto';
+import { UpsertPassengersDto } from './dto/upsert-passengers.dto';
+import { AssignBookingDto } from './dto/assign-booking.dto';
+import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
+import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
+import { CreateTourDto } from './dto/create-tour.dto';
+import { UpdateTourDto } from './dto/update-tour.dto';
+import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 import { AdminPaginatedResponse } from './types/admin-paginated-response.type';
 import { IAdminBookingSummary } from './interfaces/admin-booking-summary.interface';
 import { IAdminBookingDetail } from './interfaces/admin-booking-detail.interface';
@@ -22,20 +36,34 @@ import { IAdminDashboardMetrics } from './interfaces/admin-dashboard-metrics.int
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
-  async listBookings(query: ListBookingsQueryDto, adminUserId: number): Promise<AdminPaginatedResponse<IAdminBookingSummary>> {
-    const { page = 1, limit = 20, status, tourId, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  async listBookings(query: ListBookingsQueryDto, adminUserId: string): Promise<AdminPaginatedResponse<IAdminBookingSummary>> {
+    const { page = 1, limit = 20, status, tourId, dateFrom, dateTo, search, paymentStatus, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     
     this.logger.log(`listBookings invoked by admin ${adminUserId} with filters: ${JSON.stringify(query)}`);
 
-    const where: any = {};
+    const where: any = { deletedAt: null };
+    if ((query as any).includeDeleted === 'true' || (query as any).includeDeleted === true) {
+      delete where.deletedAt;
+    }
     if (status) where.status = status;
+    if (paymentStatus && !status) where.status = paymentStatus;
     if (tourId) where.tourId = tourId;
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
       if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
+    if (search) {
+      where.OR = [
+        { referenceCode: { contains: search, mode: 'insensitive' } },
+        { billingInfo: { fullName: { contains: search, mode: 'insensitive' } } },
+        { billingInfo: { email: { contains: search, mode: 'insensitive' } } },
+      ];
     }
 
     const skip = (page - 1) * limit;
@@ -82,7 +110,7 @@ export class AdminService {
     };
   }
 
-  async getBookingByReferenceCode(referenceCode: string, adminUserId: number): Promise<IAdminBookingDetail> {
+  async getBookingByReferenceCode(referenceCode: string, adminUserId: string): Promise<any> {
     this.logger.log(`getBookingByReferenceCode invoked by admin ${adminUserId} for Ref: ${referenceCode}`);
     
     const b = await this.prisma.booking.findUnique({
@@ -92,6 +120,10 @@ export class AdminService {
         billingInfo: true,
         invoice: true,
         tour: { select: { id: true, slug: true, titleJsonb: true } },
+        payments: true,
+        activityLogs: { orderBy: { createdAt: 'desc' } },
+        notesList: { orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true } } } },
+        attachments: true,
       }
     });
 
@@ -113,19 +145,15 @@ export class AdminService {
       invoiceNumber: b.invoice?.invoiceNumber || null,
       createdAt: b.createdAt,
       updatedAt: b.updatedAt,
-      passengers: b.passengers.map(p => {
-        const parts = p.fullName.split(' ');
-        const firstName = parts[0];
-        const lastName = parts.slice(1).join(' ') || '';
-        return {
-          id: p.id,
-          firstName,
-          lastName,
-          passportNumber: null,
-          dateOfBirth: null,
-          nationality: null,
-        };
-      }),
+      passengers: b.passengers.map(p => ({
+        id: p.id,
+        fullName: p.fullName,
+        passengerType: p.passengerType,
+        passportNumber: p.passportNumber || null,
+        passportExpiry: p.passportExpiry || null,
+        dateOfBirth: p.dateOfBirth || null,
+        nationality: p.nationality || null,
+      })),
       billingInfo: b.billingInfo ? {
         fullName: b.billingInfo.fullName,
         email: b.billingInfo.email,
@@ -139,7 +167,353 @@ export class AdminService {
         invoiceNumber: b.invoice.invoiceNumber,
         createdAt: b.invoice.issuedAt,
       } : null,
+      payments: b.payments,
+      activityLogs: b.activityLogs,
+      notes: b.notesList,
+      attachments: b.attachments,
     };
+  }
+
+  async updateBooking(referenceCode: string, dto: UpdateBookingDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const updated = await this.prisma.booking.update({
+      where: { referenceCode },
+      data: {
+        ...(dto.transportChoice !== undefined && { transportChoice: dto.transportChoice }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.cancellationReason !== undefined && { cancellationReason: dto.cancellationReason }),
+        ...(dto.arrivalDate && { arrivalDate: new Date(dto.arrivalDate) }),
+        ...(dto.departureDate && { departureDate: new Date(dto.departureDate) }),
+      }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'BOOKING_UPDATED',
+        details: dto as any
+      }
+    });
+
+    return updated;
+  }
+
+  async updateBookingStatus(referenceCode: string, dto: UpdateBookingStatusDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    if (booking.status === dto.status) {
+      throw new BadRequestException(`Booking is already in status ${dto.status}`);
+    }
+
+    const validTransitions: Record<string, string[]> = {
+      PENDING: ['CONFIRMED', 'CANCELLED', 'ARCHIVED'],
+      CONFIRMED: ['PAID', 'CANCELLED', 'ARCHIVED'],
+      PAID: ['COMPLETED', 'REFUNDED', 'ARCHIVED'],
+      COMPLETED: ['ARCHIVED'],
+      CANCELLED: ['ARCHIVED'],
+      REFUNDED: ['ARCHIVED'],
+      ARCHIVED: [],
+    };
+
+    const allowed = validTransitions[booking.status] || [];
+    if (!allowed.includes(dto.status)) {
+      throw new BadRequestException(`Cannot transition booking status from ${booking.status} to ${dto.status}`);
+    }
+
+    const updated = await this.prisma.booking.update({
+      where: { referenceCode },
+      data: { 
+        status: dto.status,
+        ...(dto.reason && { cancellationReason: dto.reason })
+      }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'STATUS_CHANGED',
+        details: { oldStatus: booking.status, newStatus: dto.status, reason: dto.reason }
+      }
+    });
+
+    return updated;
+  }
+
+  async addPayment(referenceCode: string, dto: AddPaymentDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        bookingId: booking.id,
+        amount: dto.amount,
+        currency: dto.currency,
+        method: dto.method,
+        transactionId: dto.transactionId,
+        isRefund: dto.isRefund ?? false,
+      }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: dto.isRefund ? 'REFUND_ADDED' : 'PAYMENT_ADDED',
+        details: { amount: dto.amount, currency: dto.currency, method: dto.method }
+      }
+    });
+
+    return payment;
+  }
+
+  async addBookingNote(referenceCode: string, dto: AddBookingNoteDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const note = await this.prisma.bookingNote.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        content: dto.content,
+      }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'NOTE_ADDED',
+        details: { noteId: note.id }
+      }
+    });
+
+    return note;
+  }
+
+  async addBookingAttachment(referenceCode: string, dto: AddBookingAttachmentDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const attachment = await this.prisma.bookingAttachment.create({
+      data: {
+        bookingId: booking.id,
+        mediaAssetId: dto.mediaAssetId,
+        uploadedBy: adminUserId,
+      }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'ATTACHMENT_ADDED',
+        details: { mediaAssetId: dto.mediaAssetId }
+      }
+    });
+
+    return attachment;
+  }
+
+  async upsertPassengers(referenceCode: string, dto: UpsertPassengersDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passenger.deleteMany({ where: { bookingId: booking.id } });
+
+      await tx.passenger.createMany({
+        data: dto.passengers.map(p => ({
+          bookingId: booking.id,
+          passengerType: p.passengerType,
+          fullName: p.fullName,
+          passportNumber: p.passportNumber || null,
+          passportExpiry: p.passportExpiry ? new Date(p.passportExpiry) : null,
+          dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth) : null,
+          nationality: p.nationality || null,
+        }))
+      });
+
+      await tx.bookingActivityLog.create({
+        data: {
+          bookingId: booking.id,
+          userId: adminUserId,
+          action: 'PASSENGERS_UPDATED',
+          details: { count: dto.passengers.length }
+        }
+      });
+    });
+
+    return { success: true };
+  }
+
+  async assignBooking(referenceCode: string, dto: AssignBookingDto, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const updated = await this.prisma.booking.update({
+      where: { referenceCode },
+      data: { assigneeId: dto.assigneeId }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'ASSIGNEE_CHANGED',
+        details: { oldAssigneeId: booking.assigneeId, newAssigneeId: dto.assigneeId }
+      }
+    });
+
+    return updated;
+  }
+
+  async bulkUpdateBookings(dto: BulkUpdateBookingsDto, adminUserId: string) {
+    const data: any = {};
+    if (dto.status) data.status = dto.status;
+    if (dto.assigneeId !== undefined) data.assigneeId = dto.assigneeId;
+    if (dto.priority) data.priority = dto.priority;
+
+    if (Object.keys(data).length === 0) return { count: 0 };
+
+    const count = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.booking.updateMany({
+        where: { referenceCode: { in: dto.referenceCodes } },
+        data
+      });
+
+      const bookings = await tx.booking.findMany({
+        where: { referenceCode: { in: dto.referenceCodes } },
+        select: { id: true }
+      });
+
+      if (bookings.length > 0) {
+        await tx.bookingActivityLog.createMany({
+          data: bookings.map(b => ({
+            bookingId: b.id,
+            userId: adminUserId,
+            action: 'BULK_UPDATE',
+            details: data
+          }))
+        });
+      }
+
+      return result.count;
+    });
+
+    return { count };
+  }
+
+  async softDeleteBooking(referenceCode: string, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    await this.prisma.booking.update({
+      where: { referenceCode },
+      data: { deletedAt: new Date() }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'BOOKING_DELETED',
+        details: { softDelete: true }
+      }
+    });
+
+    return { success: true };
+  }
+
+  async restoreBooking(referenceCode: string, adminUserId: string) {
+    const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    await this.prisma.booking.update({
+      where: { referenceCode },
+      data: { deletedAt: null }
+    });
+
+    await this.prisma.bookingActivityLog.create({
+      data: {
+        bookingId: booking.id,
+        userId: adminUserId,
+        action: 'BOOKING_RESTORED',
+        details: { restore: true }
+      }
+    });
+
+    return { success: true };
+  }
+
+  async exportBookingsCsv(query: ListBookingsQueryDto, adminUserId: string): Promise<string> {
+    const { status, tourId, dateFrom, dateTo, search, paymentStatus, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const where: any = { deletedAt: null };
+    if ((query as any).includeDeleted === 'true' || (query as any).includeDeleted === true) {
+      delete where.deletedAt;
+    }
+    if (status) where.status = status;
+    if (paymentStatus && !status) where.status = paymentStatus;
+    if (tourId) where.tourId = tourId;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
+    if (search) {
+      where.OR = [
+        { referenceCode: { contains: search, mode: 'insensitive' } },
+        { billingInfo: { fullName: { contains: search, mode: 'insensitive' } } },
+        { billingInfo: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const headers = ['Reference', 'Date', 'Status', 'Tour', 'Customer Name', 'Customer Email', 'Amount (USD)', 'Invoice'];
+    const rows: string[][] = [];
+
+    let skip = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const batch = await this.prisma.booking.findMany({
+        where,
+        skip,
+        take: batchSize,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          tour: { select: { slug: true } },
+          billingInfo: { select: { fullName: true, email: true } },
+          invoice: { select: { invoiceNumber: true } }
+        }
+      });
+
+      for (const b of batch) {
+        rows.push([
+          b.referenceCode,
+          b.createdAt.toISOString().split('T')[0],
+          b.status,
+          b.tour.slug,
+          b.billingInfo?.fullName || 'N/A',
+          b.billingInfo?.email || 'N/A',
+          b.totalAmountUsd.toString(),
+          b.invoice?.invoiceNumber || 'N/A'
+        ]);
+      }
+
+      skip += batchSize;
+      if (batch.length < batchSize) {
+        hasMore = false;
+      }
+    }
+
+    this.logger.log(`exportBookingsCsv invoked by admin ${adminUserId}. Exported ${rows.length} records via batching.`);
+
+    return [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
   }
 
   async listInquiries(query: ListInquiriesQueryDto, adminUserId: number): Promise<AdminPaginatedResponse<IAdminInquirySummary>> {
@@ -374,7 +748,14 @@ export class AdminService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async getDashboardMetrics(adminUserId: number): Promise<IAdminDashboardMetrics> {
+  async getDashboardMetrics(adminUserId: string): Promise<IAdminDashboardMetrics> {
+    const cacheKey = 'admin_dashboard_metrics';
+    const cachedMetrics = await this.cacheManager.get<IAdminDashboardMetrics>(cacheKey);
+    if (cachedMetrics) {
+      this.logger.debug(`Returning cached dashboard metrics for admin ${adminUserId}`);
+      return cachedMetrics;
+    }
+
     const start = Date.now();
     
     const now = new Date();
@@ -419,7 +800,7 @@ export class AdminService {
     const ms = Date.now() - start;
     this.logger.log(`getDashboardMetrics invoked by admin ${adminUserId}. Computed in ${ms}ms.`);
 
-    return {
+    const metrics: IAdminDashboardMetrics = {
       totalBookings,
       bookingsThisMonth,
       totalInquiries,
@@ -430,5 +811,350 @@ export class AdminService {
       totalNotificationsFailed,
       recentFailedNotifications,
     };
+
+    // Cache for 5 minutes (300,000 ms)
+    await this.cacheManager.set(cacheKey, metrics, 300000);
+
+    return metrics;
+  }
+
+  async listTours(query: ListAdminToursQueryDto, adminUserId: string): Promise<AdminPaginatedResponse<any>> {
+    const { page = 1, limit = 20, search, country, city, category, status, isFeatured, tag, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    this.logger.log(`listTours invoked by admin ${adminUserId} with filters: ${JSON.stringify(query)}`);
+
+    const where: any = { deletedAt: null };
+    if (country) where.country = { equals: country, mode: 'insensitive' };
+    if (city) where.city = { equals: city, mode: 'insensitive' };
+    if (category) where.category = { equals: category, mode: 'insensitive' };
+    if (status) where.status = status;
+    if (isFeatured !== undefined) where.isFeatured = isFeatured === 'true';
+    if (tag) where.tags = { has: tag };
+    if (search) {
+      where.OR = [
+        { slug: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const [total, records] = await Promise.all([
+      this.prisma.tour.count({ where }),
+      this.prisma.tour.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          _count: { select: { bookings: true, reviews: true } },
+          images: { where: { isHero: true }, take: 1, select: { imageUrl: true } }
+        }
+      })
+    ]);
+
+    const data = records.map((t) => ({
+      id: t.id,
+      slug: t.slug,
+      titleJsonb: t.titleJsonb,
+      category: t.category,
+      basePriceUsd: t.basePriceUsd.toString(),
+      currency: t.currency,
+      isActive: t.isActive,
+      status: t.status,
+      isFeatured: t.isFeatured,
+      country: t.country,
+      city: t.city,
+      capacity: t.capacity,
+      remainingSeats: t.remainingSeats,
+      bookingCount: t._count.bookings,
+      reviewCount: t._count.reviews,
+      heroImage: t.images[0]?.imageUrl || null,
+      createdAt: t.createdAt,
+    }));
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getTourStats(adminUserId: string): Promise<any> {
+    this.logger.log(`getTourStats invoked by admin ${adminUserId}`);
+    const [
+      totalTours,
+      publishedTours,
+      draftTours,
+      featuredTours,
+      allTours
+    ] = await Promise.all([
+      this.prisma.tour.count({ where: { deletedAt: null } }),
+      this.prisma.tour.count({ where: { deletedAt: null, status: 'PUBLISHED' } }),
+      this.prisma.tour.count({ where: { deletedAt: null, status: 'DRAFT' } }),
+      this.prisma.tour.count({ where: { deletedAt: null, isFeatured: true } }),
+      this.prisma.tour.findMany({
+        where: { deletedAt: null },
+        select: { capacity: true, remainingSeats: true }
+      })
+    ]);
+
+    const totalCapacity = allTours.reduce((sum, t) => sum + (t.capacity || 0), 0);
+    const totalRemaining = allTours.reduce((sum, t) => sum + (t.remainingSeats || 0), 0);
+    const seatsSold = totalCapacity - totalRemaining;
+
+    return {
+      totalTours,
+      publishedTours,
+      draftTours,
+      featuredTours,
+      totalCapacity,
+      totalRemainingSeats: totalRemaining,
+      seatsSold,
+      occupancyRate: totalCapacity > 0 ? ((seatsSold / totalCapacity) * 100).toFixed(1) : '0.0'
+    };
+  }
+
+  async exportToursCsv(query: ListAdminToursQueryDto, adminUserId: string): Promise<string> {
+    const { search, country, city, category, status, isFeatured, tag, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const where: any = { deletedAt: null };
+    if (country) where.country = { equals: country, mode: 'insensitive' };
+    if (city) where.city = { equals: city, mode: 'insensitive' };
+    if (category) where.category = { equals: category, mode: 'insensitive' };
+    if (status) where.status = status;
+    if (isFeatured !== undefined) where.isFeatured = isFeatured === 'true';
+    if (tag) where.tags = { has: tag };
+    if (search) {
+      where.OR = [
+        { slug: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const records = await this.prisma.tour.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      include: { _count: { select: { bookings: true } } }
+    });
+
+    const headers = ['Slug', 'Title (EN)', 'Category', 'Country', 'City', 'Price (USD)', 'Status', 'Featured', 'Capacity', 'Remaining Seats', 'Bookings'];
+    const rows = records.map(t => {
+      const titleObj: any = t.titleJsonb || {};
+      return [
+        t.slug,
+        titleObj['en'] || t.slug,
+        t.category || 'N/A',
+        t.country || 'N/A',
+        t.city || 'N/A',
+        t.basePriceUsd.toString(),
+        t.status,
+        t.isFeatured ? 'Yes' : 'No',
+        t.capacity.toString(),
+        t.remainingSeats.toString(),
+        t._count.bookings.toString()
+      ];
+    });
+
+    this.logger.log(`exportToursCsv invoked by admin ${adminUserId}. Exported ${records.length} tours.`);
+    return [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+  }
+
+  async getTourBySlug(slug: string, adminUserId: string): Promise<any> {
+    this.logger.log(`getTourBySlug invoked by admin ${adminUserId} for slug: ${slug}`);
+    const tour = await this.prisma.tour.findUnique({
+      where: { slug },
+      include: {
+        itineraries: { orderBy: { sortOrder: 'asc' } },
+        images: { orderBy: { sortOrder: 'asc' } },
+        reviews: { orderBy: { createdAt: 'desc' } },
+        activityLogs: { orderBy: { createdAt: 'desc' } },
+        bookings: {
+          orderBy: { createdAt: 'desc' },
+          include: { billingInfo: { select: { fullName: true, email: true } } }
+        }
+      }
+    });
+
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    return {
+      ...tour,
+      basePriceUsd: tour.basePriceUsd.toString(),
+      bookings: tour.bookings.map(b => ({
+        ...b,
+        totalAmountUsd: b.totalAmountUsd.toString()
+      }))
+    };
+  }
+
+  async createTour(dto: CreateTourDto, adminUserId: string) {
+    this.logger.log(`createTour invoked by admin ${adminUserId} for slug: ${dto.slug}`);
+    const existing = await this.prisma.tour.findUnique({ where: { slug: dto.slug } });
+    if (existing) throw new BadRequestException(`Tour with slug ${dto.slug} already exists`);
+
+    const { itineraries, images, ...tourData } = dto;
+
+    const tour = await this.prisma.tour.create({
+      data: {
+        ...tourData,
+        itineraries: itineraries ? {
+          create: itineraries.map(it => ({
+            dayLabel: it.dayLabel,
+            descriptionJsonb: it.descriptionJsonb,
+            mealsJsonb: it.mealsJsonb,
+            activitiesJsonb: it.activitiesJsonb,
+            hotelsJsonb: it.hotelsJsonb,
+            transportationJsonb: it.transportationJsonb,
+            notesJsonb: it.notesJsonb,
+            sortOrder: it.sortOrder
+          }))
+        } : undefined,
+        images: images ? {
+          create: images.map(img => ({
+            imageUrl: img.imageUrl,
+            isHero: img.isHero ?? false,
+            isVideo: img.isVideo ?? false,
+            videoUrl: img.videoUrl,
+            altText: img.altText,
+            sortOrder: img.sortOrder
+          }))
+        } : undefined,
+        activityLogs: {
+          create: [{
+            userId: adminUserId,
+            action: 'TOUR_CREATED',
+            details: { slug: dto.slug }
+          }]
+        }
+      }
+    });
+
+    return { success: true, slug: tour.slug };
+  }
+
+  async updateTour(slug: string, dto: UpdateTourDto, adminUserId: string) {
+    this.logger.log(`updateTour invoked by admin ${adminUserId} for slug: ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    const { itineraries, images, ...tourData } = dto;
+
+    // We do this in a clean sequence
+    if (itineraries) {
+      await this.prisma.tourItinerary.deleteMany({ where: { tourId: tour.id } });
+      await this.prisma.tourItinerary.createMany({
+        data: itineraries.map(it => ({
+          tourId: tour.id,
+          dayLabel: it.dayLabel,
+          descriptionJsonb: it.descriptionJsonb,
+          mealsJsonb: it.mealsJsonb ?? undefined,
+          activitiesJsonb: it.activitiesJsonb ?? undefined,
+          hotelsJsonb: it.hotelsJsonb ?? undefined,
+          transportationJsonb: it.transportationJsonb ?? undefined,
+          notesJsonb: it.notesJsonb ?? undefined,
+          sortOrder: it.sortOrder
+        }))
+      });
+    }
+
+    if (images) {
+      await this.prisma.tourImage.deleteMany({ where: { tourId: tour.id } });
+      await this.prisma.tourImage.createMany({
+        data: images.map(img => ({
+          tourId: tour.id,
+          imageUrl: img.imageUrl,
+          isHero: img.isHero ?? false,
+          isVideo: img.isVideo ?? false,
+          videoUrl: img.videoUrl ?? undefined,
+          altText: img.altText ?? undefined,
+          sortOrder: img.sortOrder
+        }))
+      });
+    }
+
+    const updated = await this.prisma.tour.update({
+      where: { slug },
+      data: {
+        ...tourData,
+        activityLogs: {
+          create: [{
+            userId: adminUserId,
+            action: 'TOUR_UPDATED',
+            details: tourData as any
+          }]
+        }
+      }
+    });
+
+    // Invalidate cache
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    for (const l of langs) {
+      await this.cacheManager.del(`tour:${slug}:${l}`);
+    }
+
+    return { success: true, slug: updated.slug };
+  }
+
+  async bulkUpdateTours(dto: BulkUpdateToursDto, adminUserId: string) {
+    this.logger.log(`bulkUpdateTours invoked by admin ${adminUserId}`);
+    const data: any = {};
+    if (dto.status) data.status = dto.status;
+    if (dto.category) data.category = dto.category;
+    if (dto.country) data.country = dto.country;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+
+    if (Object.keys(data).length === 0) return { count: 0 };
+
+    const result = await this.prisma.tour.updateMany({
+      where: { slug: { in: dto.slugs } },
+      data
+    });
+
+    const tours = await this.prisma.tour.findMany({
+      where: { slug: { in: dto.slugs } },
+      select: { id: true, slug: true }
+    });
+
+    if (tours.length > 0) {
+      await this.prisma.tourActivityLog.createMany({
+        data: tours.map(t => ({
+          tourId: t.id,
+          userId: adminUserId,
+          action: 'BULK_UPDATE',
+          details: data
+        }))
+      });
+    }
+
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    for (const t of tours) {
+      for (const l of langs) {
+        await this.cacheManager.del(`tour:${t.slug}:${l}`);
+      }
+    }
+
+    return { count: result.count };
+  }
+
+  async softDeleteTour(slug: string, adminUserId: string) {
+    this.logger.log(`softDeleteTour invoked by admin ${adminUserId} for slug: ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    await this.prisma.tour.update({
+      where: { slug },
+      data: {
+        deletedAt: new Date(),
+        status: 'ARCHIVED',
+        activityLogs: {
+          create: [{
+            userId: adminUserId,
+            action: 'TOUR_SOFT_DELETED',
+            details: { softDelete: true }
+          }]
+        }
+      }
+    });
+
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    for (const l of langs) {
+      await this.cacheManager.del(`tour:${slug}:${l}`);
+    }
+
+    return { success: true };
   }
 }

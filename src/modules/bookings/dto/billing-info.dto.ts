@@ -29,7 +29,7 @@ export class BillingInfoDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  @Matches(/^[\d\s\-+()]+$/)
+  @Matches(/^(?=(?:\D*\d){6})[\d\s\-+()]+$/, { message: 'Phone number must contain at least 6 digits and valid symbols' })
   phone!: string;
 
   @ApiProperty({ enum: ['PERSONAL', 'COMPANY'] })

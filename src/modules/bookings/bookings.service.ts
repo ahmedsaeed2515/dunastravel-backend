@@ -6,7 +6,10 @@ import {
   UnprocessableEntityException,
   InternalServerErrorException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ToursService } from '../tours/tours.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -19,6 +22,8 @@ import {
   extractI18n,
 } from '../../common/utils';
 import { BOOKING_EVENTS, BookingCreatedPayload } from '../../common/events';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Counter } from 'prom-client';
 
 @Injectable()
 export class BookingsService {
@@ -28,6 +33,9 @@ export class BookingsService {
     private readonly prisma: PrismaService,
     private readonly toursService: ToursService,
     private readonly eventEmitter: EventEmitter2,
+    @InjectMetric('bookings_created_total')
+    private readonly bookingsCounter: Counter<string>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   private calculateTotalAmount(
@@ -61,23 +69,28 @@ export class BookingsService {
     return this.generateUniqueReferenceCode(attempt + 1);
   }
 
-  private async generateUniqueInvoiceNumber(
-    tx: Prisma.TransactionClient,
-  ): Promise<string> {
+  private async generateUniqueInvoiceNumber(tx: any): Promise<string> {
     const year = new Date().getFullYear();
-    const existingCount = await tx.invoice.count({
-      where: {
-        invoiceNumber: { startsWith: `INV-${year}-` },
-      },
-    });
-    const newCount = existingCount + 1;
-    return generateInvoiceNumber(year, newCount);
+    const seqResult = await tx.$queryRaw<
+      [{ nextval: bigint }]
+    >`SELECT nextval('invoice_seq')`;
+    const num = Number(seqResult[0].nextval);
+    return `INV-${year}-${String(num).padStart(4, '0')}`;
   }
 
   async createBooking(
     dto: CreateBookingDto,
     userId: string | null,
+    idempotencyKey?: string,
   ): Promise<BookingCreatedResponse> {
+    if (idempotencyKey) {
+      const cachedResponse = await this.cacheManager.get<BookingCreatedResponse>(`idempotency:${idempotencyKey}`);
+      if (cachedResponse) {
+        this.logger.log(`Idempotency key hit for ${idempotencyKey}, returning cached booking response`);
+        return cachedResponse;
+      }
+    }
+
     // STEP 1
     if (
       dto.billing.invoiceType === 'COMPANY' &&
@@ -114,80 +127,106 @@ export class BookingsService {
 
     // STEP 5
     let result;
-    try {
-      result = await this.prisma.$transaction(async (tx) => {
-        // 5a
-        const booking = await tx.booking.create({
-          data: {
-            referenceCode,
-            userId,
-            tourId: tour.id,
-            status: 'PENDING',
-            arrivalDate: new Date(dto.arrivalDate),
-            departureDate: dto.departureDate
-              ? new Date(dto.departureDate)
-              : null,
-            transportChoice: dto.transportChoice ?? null,
-            adults: dto.adults,
-            children: dto.children ?? 0,
-            infants: dto.infants ?? 0,
-            totalAmountUsd,
-            notes: dto.notes ?? null,
-          },
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt < maxAttempts) {
+      try {
+        result = await this.prisma.$transaction(async (tx) => {
+          // 5a
+          const booking = await tx.booking.create({
+            data: {
+              referenceCode,
+              userId,
+              tourId: tour.id,
+              status: 'PENDING',
+              arrivalDate: new Date(dto.arrivalDate),
+              departureDate: dto.departureDate
+                ? new Date(dto.departureDate)
+                : null,
+              transportChoice: dto.transportChoice ?? null,
+              adults: dto.adults,
+              children: dto.children ?? 0,
+              infants: dto.infants ?? 0,
+              totalAmountUsd,
+              notes: dto.notes ?? null,
+            },
+          });
+
+          // 5b
+          await tx.passenger.createMany({
+            data: dto.passengerNames.map((p) => ({
+              bookingId: booking.id,
+              passengerType: p.passengerType,
+              fullName: p.fullName.trim(),
+            })),
+          });
+
+          // 5c
+          const billingInfo = await tx.billingInfo.create({
+            data: {
+              bookingId: booking.id,
+              fullName: dto.billing.fullName.trim(),
+              email: dto.billing.email.toLowerCase().trim(),
+              phone: dto.billing.phone.trim(),
+              invoiceType: dto.billing.invoiceType as any,
+              companyName: dto.billing.companyName?.trim() ?? null,
+              taxId: dto.billing.taxId?.trim() ?? null,
+              address: dto.billing.address?.trim() ?? null,
+              city: dto.billing.city?.trim() ?? null,
+              country: dto.billing.country?.trim() ?? null,
+            },
+          });
+
+          // 5d
+          const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
+
+          // 5e
+          await tx.invoice.create({
+            data: {
+              invoiceNumber,
+              bookingId: booking.id,
+              issuedAt: new Date(),
+            },
+          });
+
+          // 5f
+          const passengers = await tx.passenger.findMany({
+            where: { bookingId: booking.id },
+          });
+
+          return { booking, billingInfo, invoiceNumber, passengers };
         });
 
-        // 5b
-        await tx.passenger.createMany({
-          data: dto.passengerNames.map((p) => ({
-            bookingId: booking.id,
-            passengerType: p.passengerType,
-            fullName: p.fullName.trim(),
-          })),
-        });
+        break; // Success, exit retry loop
+      } catch (error: any) {
+        if (
+          error.code === 'P2002' &&
+          error.meta?.target?.includes('invoiceNumber')
+        ) {
+          attempt++;
+          this.logger.warn(
+            `Invoice number collision, retrying attempt ${attempt}`,
+          );
+          if (attempt >= maxAttempts) {
+            throw new InternalServerErrorException(
+              'Booking transaction failed due to invoice collision',
+            );
+          }
+          continue;
+        }
 
-        // 5c
-        const billingInfo = await tx.billingInfo.create({
-          data: {
-            bookingId: booking.id,
-            fullName: dto.billing.fullName.trim(),
-            email: dto.billing.email.toLowerCase().trim(),
-            phone: dto.billing.phone.trim(),
-            invoiceType: dto.billing.invoiceType as any,
-            companyName: dto.billing.companyName?.trim() ?? null,
-            taxId: dto.billing.taxId?.trim() ?? null,
-            address: dto.billing.address?.trim() ?? null,
-            city: dto.billing.city?.trim() ?? null,
-            country: dto.billing.country?.trim() ?? null,
-          },
-        });
-
-        // 5d
-        const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
-
-        // 5e
-        await tx.invoice.create({
-          data: {
-            invoiceNumber,
-            bookingId: booking.id,
-            issuedAt: new Date(),
-          },
-        });
-
-        // 5f
-        const passengers = await tx.passenger.findMany({
-          where: { bookingId: booking.id },
-        });
-
-        return { booking, billingInfo, invoiceNumber, passengers };
-      });
-    } catch (error: any) {
-      this.logger.error(
-        `Booking transaction failed | ref=${referenceCode} | error=${error.message}`,
-      );
-      throw new InternalServerErrorException('Booking transaction failed');
+        this.logger.error(
+          `Booking transaction failed | ref=${referenceCode} | error=${error.message}`,
+        );
+        throw new InternalServerErrorException('Booking transaction failed');
+      }
     }
 
     // STEP 6
+    if (!result) {
+      throw new InternalServerErrorException('Booking transaction failed');
+    }
     const tourTitle = extractI18n(tour.titleJsonb, 'en');
 
     // STEP 7
@@ -209,8 +248,9 @@ export class BookingsService {
     this.logger.log(
       `Booking created | ref=${referenceCode} invoice=${result.invoiceNumber} tour=${tour.slug} total=${totalAmountUsd.toString()}`,
     );
+    this.bookingsCounter.inc();
 
-    return {
+    const responseData = {
       id: result.booking.id,
       referenceCode: result.booking.referenceCode,
       invoiceNumber: result.invoiceNumber,
@@ -241,10 +281,18 @@ export class BookingsService {
         country: result.billingInfo.country,
       },
     };
+
+    if (idempotencyKey) {
+      await this.cacheManager.set(`idempotency:${idempotencyKey}`, responseData, 86400000);
+    }
+
+    return responseData;
   }
 
   async findByReferenceCode(
     referenceCode: string,
+    email?: string,
+    userId?: string,
   ): Promise<BookingSummaryResponse> {
     this.logger.debug(`Booking queried | ref=${referenceCode}`);
 
@@ -253,11 +301,31 @@ export class BookingsService {
       include: {
         tour: { select: { titleJsonb: true, slug: true } },
         invoice: { select: { invoiceNumber: true } },
+        billingInfo: { select: { email: true } },
       },
     });
 
     if (!booking) {
       this.logger.warn(`Booking not found | ref=${referenceCode}`);
+      throw new NotFoundException('Booking not found');
+    }
+
+    // IDOR / Enumeration Mitigation
+    let authorized = false;
+    if (userId && booking.userId === userId) {
+      authorized = true;
+    } else if (
+      email &&
+      booking.billingInfo?.email.toLowerCase() === email.toLowerCase()
+    ) {
+      authorized = true;
+    }
+
+    if (!authorized) {
+      this.logger.warn(
+        `Unauthorized access attempt for booking | ref=${referenceCode}`,
+      );
+      // Return 404 to prevent enumeration
       throw new NotFoundException('Booking not found');
     }
 
@@ -278,5 +346,35 @@ export class BookingsService {
       totalAmountUsd: booking.totalAmountUsd.toString(),
       createdAt: booking.createdAt.toISOString(),
     };
+  }
+
+  async findUserBookings(userId: string): Promise<BookingSummaryResponse[]> {
+    this.logger.debug(`User bookings queried | userId=${userId}`);
+    const bookings = await this.prisma.booking.findMany({
+      where: { userId },
+      include: {
+        tour: { select: { titleJsonb: true, slug: true } },
+        invoice: { select: { invoiceNumber: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return bookings.map((booking) => ({
+      id: booking.id,
+      referenceCode: booking.referenceCode,
+      invoiceNumber: booking.invoice?.invoiceNumber ?? null,
+      status: booking.status,
+      tourTitle: extractI18n(booking.tour.titleJsonb, 'en'),
+      tourSlug: booking.tour.slug,
+      arrivalDate: booking.arrivalDate.toISOString().split('T')[0],
+      departureDate: booking.departureDate
+        ? booking.departureDate.toISOString().split('T')[0]
+        : null,
+      adults: booking.adults,
+      children: booking.children,
+      infants: booking.infants,
+      totalAmountUsd: booking.totalAmountUsd.toString(),
+      createdAt: booking.createdAt.toISOString(),
+    }));
   }
 }

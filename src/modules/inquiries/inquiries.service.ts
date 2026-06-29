@@ -15,6 +15,7 @@ import {
 import { CreateInquiryDto, ListInquiriesQueryDto } from './dto';
 import { InquiryResponse } from './types';
 import { INQUIRY_EVENTS, InquiryCreatedPayload } from './events';
+import { sanitizeString } from '../../common/utils/sanitize.util';
 
 @Injectable()
 export class InquiriesService {
@@ -54,11 +55,11 @@ export class InquiriesService {
     const newInquiry = await this.prisma.tailorMadeInquiry.create({
       data: {
         referenceCode,
-        fullName: dto.fullName,
-        email: dto.email,
-        phone: dto.phone,
+        fullName: sanitizeString(dto.fullName),
+        email: sanitizeString(dto.email),
+        phone: sanitizeString(dto.phone),
         preferredLanguage: dto.preferredLanguage,
-        destinations: dto.destinations,
+        destinations: dto.destinations.map((d) => sanitizeString(d)),
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
         adults: dto.adults,
@@ -68,7 +69,7 @@ export class InquiriesService {
             ? new Prisma.Decimal(dto.budgetAmount)
             : null,
         budgetCurrency: dto.budgetCurrency || null,
-        notes: dto.notes || null,
+        notes: sanitizeString(dto.notes || '') || null,
         status: TailorMadeInquiryStatus.NEWLY_RECEIVED,
       },
     });

@@ -19,7 +19,8 @@ export interface TransformOptions {
 }
 
 export interface UploadableFile {
-  buffer: Buffer;
+  buffer?: Buffer;
+  path?: string;
   originalname: string;
   mimetype: string;
   size: number;

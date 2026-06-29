@@ -12,6 +12,7 @@ import {
   CONTACT_CREATED_EVENT,
 } from './events/contact-created.event';
 import * as crypto from 'crypto';
+import { sanitizeString } from '../../common/utils/sanitize.util';
 
 @Injectable()
 export class ContactSubmissionsService {
@@ -29,12 +30,12 @@ export class ContactSubmissionsService {
       const submission = await this.prisma.contactSubmission.create({
         data: {
           referenceCode,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          email: dto.email,
-          phone: dto.phone,
-          subject: dto.subject,
-          message: dto.message,
+          firstName: sanitizeString(dto.firstName),
+          lastName: sanitizeString(dto.lastName),
+          email: sanitizeString(dto.email),
+          phone: dto.phone ? sanitizeString(dto.phone) : null,
+          subject: sanitizeString(dto.subject),
+          message: sanitizeString(dto.message),
           locale: dto.locale || 'en',
           ipAddress,
         },

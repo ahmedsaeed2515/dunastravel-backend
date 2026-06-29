@@ -10,8 +10,10 @@ describe('Environment Validation Schema', () => {
       ADMIN_DASHBOARD_BASE_URL: 'http://localhost:3002',
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/db',
       REDIS_URL: 'redis://localhost:6379',
-      JWT_SECRET: 'super_secret_jwt_key_that_is_at_least_32_chars_long',
-      JWT_EXPIRES_IN: '7d',
+      JWT_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
+      JWT_REFRESH_SECRET:
+        'super-secret-refresh-key-that-is-at-least-32-chars-long',
+      JWT_EXPIRES_IN: '15m',
       LOG_LEVEL: 'info',
       REQUEST_TIMEOUT_MS: '30000',
       THROTTLE_TTL: '60000',

@@ -80,7 +80,7 @@ export class PrismaService
       this.booking.deleteMany(),
       this.tourImage.deleteMany(),
       this.tourItinerary.deleteMany(),
-      this.inquiry.deleteMany(),
+      this.tailorMadeInquiry.deleteMany(),
       this.tour.deleteMany(),
       this.user.deleteMany(),
     ]);

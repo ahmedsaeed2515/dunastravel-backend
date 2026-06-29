@@ -14,13 +14,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
     private readonly userService: UserService,
   ) {
+    const secret = configService.get<string>('jwt.secret');
+    if (!secret) {
+      throw new Error('FATAL: JWT_SECRET is not defined');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) =>
           (request?.cookies as Record<string, string>)?.access_token,
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwt.secret') || 'default_secret',
+      secretOrKey: secret,
     });
   }
 

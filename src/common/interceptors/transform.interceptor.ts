@@ -9,9 +9,10 @@ import { map } from 'rxjs/operators';
 import { Request, Response as ExpressResponse } from 'express';
 
 export interface Response<T> {
-  data: T;
-  message: string;
+  success: boolean;
   statusCode: number;
+  data: T;
+  timestamp: string;
 }
 
 @Injectable()
@@ -34,11 +35,26 @@ export class TransformInterceptor<T> implements NestInterceptor<
     }
 
     return next.handle().pipe(
-      map((data: T) => ({
-        data,
-        message: 'Success',
-        statusCode: response.statusCode,
-      })),
+      map((resData: any) => {
+        // Avoid double-enveloping if the response is already paginated or wrapped
+        if (resData && typeof resData === 'object' && 'data' in resData) {
+          const { data, ...meta } = resData;
+          return {
+            success: true,
+            statusCode: response.statusCode,
+            data,
+            ...meta,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        return {
+          success: true,
+          statusCode: response.statusCode,
+          data: resData,
+          timestamp: new Date().toISOString(),
+        };
+      }),
     );
   }
 }

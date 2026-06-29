@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,7 +28,9 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { diskStorage } from 'multer';
+import * as os from 'os';
+import { extname } from 'path';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -50,7 +53,17 @@ export class MediaAdminController {
   @Roles('ADMIN')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: memoryStorage(),
+      storage: diskStorage({
+        destination: os.tmpdir(),
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(
+            null,
+            file.fieldname + '-' + uniqueSuffix + extname(file.originalname),
+          );
+        },
+      }),
       limits: {
         fileSize: 10485760, // Checked dynamically in pipe if we wanted, but multer does hard limit here
       },
@@ -161,15 +174,8 @@ export class MediaPublicController {
   @ApiOkResponse({ type: [MediaAssetResponseDto] })
   @ApiBadRequestResponse()
   async getAssetsByTourId(
-    @Param('tourId') tourId: string,
+    @Param('tourId', ParseUUIDPipe) tourId: string,
   ): Promise<MediaAssetResponseDto[]> {
-    // Validate uuid regex since no class-validator on plain string without ParseUUIDPipe
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tourId)) {
-      throw new BadRequestException('Invalid tourId format');
-    }
-
     const assets = await this.mediaService.getAssetsByTourId(tourId);
     return assets.map((asset) =>
       MediaAssetResponseDto.fromPrisma(asset as any),

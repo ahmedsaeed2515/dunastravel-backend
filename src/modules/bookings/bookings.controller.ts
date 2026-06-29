@@ -8,6 +8,8 @@ import {
   HttpCode,
   UseGuards,
   BadRequestException,
+  Query,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,8 +23,9 @@ import {
 } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto';
-import { OptionalJwtAuthGuard } from '../../common/guards';
+import { OptionalJwtAuthGuard, JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
+import { ParseBookingRefPipe } from '../../common/pipes/parse-booking-ref.pipe';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -39,21 +42,37 @@ export class BookingsController {
   async createBooking(
     @Body() dto: CreateBookingDto,
     @CurrentUser() user: any | null,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     const userId = user?.id ?? null;
-    return this.bookingsService.createBooking(dto, userId);
+    return this.bookingsService.createBooking(dto, userId, idempotencyKey);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all bookings for current user' })
+  @ApiOkResponse({ description: 'List of user bookings' })
+  async findUserBookings(@CurrentUser() user: any) {
+    return this.bookingsService.findUserBookings(user.id);
   }
 
   @Get(':referenceCode')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get booking summary by reference code' })
   @ApiOkResponse({ description: 'Booking summary' })
   @ApiBadRequestResponse({ description: 'Invalid reference format' })
   @ApiNotFoundResponse({ description: 'Booking not found' })
   @ApiParam({ name: 'referenceCode', example: 'BKG-A4X7Z2' })
-  async findByReferenceCode(@Param('referenceCode') referenceCode: string) {
-    if (!/^BKG-[A-Z0-9]{6}$/.test(referenceCode)) {
-      throw new BadRequestException('Invalid booking reference format');
-    }
-    return this.bookingsService.findByReferenceCode(referenceCode);
+  async findByReferenceCode(
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
+    @CurrentUser() user: any | null,
+    @Query('email') email?: string,
+  ) {
+    const userId = user?.id ?? null;
+    return this.bookingsService.findByReferenceCode(
+      referenceCode,
+      email,
+      userId,
+    );
   }
 }

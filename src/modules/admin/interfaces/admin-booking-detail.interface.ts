@@ -3,9 +3,10 @@ import { IAdminBookingSummary } from './admin-booking-summary.interface';
 export interface IAdminBookingDetail extends IAdminBookingSummary {
   readonly passengers: ReadonlyArray<{
     readonly id: string;
-    readonly firstName: string;
-    readonly lastName: string;
+    readonly fullName: string;
+    readonly passengerType: string;
     readonly passportNumber: string | null;
+    readonly passportExpiry: Date | null;
     readonly dateOfBirth: Date | null;
     readonly nationality: string | null;
   }>;

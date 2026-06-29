@@ -69,6 +69,13 @@ export class PassengerCountMatchesConstraint implements ValidatorConstraintInter
       (p) => p.passengerType === 'infant',
     ).length;
 
+    if (currentAdults === 0 && (currentChildren > 0 || currentInfants > 0)) {
+      return false;
+    }
+    if (currentInfants > currentAdults * 2) {
+      return false;
+    }
+
     return (
       currentAdults === adultsCount &&
       currentChildren === childrenCount &&
@@ -77,7 +84,7 @@ export class PassengerCountMatchesConstraint implements ValidatorConstraintInter
   }
 
   defaultMessage() {
-    return 'passengerNames count must match adults and children counts';
+    return 'passengerNames count must match adults and children counts, require at least one adult if children/infants present, and maximum 2 infants per adult';
   }
 }
 
