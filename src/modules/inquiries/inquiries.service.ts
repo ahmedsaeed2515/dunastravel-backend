@@ -1,0 +1,234 @@
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { generateInquiryReferenceCode } from '../../common/utils';
+import {
+  Prisma,
+  TailorMadeInquiryStatus,
+  TailorMadeInquiry,
+} from '@prisma/client';
+import { CreateInquiryDto, ListInquiriesQueryDto } from './dto';
+import { InquiryResponse } from './types';
+import { INQUIRY_EVENTS, InquiryCreatedPayload } from './events';
+
+@Injectable()
+export class InquiriesService {
+  private readonly logger = new Logger(InquiriesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
+
+  async create(dto: CreateInquiryDto): Promise<InquiryResponse> {
+    this.logger.log('Processing new tailor-made inquiry submission');
+
+    let referenceCode = generateInquiryReferenceCode();
+    let collision = true;
+    let attempts = 0;
+
+    while (collision && attempts < 5) {
+      const existing = await this.prisma.tailorMadeInquiry.findUnique({
+        where: { referenceCode },
+        select: { id: true },
+      });
+      if (existing) {
+        referenceCode = generateInquiryReferenceCode();
+        attempts++;
+      } else {
+        collision = false;
+      }
+    }
+
+    if (collision) {
+      throw new UnprocessableEntityException(
+        'Failed to generate unique reference code',
+      );
+    }
+
+    const newInquiry = await this.prisma.tailorMadeInquiry.create({
+      data: {
+        referenceCode,
+        fullName: dto.fullName,
+        email: dto.email,
+        phone: dto.phone,
+        preferredLanguage: dto.preferredLanguage,
+        destinations: dto.destinations,
+        startDate: dto.startDate ? new Date(dto.startDate) : null,
+        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        adults: dto.adults,
+        children: dto.children,
+        budgetAmount:
+          dto.budgetAmount !== undefined
+            ? new Prisma.Decimal(dto.budgetAmount)
+            : null,
+        budgetCurrency: dto.budgetCurrency || null,
+        notes: dto.notes || null,
+        status: TailorMadeInquiryStatus.NEWLY_RECEIVED,
+      },
+    });
+
+    this.logger.log(`Inquiry created successfully | ref=${referenceCode}`);
+
+    const payload: InquiryCreatedPayload = {
+      referenceCode: newInquiry.referenceCode,
+      fullName: newInquiry.fullName,
+      email: newInquiry.email,
+      phone: newInquiry.phone,
+      preferredLanguage: newInquiry.preferredLanguage,
+      destinations: newInquiry.destinations,
+      startDate: newInquiry.startDate
+        ? newInquiry.startDate.toISOString().split('T')[0]
+        : null,
+      endDate: newInquiry.endDate
+        ? newInquiry.endDate.toISOString().split('T')[0]
+        : null,
+      adults: newInquiry.adults,
+      children: newInquiry.children,
+      budgetAmount: newInquiry.budgetAmount
+        ? newInquiry.budgetAmount.toString()
+        : null,
+      budgetCurrency: newInquiry.budgetCurrency,
+      notes: newInquiry.notes,
+      createdAt: newInquiry.createdAt.toISOString(),
+    };
+
+    this.eventEmitter.emit(INQUIRY_EVENTS.CREATED, payload);
+
+    return this.mapToResponse(newInquiry);
+  }
+
+  async findAll(query: ListInquiriesQueryDto) {
+    const { page, limit, status, createdAtStart, createdAtEnd } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.TailorMadeInquiryWhereInput = {};
+
+    if (status) {
+      where.status = status as TailorMadeInquiryStatus;
+    }
+
+    if (createdAtStart || createdAtEnd) {
+      where.createdAt = {};
+      if (createdAtStart) {
+        where.createdAt.gte = new Date(createdAtStart);
+      }
+      if (createdAtEnd) {
+        where.createdAt.lte = new Date(createdAtEnd);
+      }
+    }
+
+    const [total, records] = await this.prisma.$transaction([
+      this.prisma.tailorMadeInquiry.count({ where }),
+      this.prisma.tailorMadeInquiry.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: records.map((r: TailorMadeInquiry) => this.mapToResponse(r)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
+  }
+
+  async findOne(referenceCode: string): Promise<InquiryResponse> {
+    const inquiry = await this.prisma.tailorMadeInquiry.findUnique({
+      where: { referenceCode },
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        `Inquiry with reference code ${referenceCode} not found`,
+      );
+    }
+
+    return this.mapToResponse(inquiry);
+  }
+
+  async updateStatus(
+    referenceCode: string,
+    newStatus: TailorMadeInquiryStatus,
+  ): Promise<InquiryResponse> {
+    const inquiry = await this.prisma.tailorMadeInquiry.findUnique({
+      where: { referenceCode },
+    });
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        `Inquiry with reference code ${referenceCode} not found`,
+      );
+    }
+
+    if (inquiry.status === TailorMadeInquiryStatus.CLOSED) {
+      this.logger.warn(
+        `Rejected status update on CLOSED inquiry | ref=${referenceCode}`,
+      );
+      throw new UnprocessableEntityException(
+        'Cannot transition a closed inquiry',
+      );
+    }
+
+    if (
+      inquiry.status === TailorMadeInquiryStatus.IN_PROGRESS &&
+      newStatus === TailorMadeInquiryStatus.NEWLY_RECEIVED
+    ) {
+      this.logger.warn(
+        `Rejected backward status transition | ref=${referenceCode} | to=${newStatus}`,
+      );
+      throw new UnprocessableEntityException(
+        'Cannot move an in-progress inquiry back to newly received',
+      );
+    }
+
+    const updated = await this.prisma.tailorMadeInquiry.update({
+      where: { referenceCode },
+      data: { status: newStatus },
+    });
+
+    this.logger.log(
+      `Inquiry status updated | ref=${referenceCode} | from=${inquiry.status} | to=${newStatus}`,
+    );
+
+    return this.mapToResponse(updated);
+  }
+
+  private mapToResponse(record: TailorMadeInquiry): InquiryResponse {
+    return {
+      referenceCode: record.referenceCode,
+      fullName: record.fullName,
+      email: record.email,
+      phone: record.phone,
+      preferredLanguage: record.preferredLanguage,
+      destinations: record.destinations,
+      startDate: record.startDate
+        ? record.startDate.toISOString().split('T')[0]
+        : null,
+      endDate: record.endDate
+        ? record.endDate.toISOString().split('T')[0]
+        : null,
+      adults: record.adults,
+      children: record.children,
+      budgetAmount: record.budgetAmount ? record.budgetAmount.toString() : null,
+      budgetCurrency: record.budgetCurrency,
+      notes: record.notes,
+      status: record.status,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    };
+  }
+}

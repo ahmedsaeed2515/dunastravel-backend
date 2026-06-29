@@ -1,0 +1,162 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
+import {
+  StorageProvider,
+  UploadableFile,
+  UploadOptions,
+  UploadResult,
+  TransformOptions,
+} from '../../../common/storage/storage-provider.interface';
+
+@Injectable()
+export class CloudinaryStorageProvider implements StorageProvider {
+  private readonly logger = new Logger(CloudinaryStorageProvider.name);
+
+  constructor(private readonly configService: ConfigService) {
+    const cloudName = this.configService.get<string>(
+      'storage.cloudinaryCloudName',
+    );
+    const apiKey = this.configService.get<string>('storage.cloudinaryApiKey');
+    const apiSecret = this.configService.get<string>(
+      'storage.cloudinaryApiSecret',
+    );
+
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
+  }
+
+  async upload(
+    file: UploadableFile,
+    options: UploadOptions,
+  ): Promise<UploadResult> {
+    const start = Date.now();
+    const folderPath = `${options.folder}/${options.entityType.toLowerCase()}/${options.entityId ?? 'general'}`;
+    const tags = [
+      'dunas-travel',
+      options.entityType,
+      options.entityId ?? 'general',
+    ];
+
+    this.logger.debug(
+      `Upload SDK call started { folder: ${folderPath}, eager count: ${options.eager.length} }`,
+    );
+
+    return new Promise((resolve) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          folder: folderPath,
+          use_filename: false,
+          unique_filename: true,
+          overwrite: false,
+          eager: options.eager,
+          eager_async: false,
+          tags: tags,
+          context: options.altText ? `alt=${options.altText}` : undefined,
+        },
+        (error, result) => {
+          const duration_ms = Date.now() - start;
+          if (error) {
+            this.logger.error(
+              `SDK error { operation: 'upload', errorCode: ${error.http_code || 'UNKNOWN'}, message: '${error.message}' }`,
+            );
+            return resolve({
+              success: false,
+              publicId: '',
+              url: '',
+              secureUrl: '',
+              format: '',
+              bytes: 0,
+              width: null,
+              height: null,
+              error: error.message,
+            });
+          }
+
+          if (!result) {
+            this.logger.error(
+              `SDK error { operation: 'upload', errorCode: 'UNKNOWN', message: 'No result returned from Cloudinary' }`,
+            );
+            return resolve({
+              success: false,
+              publicId: '',
+              url: '',
+              secureUrl: '',
+              format: '',
+              bytes: 0,
+              width: null,
+              height: null,
+              error: 'Unknown error occurred during upload',
+            });
+          }
+
+          this.logger.debug(
+            `Upload SDK call completed { publicId: ${result.public_id}, duration_ms: ${duration_ms} }`,
+          );
+
+          // Find the transformed version if available
+          let finalUrl = result.url;
+          let finalSecureUrl = result.secure_url;
+          if (result.eager && result.eager.length > 0) {
+            finalUrl = result.eager[0].url;
+            finalSecureUrl = result.eager[0].secure_url;
+          }
+
+          resolve({
+            success: true,
+            publicId: result.public_id,
+            url: finalUrl,
+            secureUrl: finalSecureUrl,
+            format: result.format,
+            bytes: result.bytes,
+            width: result.width || null,
+            height: result.height || null,
+            error: null,
+          });
+        },
+      );
+
+      uploadStream.end(file.buffer);
+    });
+  }
+
+  async delete(publicId: string): Promise<void> {
+    const start = Date.now();
+    try {
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+      });
+      const duration_ms = Date.now() - start;
+
+      if (result.result !== 'ok' && result.result !== 'not found') {
+        this.logger.error(
+          `SDK error { operation: 'delete', errorCode: 'UNKNOWN', message: '${result.result}' }`,
+        );
+        throw new Error(
+          `Failed to delete asset from Cloudinary: ${result.result}`,
+        );
+      }
+
+      this.logger.debug(
+        `Delete SDK call completed { publicId: ${publicId}, duration_ms: ${duration_ms} }`,
+      );
+    } catch (error: any) {
+      const duration_ms = Date.now() - start;
+      this.logger.error(
+        `SDK error { operation: 'delete', errorCode: ${error.http_code || 'UNKNOWN'}, message: '${error.message}' }`,
+      );
+      throw error;
+    }
+  }
+
+  async getDeliveryUrl(
+    publicId: string,
+    transformOptions?: TransformOptions,
+  ): Promise<string> {
+    return cloudinary.url(publicId, transformOptions);
+  }
+}

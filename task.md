@@ -1,0 +1,12 @@
+# Phase 8 Tasks
+
+- `[x]` Create types (`admin-paginated-response.type.ts`)
+- `[x]` Create interfaces (`admin-booking-summary.interface.ts`, etc.)
+- `[x]` Create query DTOs (`list-bookings-query.dto.ts`, etc.)
+- `[x]` Create body DTOs (`update-inquiry-status.dto.ts`, etc.)
+- `[x]` Create `admin.service.ts`
+- `[x]` Create `admin.controller.ts`
+- `[x]` Create `admin.module.ts`
+- `[x]` Register `AdminModule` in `app.module.ts`
+- `[x]` Run build/lint verifications
+- `[x]` Run runtime verifications (Section 19)

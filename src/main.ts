@@ -1,0 +1,161 @@
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import * as cookieParser from 'cookie-parser';
+import * as compression from 'compression';
+import * as express from 'express';
+import helmet from 'helmet';
+import { AppModule } from './app.module';
+import { JsonLoggerService } from './common/logging/json-logger.service';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
+
+async function bootstrap(): Promise<void> {
+  const logger = new Logger('Bootstrap');
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['log', 'error', 'warn', 'debug'],
+  });
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('port') ?? 5000;
+  const frontendUrl = configService.get<string>('frontendUrl');
+  const nodeEnv = configService.get<string>('nodeEnv');
+
+  // Replace NestJS default logger with JsonLoggerService for structured logging
+  app.useLogger(app.get(JsonLoggerService));
+
+  // Enable graceful shutdown hooks (e.g. for Prisma)
+  app.enableShutdownHooks();
+
+  // ─── Trust Proxy ──────────────────────────────────────────────────────────
+  // Required before any middleware that reads req.ip (e.g. ThrottlerGuard)
+  app.set('trust proxy', 1);
+
+  // ─── Security Middleware ───────────────────────────────────────────────────
+  app.use(
+    helmet({
+      contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+    }),
+  );
+  app.use(cookieParser());
+
+  // ─── Compression & Limits ──────────────────────────────────────────────────
+  app.use(compression({ threshold: 1024 }));
+
+  // Body size limits (10MB json, 1MB urlencoded)
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+  // ─── CORS ─────────────────────────────────────────────────────────────────
+  const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins');
+  if (!corsAllowedOrigins) {
+    logger.error(
+      'CORS_ALLOWED_ORIGINS environment variable is missing or empty. Process exiting.',
+    );
+    process.exit(1);
+  }
+
+  const allowedOrigins = corsAllowedOrigins.split(',').map((o) => o.trim());
+  const originRegex = /^https?:\/\/[a-zA-Z0-9.-]+(:[0-9]+)?$/;
+
+  for (const origin of allowedOrigins) {
+    if (origin === '*') {
+      logger.error(
+        'Wildcard CORS origin (*) is forbidden in production with credentials. Process exiting.',
+      );
+      process.exit(1);
+    }
+    if (!originRegex.test(origin)) {
+      logger.error(`Invalid CORS origin format: ${origin}. Process exiting.`);
+      process.exit(1);
+    }
+  }
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+    ],
+    maxAge: 86400,
+  });
+
+  // ─── Global Prefix ────────────────────────────────────────────────────────
+  app.setGlobalPrefix('api');
+
+  // ─── Global Validation Pipe ───────────────────────────────────────────────
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strips away non-whitelisted properties
+      forbidNonWhitelisted: true, // Throws an error if non-whitelisted properties are present
+      transform: true, // Automatically transforms payloads to be objects typed according to their DTO classes
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
+  const { HttpExceptionFilter } =
+    await import('./common/filters/http-exception.filter');
+  const { TransformInterceptor } =
+    await import('./common/interceptors/transform.interceptor');
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    app.get(TimeoutInterceptor),
+    new RequestLoggingInterceptor(),
+  );
+
+  // ─── Swagger (Dev + Staging only) ─────────────────────────────────────────
+  if (nodeEnv !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Dunas Travel API')
+      .setDescription(
+        'Production-ready REST API for Dunas Travel — a luxury multi-country tour platform.',
+      )
+      .setVersion('1.0')
+      .addCookieAuth('access_token', {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'access_token',
+      })
+      .addTag('Health', 'Application health checks')
+      .addTag('Auth', 'User authentication and session management')
+      .addTag('Tours', 'Tour catalog and destination browsing')
+      .addTag('Bookings', 'Tour reservation engine')
+      .addTag('Invoices', 'Invoice retrieval and display')
+      .addTag('Inquiries', 'Tailor-made tour and contact form submissions')
+      .addTag('AI Tools', 'AI-powered features (Hieroglyphics translator)')
+      .addTag('Currency', 'Live exchange rate feed')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+      },
+    });
+
+    logger.log(`📚 Swagger UI → http://localhost:${port}/api/docs`);
+  }
+
+  // ─── Start Server ─────────────────────────────────────────────────────────
+  await app.listen(port);
+  logger.log(`🚀 Dunas Travel API → http://localhost:${port}/api`);
+  logger.log(`🌍 Environment: ${nodeEnv}`);
+  logger.log(`🔗 CORS Origin: ${frontendUrl}`);
+}
+
+bootstrap().catch((err: unknown) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('Failed to start application', err);
+  process.exit(1);
+});

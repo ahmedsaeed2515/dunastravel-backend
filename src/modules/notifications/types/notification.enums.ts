@@ -1,0 +1,11 @@
+export enum NotificationType {
+  CUSTOMER_ACKNOWLEDGMENT = 'CUSTOMER_ACKNOWLEDGMENT',
+  INTERNAL_SALES_ALERT = 'INTERNAL_SALES_ALERT',
+}
+
+export enum NotificationDeliveryStatus {
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  FAILED = 'FAILED',
+  EXHAUSTED = 'EXHAUSTED',
+}

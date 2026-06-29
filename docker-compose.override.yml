@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder # Use builder stage for dev dependencies
+    volumes:
+      - ./src:/app/src
+    command: npm run start:dev # or ts-node-dev
+    environment:
+      NODE_ENV: development

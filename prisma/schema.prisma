@@ -1,0 +1,388 @@
+// ============================================================
+// Dunas Travel — PostgreSQL Schema
+// Production-ready. Do not modify without a migration plan.
+// ============================================================
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────
+
+enum UserRole {
+  GUEST
+  USER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum InvoiceType {
+  PERSONAL
+  COMPANY
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+}
+
+// ─── USERS ───────────────────────────────────────────────────
+// Stores all registered accounts.
+// Soft-delete via deletedAt (GDPR compliance).
+// JWT auth reads from this table on every request.
+
+model User {
+  id           String    @id @default(uuid())
+  name         String    @db.VarChar(255)
+  email        String    @unique @db.VarChar(255)
+  phone        String?   @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(USER)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  bookings Booking[]
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// ─── TOURS ───────────────────────────────────────────────────
+// Central catalog. Replaces programs.json from the frontend.
+// Multilingual fields stored as JSONB: { "en": "...", "es": "...", "ar": "..." }
+// basePriceUsd is the ONLY source of truth for pricing.
+// The booking engine reads this — never trusts the client.
+
+model Tour {
+  id            String   @id @default(uuid())
+  slug          String   @unique @db.VarChar(255)
+  titleJsonb    Json     @map("title_jsonb")
+  category      String?  @db.VarChar(100)
+  basePriceUsd  Decimal  @map("base_price_usd") @db.Decimal(10, 2)
+  durationJsonb Json?    @map("duration_jsonb")
+  overviewJsonb Json?    @map("overview_jsonb")
+  minPaxJsonb   Json?    @map("min_pax_jsonb")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  itineraries TourItinerary[]
+  images      TourImage[]
+  bookings    Booking[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([category])
+  @@map("tours")
+}
+
+// ─── TOUR ITINERARIES ────────────────────────────────────────
+// Day-by-day breakdown for each tour.
+// sortOrder determines display sequence.
+
+model TourItinerary {
+  id               String   @id @default(uuid())
+  tourId           String   @map("tour_id")
+  dayLabel         String?  @map("day_label") @db.VarChar(50)
+  descriptionJsonb Json     @map("description_jsonb")
+  mealsJsonb       Json?    @map("meals_jsonb")
+  sortOrder        Int      @map("sort_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@index([tourId])
+  @@index([sortOrder])
+  @@map("tour_itineraries")
+}
+
+// ─── TOUR IMAGES ─────────────────────────────────────────────
+// Gallery per tour. isHero = true means primary display image.
+// sortOrder determines gallery sequence.
+
+model TourImage {
+  id        String   @id @default(uuid())
+  tourId    String   @map("tour_id")
+  imageUrl  String   @map("image_url") @db.Text
+  isHero    Boolean  @default(false) @map("is_hero")
+  altText   String?  @map("alt_text") @db.VarChar(255)
+  sortOrder Int      @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@index([tourId])
+  @@index([isHero])
+  @@map("tour_images")
+}
+
+// ─── BOOKINGS ────────────────────────────────────────────────
+// Financial reservation record.
+// totalAmountUsd MUST be server-calculated. Never trust the client.
+// userId is nullable: supports guest checkout without an account.
+// referenceCode is the human-readable identifier shown to the customer.
+
+model Booking {
+  id              String        @id @default(uuid())
+  referenceCode   String        @unique @map("reference_code") @db.VarChar(20)
+  userId          String?       @map("user_id")
+  tourId          String        @map("tour_id")
+  status          BookingStatus @default(PENDING)
+  arrivalDate     DateTime      @map("arrival_date") @db.Date
+  departureDate   DateTime?     @map("departure_date") @db.Date
+  transportChoice String?       @map("transport_choice") @db.VarChar(100)
+  adults          Int           @default(1)
+  children        Int           @default(0)
+  infants         Int           @default(0)
+  totalAmountUsd  Decimal       @map("total_amount_usd") @db.Decimal(10, 2)
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tour        Tour        @relation(fields: [tourId], references: [id], onDelete: Restrict)
+  passengers  Passenger[]
+  invoice     Invoice?
+  billingInfo BillingInfo?
+
+  @@index([userId])
+  @@index([tourId])
+  @@index([referenceCode])
+  @@index([status])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+// ─── PASSENGERS ──────────────────────────────────────────────
+// Individual traveler names attached to a booking.
+// passengerType: 'adult' | 'child' | 'infant'
+
+model Passenger {
+  id            String  @id @default(uuid())
+  bookingId     String  @map("booking_id")
+  passengerType String  @map("passenger_type") @db.VarChar(20)
+  fullName      String  @map("full_name") @db.VarChar(255)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("passengers")
+}
+
+// ─── BILLING INFO ─────────────────────────────────────────────
+// Invoice billing details per booking (1:1).
+// companyName and taxId only populated when invoiceType = COMPANY.
+
+model BillingInfo {
+  id          String      @id @default(uuid())
+  bookingId   String      @unique @map("booking_id")
+  fullName    String      @map("full_name") @db.VarChar(255)
+  email       String      @db.VarChar(255)
+  phone       String      @db.VarChar(50)
+  invoiceType InvoiceType @default(PERSONAL) @map("invoice_type")
+  companyName String?     @map("company_name") @db.VarChar(255)
+  taxId       String?     @map("tax_id") @db.VarChar(100)
+  address     String?     @db.VarChar(500)
+  city        String?     @db.VarChar(100)
+  country     String?     @db.VarChar(100)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("billing_info")
+}
+
+// ─── INVOICES ─────────────────────────────────────────────────
+// Generated invoice record per booking (1:1).
+// invoiceNumber format: INV-YYYY-NNN (e.g. INV-2026-001)
+// Protected by unguessable invoiceNumber, not by auth.
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique @map("invoice_number") @db.VarChar(30)
+  bookingId     String   @unique @map("booking_id")
+  issuedAt      DateTime @default(now()) @map("issued_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceNumber])
+  @@map("invoices")
+}
+
+// ─── INQUIRIES ────────────────────────────────────────────────
+// Tailor-made tour requests and contact form submissions.
+// Rate-limited at the API layer (3 per hour per IP).
+// destinations stored as string array (PostgreSQL native).
+
+model Inquiry {
+  id           String        @id @default(uuid())
+  fullName     String        @map("full_name") @db.VarChar(255)
+  email        String        @db.VarChar(255)
+  phone        String?       @db.VarChar(50)
+  destinations String[]
+  travelDate   DateTime?     @map("travel_date") @db.Date
+  adults       Int?
+  children     Int?
+  budget       String?       @db.VarChar(100)
+  message      String?       @db.Text
+  status       InquiryStatus @default(NEW)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+// ─── TAILOR-MADE INQUIRIES ────────────────────────────────────
+// Tailor-Made Tour Inquiry Module (Phase 5)
+// Fully independent module for custom multi-destination tours.
+
+enum TailorMadeInquiryStatus {
+  NEWLY_RECEIVED
+  IN_PROGRESS
+  CLOSED
+}
+
+model TailorMadeInquiry {
+  id               String                  @id @default(uuid())
+  referenceCode    String                  @unique @map("reference_code") @db.VarChar(20)
+  fullName         String                  @map("full_name") @db.VarChar(255)
+  email            String                  @db.VarChar(255)
+  phone            String                  @db.VarChar(50)
+  preferredLanguage String                 @map("preferred_language") @db.VarChar(10)
+  destinations     String[]
+  startDate        DateTime?               @map("start_date") @db.Date
+  endDate          DateTime?               @map("end_date") @db.Date
+  adults           Int
+  children         Int                     @default(0)
+  budgetAmount     Decimal?                @map("budget_amount") @db.Decimal(10, 2)
+  budgetCurrency   String?                 @map("budget_currency") @db.VarChar(10)
+  notes            String?                 @db.Text
+  status           TailorMadeInquiryStatus @default(NEWLY_RECEIVED)
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+
+  @@index([referenceCode])
+  @@index([status])
+  @@index([createdAt])
+  @@map("tailor_made_inquiries")
+}
+
+// ─── NOTIFICATION DELIVERY LOGS ───────────────────────────────
+// Tracks all outgoing notifications, retries, and statuses.
+
+enum NotificationType {
+  CUSTOMER_ACKNOWLEDGMENT
+  INTERNAL_SALES_ALERT
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  EXHAUSTED
+}
+
+model NotificationDeliveryLog {
+  id                   String                     @id @default(uuid())
+  notificationType     NotificationType           @map("notification_type")
+  originReferenceCode  String                     @map("origin_reference_code") @db.VarChar(50)
+  originEntityType     String                     @map("origin_entity_type") @db.VarChar(50)
+  recipientEmail       String                     @map("recipient_email") @db.VarChar(255)
+  status               NotificationDeliveryStatus @default(PENDING)
+  attempts             Int                        @default(0)
+  lastAttemptAt        DateTime?                  @map("last_attempt_at")
+  failureReason        String?                    @map("failure_reason") @db.Text
+  providerResponseId   String?                    @map("provider_response_id") @db.VarChar(255)
+  createdAt            DateTime                   @default(now()) @map("created_at")
+  updatedAt            DateTime                   @updatedAt @map("updated_at")
+
+  @@index([originReferenceCode])
+  @@index([status])
+  @@map("notification_delivery_logs")
+}
+
+// ─── CONTACT SUBMISSIONS ──────────────────────────────────────
+// Contact Submissions Module (Phase 7)
+// Captures general contact inquiries from the frontend.
+
+enum ContactSubmissionStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model ContactSubmission {
+  id            Int                     @id @default(autoincrement())
+  referenceCode String                  @unique @map("reference_code") @db.VarChar(20)
+  status        ContactSubmissionStatus @default(NEW)
+  firstName     String                  @map("first_name") @db.VarChar(100)
+  lastName      String                  @map("last_name") @db.VarChar(100)
+  email         String                  @db.VarChar(254)
+  phone         String?                 @db.VarChar(30)
+  subject       String                  @db.VarChar(200)
+  message       String                  @db.Text
+  locale        String                  @default("en") @db.VarChar(10)
+  ipAddress     String?                 @map("ip_address") @db.VarChar(45)
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@map("contact_submissions")
+}
+
+// ─── MEDIA MANAGEMENT ─────────────────────────────────────────
+// Phase 10: Media Assets abstraction and storage tracking
+// Tracks uploaded assets (e.g., to Cloudinary) and seeded images.
+
+enum MediaEntityType {
+  TOUR
+  GENERAL
+}
+
+enum MediaProvenance {
+  UPLOADED
+  SEEDED
+}
+
+model MediaAsset {
+  id           String          @id @default(uuid())
+  publicId     String          @unique @map("public_id") @db.VarChar(255)
+  url          String          @db.Text
+  secureUrl    String          @map("secure_url") @db.Text
+  providerName String          @map("provider_name") @db.VarChar(100)
+  format       String          @db.VarChar(20)
+  mimeType     String          @map("mime_type") @db.VarChar(100)
+  bytes        Int
+  width        Int?
+  height       Int?
+  entityType   MediaEntityType @map("entity_type")
+  entityId     String?         @map("entity_id") @db.VarChar(50)
+  provenance   MediaProvenance
+  altText      String?         @map("alt_text") @db.VarChar(255)
+  uploadedBy   String?         @map("uploaded_by")
+  deletedAt    DateTime?       @map("deleted_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  @@index([entityType, entityId])
+  @@index([deletedAt])
+  @@index([providerName])
+  @@map("media_assets")
+}
