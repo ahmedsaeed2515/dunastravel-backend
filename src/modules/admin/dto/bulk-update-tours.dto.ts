@@ -7,7 +7,9 @@ export class BulkUpdateToursDto {
   @IsString({ each: true })
   slugs!: string[];
 
-  @ApiPropertyOptional({ description: 'Publishing status to apply (PUBLISHED, DRAFT, ARCHIVED)' })
+  @ApiPropertyOptional({
+    description: 'Publishing status to apply (PUBLISHED, DRAFT, ARCHIVED)',
+  })
   @IsOptional()
   @IsString()
   status?: string;

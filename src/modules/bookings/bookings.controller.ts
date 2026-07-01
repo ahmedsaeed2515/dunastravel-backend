@@ -11,6 +11,7 @@ import {
   Query,
   Headers,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -58,6 +59,7 @@ export class BookingsController {
 
   @Get(':referenceCode')
   @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Get booking summary by reference code' })
   @ApiOkResponse({ description: 'Booking summary' })
   @ApiBadRequestResponse({ description: 'Invalid reference format' })
@@ -74,5 +76,19 @@ export class BookingsController {
       email,
       userId,
     );
+  }
+
+  @Post(':referenceCode/cancel')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cancel a booking (authenticated owner only)' })
+  @ApiOkResponse({ description: 'Booking cancelled' })
+  @ApiParam({ name: 'referenceCode', example: 'BKG-A4X7Z2' })
+  async cancelBooking(
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason?: string,
+  ) {
+    return this.bookingsService.cancelBooking(referenceCode, user.id, reason);
   }
 }

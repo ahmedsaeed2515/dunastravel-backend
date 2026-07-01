@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ConflictException,
+  ForbiddenException,
   Req,
 } from '@nestjs/common';
 import {
@@ -37,6 +38,7 @@ import {
   AddCustomerDocumentDto,
 } from './dto/customer-crm.dto';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service';
 
 @ApiTags('Admin Users & CRM')
 @ApiBearerAuth()
@@ -44,7 +46,10 @@ import * as bcrypt from 'bcrypt';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class UsersController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly auditService: AuditService,
+  ) {}
 
   // ─── ENTERPRISE CRM ENDPOINTS (PHASE 5) ────────────────────────
 
@@ -58,29 +63,48 @@ export class UsersController {
   @Get('crm/export/csv')
   @ApiOperation({ summary: 'Export customers to CSV.' })
   @ApiOkResponse({ description: 'CSV data string' })
-  async exportCustomersCsv(@Query() query: ListCustomersQueryDto, @Req() req: any) {
+  async exportCustomersCsv(
+    @Query() query: ListCustomersQueryDto,
+    @Req() req: any,
+  ) {
     return this.userService.exportCustomersCsv(query, req.user.id);
   }
 
   @Get('crm/list')
-  @ApiOperation({ summary: 'List customers with advanced enterprise filtering and pagination.' })
-  @ApiOkResponse({ description: 'Paginated list of customers with financial metrics' })
-  async listCustomersCrm(@Query() query: ListCustomersQueryDto, @Req() req: any) {
+  @ApiOperation({
+    summary:
+      'List customers with advanced enterprise filtering and pagination.',
+  })
+  @ApiOkResponse({
+    description: 'Paginated list of customers with financial metrics',
+  })
+  async listCustomersCrm(
+    @Query() query: ListCustomersQueryDto,
+    @Req() req: any,
+  ) {
     return this.userService.findCustomersCrm(query, req.user.id);
   }
 
   @Patch('crm/bulk/update')
-  @ApiOperation({ summary: 'Bulk update customer segments, tags, VIP flags, or statuses.' })
+  @ApiOperation({
+    summary: 'Bulk update customer segments, tags, VIP flags, or statuses.',
+  })
   @ApiBody({ type: BulkUpdateCustomersDto })
   @ApiOkResponse({ description: 'Customers bulk updated successfully' })
-  async bulkUpdateCustomers(@Body() dto: BulkUpdateCustomersDto, @Req() req: any) {
+  async bulkUpdateCustomers(
+    @Body() dto: BulkUpdateCustomersDto,
+    @Req() req: any,
+  ) {
     return this.userService.bulkUpdateCustomers(dto, req.user.id);
   }
 
   @Get('crm/:id')
   @ApiOperation({ summary: 'Get fully populated customer CRM detail profile.' })
   @ApiParam({ name: 'id', type: 'string' })
-  @ApiOkResponse({ description: 'Rich customer profile including bookings, payments, notes, documents, and timeline.' })
+  @ApiOkResponse({
+    description:
+      'Rich customer profile including bookings, payments, notes, documents, and timeline.',
+  })
   async getCustomerCrmDetail(@Param('id') id: string, @Req() req: any) {
     return this.userService.getCustomerCrmDetail(id, req.user.id);
   }
@@ -90,25 +114,42 @@ export class UsersController {
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateCustomerCrmDto })
   @ApiOkResponse({ description: 'Updated customer CRM profile' })
-  async updateCustomerCrm(@Param('id') id: string, @Body() dto: UpdateCustomerCrmDto, @Req() req: any) {
+  async updateCustomerCrm(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomerCrmDto,
+    @Req() req: any,
+  ) {
     return this.userService.updateCustomerCrm(id, dto, req.user.id);
   }
 
   @Post('crm/:id/notes')
-  @ApiOperation({ summary: 'Add an internal, sales, or operations note to a customer.' })
+  @ApiOperation({
+    summary: 'Add an internal, sales, or operations note to a customer.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: AddCustomerNoteDto })
   @ApiOkResponse({ description: 'Customer note added successfully' })
-  async addCustomerNote(@Param('id') id: string, @Body() dto: AddCustomerNoteDto, @Req() req: any) {
+  async addCustomerNote(
+    @Param('id') id: string,
+    @Body() dto: AddCustomerNoteDto,
+    @Req() req: any,
+  ) {
     return this.userService.addCustomerNote(id, dto, req.user.id);
   }
 
   @Post('crm/:id/documents')
-  @ApiOperation({ summary: 'Attach a document (passport scan, visa, insurance, tickets) to a customer.' })
+  @ApiOperation({
+    summary:
+      'Attach a document (passport scan, visa, insurance, tickets) to a customer.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: AddCustomerDocumentDto })
   @ApiOkResponse({ description: 'Customer document attached successfully' })
-  async addCustomerDocument(@Param('id') id: string, @Body() dto: AddCustomerDocumentDto, @Req() req: any) {
+  async addCustomerDocument(
+    @Param('id') id: string,
+    @Body() dto: AddCustomerDocumentDto,
+    @Req() req: any,
+  ) {
     return this.userService.addCustomerDocument(id, dto, req.user.id);
   }
 
@@ -151,7 +192,11 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
-  async createUser(@Body() dto: CreateUserDto) {
+  async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
+    if (dto.role === UserRole.SUPER_ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can create a SUPER_ADMIN user');
+    }
+
     const existing = await this.userService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
 
@@ -171,7 +216,11 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update an existing user.' })
   @ApiOkResponse({ description: 'The updated user' })
-  async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+  async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() req: any) {
+    if (dto.role === UserRole.SUPER_ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can grant SUPER_ADMIN role');
+    }
+
     let passwordHash = undefined;
     if (dto.password) {
       passwordHash = await bcrypt.hash(dto.password, 12);
@@ -185,14 +234,34 @@ export class UsersController {
       passwordHash,
     });
 
+    if (dto.role) {
+      void this.auditService.log({
+        actorId: req.user.id,
+        actorRole: req.user.role,
+        action: 'USER_ROLE_CHANGED',
+        entityType: 'User',
+        entityId: id,
+        metadata: { newRole: dto.role },
+        ipAddress: req.ip,
+      });
+    }
+
     return this.userService.toSafeUser(user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a user.' })
   @ApiOkResponse({ description: 'User deleted' })
-  async deleteUser(@Param('id') id: string) {
+  async deleteUser(@Param('id') id: string, @Req() req: any) {
     await this.userService.softDelete(id);
+    void this.auditService.log({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: 'USER_DELETED',
+      entityType: 'User',
+      entityId: id,
+      ipAddress: req.ip,
+    });
     return { success: true };
   }
 }

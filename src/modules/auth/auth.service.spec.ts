@@ -164,7 +164,7 @@ describe('AuthService', () => {
       userService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await authService.login(loginDto);
+      const result = await authService.login(loginDto, '127.0.0.1');
 
       expect(result).toEqual(safeUser);
       expect(userService.findByEmail).toHaveBeenCalledWith(loginDto.email);
@@ -178,9 +178,9 @@ describe('AuthService', () => {
       userService.findByEmail.mockResolvedValue({
         ...mockUser,
         isVerified: false,
-      } as any);
+      });
 
-      await expect(authService.login(loginDto)).rejects.toThrow(
+      await expect(authService.login(loginDto, '127.0.0.1')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -189,7 +189,7 @@ describe('AuthService', () => {
       userService.findByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(authService.login(loginDto)).rejects.toThrow(
+      await expect(authService.login(loginDto, '127.0.0.1')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -197,7 +197,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user does not exist', async () => {
       userService.findByEmail.mockResolvedValue(null);
 
-      await expect(authService.login(loginDto)).rejects.toThrow(
+      await expect(authService.login(loginDto, '127.0.0.1')).rejects.toThrow(
         UnauthorizedException,
       );
     });

@@ -4,7 +4,10 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -18,6 +21,8 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
+  ChangePasswordDto,
+  ResendVerificationDto,
 } from './dto';
 import { JwtPayload } from '../../common/types';
 
@@ -46,6 +51,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   async register(dto: RegisterDto): Promise<SafeUser> {
@@ -92,9 +98,18 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
-  async login(dto: LoginDto): Promise<SafeUser> {
+  async login(dto: LoginDto, ip: string): Promise<SafeUser> {
+    const lockoutKey = `login:lockout:${ip}:${dto.email}`;
+    const attemptsKey = `login:attempts:${ip}:${dto.email}`;
+
+    const isLocked = await this.cacheManager.get<boolean>(lockoutKey);
+    if (isLocked) {
+      throw new UnauthorizedException('Too many failed login attempts. Please try again later.');
+    }
+
     const user = await this.userService.findByEmail(dto.email);
     if (!user) {
+      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
       this.logger.warn(`Failed login attempt for email: ${dto.email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -110,13 +125,28 @@ export class AuthService {
       user.passwordHash,
     );
     if (!isPasswordValid) {
+      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
       this.logger.warn(`Failed login attempt for email: ${dto.email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Clear failed attempts on success
+    await this.cacheManager.del(attemptsKey);
+
     this.logger.log(`User logged in: ${user.email}`);
 
     return this.userService.toSafeUser(user);
+  }
+
+  private async incrementFailedAttempts(attemptsKey: string, lockoutKey: string) {
+    let attempts = await this.cacheManager.get<number>(attemptsKey) || 0;
+    attempts += 1;
+    if (attempts >= 5) {
+      await this.cacheManager.set(lockoutKey, true, 15 * 60 * 1000); // 15 mins
+      await this.cacheManager.del(attemptsKey);
+    } else {
+      await this.cacheManager.set(attemptsKey, attempts, 5 * 60 * 1000); // 5 mins
+    }
   }
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
@@ -238,5 +268,37 @@ export class AuthService {
     }
 
     return this.userService.toSafeUser(user);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const isPasswordValid = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    if (!isPasswordValid) throw new BadRequestException('Invalid old password');
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { message: 'Password changed successfully' };
+  }
+
+  async resendVerification(dto: ResendVerificationDto): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user) return { message: 'If that email is registered, a verification link has been sent.' };
+    if (user.isVerified) return { message: 'Email is already verified.' };
+
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verifyToken },
+    });
+
+    this.logger.log(`Resent verification email for: ${user.email}`);
+    // TODO: send email
+    return { message: 'If that email is registered, a verification link has been sent.' };
   }
 }

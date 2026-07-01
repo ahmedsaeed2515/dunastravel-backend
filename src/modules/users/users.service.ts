@@ -198,7 +198,7 @@ export class UserService {
       phoneVerified: user.phoneVerified,
       customerSource: user.customerSource,
       referralSource: user.referralSource,
-      futureCompanyId: user.futureCompanyId,
+      companyId: user.companyId,
       futureWalletId: user.futureWalletId,
       futureCommissionPlan: user.futureCommissionPlan,
       createdAt: user.createdAt,
@@ -220,71 +220,109 @@ export class UserService {
       vipCustomers,
       customersWithBookingsData,
       topSpendersData,
-      allBookings
+      allBookings,
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null, role: 'USER' } }),
-      this.prisma.user.count({ where: { deletedAt: null, role: 'USER', createdAt: { gte: thirtyDaysAgo } } }),
-      this.prisma.user.count({ where: { deletedAt: null, role: 'USER', isVip: true } }),
-      this.prisma.user.findMany({
-        where: { deletedAt: null, role: 'USER', bookings: { some: { deletedAt: null } } },
-        select: { id: true, bookings: { select: { status: true, totalAmountUsd: true } } }
+      this.prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'USER',
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, role: 'USER', isVip: true },
       }),
       this.prisma.user.findMany({
-        where: { deletedAt: null, role: 'USER', bookings: { some: { deletedAt: null, status: { in: ['CONFIRMED', 'PAID', 'COMPLETED'] } } } },
+        where: {
+          deletedAt: null,
+          role: 'USER',
+          bookings: { some: { deletedAt: null } },
+        },
+        select: {
+          id: true,
+          bookings: { select: { status: true, totalAmountUsd: true } },
+        },
+      }),
+      this.prisma.user.findMany({
+        where: {
+          deletedAt: null,
+          role: 'USER',
+          bookings: {
+            some: {
+              deletedAt: null,
+              status: { in: ['CONFIRMED', 'PAID', 'COMPLETED'] },
+            },
+          },
+        },
         select: {
           id: true,
           name: true,
           email: true,
           isVip: true,
           customerNumber: true,
-          bookings: { select: { totalAmountUsd: true, status: true } }
-        }
+          bookings: { select: { totalAmountUsd: true, status: true } },
+        },
       }),
       this.prisma.booking.findMany({
-        where: { deletedAt: null, status: { in: ['CONFIRMED', 'PAID', 'COMPLETED'] } },
-        select: { totalAmountUsd: true }
-      })
+        where: {
+          deletedAt: null,
+          status: { in: ['CONFIRMED', 'PAID', 'COMPLETED'] },
+        },
+        select: { totalAmountUsd: true },
+      }),
     ]);
 
     let returningCustomers = 0;
     let customersWithActiveBookings = 0;
     let customersWithOutstandingPayments = 0;
 
-    customersWithBookingsData.forEach(user => {
+    customersWithBookingsData.forEach((user) => {
       if (user.bookings.length > 1) {
         returningCustomers++;
       }
-      const hasActive = user.bookings.some(b => ['PENDING', 'CONFIRMED', 'PARTIALLY_PAID'].includes(b.status));
+      const hasActive = user.bookings.some((b) =>
+        ['PENDING', 'CONFIRMED', 'PARTIALLY_PAID'].includes(b.status),
+      );
       if (hasActive) {
         customersWithActiveBookings++;
       }
-      const hasOutstanding = user.bookings.some(b => ['PENDING', 'CONFIRMED', 'PARTIALLY_PAID'].includes(b.status));
+      const hasOutstanding = user.bookings.some((b) =>
+        ['PENDING', 'CONFIRMED', 'PARTIALLY_PAID'].includes(b.status),
+      );
       if (hasOutstanding) {
         customersWithOutstandingPayments++;
       }
     });
 
-    const topSpendingCustomers = topSpendersData.map(u => {
-      const totalSpent = u.bookings
-        .filter(b => ['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status))
-        .reduce((sum, b) => sum + Number(b.totalAmountUsd), 0);
-      return {
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        isVip: u.isVip,
-        customerNumber: u.customerNumber,
-        totalSpent
-      };
-    }).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5);
+    const topSpendingCustomers = topSpendersData
+      .map((u) => {
+        const totalSpent = u.bookings
+          .filter((b) => ['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status))
+          .reduce((sum, b) => sum + Number(b.totalAmountUsd), 0);
+        return {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          isVip: u.isVip,
+          customerNumber: u.customerNumber,
+          totalSpent,
+        };
+      })
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 5);
 
     let totalRevenue = 0;
-    allBookings.forEach(b => {
+    allBookings.forEach((b) => {
       totalRevenue += Number(b.totalAmountUsd);
     });
 
-    const averageBookingValue = allBookings.length > 0 ? Math.round(totalRevenue / allBookings.length) : 0;
-    const lifetimeValue = totalCustomers > 0 ? Math.round(totalRevenue / totalCustomers) : 0;
+    const averageBookingValue =
+      allBookings.length > 0
+        ? Math.round(totalRevenue / allBookings.length)
+        : 0;
+    const lifetimeValue =
+      totalCustomers > 0 ? Math.round(totalRevenue / totalCustomers) : 0;
 
     return {
       totalCustomers,
@@ -301,7 +339,17 @@ export class UserService {
   }
 
   async findCustomersCrm(query: ListCustomersQueryDto, adminUserId: string) {
-    const { page = 1, limit = 20, search, status, isVip, tag, segment, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      isVip,
+      tag,
+      segment,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
     this.logger.log(`findCustomersCrm invoked by admin ${adminUserId}`);
 
     const where: Prisma.UserWhereInput = { deletedAt: null, role: 'USER' };
@@ -333,22 +381,32 @@ export class UserService {
         include: {
           bookings: {
             where: { deletedAt: null },
-            select: { totalAmountUsd: true, status: true, payments: { select: { amount: true, isRefund: true } } }
+            select: {
+              totalAmountUsd: true,
+              status: true,
+              payments: { select: { amount: true, isRefund: true } },
+            },
           },
-          _count: { select: { bookings: true, customerNotes: true, customerDocuments: true } }
-        }
-      })
+          _count: {
+            select: {
+              bookings: true,
+              customerNotes: true,
+              customerDocuments: true,
+            },
+          },
+        },
+      }),
     ]);
 
-    const data = records.map(u => {
+    const data = records.map((u) => {
       let totalSpent = 0;
       let totalPaid = 0;
 
-      u.bookings.forEach(b => {
+      u.bookings.forEach((b) => {
         if (['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status)) {
           totalSpent += Number(b.totalAmountUsd);
         }
-        b.payments.forEach(p => {
+        b.payments.forEach((p) => {
           if (!p.isRefund) {
             totalPaid += Number(p.amount);
           } else {
@@ -361,7 +419,8 @@ export class UserService {
 
       return {
         id: u.id,
-        customerNumber: u.customerNumber || `CUST-2026-${u.id.substring(0, 4).toUpperCase()}`,
+        customerNumber:
+          u.customerNumber || `CUST-2026-${u.id.substring(0, 4).toUpperCase()}`,
         name: u.name,
         email: u.email,
         phone: u.phone,
@@ -389,7 +448,9 @@ export class UserService {
   }
 
   async getCustomerCrmDetail(id: string, adminUserId: string) {
-    this.logger.log(`getCustomerCrmDetail invoked by admin ${adminUserId} for customer ${id}`);
+    this.logger.log(
+      `getCustomerCrmDetail invoked by admin ${adminUserId} for customer ${id}`,
+    );
 
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
@@ -402,20 +463,20 @@ export class UserService {
             payments: true,
             invoice: true,
             passengers: true,
-          }
+          },
         },
         customerNotes: {
           orderBy: { createdAt: 'desc' },
-          include: { user: { select: { name: true, email: true } } }
+          include: { user: { select: { name: true, email: true } } },
         },
         customerDocuments: {
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
         },
         customerActivityLogs: {
           orderBy: { createdAt: 'desc' },
-          include: { user: { select: { name: true } } }
-        }
-      }
+          include: { user: { select: { name: true } } },
+        },
+      },
     });
 
     if (!user) throw new NotFoundException(`Customer with ID ${id} not found`);
@@ -426,7 +487,7 @@ export class UserService {
       customerNumber = `CUST-2026-${user.id.substring(0, 6).toUpperCase()}`;
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { customerNumber }
+        data: { customerNumber },
       });
     }
 
@@ -435,11 +496,11 @@ export class UserService {
     const tourCounts: Record<string, number> = {};
     let favoriteTour = 'None';
 
-    user.bookings.forEach(b => {
+    user.bookings.forEach((b) => {
       if (['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status)) {
         totalSpent += Number(b.totalAmountUsd);
       }
-      b.payments.forEach(p => {
+      b.payments.forEach((p) => {
         if (!p.isRefund) {
           totalPaid += Number(p.amount);
         } else {
@@ -461,7 +522,10 @@ export class UserService {
     });
 
     const outstandingBalance = Math.max(0, totalSpent - totalPaid);
-    const averageSpend = user.bookings.length > 0 ? Math.round(totalSpent / user.bookings.length) : 0;
+    const averageSpend =
+      user.bookings.length > 0
+        ? Math.round(totalSpent / user.bookings.length)
+        : 0;
 
     return {
       ...this.toSafeUser(user),
@@ -471,13 +535,16 @@ export class UserService {
       outstandingBalance,
       averageSpend,
       favoriteTour,
-      bookings: user.bookings.map(b => ({
+      bookings: user.bookings.map((b) => ({
         ...b,
         totalAmountUsd: b.totalAmountUsd.toString(),
         tourNameEn: (b.tour.titleJsonb as any)?.['en'] || b.tour.slug,
-        payments: b.payments.map(p => ({ ...p, amount: p.amount.toString() }))
+        payments: b.payments.map((p) => ({
+          ...p,
+          amount: p.amount.toString(),
+        })),
       })),
-      notes: user.customerNotes.map(n => ({
+      notes: user.customerNotes.map((n) => ({
         id: n.id,
         content: n.content,
         noteType: n.noteType,
@@ -486,7 +553,7 @@ export class UserService {
         authorName: n.user.name,
       })),
       documents: user.customerDocuments,
-      timeline: user.customerActivityLogs.map(l => ({
+      timeline: user.customerActivityLogs.map((l) => ({
         id: l.id,
         action: l.action,
         details: l.details,
@@ -496,8 +563,14 @@ export class UserService {
     };
   }
 
-  async updateCustomerCrm(id: string, dto: UpdateCustomerCrmDto, adminUserId: string) {
-    const user = await this.prisma.user.findFirst({ where: { id, deletedAt: null } });
+  async updateCustomerCrm(
+    id: string,
+    dto: UpdateCustomerCrmDto,
+    adminUserId: string,
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!user) throw new NotFoundException('Customer not found');
 
     const updated = await this.prisma.user.update({
@@ -508,26 +581,42 @@ export class UserService {
         ...(dto.tags && { tags: dto.tags }),
         ...(dto.segments && { segments: dto.segments }),
         ...(dto.status && { status: dto.status }),
-        ...(dto.passportNumber !== undefined && { passportNumber: dto.passportNumber }),
+        ...(dto.passportNumber !== undefined && {
+          passportNumber: dto.passportNumber,
+        }),
         ...(dto.nationality !== undefined && { nationality: dto.nationality }),
         ...(dto.gender !== undefined && { gender: dto.gender }),
         ...(dto.dateOfBirth && { dateOfBirth: new Date(dto.dateOfBirth) }),
         ...(dto.emergencyContact && { emergencyContact: dto.emergencyContact }),
         ...(dto.address && { address: dto.address }),
-        ...(dto.preferredLanguage && { preferredLanguage: dto.preferredLanguage }),
-        ...(dto.preferredCurrency && { preferredCurrency: dto.preferredCurrency }),
-        ...(dto.preferredDestination && { preferredDestination: dto.preferredDestination }),
-        ...(dto.preferredTravelType && { preferredTravelType: dto.preferredTravelType }),
+        ...(dto.preferredLanguage && {
+          preferredLanguage: dto.preferredLanguage,
+        }),
+        ...(dto.preferredCurrency && {
+          preferredCurrency: dto.preferredCurrency,
+        }),
+        ...(dto.preferredDestination && {
+          preferredDestination: dto.preferredDestination,
+        }),
+        ...(dto.preferredTravelType && {
+          preferredTravelType: dto.preferredTravelType,
+        }),
         ...(dto.familyMembers && { familyMembers: dto.familyMembers }),
         ...(dto.travelCompanions && { travelCompanions: dto.travelCompanions }),
-        ...(dto.marketingConsent !== undefined && { marketingConsent: dto.marketingConsent }),
-        ...(dto.phoneVerified !== undefined && { phoneVerified: dto.phoneVerified }),
+        ...(dto.marketingConsent !== undefined && {
+          marketingConsent: dto.marketingConsent,
+        }),
+        ...(dto.phoneVerified !== undefined && {
+          phoneVerified: dto.phoneVerified,
+        }),
         ...(dto.customerSource && { customerSource: dto.customerSource }),
         ...(dto.referralSource && { referralSource: dto.referralSource }),
         ...(dto.futureCompanyId && { futureCompanyId: dto.futureCompanyId }),
         ...(dto.futureWalletId && { futureWalletId: dto.futureWalletId }),
-        ...(dto.futureCommissionPlan && { futureCommissionPlan: dto.futureCommissionPlan }),
-      }
+        ...(dto.futureCommissionPlan && {
+          futureCommissionPlan: dto.futureCommissionPlan,
+        }),
+      },
     });
 
     await this.prisma.customerActivityLog.create({
@@ -536,7 +625,7 @@ export class UserService {
         userId: adminUserId,
         action: 'PROFILE_UPDATED',
         details: dto as any,
-      }
+      },
     });
 
     return this.toSafeUser(updated);
@@ -564,7 +653,7 @@ export class UserService {
 
       if (users.length > 0) {
         await tx.customerActivityLog.createMany({
-          data: users.map(u => ({
+          data: users.map((u) => ({
             customerId: u.id,
             userId: adminUserId,
             action: 'BULK_UPDATE',
@@ -579,8 +668,14 @@ export class UserService {
     return { count };
   }
 
-  async addCustomerNote(id: string, dto: AddCustomerNoteDto, adminUserId: string) {
-    const user = await this.prisma.user.findFirst({ where: { id, deletedAt: null } });
+  async addCustomerNote(
+    id: string,
+    dto: AddCustomerNoteDto,
+    adminUserId: string,
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!user) throw new NotFoundException('Customer not found');
 
     const note = await this.prisma.customerNote.create({
@@ -591,7 +686,7 @@ export class UserService {
         noteType: dto.noteType || 'INTERNAL',
         isPinned: dto.isPinned || false,
       },
-      include: { user: { select: { name: true } } }
+      include: { user: { select: { name: true } } },
     });
 
     await this.prisma.customerActivityLog.create({
@@ -600,7 +695,7 @@ export class UserService {
         userId: adminUserId,
         action: 'NOTE_ADDED',
         details: { noteId: note.id, noteType: note.noteType },
-      }
+      },
     });
 
     return {
@@ -613,8 +708,14 @@ export class UserService {
     };
   }
 
-  async addCustomerDocument(id: string, dto: AddCustomerDocumentDto, adminUserId: string) {
-    const user = await this.prisma.user.findFirst({ where: { id, deletedAt: null } });
+  async addCustomerDocument(
+    id: string,
+    dto: AddCustomerDocumentDto,
+    adminUserId: string,
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!user) throw new NotFoundException('Customer not found');
 
     const doc = await this.prisma.customerDocument.create({
@@ -624,7 +725,7 @@ export class UserService {
         documentType: dto.documentType || 'OTHER',
         title: dto.title,
         uploadedBy: adminUserId,
-      }
+      },
     });
 
     await this.prisma.customerActivityLog.create({
@@ -632,15 +733,30 @@ export class UserService {
         customerId: id,
         userId: adminUserId,
         action: 'DOCUMENT_UPLOADED',
-        details: { documentId: doc.id, documentType: doc.documentType, title: doc.title },
-      }
+        details: {
+          documentId: doc.id,
+          documentType: doc.documentType,
+          title: doc.title,
+        },
+      },
     });
 
     return doc;
   }
 
-  async exportCustomersCsv(query: ListCustomersQueryDto, adminUserId: string): Promise<string> {
-    const { search, status, isVip, tag, segment, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  async exportCustomersCsv(
+    query: ListCustomersQueryDto,
+    adminUserId: string,
+  ): Promise<string> {
+    const {
+      search,
+      status,
+      isVip,
+      tag,
+      segment,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
     this.logger.log(`exportCustomersCsv invoked by admin ${adminUserId}`);
 
     const where: Prisma.UserWhereInput = { deletedAt: null, role: 'USER' };
@@ -660,7 +776,18 @@ export class UserService {
       ];
     }
 
-    const headers = ['Customer Number', 'Name', 'Email', 'Phone', 'VIP', 'Status', 'Nationality', 'Total Spent (USD)', 'Outstanding Balance (USD)', 'Created At'];
+    const headers = [
+      'Customer Number',
+      'Name',
+      'Email',
+      'Phone',
+      'VIP',
+      'Status',
+      'Nationality',
+      'Total Spent (USD)',
+      'Outstanding Balance (USD)',
+      'Created At',
+    ];
     const rows: string[][] = [];
 
     let skip = 0;
@@ -676,20 +803,24 @@ export class UserService {
         include: {
           bookings: {
             where: { deletedAt: null },
-            select: { totalAmountUsd: true, status: true, payments: { select: { amount: true, isRefund: true } } }
-          }
-        }
+            select: {
+              totalAmountUsd: true,
+              status: true,
+              payments: { select: { amount: true, isRefund: true } },
+            },
+          },
+        },
       });
 
       for (const u of batch) {
         let totalSpent = 0;
         let totalPaid = 0;
 
-        u.bookings.forEach(b => {
+        u.bookings.forEach((b) => {
           if (['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status)) {
             totalSpent += Number(b.totalAmountUsd);
           }
-          b.payments.forEach(p => {
+          b.payments.forEach((p) => {
             if (!p.isRefund) {
               totalPaid += Number(p.amount);
             } else {
@@ -710,7 +841,7 @@ export class UserService {
           u.nationality || 'N/A',
           totalSpent.toString(),
           outstandingBalance.toString(),
-          u.createdAt.toISOString().split('T')[0]
+          u.createdAt.toISOString().split('T')[0],
         ]);
       }
 
@@ -720,8 +851,13 @@ export class UserService {
       }
     }
 
-    this.logger.log(`exportCustomersCsv invoked by admin ${adminUserId}. Exported ${rows.length} records via batching.`);
+    this.logger.log(
+      `exportCustomersCsv invoked by admin ${adminUserId}. Exported ${rows.length} records via batching.`,
+    );
 
-    return [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    return [
+      headers.join(','),
+      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+    ].join('\n');
   }
 }

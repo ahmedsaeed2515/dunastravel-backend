@@ -1,5 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsArray, IsNumber, Min, IsEnum, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+  IsNumber,
+  Min,
+  IsEnum,
+  IsObject,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListCustomersQueryDto {
@@ -17,7 +26,9 @@ export class ListCustomersQueryDto {
   @Min(1)
   limit?: number;
 
-  @ApiPropertyOptional({ description: 'Search by name, email, phone, or passport' })
+  @ApiPropertyOptional({
+    description: 'Search by name, email, phone, or passport',
+  })
   @IsOptional()
   @IsString()
   search?: string;
@@ -27,7 +38,9 @@ export class ListCustomersQueryDto {
   @IsString()
   isVip?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by account status (e.g. ACTIVE, INACTIVE, BLOCKED)' })
+  @ApiPropertyOptional({
+    description: 'Filter by account status (e.g. ACTIVE, INACTIVE, BLOCKED)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -101,12 +114,20 @@ export class UpdateCustomerCrmDto {
   @IsString()
   dateOfBirth?: string;
 
-  @ApiPropertyOptional({ example: { name: 'Sarah Connor', relationship: 'Spouse', phone: '+123456789' } })
+  @ApiPropertyOptional({
+    example: {
+      name: 'Sarah Connor',
+      relationship: 'Spouse',
+      phone: '+123456789',
+    },
+  })
   @IsOptional()
   @IsObject()
   emergencyContact?: Record<string, any>;
 
-  @ApiPropertyOptional({ example: { street: '123 Nile Ave', city: 'Cairo', country: 'Egypt' } })
+  @ApiPropertyOptional({
+    example: { street: '123 Nile Ave', city: 'Cairo', country: 'Egypt' },
+  })
   @IsOptional()
   @IsObject()
   address?: Record<string, any>;
@@ -131,7 +152,9 @@ export class UpdateCustomerCrmDto {
   @IsString()
   preferredTravelType?: string;
 
-  @ApiPropertyOptional({ example: [{ name: 'John Jr', relationship: 'Son', age: 10 }] })
+  @ApiPropertyOptional({
+    example: [{ name: 'John Jr', relationship: 'Son', age: 10 }],
+  })
   @IsOptional()
   @IsArray()
   familyMembers?: any[];

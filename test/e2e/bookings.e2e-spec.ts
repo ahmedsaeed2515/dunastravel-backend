@@ -11,6 +11,8 @@ describe('Bookings (e2e)', () => {
   let tourId: string;
   let createdRefCode: string;
   let adminCookie: string;
+  let csrfCookie: string;
+  let csrfToken: string;
 
   const adminUser = {
     name: 'E2E Admin',
@@ -81,6 +83,12 @@ describe('Bookings (e2e)', () => {
       (loginRes.headers['set-cookie'] as unknown as string[]).find(
         (c: string) => c.startsWith('access_token='),
       ) ?? '';
+
+    // Fetch CSRF token for guest endpoints
+    const csrfRes = await request(app.getHttpServer()).get('/api/auth/csrf');
+    const csrfCookies = csrfRes.headers['set-cookie'] as unknown as string[];
+    csrfCookie = csrfCookies?.find((c: string) => c.startsWith('csrf_token='))?.split(';')[0] ?? '';
+    csrfToken = csrfRes.body.csrfToken;
   });
 
   afterAll(async () => {
@@ -94,6 +102,8 @@ describe('Bookings (e2e)', () => {
     it('should create a booking as guest and return 201', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/bookings')
+        .set('Cookie', csrfCookie)
+        .set('x-csrf-token', csrfToken)
         .send(createBookingPayload())
         .expect(201);
 
@@ -109,6 +119,8 @@ describe('Bookings (e2e)', () => {
     it('should reject invalid tourId with 422', async () => {
       await request(app.getHttpServer())
         .post('/api/bookings')
+        .set('Cookie', csrfCookie)
+        .set('x-csrf-token', csrfToken)
         .send({
           ...createBookingPayload(),
           tourId: '00000000-0000-0000-0000-000000000000',
@@ -119,6 +131,8 @@ describe('Bookings (e2e)', () => {
     it('should reject adults=0 with 400', async () => {
       await request(app.getHttpServer())
         .post('/api/bookings')
+        .set('Cookie', csrfCookie)
+        .set('x-csrf-token', csrfToken)
         .send({ ...createBookingPayload(), adults: 0 })
         .expect(400);
     });
@@ -128,6 +142,8 @@ describe('Bookings (e2e)', () => {
       payload.billing = { ...payload.billing, invoiceType: 'COMPANY' };
       await request(app.getHttpServer())
         .post('/api/bookings')
+        .set('Cookie', csrfCookie)
+        .set('x-csrf-token', csrfToken)
         .send(payload)
         .expect(400);
     });
@@ -187,6 +203,29 @@ describe('Bookings (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/invoices/INVALID-NUMBER')
         .expect(400);
+    });
+  });
+
+  describe('GET /api/bookings/me', () => {
+    it('should return 401 Unauthorized when no valid token is provided, verifying isolated scoping', async () => {
+      // Act
+      const res = await request(app.getHttpServer())
+        .get('/api/bookings/me')
+        .expect(401);
+
+      // Assert
+      expect(res.body.statusCode).toBe(401);
+      expect(res.body.message).toBe('Unauthorized');
+    });
+
+    it('should return user bookings when properly authenticated', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/bookings/me')
+        .set('Cookie', adminCookie)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
   });
 });

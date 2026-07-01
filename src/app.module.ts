@@ -11,6 +11,7 @@ import { envValidationSchema } from './config/env.validation';
 import configuration from './config/configuration';
 import { AsyncContextService } from './common/logging/async-context.service';
 import { JsonLoggerService } from './common/logging/json-logger.service';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { CorrelationIdMiddleware } from './common/logging/correlation-id.middleware';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -23,6 +24,14 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ContactSubmissionsModule } from './modules/contact-submissions/contact-submissions.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
+import { CompaniesModule } from './modules/companies/companies.module';
+import { CommissionsModule } from './modules/commissions/commissions.module';
+import { WalletsModule } from './modules/wallets/wallets.module';
+import { AiModule } from './modules/ai/ai.module';
+import { CurrencyModule } from './modules/currency/currency.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AgentsModule } from './modules/agents/agents.module';
+import { CompanySelfModule } from './modules/company-self/company-self.module';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { CsrfGuard } from './common/guards/csrf.guard';
@@ -73,7 +82,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async (config: ConfigService) => ({
-        store: redisStore,
+        // store: redisStore, // Disabled for local audit to use memory store
         host: config.get<string>('REDIS_HOST', 'localhost'),
         port: config.get<number>('REDIS_PORT', 6379),
         ttl: 300, // 5 minutes default
@@ -113,13 +122,20 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     NotificationsModule,
     ContactSubmissionsModule,
     MediaModule,
+    CompaniesModule,
+    WalletsModule,
+    CommissionsModule,
     // MailModule      ← Phase 8
-    // AiModule        ← Phase 9
-    // CurrencyModule  ← Phase 10
+    AiModule,
+    CurrencyModule,
+    AuditModule,
+    AgentsModule,
+    CompanySelfModule,
   ],
   providers: [
     AsyncContextService,
     JsonLoggerService,
+    TimeoutInterceptor,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

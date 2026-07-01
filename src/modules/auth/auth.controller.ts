@@ -31,6 +31,8 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
+  ChangePasswordDto,
+  ResendVerificationDto,
 } from './dto';
 import { Public, CurrentUser } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards';
@@ -71,10 +73,11 @@ export class AuthController {
   @ApiOkResponse()
   @ApiUnauthorizedResponse()
   async login(
+    @Req() req: Request,
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.login(dto);
+    const user = await this.authService.login(dto, req.ip || 'unknown');
     const token = this.authService.generateToken(user);
     const refreshToken = await this.authService.generateRefreshToken(user.id);
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
@@ -177,5 +180,38 @@ export class AuthController {
   @ApiOkResponse()
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Change password' })
+  async changePassword(
+    @CurrentUser() user: any,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.id, dto);
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Resend verification email' })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto);
+  }
+
+  @Post('logout-all')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Logout from all devices' })
+  async logoutAll(
+    @CurrentUser() user: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.clearRefreshToken(user.id);
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    return { message: 'Logged out from all devices successfully' };
   }
 }

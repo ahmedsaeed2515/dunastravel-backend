@@ -37,7 +37,9 @@ export class ListAdminToursQueryDto {
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by status (PUBLISHED, DRAFT, ARCHIVED)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (PUBLISHED, DRAFT, ARCHIVED)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -57,7 +59,11 @@ export class ListAdminToursQueryDto {
   @IsString()
   sortBy?: string;
 
-  @ApiPropertyOptional({ description: 'Sort order', enum: ['asc', 'desc'], default: 'desc' })
+  @ApiPropertyOptional({
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+    default: 'desc',
+  })
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc';

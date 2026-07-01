@@ -84,9 +84,14 @@ export class BookingsService {
     idempotencyKey?: string,
   ): Promise<BookingCreatedResponse> {
     if (idempotencyKey) {
-      const cachedResponse = await this.cacheManager.get<BookingCreatedResponse>(`idempotency:${idempotencyKey}`);
+      const cachedResponse =
+        await this.cacheManager.get<BookingCreatedResponse>(
+          `idempotency:${idempotencyKey}`,
+        );
       if (cachedResponse) {
-        this.logger.log(`Idempotency key hit for ${idempotencyKey}, returning cached booking response`);
+        this.logger.log(
+          `Idempotency key hit for ${idempotencyKey}, returning cached booking response`,
+        );
         return cachedResponse;
       }
     }
@@ -133,7 +138,22 @@ export class BookingsService {
     while (attempt < maxAttempts) {
       try {
         result = await this.prisma.$transaction(async (tx) => {
-          // 5a
+          // 5a — Atomic seat decrement (prevents overselling under concurrency)
+          const seatsRequested = dto.adults + (dto.children ?? 0);
+          const seatUpdate = await tx.tour.updateMany({
+            where: {
+              id: tour.id,
+              remainingSeats: { gte: seatsRequested },
+            },
+            data: { remainingSeats: { decrement: seatsRequested } },
+          });
+          if (seatUpdate.count === 0) {
+            throw new UnprocessableEntityException(
+              'Tour is fully booked or has insufficient seats',
+            );
+          }
+
+          // 5b
           const booking = await tx.booking.create({
             data: {
               referenceCode,
@@ -153,7 +173,7 @@ export class BookingsService {
             },
           });
 
-          // 5b
+          // 5c
           await tx.passenger.createMany({
             data: dto.passengerNames.map((p) => ({
               bookingId: booking.id,
@@ -162,7 +182,7 @@ export class BookingsService {
             })),
           });
 
-          // 5c
+          // 5d
           const billingInfo = await tx.billingInfo.create({
             data: {
               bookingId: booking.id,
@@ -178,10 +198,10 @@ export class BookingsService {
             },
           });
 
-          // 5d
+          // 5e
           const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
 
-          // 5e
+          // 5f
           await tx.invoice.create({
             data: {
               invoiceNumber,
@@ -190,7 +210,7 @@ export class BookingsService {
             },
           });
 
-          // 5f
+          // 5g
           const passengers = await tx.passenger.findMany({
             where: { bookingId: booking.id },
           });
@@ -283,7 +303,11 @@ export class BookingsService {
     };
 
     if (idempotencyKey) {
-      await this.cacheManager.set(`idempotency:${idempotencyKey}`, responseData, 86400000);
+      await this.cacheManager.set(
+        `idempotency:${idempotencyKey}`,
+        responseData,
+        86400000,
+      );
     }
 
     return responseData;
@@ -376,5 +400,54 @@ export class BookingsService {
       totalAmountUsd: booking.totalAmountUsd.toString(),
       createdAt: booking.createdAt.toISOString(),
     }));
+  }
+
+  async cancelBooking(
+    referenceCode: string,
+    userId: string,
+    reason?: string,
+  ): Promise<{ message: string }> {
+    const booking = await this.prisma.booking.findUnique({
+      where: { referenceCode },
+      include: { billingInfo: { select: { email: true } } },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      // Return 404 to avoid enumeration
+      throw new NotFoundException('Booking not found');
+    }
+
+    const nonCancellableStatuses = ['CANCELLED', 'COMPLETED', 'NO_SHOW'];
+    if (nonCancellableStatuses.includes(booking.status as string)) {
+      throw new BadRequestException(
+        `Booking cannot be cancelled in status: ${booking.status}`,
+      );
+    }
+
+    const seatsToRestore = booking.adults + booking.children;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: 'CANCELLED' as any,
+          cancellationReason: reason ?? 'Customer requested cancellation',
+        },
+      });
+
+      // Restore seats atomically
+      await tx.tour.updateMany({
+        where: { id: booking.tourId },
+        data: { remainingSeats: { increment: seatsToRestore } },
+      });
+    });
+
+    this.logger.log(`Booking cancelled | ref=${referenceCode} by userId=${userId}`);
+
+    return { message: 'Booking cancelled successfully' };
   }
 }

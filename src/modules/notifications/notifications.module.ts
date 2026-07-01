@@ -8,6 +8,8 @@ import { EMAIL_PROVIDER_TOKEN } from './providers/email-provider.interface';
 import { InquiryCreatedListener } from './listeners/inquiry-created.listener';
 import { ContactCreatedListener } from './listeners/contact-created.listener';
 import { BookingCreatedListener } from './listeners/booking-created.listener';
+import { NotificationsService } from './notifications.service';
+import { NotificationsController } from './notifications.controller';
 
 const EmailProviderFactory = {
   provide: EMAIL_PROVIDER_TOKEN,
@@ -22,14 +24,16 @@ const EmailProviderFactory = {
 };
 
 @Module({
+  controllers: [NotificationsController],
   providers: [
     EmailProviderFactory,
     EmailCompositionService,
     EmailDeliveryService,
+    NotificationsService,
     InquiryCreatedListener,
     ContactCreatedListener,
     BookingCreatedListener,
   ],
-  exports: [],
+  exports: [NotificationsService],
 })
 export class NotificationsModule {}

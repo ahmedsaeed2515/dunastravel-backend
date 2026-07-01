@@ -1,0 +1,1801 @@
+[
+  {
+    "module": "health",
+    "controller": "HealthController",
+    "action": "checkLive",
+    "method": "GET",
+    "route": "/api/health/live",
+    "params": []
+  },
+  {
+    "module": "health",
+    "controller": "HealthController",
+    "action": "checkReady",
+    "method": "GET",
+    "route": "/api/health/ready",
+    "params": []
+  },
+  {
+    "module": "health",
+    "controller": "HealthController",
+    "action": "check",
+    "method": "GET",
+    "route": "/api/health",
+    "params": []
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "listBookings",
+    "method": "GET",
+    "route": "/api/admin/bookings",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-bookings-query.dto\").ListBookingsQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "exportBookingsCsv",
+    "method": "GET",
+    "route": "/api/admin/bookings/export/csv",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-bookings-query.dto\").ListBookingsQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getBookingByReferenceCode",
+    "method": "GET",
+    "route": "/api/admin/bookings/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "bulkUpdateBookings",
+    "method": "PATCH",
+    "route": "/api/admin/bookings/bulk/update",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/bulk-update-bookings.dto\").BulkUpdateBookingsDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "updateBooking",
+    "method": "PATCH",
+    "route": "/api/admin/bookings/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/update-booking.dto\").UpdateBookingDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "updateBookingStatus",
+    "method": "PATCH",
+    "route": "/api/admin/bookings/:referenceCode/status",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/update-booking-status.dto\").UpdateBookingStatusDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "upsertPassengers",
+    "method": "PATCH",
+    "route": "/api/admin/bookings/:referenceCode/passengers",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/upsert-passengers.dto\").UpsertPassengersDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "assignBooking",
+    "method": "PATCH",
+    "route": "/api/admin/bookings/:referenceCode/assign",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/assign-booking.dto\").AssignBookingDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "addPayment",
+    "method": "POST",
+    "route": "/api/admin/bookings/:referenceCode/payments",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/add-payment.dto\").AddPaymentDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "addBookingNote",
+    "method": "POST",
+    "route": "/api/admin/bookings/:referenceCode/notes",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/add-booking-note.dto\").AddBookingNoteDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "addBookingAttachment",
+    "method": "POST",
+    "route": "/api/admin/bookings/:referenceCode/attachments",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/add-booking-attachment.dto\").AddBookingAttachmentDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "softDeleteBooking",
+    "method": "DELETE",
+    "route": "/api/admin/bookings/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "listInquiries",
+    "method": "GET",
+    "route": "/api/admin/inquiries",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-inquiries-query.dto\").ListInquiriesQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getInquiryByReferenceCode",
+    "method": "GET",
+    "route": "/api/admin/inquiries/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "updateInquiryStatus",
+    "method": "PATCH",
+    "route": "/api/admin/inquiries/:referenceCode/status",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/update-inquiry-status.dto\").UpdateInquiryStatusDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "listContactSubmissions",
+    "method": "GET",
+    "route": "/api/admin/contact-submissions",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-contact-submissions-query.dto\").ListContactSubmissionsQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getContactSubmissionByReferenceCode",
+    "method": "GET",
+    "route": "/api/admin/contact-submissions/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "updateContactSubmissionStatus",
+    "method": "PATCH",
+    "route": "/api/admin/contact-submissions/:referenceCode/status",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/update-contact-submission-status.dto\").UpdateContactSubmissionStatusDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "listNotificationLogs",
+    "method": "GET",
+    "route": "/api/admin/notification-logs",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-notification-logs-query.dto\").ListNotificationLogsQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getDashboardMetrics",
+    "method": "GET",
+    "route": "/api/admin/dashboard",
+    "params": [
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "listTours",
+    "method": "GET",
+    "route": "/api/admin/tours",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-admin-tours-query.dto\").ListAdminToursQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getTourStats",
+    "method": "GET",
+    "route": "/api/admin/tours/stats",
+    "params": [
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "exportToursCsv",
+    "method": "GET",
+    "route": "/api/admin/tours/export/csv",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/list-admin-tours-query.dto\").ListAdminToursQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "getTourBySlug",
+    "method": "GET",
+    "route": "/api/admin/tours/:slug",
+    "params": [
+      {
+        "name": "slug",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "createTour",
+    "method": "POST",
+    "route": "/api/admin/tours",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/create-tour.dto\").CreateTourDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "bulkUpdateTours",
+    "method": "PATCH",
+    "route": "/api/admin/tours/bulk/update",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/bulk-update-tours.dto\").BulkUpdateToursDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "updateTour",
+    "method": "PATCH",
+    "route": "/api/admin/tours/:slug",
+    "params": [
+      {
+        "name": "slug",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/admin/dto/update-tour.dto\").UpdateTourDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "admin",
+    "controller": "AdminController",
+    "action": "softDeleteTour",
+    "method": "DELETE",
+    "route": "/api/admin/tours/:slug",
+    "params": [
+      {
+        "name": "slug",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "ai",
+    "controller": "AiController",
+    "action": "generateItinerary",
+    "method": "POST",
+    "route": "/api/admin/ai/itinerary/generate",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/ai/dto/ai.dto\").GenerateItineraryDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "ai",
+    "controller": "AiController",
+    "action": "analyzeCustomer",
+    "method": "POST",
+    "route": "/api/admin/ai/customer/:id/analyze",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "register",
+    "method": "POST",
+    "route": "/api/auth/register",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/auth/dto/register.dto\").RegisterDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "login",
+    "method": "POST",
+    "route": "/api/auth/login",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/auth/dto/login.dto\").LoginDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "refresh",
+    "method": "POST",
+    "route": "/api/auth/refresh",
+    "params": [
+      {
+        "name": "req",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Request<import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express-serve-static-core/index\").ParamsDictionary, any, any, qs.ParsedQs, Record<string, any>>",
+        "decorators": [
+          "Req"
+        ]
+      },
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "logout",
+    "method": "POST",
+    "route": "/api/auth/logout",
+    "params": [
+      {
+        "name": "user",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/common/types/index\").AuthenticatedUser",
+        "decorators": [
+          "CurrentUser"
+        ]
+      },
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "getMe",
+    "method": "GET",
+    "route": "/api/auth/me",
+    "params": [
+      {
+        "name": "user",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/common/types/index\").AuthenticatedUser",
+        "decorators": [
+          "CurrentUser"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "getCsrfToken",
+    "method": "GET",
+    "route": "/api/auth/csrf",
+    "params": [
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "forgotPassword",
+    "method": "POST",
+    "route": "/api/auth/forgot-password",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/auth/dto/forgot-password.dto\").ForgotPasswordDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "resetPassword",
+    "method": "POST",
+    "route": "/api/auth/reset-password",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/auth/dto/reset-password.dto\").ResetPasswordDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "auth",
+    "controller": "AuthController",
+    "action": "verifyEmail",
+    "method": "POST",
+    "route": "/api/auth/verify-email",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/auth/dto/verify-email.dto\").VerifyEmailDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "bookings",
+    "controller": "BookingsController",
+    "action": "createBooking",
+    "method": "POST",
+    "route": "/api/bookings",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/bookings/dto/create-booking.dto\").CreateBookingDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "user",
+        "type": "any",
+        "decorators": [
+          "CurrentUser"
+        ]
+      },
+      {
+        "name": "idempotencyKey",
+        "type": "string | undefined",
+        "decorators": [
+          "Headers"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "bookings",
+    "controller": "BookingsController",
+    "action": "findUserBookings",
+    "method": "GET",
+    "route": "/api/bookings/me",
+    "params": [
+      {
+        "name": "user",
+        "type": "any",
+        "decorators": [
+          "CurrentUser"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "bookings",
+    "controller": "BookingsController",
+    "action": "findByReferenceCode",
+    "method": "GET",
+    "route": "/api/bookings/:referenceCode",
+    "params": [
+      {
+        "name": "referenceCode",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "user",
+        "type": "any",
+        "decorators": [
+          "CurrentUser"
+        ]
+      },
+      {
+        "name": "email",
+        "type": "string | undefined",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "commissions",
+    "controller": "CommissionsController",
+    "action": "getMetrics",
+    "method": "GET",
+    "route": "/api/admin/finance/commissions/metrics",
+    "params": []
+  },
+  {
+    "module": "commissions",
+    "controller": "CommissionsController",
+    "action": "findAll",
+    "method": "GET",
+    "route": "/api/admin/finance/commissions",
+    "params": [
+      {
+        "name": "filters",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/commissions/dto/commission.dto\").CommissionQueryFilters",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "commissions",
+    "controller": "CommissionsController",
+    "action": "createCommission",
+    "method": "POST",
+    "route": "/api/admin/finance/commissions",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/commissions/dto/commission.dto\").CreateCommissionDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "commissions",
+    "controller": "CommissionsController",
+    "action": "updateStatus",
+    "method": "PATCH",
+    "route": "/api/admin/finance/commissions/:id/status",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/commissions/dto/commission.dto\").UpdateCommissionStatusDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "getMetrics",
+    "method": "GET",
+    "route": "/api/admin/companies/metrics",
+    "params": []
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "exportCsv",
+    "method": "GET",
+    "route": "/api/admin/companies/export/csv",
+    "params": [
+      {
+        "name": "filters",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/companies/dto/company.dto\").CompanyQueryFilters",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "res",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/node_modules/@types/express/index\").Response<any, Record<string, any>>",
+        "decorators": [
+          "Res"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "create",
+    "method": "POST",
+    "route": "/api/admin/companies",
+    "params": [
+      {
+        "name": "createCompanyDto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/companies/dto/company.dto\").CreateCompanyDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "findAll",
+    "method": "GET",
+    "route": "/api/admin/companies",
+    "params": [
+      {
+        "name": "filters",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/companies/dto/company.dto\").CompanyQueryFilters",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "findOne",
+    "method": "GET",
+    "route": "/api/admin/companies/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "bulkUpdate",
+    "method": "PATCH",
+    "route": "/api/admin/companies/bulk/update",
+    "params": [
+      {
+        "name": "data",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/companies/dto/company.dto\").BulkUpdateCompaniesDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "update",
+    "method": "PATCH",
+    "route": "/api/admin/companies/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "updateCompanyDto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/companies/dto/company.dto\").UpdateCompanyDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "companies",
+    "controller": "CompaniesController",
+    "action": "remove",
+    "method": "DELETE",
+    "route": "/api/admin/companies/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "contact-submissions",
+    "controller": "ContactSubmissionsController",
+    "action": "create",
+    "method": "POST",
+    "route": "/api/contact",
+    "params": [
+      {
+        "name": "createContactDto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/contact-submissions/dto/create-contact-submission.dto\").CreateContactSubmissionDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "ip",
+        "type": "string",
+        "decorators": [
+          "Ip"
+        ]
+      },
+      {
+        "name": "xForwardedFor",
+        "type": "string | undefined",
+        "decorators": [
+          "Headers"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "currency",
+    "controller": "CurrencyController",
+    "action": "getRates",
+    "method": "GET",
+    "route": "/api/admin/currency/rates",
+    "params": []
+  },
+  {
+    "module": "currency",
+    "controller": "CurrencyController",
+    "action": "convert",
+    "method": "GET",
+    "route": "/api/admin/currency/convert",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/currency/dto/currency.dto\").ConvertCurrencyDto",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "inquiries",
+    "controller": "PublicInquiriesController",
+    "action": "create",
+    "method": "POST",
+    "route": "/api/inquiries",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/inquiries/dto/create-inquiry.dto\").CreateInquiryDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "invoices",
+    "controller": "InvoicesController",
+    "action": "findByInvoiceNumber",
+    "method": "GET",
+    "route": "/api/invoices/:invoiceNumber",
+    "params": [
+      {
+        "name": "invoiceNumber",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "media",
+    "controller": "MediaAdminController",
+    "action": "upload",
+    "method": "POST",
+    "route": "/api/admin/media/upload",
+    "params": [
+      {
+        "name": "file",
+        "type": "Express.Multer.File",
+        "decorators": [
+          "UploadedFile"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/media/dto/upload-media.dto\").UploadMediaDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "user",
+        "type": "any",
+        "decorators": [
+          "CurrentUser"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "media",
+    "controller": "MediaAdminController",
+    "action": "deleteAsset",
+    "method": "DELETE",
+    "route": "/api/admin/media/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "media",
+    "controller": "MediaAdminController",
+    "action": "listAssets",
+    "method": "GET",
+    "route": "/api/admin/media",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/media/dto/list-media.dto\").ListMediaDto",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "media",
+    "controller": "MediaPublicController",
+    "action": "getAssetsByTourId",
+    "method": "GET",
+    "route": "/api/media/tours/:tourId",
+    "params": [
+      {
+        "name": "tourId",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "notifications",
+    "controller": "NotificationsController",
+    "action": "getMetrics",
+    "method": "GET",
+    "route": "/api/admin/communications/logs/metrics",
+    "params": []
+  },
+  {
+    "module": "notifications",
+    "controller": "NotificationsController",
+    "action": "findAll",
+    "method": "GET",
+    "route": "/api/admin/communications/logs",
+    "params": [
+      {
+        "name": "filters",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/notifications/dto/notification.dto\").NotificationDeliveryLogQueryFilters",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "notifications",
+    "controller": "NotificationsController",
+    "action": "retryNotification",
+    "method": "POST",
+    "route": "/api/admin/communications/logs/:id/retry",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "tours",
+    "controller": "ToursController",
+    "action": "findAll",
+    "method": "GET",
+    "route": "/api/tours",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/tours/dto/get-tours-query.dto\").GetToursQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "tours",
+    "controller": "ToursController",
+    "action": "findBySlug",
+    "method": "GET",
+    "route": "/api/tours/:slug",
+    "params": [
+      {
+        "name": "slug",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/tours/dto/get-tour-detail-query.dto\").GetTourDetailQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "getCrmDashboardMetrics",
+    "method": "GET",
+    "route": "/api/admin/users/crm/metrics",
+    "params": [
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "exportCustomersCsv",
+    "method": "GET",
+    "route": "/api/admin/users/crm/export/csv",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").ListCustomersQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "listCustomersCrm",
+    "method": "GET",
+    "route": "/api/admin/users/crm/list",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").ListCustomersQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "bulkUpdateCustomers",
+    "method": "PATCH",
+    "route": "/api/admin/users/crm/bulk/update",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").BulkUpdateCustomersDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "getCustomerCrmDetail",
+    "method": "GET",
+    "route": "/api/admin/users/crm/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "updateCustomerCrm",
+    "method": "PATCH",
+    "route": "/api/admin/users/crm/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").UpdateCustomerCrmDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "addCustomerNote",
+    "method": "POST",
+    "route": "/api/admin/users/crm/:id/notes",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").AddCustomerNoteDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "addCustomerDocument",
+    "method": "POST",
+    "route": "/api/admin/users/crm/:id/documents",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/customer-crm.dto\").AddCustomerDocumentDto",
+        "decorators": [
+          "Body"
+        ]
+      },
+      {
+        "name": "req",
+        "type": "any",
+        "decorators": [
+          "Req"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "listUsers",
+    "method": "GET",
+    "route": "/api/admin/users",
+    "params": [
+      {
+        "name": "query",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/list-users-query.dto\").ListUsersQueryDto",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "getUser",
+    "method": "GET",
+    "route": "/api/admin/users/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "createUser",
+    "method": "POST",
+    "route": "/api/admin/users",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/create-user.dto\").CreateUserDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "updateUser",
+    "method": "PATCH",
+    "route": "/api/admin/users/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/users/dto/update-user.dto\").UpdateUserDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "users",
+    "controller": "UsersController",
+    "action": "deleteUser",
+    "method": "DELETE",
+    "route": "/api/admin/users/:id",
+    "params": [
+      {
+        "name": "id",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "wallets",
+    "controller": "WalletsController",
+    "action": "getMetrics",
+    "method": "GET",
+    "route": "/api/admin/finance/wallets/metrics",
+    "params": []
+  },
+  {
+    "module": "wallets",
+    "controller": "WalletsController",
+    "action": "getWallet",
+    "method": "GET",
+    "route": "/api/admin/finance/wallets/:ownerType/:ownerId",
+    "params": [
+      {
+        "name": "ownerType",
+        "type": "\"USER\" | \"COMPANY\"",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "ownerId",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "wallets",
+    "controller": "WalletsController",
+    "action": "getTransactions",
+    "method": "GET",
+    "route": "/api/admin/finance/wallets/:walletId/transactions",
+    "params": [
+      {
+        "name": "walletId",
+        "type": "string",
+        "decorators": [
+          "Param"
+        ]
+      },
+      {
+        "name": "filters",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/wallets/dto/wallet.dto\").WalletTransactionQueryFilters",
+        "decorators": [
+          "Query"
+        ]
+      }
+    ]
+  },
+  {
+    "module": "wallets",
+    "controller": "WalletsController",
+    "action": "addManualTransaction",
+    "method": "POST",
+    "route": "/api/admin/finance/wallets/transactions/manual",
+    "params": [
+      {
+        "name": "dto",
+        "type": "import(\"D:/@@project/LUXURY-PROJECT/dunastravel-backend/src/modules/wallets/dto/wallet.dto\").CreateWalletTransactionDto",
+        "decorators": [
+          "Body"
+        ]
+      }
+    ]
+  }
+]

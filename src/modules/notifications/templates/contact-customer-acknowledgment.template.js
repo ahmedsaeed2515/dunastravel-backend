@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.renderContactCustomerAcknowledgment = renderContactCustomerAcknowledgment;
+var template_types_1 = require("./template.types");
+function renderContactCustomerAcknowledgment(data) {
+    var safeName = (0, template_types_1.escapeHtml)(data.customerName);
+    var safeSubject = (0, template_types_1.escapeHtml)(data.subject);
+    return {
+        subject: "We've received your message: ".concat(safeSubject),
+        text: "Hi ".concat(safeName, ",\n\nThank you for reaching out to Dunas Travel. We have successfully received your message regarding \"").concat(safeSubject, "\".\n\nOur team is reviewing your message and will respond as soon as possible, typically within 24 hours.\n\nWarm regards,\nThe Dunas Travel Team"),
+        html: "\n      <!DOCTYPE html>\n      <html lang=\"en\">\n      <head>\n        <meta charset=\"UTF-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n        <title>Dunas Travel - Message Received</title>\n        <style>\n          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; color: #333; line-height: 1.6; margin: 0; padding: 20px; }\n          .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }\n          .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e1b382; padding-bottom: 15px; }\n          .header h1 { color: #e1b382; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }\n          .content { font-size: 16px; color: #444; }\n          .footer { text-align: center; font-size: 14px; color: #888; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }\n        </style>\n      </head>\n      <body>\n        <div class=\"container\">\n          <div class=\"header\">\n            <h1>Dunas Travel</h1>\n          </div>\n          <div class=\"content\">\n            <p>Dear <strong>".concat(safeName, "</strong>,</p>\n            <p>Thank you for reaching out to Dunas Travel. We have successfully received your message regarding <em>\"").concat(safeSubject, "\"</em>.</p>\n            <p>Our dedicated team is reviewing your message and will respond as soon as possible, typically within 24 hours.</p>\n            <p>Warm regards,<br><strong>The Dunas Travel Team</strong></p>\n          </div>\n          <div class=\"footer\">\n            <p>&copy; ").concat(new Date().getFullYear(), " Dunas Travel. All rights reserved.</p>\n          </div>\n        </div>\n      </body>\n      </html>\n    "),
+    };
+}

@@ -1,0 +1,3607 @@
+{
+  "GET /auth/csrf": [
+    {
+      "method": "GET",
+      "url": "/auth/csrf",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "csrfToken": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f"
+        },
+        "timestamp": "2026-07-01T06:00:20.152Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.168Z"
+    }
+  ],
+  "POST /auth/login": [
+    {
+      "method": "POST",
+      "url": "/auth/login",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "58",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "email": "admin@dunastravel.com",
+        "password": "password123"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "id": "19e89be2-1e6a-41ec-8b03-11d39047e626",
+          "name": "Admin User",
+          "email": "admin@dunastravel.com",
+          "phone": "+1234567890",
+          "role": "ADMIN",
+          "isVerified": true,
+          "customerNumber": null,
+          "isVip": false,
+          "tags": [],
+          "segments": [],
+          "status": "ACTIVE",
+          "passportNumber": null,
+          "nationality": null,
+          "gender": null,
+          "dateOfBirth": null,
+          "emergencyContact": null,
+          "address": null,
+          "preferredLanguage": "en",
+          "preferredCurrency": "USD",
+          "preferredDestination": null,
+          "preferredTravelType": null,
+          "familyMembers": null,
+          "travelCompanions": null,
+          "marketingConsent": true,
+          "phoneVerified": false,
+          "customerSource": null,
+          "referralSource": null,
+          "companyId": null,
+          "futureWalletId": null,
+          "futureCommissionPlan": null,
+          "createdAt": "2026-07-01T05:59:34.928Z",
+          "updatedAt": "2026-07-01T05:59:34.928Z"
+        },
+        "timestamp": "2026-07-01T06:00:20.771Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.773Z"
+    }
+  ],
+  "GET http://localhost:5000/api/health/live": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/health/live",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "status": "ok",
+        "timestamp": "2026-07-01T06:00:20.780Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.782Z"
+    }
+  ],
+  "GET http://localhost:5000/api/health/ready": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/health/ready",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "status": "ok",
+        "db": "reachable",
+        "timestamp": "2026-07-01T06:00:20.790Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.793Z"
+    }
+  ],
+  "GET http://localhost:5000/api/health": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/health",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "status": "ok",
+        "db": "reachable",
+        "timestamp": "2026-07-01T06:00:20.800Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.802Z"
+    }
+  ],
+  "GET http://localhost:5000/api/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": "# HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE process_cpu_user_seconds_total counter\nprocess_cpu_user_seconds_total 1.765\n\n# HELP process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE process_cpu_system_seconds_total counter\nprocess_cpu_system_seconds_total 0.188\n\n# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE process_cpu_seconds_total counter\nprocess_cpu_seconds_total 1.953\n\n# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.\n# TYPE process_start_time_seconds gauge\nprocess_start_time_seconds 1782885596\n\n# HELP process_resident_memory_bytes Resident memory size in bytes.\n# TYPE process_resident_memory_bytes gauge\nprocess_resident_memory_bytes 152055808\n\n# HELP nodejs_eventloop_lag_seconds Lag of event loop in seconds.\n# TYPE nodejs_eventloop_lag_seconds gauge\nnodejs_eventloop_lag_seconds 0\n\n# HELP nodejs_eventloop_lag_min_seconds The minimum recorded event loop delay.\n# TYPE nodejs_eventloop_lag_min_seconds gauge\nnodejs_eventloop_lag_min_seconds 0.009723904\n\n# HELP nodejs_eventloop_lag_max_seconds The maximum recorded event loop delay.\n# TYPE nodejs_eventloop_lag_max_seconds gauge\nnodejs_eventloop_lag_max_seconds 0.197918719\n\n# HELP nodejs_eventloop_lag_mean_seconds The mean of the recorded event loop delays.\n# TYPE nodejs_eventloop_lag_mean_seconds gauge\nnodejs_eventloop_lag_mean_seconds 0.01602505255039439\n\n# HELP nodejs_eventloop_lag_stddev_seconds The standard deviation of the recorded event loop delays.\n# TYPE nodejs_eventloop_lag_stddev_seconds gauge\nnodejs_eventloop_lag_stddev_seconds 0.00592085637507751\n\n# HELP nodejs_eventloop_lag_p50_seconds The 50th percentile of the recorded event loop delays.\n# TYPE nodejs_eventloop_lag_p50_seconds gauge\nnodejs_eventloop_lag_p50_seconds 0.015532031\n\n# HELP nodejs_eventloop_lag_p90_seconds The 90th percentile of the recorded event loop delays.\n# TYPE nodejs_eventloop_lag_p90_seconds gauge\nnodejs_eventloop_lag_p90_seconds 0.016056319\n\n# HELP nodejs_eventloop_lag_p99_seconds The 99th percentile of the recorded event loop delays.\n# TYPE nodejs_eventloop_lag_p99_seconds gauge\nnodejs_eventloop_lag_p99_seconds 0.027000831\n\n# HELP nodejs_active_resources Number of active resources that are currently keeping the event loop alive, grouped by async resource type.\n# TYPE nodejs_active_resources gauge\nnodejs_active_resources{type=\"PipeWrap\"} 2\nnodejs_active_resources{type=\"TCPServerWrap\"} 1\nnodejs_active_resources{type=\"TCPSocketWrap\"} 2\nnodejs_active_resources{type=\"Timeout\"} 11\nnodejs_active_resources{type=\"Immediate\"} 1\n\n# HELP nodejs_active_resources_total Total number of active resources.\n# TYPE nodejs_active_resources_total gauge\nnodejs_active_resources_total 17\n\n# HELP nodejs_active_handles Number of active libuv handles grouped by handle type. Every handle type is C++ class name.\n# TYPE nodejs_active_handles gauge\nnodejs_active_handles{type=\"Socket\"} 4\nnodejs_active_handles{type=\"Server\"} 1\n\n# HELP nodejs_active_handles_total Total number of active handles.\n# TYPE nodejs_active_handles_total gauge\nnodejs_active_handles_total 5\n\n# HELP nodejs_active_requests Number of active libuv requests grouped by request type. Every request type is C++ class name.\n# TYPE nodejs_active_requests gauge\n\n# HELP nodejs_active_requests_total Total number of active requests.\n# TYPE nodejs_active_requests_total gauge\nnodejs_active_requests_total 0\n\n# HELP nodejs_heap_size_total_bytes Process heap size from Node.js in bytes.\n# TYPE nodejs_heap_size_total_bytes gauge\nnodejs_heap_size_total_bytes 101793792\n\n# HELP nodejs_heap_size_used_bytes Process heap size used from Node.js in bytes.\n# TYPE nodejs_heap_size_used_bytes gauge\nnodejs_heap_size_used_bytes 65830248\n\n# HELP nodejs_external_memory_bytes Node.js external memory size in bytes.\n# TYPE nodejs_external_memory_bytes gauge\nnodejs_external_memory_bytes 4495955\n\n# HELP nodejs_heap_space_size_total_bytes Process heap space size total from Node.js in bytes.\n# TYPE nodejs_heap_space_size_total_bytes gauge\nnodejs_heap_space_size_total_bytes{space=\"read_only\"} 0\nnodejs_heap_space_size_total_bytes{space=\"new\"} 33554432\nnodejs_heap_space_size_total_bytes{space=\"old\"} 47718400\nnodejs_heap_space_size_total_bytes{space=\"code\"} 2621440\nnodejs_heap_space_size_total_bytes{space=\"shared\"} 0\nnodejs_heap_space_size_total_bytes{space=\"trusted\"} 4997120\nnodejs_heap_space_size_total_bytes{space=\"new_large_object\"} 0\nnodejs_heap_space_size_total_bytes{space=\"large_object\"} 12574720\nnodejs_heap_space_size_total_bytes{space=\"code_large_object\"} 327680\nnodejs_heap_space_size_total_bytes{space=\"shared_large_object\"} 0\nnodejs_heap_space_size_total_bytes{space=\"trusted_large_object\"} 0\n\n# HELP nodejs_heap_space_size_used_bytes Process heap space size used from Node.js in bytes.\n# TYPE nodejs_heap_space_size_used_bytes gauge\nnodejs_heap_space_size_used_bytes{space=\"read_only\"} 0\nnodejs_heap_space_size_used_bytes{space=\"new\"} 4779720\nnodejs_heap_space_size_used_bytes{space=\"old\"} 41467264\nnodejs_heap_space_size_used_bytes{space=\"code\"} 2372224\nnodejs_heap_space_size_used_bytes{space=\"shared\"} 0\nnodejs_heap_space_size_used_bytes{space=\"trusted\"} 4392344\nnodejs_heap_space_size_used_bytes{space=\"new_large_object\"} 0\nnodejs_heap_space_size_used_bytes{space=\"large_object\"} 12519760\nnodejs_heap_space_size_used_bytes{space=\"code_large_object\"} 307584\nnodejs_heap_space_size_used_bytes{space=\"shared_large_object\"} 0\nnodejs_heap_space_size_used_bytes{space=\"trusted_large_object\"} 0\n\n# HELP nodejs_heap_space_size_available_bytes Process heap space size available from Node.js in bytes.\n# TYPE nodejs_heap_space_size_available_bytes gauge\nnodejs_heap_space_size_available_bytes{space=\"read_only\"} 0\nnodejs_heap_space_size_available_bytes{space=\"new\"} 11714872\nnodejs_heap_space_size_available_bytes{space=\"old\"} 5401600\nnodejs_heap_space_size_available_bytes{space=\"code\"} 85056\nnodejs_heap_space_size_available_bytes{space=\"shared\"} 0\nnodejs_heap_space_size_available_bytes{space=\"trusted\"} 515992\nnodejs_heap_space_size_available_bytes{space=\"new_large_object\"} 16777216\nnodejs_heap_space_size_available_bytes{space=\"large_object\"} 0\nnodejs_heap_space_size_available_bytes{space=\"code_large_object\"} 0\nnodejs_heap_space_size_available_bytes{space=\"shared_large_object\"} 0\nnodejs_heap_space_size_available_bytes{space=\"trusted_large_object\"} 0\n\n# HELP nodejs_version_info Node.js version info.\n# TYPE nodejs_version_info gauge\nnodejs_version_info{version=\"v22.14.0\",major=\"22\",minor=\"14\",patch=\"0\"} 1\n\n# HELP nodejs_gc_duration_seconds Garbage collection duration by kind, one of major, minor, incremental or weakcb.\n# TYPE nodejs_gc_duration_seconds histogram\nnodejs_gc_duration_seconds_bucket{le=\"0.001\",kind=\"minor\"} 0\nnodejs_gc_duration_seconds_bucket{le=\"0.01\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_bucket{le=\"0.1\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_bucket{le=\"1\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_bucket{le=\"2\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_bucket{le=\"5\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_bucket{le=\"+Inf\",kind=\"minor\"} 1\nnodejs_gc_duration_seconds_sum{kind=\"minor\"} 0.006159200000111014\nnodejs_gc_duration_seconds_count{kind=\"minor\"} 1\n\n# HELP tours_viewed_total Total number of tours viewed\n# TYPE tours_viewed_total counter\ntours_viewed_total 0\n\n# HELP bookings_created_total Total number of bookings created\n# TYPE bookings_created_total counter\nbookings_created_total 0\n",
+        "timestamp": "2026-07-01T06:00:20.813Z"
+      },
+      "timestamp": "2026-07-01T06:00:20.823Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/bookings": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/bookings",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [
+          {
+            "id": "8c757d08-9d3b-43d4-8d30-2e730e5dbc45",
+            "referenceCode": "BKG-MSYBL0",
+            "status": "PENDING",
+            "totalAmount": "999",
+            "currency": "USD",
+            "passengerCount": 1,
+            "tourId": "b344fdc4-6e77-497f-b6c3-7d7dc91dba87",
+            "tourSlug": "reg-01-legendary-turkey",
+            "tourNameEn": "Legendary Turkey",
+            "invoiceNumber": "INV-2026-0006",
+            "createdAt": "2026-06-30T17:47:30.319Z"
+          },
+          {
+            "id": "bf1b3a30-1582-4b1a-97b6-7e4cff0d5537",
+            "referenceCode": "BKG-GHU508",
+            "status": "PENDING",
+            "totalAmount": "999",
+            "currency": "USD",
+            "passengerCount": 1,
+            "tourId": "b344fdc4-6e77-497f-b6c3-7d7dc91dba87",
+            "tourSlug": "reg-01-legendary-turkey",
+            "tourNameEn": "Legendary Turkey",
+            "invoiceNumber": "INV-2026-0005",
+            "createdAt": "2026-06-30T17:44:49.884Z"
+          },
+          {
+            "id": "97c63def-6ac0-46ec-a55e-10b9bd1cdfd5",
+            "referenceCode": "BKG-O9TVG0",
+            "status": "PENDING",
+            "totalAmount": "999",
+            "currency": "USD",
+            "passengerCount": 1,
+            "tourId": "b344fdc4-6e77-497f-b6c3-7d7dc91dba87",
+            "tourSlug": "reg-01-legendary-turkey",
+            "tourNameEn": "Legendary Turkey",
+            "invoiceNumber": "INV-2026-0003",
+            "createdAt": "2026-06-30T17:42:14.612Z"
+          },
+          {
+            "id": "dafb9eb2-4e09-47af-8072-3ea84c237bb7",
+            "referenceCode": "BKG-JY40U8",
+            "status": "PENDING",
+            "totalAmount": "2747.25",
+            "currency": "USD",
+            "passengerCount": 3,
+            "tourId": "b344fdc4-6e77-497f-b6c3-7d7dc91dba87",
+            "tourSlug": "reg-01-legendary-turkey",
+            "tourNameEn": "Legendary Turkey",
+            "invoiceNumber": "INV-2026-0002",
+            "createdAt": "2026-06-30T17:35:44.738Z"
+          },
+          {
+            "id": "a7dd7699-4c14-4d38-a0bd-d8264a812e4c",
+            "referenceCode": "BKG-K6WO0U",
+            "status": "PENDING",
+            "totalAmount": "2747.25",
+            "currency": "USD",
+            "passengerCount": 3,
+            "tourId": "b344fdc4-6e77-497f-b6c3-7d7dc91dba87",
+            "tourSlug": "reg-01-legendary-turkey",
+            "tourNameEn": "Legendary Turkey",
+            "invoiceNumber": "INV-2026-0001",
+            "createdAt": "2026-06-30T17:35:42.708Z"
+          }
+        ],
+        "total": 5,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 1,
+        "timestamp": "2026-07-01T06:00:21.113Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.118Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/bookings/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/bookings/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking with reference 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.151Z",
+        "path": "/api/admin/bookings/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.153Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/bookings/1": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/bookings/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "196",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "transportChoice": "test-string",
+        "notes": "test-string",
+        "cancellationReason": "test-string",
+        "arrivalDate": "test-string",
+        "departureDate": "test-string",
+        "tags": [
+          "test-string"
+        ],
+        "priority": "test-string"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "arrivalDate must be a valid ISO 8601 date string",
+          "departureDate must be a valid ISO 8601 date string"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.173Z",
+        "path": "/api/admin/bookings/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.175Z"
+    }
+  ],
+  "DELETE http://localhost:5000/api/admin/bookings/1": [
+    {
+      "method": "DELETE",
+      "url": "http://localhost:5000/api/admin/bookings/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.188Z",
+        "path": "/api/admin/bookings/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.190Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/bookings/bulk/update": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/bookings/bulk/update",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "105",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "referenceCodes": [
+          "test-string"
+        ],
+        "status": "test-string",
+        "assigneeId": "unknown",
+        "priority": "test-string"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "status must be one of the following values: PENDING, CONFIRMED, PAID, PARTIALLY_PAID, CANCELLED, REFUNDED, COMPLETED, ARCHIVED"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.201Z",
+        "path": "/api/admin/bookings/bulk/update"
+      },
+      "timestamp": "2026-07-01T06:00:21.202Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/bookings/1/status": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/bookings/1/status",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "47",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "status": "test-string",
+        "reason": "test-string"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "status must be one of the following values: PENDING, CONFIRMED, PAID, PARTIALLY_PAID, CANCELLED, REFUNDED, COMPLETED, ARCHIVED"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.214Z",
+        "path": "/api/admin/bookings/1/status"
+      },
+      "timestamp": "2026-07-01T06:00:21.215Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/bookings/1/passengers": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/bookings/1/passengers",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "210",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "passengers": [
+          {
+            "id": "test-string",
+            "passengerType": "test-string",
+            "fullName": "test-string",
+            "passportNumber": "test-string",
+            "passportExpiry": "test-string",
+            "dateOfBirth": "test-string",
+            "nationality": "test-string"
+          }
+        ]
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "passengers.0.passportExpiry must be a valid ISO 8601 date string",
+          "passengers.0.dateOfBirth must be a valid ISO 8601 date string"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.225Z",
+        "path": "/api/admin/bookings/1/passengers"
+      },
+      "timestamp": "2026-07-01T06:00:21.226Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/bookings/1/assign": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/bookings/1/assign",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "24",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "assigneeId": "unknown"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.238Z",
+        "path": "/api/admin/bookings/1/assign"
+      },
+      "timestamp": "2026-07-01T06:00:21.239Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/bookings/1/payments": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/bookings/1/payments",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "106",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "amount": 1,
+        "currency": "test-string",
+        "method": "test-string",
+        "transactionId": "test-string",
+        "isRefund": true
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.252Z",
+        "path": "/api/admin/bookings/1/payments"
+      },
+      "timestamp": "2026-07-01T06:00:21.253Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/bookings/1/notes": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/bookings/1/notes",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "25",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "content": "test-string"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.265Z",
+        "path": "/api/admin/bookings/1/notes"
+      },
+      "timestamp": "2026-07-01T06:00:21.266Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/bookings/1/attachments": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/bookings/1/attachments",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "30",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "mediaAssetId": "test-string"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Booking not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.278Z",
+        "path": "/api/admin/bookings/1/attachments"
+      },
+      "timestamp": "2026-07-01T06:00:21.279Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/inquiries": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/inquiries",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [],
+        "total": 0,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 0,
+        "timestamp": "2026-07-01T06:00:21.316Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.317Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/inquiries/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/inquiries/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Inquiry with reference 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.328Z",
+        "path": "/api/admin/inquiries/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.329Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/inquiries/1/status": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/inquiries/1/status",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "24",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "status": "IN_PROGRESS"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Inquiry with reference 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.339Z",
+        "path": "/api/admin/inquiries/1/status"
+      },
+      "timestamp": "2026-07-01T06:00:21.340Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/contact-submissions": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/contact-submissions",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [
+          {
+            "id": 3,
+            "referenceCode": "CON-M5N6P7",
+            "status": "ARCHIVED",
+            "firstName": "Carlos",
+            "lastName": "Santana",
+            "email": "carlos@example.com",
+            "phone": null,
+            "subject": "Información sobre tours",
+            "createdAt": "2026-06-29T13:02:13.748Z"
+          },
+          {
+            "id": 2,
+            "referenceCode": "CON-X9Y8Z7",
+            "status": "ARCHIVED",
+            "firstName": "Bob",
+            "lastName": "Jones",
+            "email": "bob@example.com",
+            "phone": null,
+            "subject": "Payment Question",
+            "createdAt": "2026-06-29T13:02:13.743Z"
+          },
+          {
+            "id": 1,
+            "referenceCode": "CON-A1B2C3",
+            "status": "ARCHIVED",
+            "firstName": "Alice",
+            "lastName": "Smith",
+            "email": "alice@example.com",
+            "phone": null,
+            "subject": "Group Tour Inquiry",
+            "createdAt": "2026-06-29T13:02:13.555Z"
+          }
+        ],
+        "total": 3,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 1,
+        "timestamp": "2026-07-01T06:00:21.358Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.360Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/contact-submissions/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/contact-submissions/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Contact submission with reference 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.373Z",
+        "path": "/api/admin/contact-submissions/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.374Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/contact-submissions/1/status": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/contact-submissions/1/status",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "17",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "status": "READ"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Contact submission with reference 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.384Z",
+        "path": "/api/admin/contact-submissions/1/status"
+      },
+      "timestamp": "2026-07-01T06:00:21.385Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/notification-logs": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/notification-logs",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [
+          {
+            "id": "aab8cb2c-be1d-43f0-bcb6-6a96fde737ce",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-9K1V6P",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:19:29.737Z",
+            "updatedAt": "2026-06-30T18:19:30.137Z"
+          },
+          {
+            "id": "55c63da5-fcb2-4840-85db-aa344495eb3f",
+            "channel": "EMAIL",
+            "recipient": "client@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-9K1V6P",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:19:29.737Z",
+            "updatedAt": "2026-06-30T18:19:30.057Z"
+          },
+          {
+            "id": "3518612d-5384-4a65-b54b-5ca43099dc7c",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-7CXQTL",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:18:15.599Z",
+            "updatedAt": "2026-06-30T18:18:16.299Z"
+          },
+          {
+            "id": "354aec82-ac18-47a3-8c9e-c0da7d9715cb",
+            "channel": "EMAIL",
+            "recipient": "client@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-7CXQTL",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:18:15.599Z",
+            "updatedAt": "2026-06-30T18:18:15.976Z"
+          },
+          {
+            "id": "307099da-aaef-4672-bcf9-11d248de7e0e",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-GHZZKP",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:15:34.309Z",
+            "updatedAt": "2026-06-30T18:15:34.800Z"
+          },
+          {
+            "id": "c7720325-224d-41e7-885e-3f98e9e56126",
+            "channel": "EMAIL",
+            "recipient": "client@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-GHZZKP",
+            "failureReason": null,
+            "createdAt": "2026-06-30T18:15:34.309Z",
+            "updatedAt": "2026-06-30T18:15:34.801Z"
+          },
+          {
+            "id": "6dfa4a90-9bb2-41dc-8adb-882fb98b860f",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-GZQBFI",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:57:38.123Z",
+            "updatedAt": "2026-06-30T17:57:38.557Z"
+          },
+          {
+            "id": "91f22658-95fc-48e5-9274-522b20f768bf",
+            "channel": "EMAIL",
+            "recipient": "lifecycle_1782842253338@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-GZQBFI",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:57:38.123Z",
+            "updatedAt": "2026-06-30T17:57:38.478Z"
+          },
+          {
+            "id": "ab902e2a-9572-4f06-a80d-2b25497956cb",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-B6YFRO",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:54:29.491Z",
+            "updatedAt": "2026-06-30T17:54:29.915Z"
+          },
+          {
+            "id": "5c62c506-b7b1-40d9-938e-d4d49c7a5d47",
+            "channel": "EMAIL",
+            "recipient": "lifecycle_1782842067397@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-B6YFRO",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:54:29.491Z",
+            "updatedAt": "2026-06-30T17:54:29.819Z"
+          },
+          {
+            "id": "6aaad616-ed10-41f8-b394-fdf931e4ce44",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-JH8WYR",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:53:10.534Z",
+            "updatedAt": "2026-06-30T17:53:10.951Z"
+          },
+          {
+            "id": "59fd2a00-a1e0-4a4d-a5f3-3f8c00da51ad",
+            "channel": "EMAIL",
+            "recipient": "guest@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-JH8WYR",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:53:10.534Z",
+            "updatedAt": "2026-06-30T17:53:10.859Z"
+          },
+          {
+            "id": "12b5ae61-f99b-4ad7-9b75-4ca2c47da482",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-FZJG2J",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:52:00.168Z",
+            "updatedAt": "2026-06-30T17:52:00.581Z"
+          },
+          {
+            "id": "e01247c7-feac-4a4a-bd82-f4f52f06438e",
+            "channel": "EMAIL",
+            "recipient": "guest@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-FZJG2J",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:52:00.168Z",
+            "updatedAt": "2026-06-30T17:52:00.488Z"
+          },
+          {
+            "id": "1bdec5bf-11a5-4532-98bd-ded7f3f412bb",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-R25DR4",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:51:38.711Z",
+            "updatedAt": "2026-06-30T17:51:39.171Z"
+          },
+          {
+            "id": "f64bf229-3f57-4076-a9f8-b244b3235fc0",
+            "channel": "EMAIL",
+            "recipient": "lifecycle_1782841895940@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-R25DR4",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:51:38.711Z",
+            "updatedAt": "2026-06-30T17:51:39.028Z"
+          },
+          {
+            "id": "448ee443-cb74-43ee-8e74-26e90b6c26a3",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-ZSWD0S",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:50:04.085Z",
+            "updatedAt": "2026-06-30T17:50:04.895Z"
+          },
+          {
+            "id": "3c672e92-55fd-4836-8595-d6b2d6ee5624",
+            "channel": "EMAIL",
+            "recipient": "guest@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-ZSWD0S",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:50:04.085Z",
+            "updatedAt": "2026-06-30T17:50:04.569Z"
+          },
+          {
+            "id": "261fc662-de6a-44c7-8974-b52f7f287f4e",
+            "channel": "EMAIL",
+            "recipient": "lifecycle_1782841645654@test.com",
+            "subject": "CUSTOMER_ACKNOWLEDGMENT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-MSYBL0",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:47:30.495Z",
+            "updatedAt": "2026-06-30T17:47:30.830Z"
+          },
+          {
+            "id": "09abdfcc-6477-408a-a98e-db43ca50bd24",
+            "channel": "EMAIL",
+            "recipient": "alerts@dunastravel.com",
+            "subject": "INTERNAL_SALES_ALERT",
+            "status": "SENT",
+            "attempts": 1,
+            "originEvent": "BOOKING",
+            "originReferenceCode": "BKG-MSYBL0",
+            "failureReason": null,
+            "createdAt": "2026-06-30T17:47:30.495Z",
+            "updatedAt": "2026-06-30T17:47:30.829Z"
+          }
+        ],
+        "total": 30,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 2,
+        "timestamp": "2026-07-01T06:00:21.445Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.449Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/dashboard": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/dashboard",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "totalBookings": 5,
+          "bookingsThisMonth": 0,
+          "totalInquiries": 0,
+          "openInquiries": 0,
+          "totalContactSubmissions": 3,
+          "unreadContactSubmissions": 0,
+          "totalNotificationsSent": 30,
+          "totalNotificationsFailed": 0,
+          "recentFailedNotifications": []
+        },
+        "timestamp": "2026-07-01T06:00:21.618Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.620Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/tours": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/tours",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [
+          {
+            "id": "889b90ab-336d-4ff5-9a8c-2ca043d5f5eb",
+            "slug": "reg-29-sharm-el-sheikh",
+            "titleJsonb": {
+              "ar": "شرم الشيخ – 04 أيام / 03 ليال",
+              "en": "Sharm El Sheikh – 04 Days / 03 Nights",
+              "es": "Sharm El Sheikh – 04 Días / 03 Noches",
+              "it": "Sharm El Sheikh – 04 Giorni / 03 Notti",
+              "pt": "Sharm El Sheikh – 04 Dias / 03 Noites"
+            },
+            "category": "Beach & Relaxation",
+            "basePriceUsd": "600",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.887Z"
+          },
+          {
+            "id": "aef30fc6-3181-4f4c-8f83-e08cb2e807a0",
+            "slug": "reg-14-secret-of-the-temple",
+            "titleJsonb": {
+              "ar": "سر المعبد",
+              "en": "Secret of the Temple",
+              "es": "Secreto del Templo",
+              "it": "Segreto del Tempio",
+              "pt": "Segredo do Templo"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.857Z"
+          },
+          {
+            "id": "5a41e0e6-a47b-4fb4-be26-1632b9291373",
+            "slug": "reg-13-extension-7-churches",
+            "titleJsonb": {
+              "ar": "إضافة الكنائس السبع - 3 أيام / ليلتين",
+              "en": "Extension 7 Churches - 3 Days / 2 Nights",
+              "es": "Extensión 7 Iglesias - 3 Días / 2 Noches",
+              "it": "Estensione 7 Chiese - 3 Giorni / 2 Notti",
+              "pt": "Extensão 7 Igrejas - 3 Dias / 2 Noites"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.848Z"
+          },
+          {
+            "id": "d098feba-704b-4f8b-8161-85c7face58f7",
+            "slug": "reg-05-b-admirable-turkey-winter",
+            "titleJsonb": {
+              "ar": "تركيا الرائعة شتاءً - 10 أيام / 9 ليالٍ",
+              "en": "Admirable Turkey Winter - 10 Days / 9 Nights",
+              "es": "Admirable Turquía de Invierno - 10 Días / 9 Noches",
+              "it": "Ammirevole Turchia d'Inverno - 10 Giorni / 9 Notti",
+              "pt": "Admirável Turquia de Inverno - 10 Dias / 9 Noites"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.822Z"
+          },
+          {
+            "id": "167da23f-b337-467d-aa15-e7963604a2e0",
+            "slug": "reg-12-beautiful-turkey",
+            "titleJsonb": {
+              "ar": "تركيا الجميلة - 9 أيام / 8 ليالٍ",
+              "en": "Beautiful Turkey - 9 Days / 8 Nights",
+              "es": "Bella Turquía - 9 Días / 8 Noches",
+              "it": "Bella Turchia - 9 Giorni / 8 Notti",
+              "pt": "Bela Turquia - 9 Dias / 8 Noites"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.799Z"
+          },
+          {
+            "id": "1cf40e9c-9f08-4f9c-9df7-7bf4ebb07508",
+            "slug": "reg-11-antalya",
+            "titleJsonb": {
+              "ar": "أنطاليا - 10 أيام / 9 ليالٍ",
+              "en": "Antalya - 10 Days / 9 Nights",
+              "es": "Antalya - 10 Días / 9 Noches",
+              "it": "Antalya - 10 Giorni / 9 Notti",
+              "pt": "Antalya - 10 Dias / 9 Noites"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.773Z"
+          },
+          {
+            "id": "70f8739d-21b0-4de2-b3a4-7159dba6bbe4",
+            "slug": "reg-10-turkish-riviera-with-fethiye",
+            "titleJsonb": {
+              "ar": "الريفيرا التركية مع فتحية",
+              "en": "Turkish Riviera with Fethiye",
+              "es": "Riviera Turca con Fethiye",
+              "it": "Riviera Turca con Fethiye",
+              "pt": "Riviera Turca com Fethiye"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.741Z"
+          },
+          {
+            "id": "68d3a332-2cd8-4e9b-a465-9215bca34819",
+            "slug": "reg-09-turkey-without-rush",
+            "titleJsonb": {
+              "ar": "تركيا بلا عجلة",
+              "en": "Turkey Without Rush",
+              "es": "Turquía Sin Prisas",
+              "it": "Turchia Senza Fretta",
+              "pt": "Turquia Sem Pressa"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.718Z"
+          },
+          {
+            "id": "7257be84-c151-4ebf-b592-62b37cfed61f",
+            "slug": "reg-08-stop-over",
+            "titleJsonb": {
+              "ar": "ستوب أوفر — توقف في إسطنبول",
+              "en": "Stop Over — Stop in Istanbul",
+              "es": "Stop Over — Parada en Estambul",
+              "it": "Stop Over — Sosta a Istanbul",
+              "pt": "Stop Over — Parada em Istambul"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.705Z"
+          },
+          {
+            "id": "7aec1907-3241-4036-84a3-a7647dafed12",
+            "slug": "reg-07-turkish-riviera",
+            "titleJsonb": {
+              "ar": "الريفيرا التركية",
+              "en": "Turkish Riviera",
+              "es": "Riviera Turca",
+              "it": "Riviera Turca",
+              "pt": "Riviera Turca"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.674Z"
+          },
+          {
+            "id": "5419bc80-a465-4814-a832-0110f9257c7a",
+            "slug": "reg-06-heart-of-turkey",
+            "titleJsonb": {
+              "ar": "قلب تركيا - إسطنبول مع كابادوكيا",
+              "en": "Heart of Turkey - Istanbul with Cappadocia",
+              "es": "Corazón de Turquía - Estambul con Capadocia",
+              "it": "Cuore della Turchia - Istanbul con Cappadocia",
+              "pt": "Coração da Turquia - Istambul com Capadócia"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.655Z"
+          },
+          {
+            "id": "7e739ad5-8a74-475b-b80f-0e48d7941e5b",
+            "slug": "reg-05-admirable-turkey",
+            "titleJsonb": {
+              "ar": "تركيا الرائعة",
+              "en": "Admirable Turkey",
+              "es": "Turquía Admirable",
+              "it": "Turchia Ammirevole",
+              "pt": "Turquia Admirável"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.630Z"
+          },
+          {
+            "id": "9364a4cc-a23b-44a4-b68e-9f3118bb7001",
+            "slug": "honeymoon-in-dubai-with-dinner-at-burj-al-arab",
+            "titleJsonb": {
+              "ar": "شهر العسل في دبي مع عشاء في برج العرب",
+              "en": "Honeymoon in Dubai with Dinner at Burj Al Arab",
+              "es": "Luna de Miel en Dubái con Cena en Burj Al Arab",
+              "it": "Luna di Miele a Dubai con Cena al Burj Al Arab",
+              "pt": "Lua de Mel em Dubai com Jantar no Burj Al Arab"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.615Z"
+          },
+          {
+            "id": "9741df1a-3fdd-4ff6-ac3c-aa710fd87de7",
+            "slug": "honeymoon-in-dubai",
+            "titleJsonb": {
+              "ar": "شهر العسل في دبي",
+              "en": "Honeymoon in Dubai",
+              "es": "Luna de Miel en Dubái",
+              "it": "Luna di Miele a Dubai",
+              "pt": "Lua de Mel em Dubai"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.601Z"
+          },
+          {
+            "id": "b59364f7-9583-4885-90d4-ab860f6fcfad",
+            "slug": "the-complete-emirates",
+            "titleJsonb": {
+              "ar": "الإمارات بالكامل (EMIRATOS AL COMPLETO)",
+              "en": "The Complete Emirates",
+              "es": "Emiratos al Completo",
+              "it": "Emirati Completi",
+              "pt": "Emirados Completo"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.580Z"
+          },
+          {
+            "id": "e5c5195f-632a-4dd8-bd48-0ca662d29a28",
+            "slug": "one-week-in-dubai",
+            "titleJsonb": {
+              "ar": "أسبوع في دبي (UNA SEMANA EN DUBAI)",
+              "en": "One Week in Dubai",
+              "es": "Una Semana en Dubái",
+              "it": "Una Settimana a Dubai",
+              "pt": "Uma Semana em Dubai"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.561Z"
+          },
+          {
+            "id": "e02e6f26-62ed-45f6-9f7c-5ccf36771755",
+            "slug": "dubai-with-overnight-in-abu-dhabi",
+            "titleJsonb": {
+              "ar": "دبي مع إقامة في أبوظبي (DUBAI CON ESTANCIA EN ABU DHABI)",
+              "en": "Dubai with Overnight in Abu Dhabi",
+              "es": "Dubái con Estancia en Abu Dhabi",
+              "it": "Dubai con Soggiorno ad Abu Dhabi",
+              "pt": "Dubai com Estadia em Abu Dhabi"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.545Z"
+          },
+          {
+            "id": "f7e46252-43b9-4828-a792-0e2363a4ac5a",
+            "slug": "dubai-and-abu-dhabi",
+            "titleJsonb": {
+              "ar": "دبي وأبوظبي (DUBAI Y ABU DHABI)",
+              "en": "Dubai and Abu Dhabi",
+              "es": "Dubái y Abu Dhabi",
+              "it": "Dubai e Abu Dhabi",
+              "pt": "Dubai e Abu Dhabi"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.527Z"
+          },
+          {
+            "id": "922bdaa2-ba09-4a9f-b0e5-f94788c67d64",
+            "slug": "dubai-city-of-the-future",
+            "titleJsonb": {
+              "ar": "دبي، مدينة المستقبل (DUBAI, CIUDAD DEL FUTURO)",
+              "en": "Dubai, City of the Future",
+              "es": "Dubái, Ciudad del Futuro",
+              "it": "Dubai, Città del Futuro",
+              "pt": "Dubai, Cidade do Futuro"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.514Z"
+          },
+          {
+            "id": "6effab79-4342-4d21-80de-95bb299c923f",
+            "slug": "dubai-and-its-history",
+            "titleJsonb": {
+              "ar": "دبي وتاريخها (DUBAI Y SU HISTORIA)",
+              "en": "Dubai and Its History",
+              "es": "Dubái y Su Historia",
+              "it": "Dubai e la Sua Storia",
+              "pt": "Dubai e a Sua História"
+            },
+            "category": "general",
+            "basePriceUsd": "999",
+            "currency": "USD",
+            "isActive": true,
+            "status": "PUBLISHED",
+            "isFeatured": false,
+            "country": null,
+            "city": null,
+            "capacity": 30,
+            "remainingSeats": 30,
+            "bookingCount": 0,
+            "reviewCount": 0,
+            "heroImage": null,
+            "createdAt": "2026-06-29T11:07:39.502Z"
+          }
+        ],
+        "total": 32,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 2,
+        "timestamp": "2026-07-01T06:00:21.749Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.753Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/tours": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/tours",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "1198",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "slug": "test-string",
+        "titleJsonb": "unknown",
+        "category": "test-string",
+        "basePriceUsd": 1,
+        "durationJsonb": "unknown",
+        "overviewJsonb": "unknown",
+        "minPaxJsonb": "unknown",
+        "isActive": true,
+        "country": "test-string",
+        "city": "test-string",
+        "region": "test-string",
+        "meetingPoint": "test-string",
+        "departureTime": "test-string",
+        "returnTime": "test-string",
+        "isFeatured": true,
+        "status": "test-string",
+        "seoTitle": "test-string",
+        "seoDescription": "test-string",
+        "includedServicesJsonb": "unknown",
+        "excludedServicesJsonb": "unknown",
+        "hotelInfoJsonb": "unknown",
+        "transportationJsonb": "unknown",
+        "pickupLocationsJsonb": "unknown",
+        "languages": [
+          "test-string"
+        ],
+        "difficultyLevel": "test-string",
+        "ageRestrictions": "test-string",
+        "cancellationPolicyJsonb": "unknown",
+        "termsJsonb": "unknown",
+        "tags": [
+          "test-string"
+        ],
+        "capacity": 1,
+        "remainingSeats": 1,
+        "seasonPricingJsonb": "unknown",
+        "currency": "test-string",
+        "itineraries": [
+          {
+            "dayLabel": "test-string",
+            "descriptionJsonb": "unknown",
+            "mealsJsonb": "unknown",
+            "activitiesJsonb": "unknown",
+            "hotelsJsonb": "unknown",
+            "transportationJsonb": "unknown",
+            "notesJsonb": "unknown",
+            "sortOrder": 1
+          }
+        ],
+        "images": [
+          {
+            "imageUrl": "test-string",
+            "isHero": true,
+            "isVideo": true,
+            "videoUrl": "test-string",
+            "altText": "test-string",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "titleJsonb must be an object",
+          "durationJsonb must be an object",
+          "overviewJsonb must be an object",
+          "minPaxJsonb must be an object",
+          "includedServicesJsonb must be an object",
+          "excludedServicesJsonb must be an object",
+          "hotelInfoJsonb must be an object",
+          "transportationJsonb must be an object",
+          "pickupLocationsJsonb must be an object",
+          "cancellationPolicyJsonb must be an object",
+          "termsJsonb must be an object",
+          "seasonPricingJsonb must be an object",
+          "itineraries.0.descriptionJsonb must be an object",
+          "itineraries.0.mealsJsonb must be an object",
+          "itineraries.0.activitiesJsonb must be an object",
+          "itineraries.0.hotelsJsonb must be an object",
+          "itineraries.0.transportationJsonb must be an object",
+          "itineraries.0.notesJsonb must be an object"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.772Z",
+        "path": "/api/admin/tours"
+      },
+      "timestamp": "2026-07-01T06:00:21.773Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/tours/stats": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/tours/stats",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "totalTours": 32,
+          "publishedTours": 32,
+          "draftTours": 0,
+          "featuredTours": 0,
+          "totalCapacity": 960,
+          "totalRemainingSeats": 960,
+          "seatsSold": 0,
+          "occupancyRate": "0.0"
+        },
+        "timestamp": "2026-07-01T06:00:21.797Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.798Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/tours/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/tours/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Tour with slug 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.822Z",
+        "path": "/api/admin/tours/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.824Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/tours/1": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/tours/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "1198",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "slug": "test-string",
+        "titleJsonb": "unknown",
+        "category": "test-string",
+        "basePriceUsd": 1,
+        "durationJsonb": "unknown",
+        "overviewJsonb": "unknown",
+        "minPaxJsonb": "unknown",
+        "isActive": true,
+        "country": "test-string",
+        "city": "test-string",
+        "region": "test-string",
+        "meetingPoint": "test-string",
+        "departureTime": "test-string",
+        "returnTime": "test-string",
+        "isFeatured": true,
+        "status": "test-string",
+        "seoTitle": "test-string",
+        "seoDescription": "test-string",
+        "includedServicesJsonb": "unknown",
+        "excludedServicesJsonb": "unknown",
+        "hotelInfoJsonb": "unknown",
+        "transportationJsonb": "unknown",
+        "pickupLocationsJsonb": "unknown",
+        "languages": [
+          "test-string"
+        ],
+        "difficultyLevel": "test-string",
+        "ageRestrictions": "test-string",
+        "cancellationPolicyJsonb": "unknown",
+        "termsJsonb": "unknown",
+        "tags": [
+          "test-string"
+        ],
+        "capacity": 1,
+        "remainingSeats": 1,
+        "seasonPricingJsonb": "unknown",
+        "currency": "test-string",
+        "itineraries": [
+          {
+            "dayLabel": "test-string",
+            "descriptionJsonb": "unknown",
+            "mealsJsonb": "unknown",
+            "activitiesJsonb": "unknown",
+            "hotelsJsonb": "unknown",
+            "transportationJsonb": "unknown",
+            "notesJsonb": "unknown",
+            "sortOrder": 1
+          }
+        ],
+        "images": [
+          {
+            "imageUrl": "test-string",
+            "isHero": true,
+            "isVideo": true,
+            "videoUrl": "test-string",
+            "altText": "test-string",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "titleJsonb must be an object",
+          "durationJsonb must be an object",
+          "overviewJsonb must be an object",
+          "minPaxJsonb must be an object",
+          "includedServicesJsonb must be an object",
+          "excludedServicesJsonb must be an object",
+          "hotelInfoJsonb must be an object",
+          "transportationJsonb must be an object",
+          "pickupLocationsJsonb must be an object",
+          "cancellationPolicyJsonb must be an object",
+          "termsJsonb must be an object",
+          "seasonPricingJsonb must be an object",
+          "itineraries.0.descriptionJsonb must be an object",
+          "itineraries.0.mealsJsonb must be an object",
+          "itineraries.0.activitiesJsonb must be an object",
+          "itineraries.0.hotelsJsonb must be an object",
+          "itineraries.0.transportationJsonb must be an object",
+          "itineraries.0.notesJsonb must be an object"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:21.836Z",
+        "path": "/api/admin/tours/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.838Z"
+    }
+  ],
+  "DELETE http://localhost:5000/api/admin/tours/1": [
+    {
+      "method": "DELETE",
+      "url": "http://localhost:5000/api/admin/tours/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Tour with slug 1 not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:21.851Z",
+        "path": "/api/admin/tours/1"
+      },
+      "timestamp": "2026-07-01T06:00:21.852Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/tours/bulk/update": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/tours/bulk/update",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "113",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "slugs": [
+          "test-string"
+        ],
+        "status": "test-string",
+        "category": "test-string",
+        "country": "test-string",
+        "isActive": true
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "count": 0
+        },
+        "timestamp": "2026-07-01T06:00:21.891Z"
+      },
+      "timestamp": "2026-07-01T06:00:21.892Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/register": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/register",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJlbWFpbCI6ImFkbWluQGR1bmFzdHJhdmVsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4Mjg4NTYyMCwiZXhwIjoxNzgyODg2NTIwfQ.bJQnJOVgWqwMJEABKqyLkFSe-7DRljA8UCPFXYkkOZY; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOWU4OWJlMi0xZTZhLTQxZWMtOGIwMy0xMWQzOTA0N2U2MjYiLCJpYXQiOjE3ODI4ODU2MjAsImV4cCI6MTc4MzQ5MDQyMH0.rgt-DLoF-kHpsXkR9N5q8v3oDLOxyTLwTv9XMY87OYo",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "103",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "+1 234 567 8900",
+        "password": "StrongPass123"
+      },
+      "responseStatus": 201,
+      "responseBody": {
+        "success": true,
+        "statusCode": 201,
+        "data": {
+          "id": "037771dc-88f4-45eb-8db2-30a8727baff5",
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "+1 234 567 8900",
+          "role": "USER",
+          "isVerified": false,
+          "customerNumber": null,
+          "isVip": false,
+          "tags": [],
+          "segments": [],
+          "status": "ACTIVE",
+          "passportNumber": null,
+          "nationality": null,
+          "gender": null,
+          "dateOfBirth": null,
+          "emergencyContact": null,
+          "address": null,
+          "preferredLanguage": "en",
+          "preferredCurrency": "USD",
+          "preferredDestination": null,
+          "preferredTravelType": null,
+          "familyMembers": null,
+          "travelCompanions": null,
+          "marketingConsent": true,
+          "phoneVerified": false,
+          "customerSource": null,
+          "referralSource": null,
+          "companyId": null,
+          "futureWalletId": null,
+          "futureCommissionPlan": null,
+          "createdAt": "2026-07-01T06:00:22.172Z",
+          "updatedAt": "2026-07-01T06:00:22.172Z"
+        },
+        "timestamp": "2026-07-01T06:00:22.249Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.250Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/login": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/login",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "59",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "email": "john.doe@example.com",
+        "password": "StrongPass123"
+      },
+      "responseStatus": 401,
+      "responseBody": {
+        "success": false,
+        "statusCode": 401,
+        "message": "Please verify your email before logging in",
+        "error": "Unauthorized",
+        "timestamp": "2026-07-01T06:00:22.258Z",
+        "path": "/api/auth/login"
+      },
+      "timestamp": "2026-07-01T06:00:22.259Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/refresh": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/refresh",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "message": "Token refreshed successfully"
+        },
+        "timestamp": "2026-07-01T06:00:22.407Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.408Z"
+    }
+  ],
+  "GET http://localhost:5000/api/auth/me": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/auth/me",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "id": "037771dc-88f4-45eb-8db2-30a8727baff5",
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "+1 234 567 8900",
+          "role": "USER",
+          "isVerified": false,
+          "customerNumber": null,
+          "isVip": false,
+          "tags": [],
+          "segments": [],
+          "status": "ACTIVE",
+          "passportNumber": null,
+          "nationality": null,
+          "gender": null,
+          "dateOfBirth": null,
+          "emergencyContact": null,
+          "address": null,
+          "preferredLanguage": "en",
+          "preferredCurrency": "USD",
+          "preferredDestination": null,
+          "preferredTravelType": null,
+          "familyMembers": null,
+          "travelCompanions": null,
+          "marketingConsent": true,
+          "phoneVerified": false,
+          "customerSource": null,
+          "referralSource": null,
+          "companyId": null,
+          "futureWalletId": null,
+          "futureCommissionPlan": null,
+          "createdAt": "2026-07-01T06:00:22.172Z",
+          "updatedAt": "2026-07-01T06:00:22.405Z"
+        },
+        "timestamp": "2026-07-01T06:00:22.420Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.421Z"
+    }
+  ],
+  "GET http://localhost:5000/api/auth/csrf": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/auth/csrf",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=a213d5025adda4577e68d716011b67cfa158a25a20dc62573287abb84e5a7c9f; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "csrfToken": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de"
+        },
+        "timestamp": "2026-07-01T06:00:22.426Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.427Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/forgot-password": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/forgot-password",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "28",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "email": "user@example.com"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "message": "If that email exists, a password reset link has been sent."
+        },
+        "timestamp": "2026-07-01T06:00:22.435Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.436Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/reset-password": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/reset-password",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "61",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "token": "abc123token",
+        "newPassword": "NewStrongPassword123!"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": "Invalid or expired password reset token",
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.445Z",
+        "path": "/api/auth/reset-password"
+      },
+      "timestamp": "2026-07-01T06:00:22.446Z"
+    }
+  ],
+  "POST http://localhost:5000/api/auth/verify-email": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/auth/verify-email",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "26",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "token": "verify123token"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": "Invalid verification token",
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.455Z",
+        "path": "/api/auth/verify-email"
+      },
+      "timestamp": "2026-07-01T06:00:22.455Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/users/crm/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/users/crm/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.465Z",
+        "path": "/api/admin/users/crm/metrics"
+      },
+      "timestamp": "2026-07-01T06:00:22.465Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/users/crm/list": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/users/crm/list",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.474Z",
+        "path": "/api/admin/users/crm/list"
+      },
+      "timestamp": "2026-07-01T06:00:22.474Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/users/crm/bulk/update": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/users/crm/bulk/update",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "117",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "userIds": [
+          "uuid-1",
+          "uuid-2"
+        ],
+        "tags": [
+          "VIP",
+          "Summer2026"
+        ],
+        "segments": [
+          "Corporate"
+        ],
+        "isVip": true,
+        "status": "INACTIVE"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.485Z",
+        "path": "/api/admin/users/crm/bulk/update"
+      },
+      "timestamp": "2026-07-01T06:00:22.486Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/users/crm/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/users/crm/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.494Z",
+        "path": "/api/admin/users/crm/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.495Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/users/crm/1": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/users/crm/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "841",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "customerNumber": "CUST-2026-0001",
+        "isVip": true,
+        "tags": [
+          "HighValue",
+          "Repeat"
+        ],
+        "segments": [
+          "VIP",
+          "Corporate"
+        ],
+        "status": "ACTIVE",
+        "passportNumber": "P12345678",
+        "nationality": "Egyptian",
+        "gender": "Male",
+        "dateOfBirth": "1985-05-15",
+        "emergencyContact": {
+          "name": "Sarah Connor",
+          "relationship": "Spouse",
+          "phone": "+123456789"
+        },
+        "address": {
+          "street": "123 Nile Ave",
+          "city": "Cairo",
+          "country": "Egypt"
+        },
+        "preferredLanguage": "en",
+        "preferredCurrency": "USD",
+        "preferredDestination": "Sharm El Sheikh",
+        "preferredTravelType": "Luxury Private",
+        "familyMembers": [
+          {
+            "name": "John Jr",
+            "relationship": "Son",
+            "age": 10
+          }
+        ],
+        "travelCompanions": [
+          {
+            "name": "Alice",
+            "relationship": "Friend"
+          }
+        ],
+        "marketingConsent": true,
+        "phoneVerified": true,
+        "customerSource": "WEB",
+        "referralSource": "VIP Referral",
+        "futureCompanyId": "test-string",
+        "futureWalletId": "test-string",
+        "futureCommissionPlan": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.504Z",
+        "path": "/api/admin/users/crm/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.505Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/users/crm/1/notes": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/users/crm/1/notes",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "88",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "content": "Customer prefers suites with Nile view.",
+        "noteType": "SALES",
+        "isPinned": true
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.514Z",
+        "path": "/api/admin/users/crm/1/notes"
+      },
+      "timestamp": "2026-07-01T06:00:22.515Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/users/crm/1/documents": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/users/crm/1/documents",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "86",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "mediaAssetId": "media-uuid-1",
+        "documentType": "PASSPORT",
+        "title": "Passport Scan 2026"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.522Z",
+        "path": "/api/admin/users/crm/1/documents"
+      },
+      "timestamp": "2026-07-01T06:00:22.522Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/users": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/users",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.529Z",
+        "path": "/api/admin/users"
+      },
+      "timestamp": "2026-07-01T06:00:22.530Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/users": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/users",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "112",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "name": "test-string",
+        "email": "test-string",
+        "phone": "test-string",
+        "password": "test-string",
+        "role": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.537Z",
+        "path": "/api/admin/users"
+      },
+      "timestamp": "2026-07-01T06:00:22.537Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/users/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/users/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.545Z",
+        "path": "/api/admin/users/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.546Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/users/1": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/users/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "112",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "name": "test-string",
+        "email": "test-string",
+        "phone": "test-string",
+        "password": "test-string",
+        "role": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.554Z",
+        "path": "/api/admin/users/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.554Z"
+    }
+  ],
+  "DELETE http://localhost:5000/api/admin/users/1": [
+    {
+      "method": "DELETE",
+      "url": "http://localhost:5000/api/admin/users/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.562Z",
+        "path": "/api/admin/users/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.563Z"
+    }
+  ],
+  "GET http://localhost:5000/api/tours": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/tours",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": {
+          "items": [
+            {
+              "id": "889b90ab-336d-4ff5-9a8c-2ca043d5f5eb",
+              "slug": "reg-29-sharm-el-sheikh",
+              "title": "Sharm El Sheikh – 04 Days / 03 Nights",
+              "category": "Beach & Relaxation",
+              "basePriceUsd": "600",
+              "duration": "04 Days / 03 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "aef30fc6-3181-4f4c-8f83-e08cb2e807a0",
+              "slug": "reg-14-secret-of-the-temple",
+              "title": "Secret of the Temple",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "11 days / 10 nights",
+              "heroImage": null
+            },
+            {
+              "id": "5a41e0e6-a47b-4fb4-be26-1632b9291373",
+              "slug": "reg-13-extension-7-churches",
+              "title": "Extension 7 Churches - 3 Days / 2 Nights",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "3 Days / 2 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "d098feba-704b-4f8b-8161-85c7face58f7",
+              "slug": "reg-05-b-admirable-turkey-winter",
+              "title": "Admirable Turkey Winter - 10 Days / 9 Nights",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "10 Days / 9 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "167da23f-b337-467d-aa15-e7963604a2e0",
+              "slug": "reg-12-beautiful-turkey",
+              "title": "Beautiful Turkey - 9 Days / 8 Nights",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "9 Days / 8 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "1cf40e9c-9f08-4f9c-9df7-7bf4ebb07508",
+              "slug": "reg-11-antalya",
+              "title": "Antalya - 10 Days / 9 Nights",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "10 Days / 9 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "70f8739d-21b0-4de2-b3a4-7159dba6bbe4",
+              "slug": "reg-10-turkish-riviera-with-fethiye",
+              "title": "Turkish Riviera with Fethiye",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "13 Days / 12 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "68d3a332-2cd8-4e9b-a465-9215bca34819",
+              "slug": "reg-09-turkey-without-rush",
+              "title": "Turkey Without Rush",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "9 Days / 8 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "7257be84-c151-4ebf-b592-62b37cfed61f",
+              "slug": "reg-08-stop-over",
+              "title": "Stop Over — Stop in Istanbul",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "3 Days / 2 Nights",
+              "heroImage": null
+            },
+            {
+              "id": "7aec1907-3241-4036-84a3-a7647dafed12",
+              "slug": "reg-07-turkish-riviera",
+              "title": "Turkish Riviera",
+              "category": "general",
+              "basePriceUsd": "999",
+              "duration": "12 Days / 11 Nights",
+              "heroImage": null
+            }
+          ],
+          "total": 32,
+          "page": 1,
+          "limit": 10,
+          "totalPages": 4,
+          "hasNextPage": true,
+          "hasPrevPage": false
+        },
+        "timestamp": "2026-07-01T06:00:22.582Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.585Z"
+    }
+  ],
+  "GET http://localhost:5000/api/tours/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/tours/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 404,
+      "responseBody": {
+        "success": false,
+        "statusCode": 404,
+        "message": "Tour not found",
+        "error": "Not Found",
+        "timestamp": "2026-07-01T06:00:22.633Z",
+        "path": "/api/tours/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.633Z"
+    }
+  ],
+  "POST http://localhost:5000/api/bookings": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "440",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "tourId": "test-string",
+        "arrivalDate": "2027-03-15",
+        "departureDate": "2027-03-22",
+        "adults": 2,
+        "children": 1,
+        "infants": 1,
+        "transportChoice": "flight",
+        "notes": "test-string",
+        "passengerNames": [
+          {
+            "id": "test-string",
+            "passengerType": "test-string",
+            "fullName": "test-string",
+            "passportNumber": "test-string",
+            "passportExpiry": "test-string",
+            "dateOfBirth": "test-string",
+            "nationality": "test-string"
+          }
+        ],
+        "billing": {
+          "phone": "test-string",
+          "invoiceType": "test-string"
+        }
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": [
+          "tourId must be a UUID",
+          "passengerNames.0.property id should not exist",
+          "passengerNames.0.property passportNumber should not exist",
+          "passengerNames.0.property passportExpiry should not exist",
+          "passengerNames.0.property dateOfBirth should not exist",
+          "passengerNames.0.property nationality should not exist",
+          "passengerNames.0.passengerType must be one of the following values: adult, child, infant",
+          "billing.fullName must be shorter than or equal to 255 characters",
+          "billing.fullName should not be empty",
+          "billing.fullName must be a string",
+          "billing.email should not be empty",
+          "billing.email must be an email",
+          "billing.Phone number must contain at least 6 digits and valid symbols",
+          "billing.invoiceType must be one of the following values: PERSONAL, COMPANY"
+        ],
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.646Z",
+        "path": "/api/bookings"
+      },
+      "timestamp": "2026-07-01T06:00:22.647Z"
+    }
+  ],
+  "GET http://localhost:5000/api/bookings/me": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/bookings/me",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 200,
+      "responseBody": {
+        "success": true,
+        "statusCode": 200,
+        "data": [],
+        "timestamp": "2026-07-01T06:00:22.669Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.670Z"
+    }
+  ],
+  "GET http://localhost:5000/api/bookings/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/bookings/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": "Invalid booking reference format",
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.686Z",
+        "path": "/api/bookings/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.687Z"
+    }
+  ],
+  "GET http://localhost:5000/api/invoices/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/invoices/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": "Invalid invoice number format",
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.693Z",
+        "path": "/api/invoices/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.693Z"
+    }
+  ],
+  "POST http://localhost:5000/api/inquiries": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/inquiries",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "314",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "fullName": "John Doe",
+        "email": "john@example.com",
+        "phone": "+1 (555) 123-4567",
+        "preferredLanguage": "en",
+        "destinations": [
+          "Cairo",
+          "Luxor"
+        ],
+        "startDate": "2027-10-01",
+        "endDate": "2027-10-15",
+        "adults": 2,
+        "children": 1,
+        "budgetAmount": 5000,
+        "budgetCurrency": "USD",
+        "notes": "We want a family friendly trip with lots of history."
+      },
+      "responseStatus": 201,
+      "responseBody": {
+        "success": true,
+        "statusCode": 201,
+        "data": {
+          "referenceCode": "INQ-GR7MLR",
+          "fullName": "John Doe",
+          "email": "john@example.com",
+          "phone": "+1 (555) 123-4567",
+          "preferredLanguage": "en",
+          "destinations": [
+            "Cairo",
+            "Luxor"
+          ],
+          "startDate": "2027-10-01",
+          "endDate": "2027-10-15",
+          "adults": 2,
+          "children": 1,
+          "budgetAmount": "5000",
+          "budgetCurrency": "USD",
+          "notes": "We want a family friendly trip with lots of history.",
+          "status": "NEWLY_RECEIVED",
+          "createdAt": "2026-07-01T06:00:22.709Z",
+          "updatedAt": "2026-07-01T06:00:22.709Z"
+        },
+        "timestamp": "2026-07-01T06:00:22.746Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.747Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/communications/logs/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/communications/logs/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.764Z",
+        "path": "/api/admin/communications/logs/metrics"
+      },
+      "timestamp": "2026-07-01T06:00:22.765Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/communications/logs": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/communications/logs",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.774Z",
+        "path": "/api/admin/communications/logs"
+      },
+      "timestamp": "2026-07-01T06:00:22.775Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/communications/logs/1/retry": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/communications/logs/1/retry",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.784Z",
+        "path": "/api/admin/communications/logs/1/retry"
+      },
+      "timestamp": "2026-07-01T06:00:22.785Z"
+    }
+  ],
+  "POST http://localhost:5000/api/contact": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/contact",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "223",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john.doe@example.com",
+        "phone": "+1234567890",
+        "subject": "Inquiry regarding custom tour",
+        "message": "I would like to know if you organize customized tours in Europe.",
+        "locale": "en"
+      },
+      "responseStatus": 201,
+      "responseBody": {
+        "success": true,
+        "statusCode": 201,
+        "data": {
+          "referenceCode": "CON-Q0242U",
+          "message": "Your message has been received. We will be in touch shortly."
+        },
+        "timestamp": "2026-07-01T06:00:22.831Z"
+      },
+      "timestamp": "2026-07-01T06:00:22.832Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/media/upload": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/media/upload",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.841Z",
+        "path": "/api/admin/media/upload"
+      },
+      "timestamp": "2026-07-01T06:00:22.842Z"
+    }
+  ],
+  "DELETE http://localhost:5000/api/admin/media/1": [
+    {
+      "method": "DELETE",
+      "url": "http://localhost:5000/api/admin/media/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.849Z",
+        "path": "/api/admin/media/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.850Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/media": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/media",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.857Z",
+        "path": "/api/admin/media"
+      },
+      "timestamp": "2026-07-01T06:00:22.857Z"
+    }
+  ],
+  "GET http://localhost:5000/api/media/tours/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/media/tours/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 400,
+      "responseBody": {
+        "success": false,
+        "statusCode": 400,
+        "message": "Validation failed (uuid is expected)",
+        "error": "Bad Request",
+        "timestamp": "2026-07-01T06:00:22.864Z",
+        "path": "/api/media/tours/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.864Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/companies/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/companies/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.873Z",
+        "path": "/api/admin/companies/metrics"
+      },
+      "timestamp": "2026-07-01T06:00:22.873Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/companies": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/companies",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "475",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "name": "Acme Luxury Travel",
+        "companyType": "AGENCY",
+        "email": "contact@acmetravel.com",
+        "phone": "+1-555-0198",
+        "website": "https://acmetravel.com",
+        "address": {
+          "street": "123 Elite Ave",
+          "city": "London"
+        },
+        "primaryContact": {
+          "name": "John Doe",
+          "role": "Director",
+          "email": "john@acmetravel.com"
+        },
+        "commissionRate": 10.5,
+        "paymentTerms": "NET_30",
+        "contractStartDate": "2026-01-01T00:00:00.000Z",
+        "contractEndDate": "2027-01-01T00:00:00.000Z",
+        "tags": [
+          "VIP",
+          "Europe"
+        ],
+        "segments": [
+          "Corporate Partner"
+        ]
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.882Z",
+        "path": "/api/admin/companies"
+      },
+      "timestamp": "2026-07-01T06:00:22.883Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/companies": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/companies",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.890Z",
+        "path": "/api/admin/companies"
+      },
+      "timestamp": "2026-07-01T06:00:22.891Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/companies/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/companies/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.899Z",
+        "path": "/api/admin/companies/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.900Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/companies/1": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/companies/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "515",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "name": "Acme Luxury Travel",
+        "companyType": "AGENCY",
+        "status": "ACTIVE",
+        "email": "contact@acmetravel.com",
+        "phone": "+1-555-0198",
+        "website": "https://acmetravel.com",
+        "address": {
+          "street": "123 Elite Ave",
+          "city": "London"
+        },
+        "primaryContact": {
+          "name": "John Doe",
+          "role": "Director",
+          "email": "john@acmetravel.com"
+        },
+        "commissionRate": 10.5,
+        "currentBalance": 5000,
+        "paymentTerms": "NET_30",
+        "contractStartDate": "2026-01-01T00:00:00.000Z",
+        "contractEndDate": "2027-01-01T00:00:00.000Z",
+        "tags": [
+          "VIP",
+          "Europe"
+        ],
+        "segments": [
+          "Corporate Partner"
+        ]
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.908Z",
+        "path": "/api/admin/companies/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.909Z"
+    }
+  ],
+  "DELETE http://localhost:5000/api/admin/companies/1": [
+    {
+      "method": "DELETE",
+      "url": "http://localhost:5000/api/admin/companies/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.917Z",
+        "path": "/api/admin/companies/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.918Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/companies/bulk/update": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/companies/bulk/update",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "105",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "companyIds": [
+          "uuid-1",
+          "uuid-2"
+        ],
+        "status": "test-string",
+        "tags": [
+          "VIP"
+        ],
+        "segments": [
+          "Corporate Partner"
+        ]
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.926Z",
+        "path": "/api/admin/companies/bulk/update"
+      },
+      "timestamp": "2026-07-01T06:00:22.927Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/finance/wallets/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/finance/wallets/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.935Z",
+        "path": "/api/admin/finance/wallets/metrics"
+      },
+      "timestamp": "2026-07-01T06:00:22.935Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/finance/wallets/1/1": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/finance/wallets/1/1",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.943Z",
+        "path": "/api/admin/finance/wallets/1/1"
+      },
+      "timestamp": "2026-07-01T06:00:22.944Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/finance/wallets/1/transactions": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/finance/wallets/1/transactions",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.950Z",
+        "path": "/api/admin/finance/wallets/1/transactions"
+      },
+      "timestamp": "2026-07-01T06:00:22.951Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/finance/wallets/transactions/manual": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/finance/wallets/transactions/manual",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "192",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "ownerType": "test-string",
+        "ownerId": "test-string",
+        "amount": 1,
+        "type": "test-string",
+        "referenceType": "test-string",
+        "referenceId": "test-string",
+        "description": "test-string",
+        "status": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.961Z",
+        "path": "/api/admin/finance/wallets/transactions/manual"
+      },
+      "timestamp": "2026-07-01T06:00:22.962Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/finance/commissions/metrics": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/finance/commissions/metrics",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.970Z",
+        "path": "/api/admin/finance/commissions/metrics"
+      },
+      "timestamp": "2026-07-01T06:00:22.971Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/finance/commissions": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/finance/commissions",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.981Z",
+        "path": "/api/admin/finance/commissions"
+      },
+      "timestamp": "2026-07-01T06:00:22.982Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/finance/commissions": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/finance/commissions",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "73",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "companyId": "test-string",
+        "bookingId": "test-string",
+        "rate": 1,
+        "amount": 1
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.988Z",
+        "path": "/api/admin/finance/commissions"
+      },
+      "timestamp": "2026-07-01T06:00:22.989Z"
+    }
+  ],
+  "PATCH http://localhost:5000/api/admin/finance/commissions/1/status": [
+    {
+      "method": "PATCH",
+      "url": "http://localhost:5000/api/admin/finance/commissions/1/status",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "24",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "status": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:22.996Z",
+        "path": "/api/admin/finance/commissions/1/status"
+      },
+      "timestamp": "2026-07-01T06:00:22.997Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/ai/itinerary/generate": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/ai/itinerary/generate",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Content-Length": "91",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "requestBody": {
+        "destinations": [
+          "test-string"
+        ],
+        "days": 1,
+        "budgetUsd": 1,
+        "pax": 1,
+        "preferences": "test-string"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:23.004Z",
+        "path": "/api/admin/ai/itinerary/generate"
+      },
+      "timestamp": "2026-07-01T06:00:23.005Z"
+    }
+  ],
+  "POST http://localhost:5000/api/admin/ai/customer/1/analyze": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5000/api/admin/ai/customer/1/analyze",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "x-csrf-token": "cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:23.013Z",
+        "path": "/api/admin/ai/customer/1/analyze"
+      },
+      "timestamp": "2026-07-01T06:00:23.014Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/currency/rates": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/currency/rates",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:23.022Z",
+        "path": "/api/admin/currency/rates"
+      },
+      "timestamp": "2026-07-01T06:00:23.022Z"
+    }
+  ],
+  "GET http://localhost:5000/api/admin/currency/convert": [
+    {
+      "method": "GET",
+      "url": "http://localhost:5000/api/admin/currency/convert",
+      "requestHeaders": {
+        "Accept": "application/json, text/plain, */*",
+        "Cookie": "csrf_token=cc1888df8055b274e8fad3c7c7e6b2dc2c2d8c888fbeff53dcc1d9438a2b15de; access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4Mjg4NjUyMn0.P8FbQWuKpU926Ldaxzr4NR7YmyfUZqNslBteWE0-qcE; refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzc3NzFkYy04OGY0LTQ1ZWItOGRiMi0zMGE4NzI3YmFmZjUiLCJpYXQiOjE3ODI4ODU2MjIsImV4cCI6MTc4MzQ5MDQyMn0.K28Dy11l2fxNQKYZ_raz5GuMVar_lpKkoUyrni4b5LA",
+        "User-Agent": "axios/1.18.1",
+        "Accept-Encoding": "gzip, compress, deflate, br"
+      },
+      "responseStatus": 403,
+      "responseBody": {
+        "success": false,
+        "statusCode": 403,
+        "message": "Forbidden resource",
+        "error": "Forbidden",
+        "timestamp": "2026-07-01T06:00:23.030Z",
+        "path": "/api/admin/currency/convert"
+      },
+      "timestamp": "2026-07-01T06:00:23.031Z"
+    }
+  ]
+}

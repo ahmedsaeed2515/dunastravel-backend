@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, ValidateNested, IsNotEmpty, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  IsNotEmpty,
+  IsObject,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateTourItineraryDto {
@@ -33,7 +42,9 @@ export class CreateTourItineraryDto {
   @IsObject()
   transportationJsonb?: Record<string, any>;
 
-  @ApiPropertyOptional({ description: 'Multilingual internal/operational notes' })
+  @ApiPropertyOptional({
+    description: 'Multilingual internal/operational notes',
+  })
   @IsOptional()
   @IsObject()
   notesJsonb?: Record<string, any>;
@@ -152,7 +163,10 @@ export class CreateTourDto {
   @IsBoolean()
   isFeatured?: boolean;
 
-  @ApiPropertyOptional({ description: 'Publishing status', default: 'PUBLISHED' })
+  @ApiPropertyOptional({
+    description: 'Publishing status',
+    default: 'PUBLISHED',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -182,7 +196,9 @@ export class CreateTourDto {
   @IsObject()
   hotelInfoJsonb?: Record<string, any>;
 
-  @ApiPropertyOptional({ description: 'Multilingual transportation information' })
+  @ApiPropertyOptional({
+    description: 'Multilingual transportation information',
+  })
   @IsOptional()
   @IsObject()
   transportationJsonb?: Record<string, any>;
@@ -224,19 +240,27 @@ export class CreateTourDto {
   @IsString({ each: true })
   tags?: string[];
 
-  @ApiPropertyOptional({ description: 'Maximum passenger capacity', default: 30 })
+  @ApiPropertyOptional({
+    description: 'Maximum passenger capacity',
+    default: 30,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   capacity?: number;
 
-  @ApiPropertyOptional({ description: 'Remaining available seats', default: 30 })
+  @ApiPropertyOptional({
+    description: 'Remaining available seats',
+    default: 30,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   remainingSeats?: number;
 
-  @ApiPropertyOptional({ description: 'Seasonal pricing and price rules JSONB' })
+  @ApiPropertyOptional({
+    description: 'Seasonal pricing and price rules JSONB',
+  })
   @IsOptional()
   @IsObject()
   seasonPricingJsonb?: Record<string, any>;

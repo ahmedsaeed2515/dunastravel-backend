@@ -164,8 +164,12 @@ export class MediaService {
       this.logger.error(
         `Database transaction failed during upload { error: ${dbError.message} }`,
       );
-      // Optionally we could delete the asset from Cloudinary here to prevent orphans,
-      // but in this phase we prioritize returning the DB error.
+      this.logger.warn(`Cleaning up orphaned asset on storage provider: ${result.publicId}`);
+      try {
+        await this.storageProvider.delete(result.publicId);
+      } catch (cleanupError: any) {
+        this.logger.error(`Failed to cleanup orphaned asset ${result.publicId}: ${cleanupError.message}`);
+      }
       throw dbError;
     }
 

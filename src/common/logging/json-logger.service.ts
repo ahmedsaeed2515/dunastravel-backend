@@ -30,6 +30,9 @@ export class JsonLoggerService implements LoggerService {
   private safeStringify(obj: any): string {
     const cache = new Set();
     return JSON.stringify(obj, (key, value) => {
+      if (value instanceof Error) {
+        return { message: value.message, stack: value.stack, name: value.name };
+      }
       if (typeof value === 'object' && value !== null) {
         if (cache.has(value)) {
           return '[Circular]';

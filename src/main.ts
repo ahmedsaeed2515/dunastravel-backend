@@ -167,6 +167,7 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch((err: unknown) => {
   const logger = new Logger('Bootstrap');
+  console.error('FATAL STARTUP ERROR:', err);
   logger.error('Failed to start application', err);
   process.exit(1);
 });
