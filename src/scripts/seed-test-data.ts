@@ -8,6 +8,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+/*
   await prisma.booking.create({
     data: {
       referenceCode: 'BKG-1',
@@ -22,6 +23,7 @@ async function main() {
       infants: 0
     }
   }).catch(() => {});
+*/
 
   await prisma.company.create({
     data: {
@@ -30,6 +32,7 @@ async function main() {
     }
   }).catch(() => {});
 
+/*
   await prisma.tailorMadeInquiry.create({
     data: {
       referenceCode: 'INQ-1',
@@ -39,6 +42,7 @@ async function main() {
       endDate: new Date()
     }
   }).catch(() => {});
+*/
 
   console.log('Test data seeded!');
 }

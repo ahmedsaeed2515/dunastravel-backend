@@ -38,6 +38,8 @@ import { CsrfGuard } from './common/guards/csrf.guard';
 
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
+import { PaymentsModule } from './modules/payments/payments.module';
+
 @Module({
   imports: [
     // Config — global, validates env vars on startup
@@ -131,6 +133,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     AuditModule,
     AgentsModule,
     CompanySelfModule,
+    PaymentsModule,
   ],
   providers: [
     AsyncContextService,

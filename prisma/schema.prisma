@@ -447,7 +447,7 @@ model Payment {
   currency      String   @default("USD") @db.VarChar(10)
   method        String   @db.VarChar(100)
   transactionId String?  @map("transaction_id") @db.VarChar(255)
-  status        String   @default("COMPLETED") @db.VarChar(50)
+  status        PaymentStatus @default(PENDING)
   isRefund      Boolean  @default(false) @map("is_refund")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -551,6 +551,7 @@ enum UserRole {
   GUEST
   USER
   ADMIN
+  SUPER_ADMIN
   COMPANY
   AGENT
 }
@@ -606,6 +607,15 @@ enum CommissionStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
 enum TailorMadeInquiryStatus {
   NEWLY_RECEIVED
   IN_PROGRESS
@@ -638,4 +648,32 @@ enum MediaEntityType {
 enum MediaProvenance {
   UPLOADED
   SEEDED
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String   @db.VarChar(255)
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ProcessedWebhookEvent {
+  id          String   @id
+  provider    String   @db.VarChar(50)
+  payload     Json?
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_webhook_events")
 }

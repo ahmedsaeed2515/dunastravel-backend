@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
 import { ToursModule } from '../tours/tours.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 @Module({
-  imports: [ToursModule],
+  imports: [ToursModule, PaymentsModule],
   controllers: [BookingsController],
   providers: [
     BookingsService,

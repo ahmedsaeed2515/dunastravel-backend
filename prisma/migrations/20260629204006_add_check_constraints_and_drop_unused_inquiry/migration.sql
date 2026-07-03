@@ -22,9 +22,8 @@ ALTER TABLE bookings
   CHECK (infants >= 0);
 
 -- 4. Enforce positive payment amounts
-ALTER TABLE payments
-  ADD CONSTRAINT chk_payments_amount_positive
-  CHECK (amount > 0);
+-- Moved to later migration after payments table is created
+
 
 -- 5. Drop the legacy Inquiry table (superseded by tailor_made_inquiries)
 --    Only safe to run after confirming the table is empty / unused.

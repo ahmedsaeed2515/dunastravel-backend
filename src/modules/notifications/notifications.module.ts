@@ -8,6 +8,7 @@ import { EMAIL_PROVIDER_TOKEN } from './providers/email-provider.interface';
 import { InquiryCreatedListener } from './listeners/inquiry-created.listener';
 import { ContactCreatedListener } from './listeners/contact-created.listener';
 import { BookingCreatedListener } from './listeners/booking-created.listener';
+import { PaymentEventsListener } from './listeners/payment.listener';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 
@@ -33,6 +34,7 @@ const EmailProviderFactory = {
     InquiryCreatedListener,
     ContactCreatedListener,
     BookingCreatedListener,
+    PaymentEventsListener,
   ],
   exports: [NotificationsService],
 })

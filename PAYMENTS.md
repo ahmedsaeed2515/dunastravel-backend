@@ -1,0 +1,65 @@
+# Payments Module
+
+The payments module handles checkout initiation, webhook processing, refund handling, and payment state management via Domain-Driven Design (DDD).
+
+## Architecture & Integration
+
+The module is decoupled from the underlying payment provider (e.g., Stripe, Paymob) using the **Ports and Adapters** (Hexagonal) architecture.
+
+To integrate a new provider:
+1. Create a new adapter (e.g., `src/modules/payments/adapters/paymob.adapter.ts`).
+2. Implement the `IPaymentGatewayPort` interface.
+3. Update `payments.module.ts` to inject your new adapter into the `IPaymentGatewayPort` token.
+
+## Payment Entity State Machine
+
+The strict state transition diagram managed by `PaymentEntity` (`src/modules/payments/domain/payment.entity.ts`):
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: initiatePayment
+    PENDING --> AUTHORIZED: Auth Only
+    PENDING --> CAPTURED: Direct Capture
+    AUTHORIZED --> CAPTURED: Capture Auth
+    PENDING --> FAILED: Webhook Failed
+    AUTHORIZED --> FAILED: Webhook Failed
+    PENDING --> EXPIRED: Cron (30m timeout)
+    CAPTURED --> REFUNDED: API Refund
+```
+*Note: Invalid transitions explicitly throw an `InvalidPaymentTransitionException`.*
+
+## Idempotency & Concurrency Safety
+
+Webhook idempotency is guaranteed via the `ProcessedWebhookEvent` table. Webhooks are processed within a Prisma `$transaction` using the **`Serializable`** isolation level to protect against concurrent webhook deliveries.
+
+If two identical webhooks arrive simultaneously, exactly one will commit and the other will fail safely, returning `200 OK` without duplicating side-effects.
+
+## Current Limitations
+- **Partial Refunds**: Not currently supported. The `Payment` schema does not track `amountRefunded`. Calling `POST /payments/:id/refund` with a partial amount will throw a `BadRequestException`.
+
+## Webhook Local Testing (Stripe)
+
+To test the Stripe webhook locally:
+
+1. Install the Stripe CLI.
+2. Login: `stripe login`
+3. Forward events to your local NestJS server:
+```bash
+stripe listen --forward-to localhost:3000/payments/webhook/stripe
+```
+4. Copy the webhook secret provided in the terminal output and set it in your `.env`:
+```
+STRIPE_WEBHOOK_SECRET=whsec_your_secret_here
+```
+5. Trigger events:
+```bash
+stripe trigger checkout.session.completed
+```
+
+## Required Environment Variables
+
+```env
+# Stripe Config
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```

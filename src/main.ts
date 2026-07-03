@@ -16,6 +16,7 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['log', 'error', 'warn', 'debug'],
+    rawBody: true,
   });
 
   const configService = app.get(ConfigService);
@@ -53,8 +54,8 @@ async function bootstrap(): Promise<void> {
   app.use(compression({ threshold: 1024 }));
 
   // Body size limits (10MB json, 1MB urlencoded)
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  app.use(express.json({ limit: '10mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
   const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins');

@@ -4,6 +4,12 @@ node_modules/
 # Build output
 dist/
 
+# Compiled JS inside source folders (to prevent NestJS/tsc stray artifacts)
+src/**/*.js
+src/**/*.d.ts
+test/**/*.js
+test/**/*.d.ts
+
 # Environment files
 .env
 .env.local

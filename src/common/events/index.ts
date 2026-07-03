@@ -1,1 +1,2 @@
 export * from './booking-events';
+export * from './payment-events';

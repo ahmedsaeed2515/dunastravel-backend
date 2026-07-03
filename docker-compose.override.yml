@@ -11,3 +11,6 @@ services:
     command: npm run start:dev # or ts-node-dev
     environment:
       NODE_ENV: development
+  postgres:
+    ports:
+      - "5432:5432"
