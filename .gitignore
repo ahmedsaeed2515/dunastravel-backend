@@ -20,6 +20,8 @@ test/**/*.d.ts
 # Logs
 *.log
 npm-debug.log
+*_output.txt
+*_specific.txt
 
 # OS files
 .DS_Store
