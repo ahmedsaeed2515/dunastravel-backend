@@ -28,7 +28,7 @@ export class EmailDeliveryService {
     // 1. Create PENDING log entry
     const logRecord = await this.prisma.notificationDeliveryLog.create({
       data: {
-        notificationType,
+        notificationType: notificationType as any,
         originReferenceCode,
         originEntityType,
         recipientEmail: payload.to,
@@ -83,9 +83,11 @@ export class EmailDeliveryService {
         });
 
         if (isExhausted) {
-          this.logger.error(
-            `Terminal failure for ${notificationType} after ${attempts} attempts`,
-          );
+          if (this.logger.fatal) {
+            this.logger.fatal(`[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`);
+          } else {
+            this.logger.error(`[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`);
+          }
         } else {
           // In-process backoff
           await new Promise((res) => setTimeout(res, 1000 * attempts));

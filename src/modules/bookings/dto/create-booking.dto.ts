@@ -165,4 +165,9 @@ export class CreateBookingDto {
   @ValidateNested()
   @Type(() => BillingInfoDto)
   billing!: BillingInfoDto;
+
+  @ApiPropertyOptional({ description: 'Optional promotion code to apply discount' })
+  @IsOptional()
+  @IsString()
+  promoCode?: string;
 }

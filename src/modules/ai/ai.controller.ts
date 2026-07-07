@@ -6,11 +6,14 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
+import { Throttle } from '@nestjs/throttler';
+
 @ApiTags('Admin - AI Concierge')
 @Controller('admin/ai')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 

@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 
 describe('Admin (e2e)', () => {
   let app: INestApplication;
@@ -35,6 +36,7 @@ describe('Admin (e2e)', () => {
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
+    app.useGlobalInterceptors(new TransformInterceptor());
     app.setGlobalPrefix('api');
     await app.init();
 
@@ -69,6 +71,7 @@ describe('Admin (e2e)', () => {
       (adminLogin.headers['set-cookie'] as unknown as string[]).find(
         (c: string) => c.startsWith('access_token='),
       ) ?? '';
+    adminCookie = `${adminCookie}; csrf_token=dummy_csrf`;
 
     // Setup regular user
     await request(app.getHttpServer())
@@ -85,10 +88,13 @@ describe('Admin (e2e)', () => {
       (userLogin.headers['set-cookie'] as unknown as string[]).find(
         (c: string) => c.startsWith('access_token='),
       ) ?? '';
+    userCookie = `${userCookie}; csrf_token=dummy_csrf`;
 
     // Create a test booking
     const bookingRes = await request(app.getHttpServer())
       .post('/api/bookings')
+      .set('Cookie', userCookie)
+      .set('x-csrf-token', 'dummy_csrf')
       .send({
         tourId: testTourId,
         arrivalDate: '2027-06-01',
@@ -110,6 +116,7 @@ describe('Admin (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.booking.deleteMany({ where: { tourId: testTourId } });
     await prisma.tour.deleteMany({ where: { id: testTourId } });
     await prisma.user.deleteMany({
       where: { email: { in: [adminCredentials.email, regularUser.email] } },
@@ -200,6 +207,7 @@ describe('Admin (e2e)', () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/admin/bookings/${testBookingRef}/status`)
         .set('Cookie', adminCookie)
+        .set('x-csrf-token', 'dummy_csrf')
         .send({ status: 'CONFIRMED' })
         .expect(200);
 
@@ -210,6 +218,7 @@ describe('Admin (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/bookings/${testBookingRef}/status`)
         .set('Cookie', adminCookie)
+        .set('x-csrf-token', 'dummy_csrf')
         .send({ status: 'INVALID_STATUS' })
         .expect(400);
     });

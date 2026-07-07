@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import Anthropic from '@anthropic-ai/sdk';
@@ -53,21 +53,37 @@ Return ONLY valid JSON matching this structure:
   ]
 }`;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1500,
-        temperature: 0.7,
-        system:
-          'You are a senior luxury travel designer. Return ONLY raw JSON without any markdown formatting.',
-        messages: [{ role: 'user', content: prompt }],
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
       });
+
+      const response = await Promise.race([
+        this.anthropic.messages.create({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 1500,
+          temperature: 0.7,
+          system:
+            'You are a senior luxury travel designer. Return ONLY raw JSON without any markdown formatting.',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        timeoutPromise,
+      ]) as Anthropic.Messages.Message;
 
       const content =
         response.content[0].type === 'text' ? response.content[0].text : '{}';
-      return JSON.parse(content);
+      
+      try {
+        return JSON.parse(content);
+      } catch (parseError: any) {
+        this.logger.error(`Failed to parse AI JSON response: ${content}`);
+        throw new InternalServerErrorException('AI returned unexpected format');
+      }
     } catch (error: any) {
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
       this.logger.error(`Failed to generate itinerary: ${error.message}`);
-      throw new Error('Failed to generate AI itinerary. Please try again.');
+      throw new InternalServerErrorException('Failed to generate AI itinerary. Please try again.');
     }
   }
 
@@ -120,21 +136,37 @@ Return ONLY valid JSON matching this structure:
   "churnRisk": "Low / Medium / High"
 }`;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1000,
-        temperature: 0.5,
-        system:
-          'You are a luxury travel CRM strategist. Return ONLY raw JSON without markdown.',
-        messages: [{ role: 'user', content: prompt }],
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
       });
+
+      const response = await Promise.race([
+        this.anthropic.messages.create({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 1000,
+          temperature: 0.5,
+          system:
+            'You are a luxury travel CRM strategist. Return ONLY raw JSON without markdown.',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        timeoutPromise,
+      ]) as Anthropic.Messages.Message;
 
       const content =
         response.content[0].type === 'text' ? response.content[0].text : '{}';
-      return JSON.parse(content);
+      
+      try {
+        return JSON.parse(content);
+      } catch (parseError: any) {
+        this.logger.error(`Failed to parse AI JSON response: ${content}`);
+        throw new InternalServerErrorException('AI returned unexpected format');
+      }
     } catch (error: any) {
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
       this.logger.error(`Failed to analyze customer: ${error.message}`);
-      throw new Error('Failed to analyze customer data.');
+      throw new InternalServerErrorException('Failed to analyze customer data.');
     }
   }
 

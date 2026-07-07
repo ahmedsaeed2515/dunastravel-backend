@@ -84,4 +84,9 @@ export class ListBookingsQueryDto {
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'desc';
+
+  @ApiPropertyOptional({ description: 'Filter by assignee ID' })
+  @IsOptional()
+  @IsString()
+  assigneeId?: string;
 }

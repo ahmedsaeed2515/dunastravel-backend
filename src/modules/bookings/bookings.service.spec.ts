@@ -60,7 +60,8 @@ describe('BookingsService', () => {
   beforeEach(async () => {
     let seq = 0n;
     mockTx = {
-      booking: { create: jest.fn().mockResolvedValue(mockBookingResult) },
+      booking: { create: jest.fn().mockResolvedValue(mockBookingResult), update: jest.fn().mockResolvedValue(mockBookingResult) },
+      tour: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       passenger: {
         createMany: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
@@ -85,8 +86,14 @@ describe('BookingsService', () => {
             booking: {
               findUnique: jest.fn().mockResolvedValue(null),
               findMany: jest.fn().mockResolvedValue([]),
+              count: jest.fn().mockResolvedValue(1),
             },
-            $transaction: jest.fn((cb: any) => cb(mockTx)),
+            $transaction: jest.fn((arg: any) => {
+              if (Array.isArray(arg)) {
+                return Promise.all(arg);
+              }
+              return arg(mockTx);
+            }),
           },
         },
         { provide: ToursService, useValue: {} },
@@ -305,8 +312,51 @@ describe('BookingsService', () => {
         },
       ]);
       const r = await service.findUserBookings('user-1');
-      expect(r).toHaveLength(1);
-      expect(r[0].referenceCode).toBe('BKG-ABC123');
+      expect(r.items).toHaveLength(1);
+      expect(r.items[0].referenceCode).toBe('BKG-ABC123');
+    });
+  });
+
+  // ─── cancelBooking ──────────────────────────────────────────────────────────
+
+  describe('cancelBooking', () => {
+    const mockBooking = {
+      id: 'booking-1',
+      referenceCode: 'BKG-ABC123',
+      userId: 'user-1',
+      status: 'PENDING',
+      adults: 2,
+      children: 1,
+      tourId: 'tour-123',
+      billingInfo: { email: 'john@test.com' },
+    };
+
+    it('should successfully cancel booking for the owner', async () => {
+      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+
+      const result = await service.cancelBooking('BKG-ABC123', 'user-1', 'Reason');
+
+      expect(result.message).toBe('Booking cancelled successfully');
+      expect(prisma['$transaction']).toHaveBeenCalled();
+    });
+
+    it('should reject cancellation by non-owner (IDOR)', async () => {
+      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+
+      await expect(
+        service.cancelBooking('BKG-ABC123', 'other-user'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if booking is already cancelled', async () => {
+      (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
+        ...mockBooking,
+        status: 'CANCELLED',
+      });
+
+      await expect(
+        service.cancelBooking('BKG-ABC123', 'user-1'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

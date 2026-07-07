@@ -19,12 +19,19 @@ import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListInquiriesQueryDto } from './dto/list-inquiries-query.dto';
 import { ListContactSubmissionsQueryDto } from './dto/list-contact-submissions-query.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
-import { UpdateInquiryStatusDto } from './dto/update-inquiry-status.dto';
+import { UpdateInquiryDto } from './dto/update-inquiry.dto';
 import { UpdateContactSubmissionStatusDto } from './dto/update-contact-submission-status.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
+import { AddTourImageDto } from './dto/add-tour-image.dto';
+import { ReorderTourImageDto } from './dto/reorder-tour-image.dto';
+import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
+import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
+import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
+import { SuspendUserDto } from './dto/suspend-user.dto';
+import { BookingsService } from '../bookings/bookings.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -34,14 +41,20 @@ import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly bookingsService: BookingsService
+  ) {}
 
   @Get('bookings')
   @ApiOperation({ summary: 'List all bookings with pagination and filtering.' })
   @ApiOkResponse({ description: 'Paginated list of bookings' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
   async listBookings(@Query() query: ListBookingsQueryDto, @Req() req: any) {
-    const adminUserId = req.user.id;
-    return this.adminService.listBookings(query, adminUserId);
+    if (req.user.role === UserRole.AGENT) {
+      query.assigneeId = req.user.id;
+    }
+    return this.adminService.listBookings(query, req.user.id);
   }
 
   @Get('bookings/export/csv')
@@ -59,6 +72,39 @@ export class AdminController {
   async getBookingByReferenceCode(@Param('referenceCode') referenceCode: string, @Req() req: any) {
     const adminUserId = req.user.id;
     return this.adminService.getBookingByReferenceCode(referenceCode, adminUserId);
+  }
+
+  @Post('bookings')
+  @ApiOperation({ summary: 'Create a manual booking (Admin Override)' })
+  @ApiBody({ type: AdminCreateBookingDto })
+  @ApiOkResponse({ description: 'Created booking record' })
+  async createManualBooking(@Body() dto: AdminCreateBookingDto, @Req() req: any) {
+    return this.bookingsService.createBooking(dto, req.user.id, undefined, true);
+  }
+
+  @Post('bookings/:referenceCode/restore')
+  @ApiOperation({ summary: 'Restore a cancelled or archived booking.' })
+  @ApiParam({ name: 'referenceCode', type: 'string' })
+  @ApiOkResponse({ description: 'Restored booking record' })
+  async restoreBooking(@Param('referenceCode') referenceCode: string, @Req() req: any) {
+    return this.adminService.restoreBooking(referenceCode, req.user.id);
+  }
+
+  @Post('users/:id/suspend')
+  @ApiOperation({ summary: 'Suspend a user account.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: SuspendUserDto })
+  @ApiOkResponse({ description: 'User suspended' })
+  async suspendUser(@Param('id') userId: string, @Body() dto: SuspendUserDto, @Req() req: any) {
+    return this.adminService.suspendUser(userId, dto.reason, req.user.id);
+  }
+
+  @Post('users/:id/activate')
+  @ApiOperation({ summary: 'Activate a suspended user account.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ description: 'User activated' })
+  async activateUser(@Param('id') userId: string, @Req() req: any) {
+    return this.adminService.activateUser(userId, req.user.id);
   }
 
   @Patch('bookings/bulk/update')
@@ -90,12 +136,14 @@ export class AdminController {
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiBody({ type: UpdateBookingStatusDto })
   @ApiOkResponse({ description: 'Updated booking status' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
   async updateBookingStatus(
     @Param('referenceCode') referenceCode: string,
     @Body() dto: UpdateBookingStatusDto,
     @Req() req: any
   ) {
-    return this.adminService.updateBookingStatus(referenceCode, dto, req.user.id);
+    const isAgent = req.user.role === UserRole.AGENT;
+    return this.adminService.updateBookingStatus(referenceCode, dto, req.user.id, isAgent);
   }
 
   @Patch('bookings/:referenceCode/passengers')
@@ -177,9 +225,12 @@ export class AdminController {
   @Get('inquiries')
   @ApiOperation({ summary: 'List all tailor-made inquiries with pagination and filtering.' })
   @ApiOkResponse({ description: 'Paginated list of inquiries' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
   async listInquiries(@Query() query: ListInquiriesQueryDto, @Req() req: any) {
-    const adminUserId = req.user.id;
-    return this.adminService.listInquiries(query, adminUserId);
+    if (req.user.role === UserRole.AGENT) {
+      query.assigneeId = req.user.id;
+    }
+    return this.adminService.listInquiries(query, req.user.id);
   }
 
   @Get('inquiries/:referenceCode')
@@ -187,25 +238,27 @@ export class AdminController {
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiOkResponse({ description: 'Full inquiry record' })
   @ApiNotFoundResponse({ description: 'Inquiry not found' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
   async getInquiryByReferenceCode(@Param('referenceCode') referenceCode: string, @Req() req: any) {
-    const adminUserId = req.user.id;
-    return this.adminService.getInquiryByReferenceCode(referenceCode, adminUserId);
+    const isAgent = req.user.role === UserRole.AGENT;
+    return this.adminService.getInquiryByReferenceCode(referenceCode, req.user.id, isAgent);
   }
 
-  @Patch('inquiries/:referenceCode/status')
-  @ApiOperation({ summary: 'Update the status of a tailor-made inquiry.' })
+  @Patch('inquiries/:referenceCode')
+  @ApiOperation({ summary: 'Update a tailor-made inquiry.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiBody({ type: UpdateInquiryStatusDto })
+  @ApiBody({ type: UpdateInquiryDto })
   @ApiOkResponse({ description: 'Updated inquiry record' })
   @ApiBadRequestResponse({ description: 'Invalid status transition' })
   @ApiNotFoundResponse({ description: 'Inquiry not found' })
-  async updateInquiryStatus(
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
+  async updateInquiry(
     @Param('referenceCode') referenceCode: string,
-    @Body() dto: UpdateInquiryStatusDto,
+    @Body() dto: UpdateInquiryDto,
     @Req() req: any
   ) {
-    const adminUserId = req.user.id;
-    return this.adminService.updateInquiryStatus(referenceCode, dto, adminUserId);
+    const isAgent = req.user.role === UserRole.AGENT;
+    return this.adminService.updateInquiry(referenceCode, dto, req.user.id, isAgent);
   }
 
   @Get('contact-submissions')
@@ -322,5 +375,61 @@ export class AdminController {
   @ApiOkResponse({ description: 'Tour soft deleted successfully' })
   async softDeleteTour(@Param('slug') slug: string, @Req() req: any) {
     return this.adminService.softDeleteTour(slug, req.user.id);
+  }
+
+  @Post('tours/:slug/images')
+  @ApiOperation({ summary: 'Add an image to a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ type: AddTourImageDto })
+  @ApiOkResponse({ description: 'Image added successfully' })
+  async addTourImage(@Param('slug') slug: string, @Body() dto: AddTourImageDto, @Req() req: any) {
+    return this.adminService.addTourImage(slug, dto, req.user.id);
+  }
+
+  @Delete('tours/:slug/images/:imageId')
+  @ApiOperation({ summary: 'Remove an image from a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiParam({ name: 'imageId', type: 'string' })
+  @ApiOkResponse({ description: 'Image removed successfully' })
+  async removeTourImage(@Param('slug') slug: string, @Param('imageId') imageId: string, @Req() req: any) {
+    return this.adminService.removeTourImage(slug, imageId, req.user.id);
+  }
+
+  @Patch('tours/:slug/images/:imageId/reorder')
+  @ApiOperation({ summary: 'Reorder a tour image.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiParam({ name: 'imageId', type: 'string' })
+  @ApiBody({ type: ReorderTourImageDto })
+  @ApiOkResponse({ description: 'Image reordered successfully' })
+  async reorderTourImage(@Param('slug') slug: string, @Param('imageId') imageId: string, @Body() dto: ReorderTourImageDto, @Req() req: any) {
+    return this.adminService.reorderTourImage(slug, imageId, dto.sortOrder, req.user.id);
+  }
+
+  @Post('tours/:slug/itinerary')
+  @ApiOperation({ summary: 'Add an itinerary day to a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ type: AddTourItineraryDto })
+  @ApiOkResponse({ description: 'Itinerary added successfully' })
+  async addTourItinerary(@Param('slug') slug: string, @Body() dto: AddTourItineraryDto, @Req() req: any) {
+    return this.adminService.addTourItinerary(slug, dto, req.user.id);
+  }
+
+  @Patch('tours/:slug/itinerary/:dayId')
+  @ApiOperation({ summary: 'Update an itinerary day.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiParam({ name: 'dayId', type: 'string' })
+  @ApiBody({ type: UpdateTourItineraryDto })
+  @ApiOkResponse({ description: 'Itinerary updated successfully' })
+  async updateTourItinerary(@Param('slug') slug: string, @Param('dayId') dayId: string, @Body() dto: UpdateTourItineraryDto, @Req() req: any) {
+    return this.adminService.updateTourItinerary(slug, dayId, dto, req.user.id);
+  }
+
+  @Delete('tours/:slug/itinerary/:dayId')
+  @ApiOperation({ summary: 'Remove an itinerary day from a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiParam({ name: 'dayId', type: 'string' })
+  @ApiOkResponse({ description: 'Itinerary removed successfully' })
+  async removeTourItinerary(@Param('slug') slug: string, @Param('dayId') dayId: string, @Req() req: any) {
+    return this.adminService.removeTourItinerary(slug, dayId, req.user.id);
   }
 }

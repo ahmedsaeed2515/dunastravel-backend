@@ -44,6 +44,8 @@ import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { MediaEntityType } from '@prisma/client';
 
 @ApiTags('Admin — Media')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @Controller('admin/media')
 export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}

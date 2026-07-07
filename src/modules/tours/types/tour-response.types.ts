@@ -32,6 +32,16 @@ export interface TourDetailResponse {
   basePriceUsd: string;
   duration: string;
   overview: string;
+  cancellationPolicy: string | null;
+  includedServices: string | null;
+  excludedServices: string | null;
+  hotelInfo: string | null;
+  seasonPricing: string | null;
+  tags: string[];
+  difficultyLevel: string | null;
+  meetingPoint: string | null;
+  capacity: number;
+  remainingSeats: number;
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
 }

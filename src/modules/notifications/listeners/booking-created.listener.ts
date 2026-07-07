@@ -101,7 +101,7 @@ export class BookingCreatedListener {
     this.logger.debug(`Writing PENDING log for ${referenceCode}`);
     const logRecord = await this.prisma.notificationDeliveryLog.create({
       data: {
-        notificationType,
+        notificationType: notificationType as any,
         originReferenceCode: referenceCode,
         originEntityType: 'BOOKING',
         recipientEmail: payload.to,

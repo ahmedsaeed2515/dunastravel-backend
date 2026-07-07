@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class PrismaExceptionFilter implements ExceptionFilter {
@@ -38,6 +39,10 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'An unexpected database error occurred.',
     };
+
+    if (mapped.status >= 500) {
+      Sentry.captureException(exception);
+    }
 
     response.status(mapped.status).json({
       success: false,

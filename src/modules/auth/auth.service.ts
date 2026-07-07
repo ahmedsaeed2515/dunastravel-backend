@@ -15,6 +15,7 @@ import * as crypto from 'crypto';
 import { CookieOptions } from 'express';
 import { UserService, SafeUser } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   RegisterDto,
   LoginDto,
@@ -52,6 +53,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<SafeUser> {
@@ -62,6 +64,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
 
     const user = await this.prisma.user.create({
       data: {
@@ -70,13 +73,14 @@ export class AuthService {
         phone: dto.phone,
         passwordHash,
         verifyToken,
+        verifyTokenExp,
       },
     });
 
     this.logger.log(
       `User registered: ${user.email}. Verification token generated.`,
     );
-    // TODO: Send verification email
+    await this.notificationsService.sendVerificationEmail(user.email, user.name, verifyToken);
 
     return this.userService.toSafeUser(user);
   }
@@ -88,6 +92,10 @@ export class AuthService {
 
     if (!user) {
       throw new BadRequestException('Invalid verification token');
+    }
+
+    if (user.verifyTokenExp && user.verifyTokenExp < new Date()) {
+      throw new BadRequestException('Verification link has expired. Please request a new one.');
     }
 
     await this.prisma.user.update({
@@ -118,6 +126,11 @@ export class AuthService {
       throw new UnauthorizedException(
         'Please verify your email before logging in',
       );
+    }
+
+    if (user.suspendedAt) {
+      this.logger.warn(`Failed login attempt for suspended user: ${dto.email}`);
+      throw new UnauthorizedException('Your account has been suspended. Please contact support.');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -167,7 +180,7 @@ export class AuthService {
     });
 
     this.logger.log(`Password reset token generated for ${user.email}`);
-    // TODO: Send password reset email
+    await this.notificationsService.sendPasswordResetEmail(user.email, user.name, resetToken);
 
     return {
       message: 'If that email exists, a password reset link has been sent.',
@@ -292,13 +305,14 @@ export class AuthService {
     if (user.isVerified) return { message: 'Email is already verified.' };
 
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { verifyToken },
+      data: { verifyToken, verifyTokenExp },
     });
 
     this.logger.log(`Resent verification email for: ${user.email}`);
-    // TODO: send email
+    await this.notificationsService.sendVerificationEmail(user.email, user.name, verifyToken);
     return { message: 'If that email is registered, a verification link has been sent.' };
   }
 }

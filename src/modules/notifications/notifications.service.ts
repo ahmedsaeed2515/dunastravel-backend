@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
 import { NotificationDeliveryStatus } from '@prisma/client';
+import { NotificationType } from './types';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -120,10 +121,10 @@ export class NotificationsService {
         if (inquiry) {
           const payload =
             log.notificationType === 'CUSTOMER_ACKNOWLEDGMENT'
-              ? this.emailComposition.composeInquiryCustomerAcknowledgment(
+              ? await this.emailComposition.composeInquiryCustomerAcknowledgment(
                   inquiry as any,
                 )
-              : this.emailComposition.composeInquiryInternalAlert(
+              : await this.emailComposition.composeInquiryInternalAlert(
                   inquiry as any,
                 );
 
@@ -155,10 +156,10 @@ export class NotificationsService {
         if (contact) {
           const payload =
             log.notificationType === 'CUSTOMER_ACKNOWLEDGMENT'
-              ? this.emailComposition.composeContactCustomerAcknowledgment(
+              ? await this.emailComposition.composeContactCustomerAcknowledgment(
                   contact as any,
                 )
-              : this.emailComposition.composeContactInternalAlert(
+              : await this.emailComposition.composeContactInternalAlert(
                   contact as any,
                 );
 
@@ -188,5 +189,47 @@ export class NotificationsService {
     throw new NotFoundException(
       'Origin entity not found for retry reconstruction',
     );
+  }
+
+  async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    
+    const template = await this.emailComposition.getTemplateFromDb('user_verification', { name, verifyUrl }, (vars) => ({
+      subject: 'Verify your Dunas Travel Account',
+      html: `<p>Hi ${vars.name},</p><p>Please verify your email by clicking the link below:</p><p><a href="${vars.verifyUrl}">${vars.verifyUrl}</a></p>`,
+      text: `Hi ${vars.name},\n\nPlease verify your email using this link: ${vars.verifyUrl}`,
+    }));
+
+    const payload = {
+      to: email,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      tags: { notificationType: NotificationType.USER_VERIFICATION },
+    };
+    
+    this.emailDelivery.deliver(NotificationType.USER_VERIFICATION, 'AUTH', 'USER', payload).catch(e => this.logger.error(e));
+  }
+
+  async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    
+    const template = await this.emailComposition.getTemplateFromDb('password_reset', { name, resetUrl }, (vars) => ({
+      subject: 'Reset your Dunas Travel Password',
+      html: `<p>Hi ${vars.name},</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="${vars.resetUrl}">${vars.resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`,
+      text: `Hi ${vars.name},\n\nYou requested a password reset. Use this link: ${vars.resetUrl}`,
+    }));
+
+    const payload = {
+      to: email,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      tags: { notificationType: NotificationType.PASSWORD_RESET },
+    };
+    
+    this.emailDelivery.deliver(NotificationType.PASSWORD_RESET, 'AUTH', 'USER', payload).catch(e => this.logger.error(e));
   }
 }

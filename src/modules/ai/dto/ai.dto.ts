@@ -1,10 +1,12 @@
-import { IsString, IsNumber, IsOptional, IsArray, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, Min, MaxLength, ArrayMaxSize } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GenerateItineraryDto {
   @ApiProperty({ description: 'List of destinations (e.g. Cairo, Luxor)' })
   @IsArray()
+  @ArrayMaxSize(5)
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   destinations!: string[];
 
   @ApiProperty({ description: 'Number of days' })
@@ -27,6 +29,7 @@ export class GenerateItineraryDto {
   @ApiPropertyOptional({ description: 'Special notes or preferences' })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   preferences?: string;
 }
 

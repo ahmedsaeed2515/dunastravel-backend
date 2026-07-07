@@ -31,6 +31,8 @@ export class AuditController {
     @Query('action') action?: string,
     @Query('actorId') actorId?: string,
     @Query('entityType') entityType?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
@@ -40,6 +42,11 @@ export class AuditController {
     if (action) where.action = { contains: action, mode: 'insensitive' };
     if (actorId) where.actorId = actorId;
     if (entityType) where.entityType = entityType;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.auditLog.findMany({

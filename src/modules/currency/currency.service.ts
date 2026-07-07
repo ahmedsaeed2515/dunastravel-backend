@@ -29,13 +29,16 @@ export class CurrencyService implements OnModuleInit {
   async fetchAndCacheRates() {
     this.logger.log('Fetching latest exchange rates...');
     try {
-      // Using a free mockable API for this phase. In production, use fixerio, openexchangerates, etc.
-      // E.g., const res = await axios.get(`https://api.exchangerate-api.com/v4/latest/USD`);
-
-      // For reliable demonstration, we will use a simulated network delay and our fallback rates,
-      // as external free APIs can rate limit or require keys.
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const rates = this.FALLBACK_RATES;
+      const appId = process.env.OPENEXCHANGERATES_APP_ID;
+      let rates = this.FALLBACK_RATES;
+      if (appId && appId !== 'your-openexchangerates-key-here' && !appId.includes('your_')) {
+        const res = await axios.get(`https://openexchangerates.org/api/latest.json?app_id=${appId}`);
+        if (res.data && res.data.rates) {
+          rates = res.data.rates;
+        }
+      } else {
+        this.logger.warn('No OpenExchangeRates APP_ID provided, using fallback rates.');
+      }
 
       await this.cacheManager.set(this.CACHE_KEY, rates, 43200000); // 12 hours TTL in ms
       this.logger.log('Exchange rates updated in Redis cache.');

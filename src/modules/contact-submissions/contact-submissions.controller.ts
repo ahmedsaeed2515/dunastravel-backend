@@ -19,7 +19,7 @@ export class ContactSubmissionsController {
   ) {}
 
   @Post()
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @ApiOperation({ summary: 'Submit a contact inquiry' })
   @ApiBody({ type: CreateContactSubmissionDto })
   @ApiCreatedResponse({

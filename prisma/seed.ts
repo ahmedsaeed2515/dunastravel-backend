@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { seedMediaAssets } from './seeds/media.seed';
+import * as bcrypt from 'bcrypt';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
 const pool = new Pool({ connectionString });
@@ -434,6 +435,59 @@ async function seedContactSubmissions(): Promise<void> {
   }
 }
 
+async function seedSuperAdmin(): Promise<void> {
+  console.log('\n📌 Seeding super admin...');
+  const existing = await prisma.user.findUnique({
+    where: { email: 'admin@dunastravel.com' },
+  });
+
+  if (existing) {
+    console.log(`  ↩  Already exists: admin@dunastravel.com`);
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash('Admin@123!', 10);
+  await prisma.user.create({
+    data: {
+      email: 'admin@dunastravel.com',
+      name: 'Super Admin',
+      passwordHash,
+      role: 'SUPER_ADMIN',
+      status: 'ACTIVE',
+    },
+  });
+  console.log(`  ✅ Seeded super admin: admin@dunastravel.com`);
+}
+
+async function seedCmsBlocks(): Promise<void> {
+  console.log('\n📌 Seeding default CMS blocks...');
+  const blocks = [
+    { key: 'homepage-hero', title: 'Homepage Hero', contentJsonb: { en: 'Welcome to Dunas Travel' } },
+    { key: 'footer-info', title: 'Footer Info', contentJsonb: { en: '© 2026 Dunas Travel' } }
+  ];
+
+  for (const block of blocks) {
+    const existing = await prisma.cMSBlock.findUnique({
+      where: { key: block.key }
+    });
+
+    if (existing) {
+      console.log(`  ↩  Already exists: ${block.key}`);
+      continue;
+    }
+
+    await prisma.cMSBlock.create({
+      data: {
+        key: block.key,
+        title: block.title,
+        contentJsonb: block.contentJsonb,
+        isActive: true,
+      }
+    });
+    console.log(`  ✅ Seeded CMS block: ${block.key}`);
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -488,6 +542,9 @@ async function main(): Promise<void> {
   }
 
   await seedContactSubmissions();
+
+  await seedSuperAdmin();
+  await seedCmsBlocks();
 
   await seedMediaAssets(prisma);
 

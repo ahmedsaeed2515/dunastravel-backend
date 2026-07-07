@@ -20,6 +20,9 @@ import {
   generateReferenceCode,
   generateInvoiceNumber,
   extractI18n,
+  getPaginationParams,
+  paginate,
+  PaginatedResponse,
 } from '../../common/utils';
 import { BOOKING_EVENTS, BookingCreatedPayload } from '../../common/events';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -79,9 +82,10 @@ export class BookingsService {
   }
 
   async createBooking(
-    dto: CreateBookingDto,
+    dto: any,
     userId: string | null,
     idempotencyKey?: string,
+    adminOverride: boolean = false
   ): Promise<BookingCreatedResponse> {
     if (idempotencyKey) {
       const cachedResponse =
@@ -98,6 +102,7 @@ export class BookingsService {
 
     // STEP 1
     if (
+      !adminOverride && dto.billing &&
       dto.billing.invoiceType === 'COMPANY' &&
       (!dto.billing.companyName || dto.billing.companyName.trim() === '')
     ) {
@@ -120,12 +125,38 @@ export class BookingsService {
       );
     }
 
+    // Normalize inputs for AdminOverride
+    const adultsCount = adminOverride ? (dto.passengers || 1) : dto.adults;
+    const childrenCount = adminOverride ? 0 : (dto.children ?? 0);
+    const arrivalDate = adminOverride && !dto.arrivalDate ? new Date() : new Date(dto.arrivalDate);
+
     // STEP 3
-    const totalAmountUsd = this.calculateTotalAmount(
-      tour.basePriceUsd,
-      dto.adults,
-      dto.children ?? 0,
-    );
+    let totalAmountUsd = adminOverride && dto.manualAmountUsd !== undefined
+      ? new Prisma.Decimal(dto.manualAmountUsd)
+      : this.calculateTotalAmount(
+          tour.basePriceUsd,
+          adultsCount,
+          childrenCount,
+        );
+
+    let appliedPromoId = null;
+    if (dto.promoCode) {
+      const promo = await this.prisma.promotion.findUnique({ where: { code: dto.promoCode } });
+      if (!promo || !promo.isActive) {
+        throw new BadRequestException('Invalid or inactive promotion code');
+      }
+      const now = new Date();
+      if (promo.validFrom && now < promo.validFrom) throw new BadRequestException('Promotion code is not yet valid');
+      if (promo.validUntil && now > promo.validUntil) throw new BadRequestException('Promotion code has expired');
+      if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) throw new BadRequestException('Promotion code has reached its usage limit');
+
+      let discountAmountUsd = new Prisma.Decimal(0);
+      discountAmountUsd = totalAmountUsd.mul(promo.discountPercent).div(100);
+      
+      totalAmountUsd = totalAmountUsd.sub(discountAmountUsd);
+      if (totalAmountUsd.lt(0)) totalAmountUsd = new Prisma.Decimal(0);
+      appliedPromoId = promo.id;
+    }
 
     // STEP 4
     const referenceCode = await this.generateUniqueReferenceCode();
@@ -139,18 +170,27 @@ export class BookingsService {
       try {
         result = await this.prisma.$transaction(async (tx) => {
           // 5a — Atomic seat decrement (prevents overselling under concurrency)
-          const seatsRequested = dto.adults + (dto.children ?? 0);
-          const seatUpdate = await tx.tour.updateMany({
-            where: {
-              id: tour.id,
-              remainingSeats: { gte: seatsRequested },
-            },
-            data: { remainingSeats: { decrement: seatsRequested } },
-          });
-          if (seatUpdate.count === 0) {
-            throw new UnprocessableEntityException(
-              'Tour is fully booked or has insufficient seats',
-            );
+          const seatsRequested = adultsCount + childrenCount;
+          if (!adminOverride) {
+            const seatUpdate = await tx.tour.updateMany({
+              where: {
+                id: tour.id,
+                remainingSeats: { gte: seatsRequested },
+              },
+              data: { remainingSeats: { decrement: seatsRequested } },
+            });
+            if (seatUpdate.count === 0) {
+              throw new UnprocessableEntityException(
+                'Tour is fully booked or has insufficient seats',
+              );
+            }
+          }
+
+          if (appliedPromoId) {
+            await tx.promotion.update({
+              where: { id: appliedPromoId },
+              data: { currentUses: { increment: 1 } },
+            });
           }
 
           // 5b
@@ -159,42 +199,69 @@ export class BookingsService {
               referenceCode,
               userId,
               tourId: tour.id,
-              status: 'PENDING',
-              arrivalDate: new Date(dto.arrivalDate),
+              status: adminOverride && dto.status ? dto.status : 'PENDING',
+              arrivalDate: arrivalDate,
               departureDate: dto.departureDate
                 ? new Date(dto.departureDate)
                 : null,
               transportChoice: dto.transportChoice ?? null,
-              adults: dto.adults,
-              children: dto.children ?? 0,
+              adults: adultsCount,
+              children: childrenCount,
               infants: dto.infants ?? 0,
               totalAmountUsd,
               notes: dto.notes ?? null,
             },
           });
 
+          if (adminOverride) {
+            await tx.bookingActivityLog.create({
+              data: {
+                bookingId: booking.id,
+                userId: userId,
+                action: 'ADMIN_CREATED',
+                details: { ...dto }
+              }
+            });
+          }
+
           // 5c
-          await tx.passenger.createMany({
-            data: dto.passengerNames.map((p) => ({
+          let passengerData = [];
+          if (adminOverride && !dto.passengerNames) {
+            for (let i = 0; i < adultsCount; i++) {
+              passengerData.push({
+                bookingId: booking.id,
+                passengerType: 'ADULT',
+                fullName: `Passenger ${i + 1}`,
+              });
+            }
+          } else {
+            passengerData = dto.passengerNames.map((p: any) => ({
               bookingId: booking.id,
               passengerType: p.passengerType,
               fullName: p.fullName.trim(),
-            })),
-          });
+            }));
+          }
+          await tx.passenger.createMany({ data: passengerData });
 
           // 5d
+          const billingData = dto.billing || {
+            fullName: 'Admin Override',
+            email: 'admin@override.com',
+            phone: '000000000',
+            invoiceType: 'PERSONAL',
+          };
           const billingInfo = await tx.billingInfo.create({
             data: {
               bookingId: booking.id,
-              fullName: dto.billing.fullName.trim(),
-              email: dto.billing.email.toLowerCase().trim(),
-              phone: dto.billing.phone.trim(),
-              invoiceType: dto.billing.invoiceType as any,
-              companyName: dto.billing.companyName?.trim() ?? null,
-              taxId: dto.billing.taxId?.trim() ?? null,
-              address: dto.billing.address?.trim() ?? null,
-              city: dto.billing.city?.trim() ?? null,
-              country: dto.billing.country?.trim() ?? null,
+              fullName: billingData.fullName.trim(),
+              email: billingData.email.toLowerCase().trim(),
+              phone: billingData.phone.trim(),
+              invoiceType: billingData.invoiceType as any,
+              companyName: billingData.companyName?.trim() ?? null,
+              taxId: billingData.taxId?.trim() ?? null,
+              address: billingData.address?.trim() ?? null,
+              city: billingData.city?.trim() ?? null,
+              country: billingData.country?.trim() ?? null,
             },
           });
 
@@ -372,18 +439,29 @@ export class BookingsService {
     };
   }
 
-  async findUserBookings(userId: string): Promise<BookingSummaryResponse[]> {
+  async findUserBookings(
+    userId: string,
+    pageVal: number = 1,
+    limitVal: number = 10,
+  ): Promise<PaginatedResponse<BookingSummaryResponse>> {
     this.logger.debug(`User bookings queried | userId=${userId}`);
-    const bookings = await this.prisma.booking.findMany({
-      where: { userId },
-      include: {
-        tour: { select: { titleJsonb: true, slug: true } },
-        invoice: { select: { invoiceNumber: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
 
-    return bookings.map((booking) => ({
+    const [total, records] = await this.prisma.$transaction([
+      this.prisma.booking.count({ where: { userId } }),
+      this.prisma.booking.findMany({
+        where: { userId },
+        include: {
+          tour: { select: { titleJsonb: true, slug: true } },
+          invoice: { select: { invoiceNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+
+    const data = records.map((booking) => ({
       id: booking.id,
       referenceCode: booking.referenceCode,
       invoiceNumber: booking.invoice?.invoiceNumber ?? null,
@@ -400,6 +478,8 @@ export class BookingsService {
       totalAmountUsd: booking.totalAmountUsd.toString(),
       createdAt: booking.createdAt.toISOString(),
     }));
+
+    return paginate(data, total, page, limit);
   }
 
   async cancelBooking(

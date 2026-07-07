@@ -32,45 +32,64 @@ export class PaymentsService {
 
     const money = Money.fromDecimal(booking.totalAmountUsd.toNumber(), 'USD');
 
-    const session = await this.paymentGateway.createSession(
-      booking.id,
-      money.toDecimal(),
-      money.currency,
-      booking.referenceCode,
-    );
+    let session;
+    try {
+      session = await this.paymentGateway.createSession(
+        booking.id,
+        money.toDecimal(),
+        money.currency,
+        booking.referenceCode,
+      );
+    } catch (error: any) {
+      this.logger.error(`Failed to create payment session for bookingId=${bookingId} ref=${booking.referenceCode}: ${error.message}`);
+      throw error;
+    }
 
-    const mockEntity = new PaymentEntity(
-      'mock-id',
-      bookingId,
-      money,
-      this.paymentGateway.getProviderName(),
-      session.transactionId,
-      'PENDING',
-      new Date()
-    );
+    try {
+      const mockEntity = new PaymentEntity(
+        'mock-id',
+        bookingId,
+        money,
+        this.paymentGateway.getProviderName(),
+        session.transactionId,
+        'PENDING',
+        new Date()
+      );
 
-    // Ensure there is a PENDING payment record
-    await this.prisma.payment.create({
-      data: {
+      // Ensure there is a PENDING payment record
+      await this.prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: money.toDecimal(),
+          currency: money.currency,
+          method: this.paymentGateway.getProviderName(),
+          transactionId: session.transactionId,
+          status: mockEntity.status,
+        },
+      });
+
+      this.eventEmitter.emit(PAYMENT_EVENTS.INITIATED, {
+        paymentId: session.transactionId,
         bookingId: booking.id,
-        amount: money.toDecimal(),
-        currency: money.currency,
-        method: this.paymentGateway.getProviderName(),
-        transactionId: session.transactionId,
-        status: mockEntity.status,
-      },
-    });
+        amountUsd: money.toDecimal(),
+        gateway: this.paymentGateway.getProviderName(),
+      });
 
-    this.eventEmitter.emit(PAYMENT_EVENTS.INITIATED, {
-      paymentId: session.transactionId,
-      bookingId: booking.id,
-      amountUsd: money.toDecimal(),
-      gateway: this.paymentGateway.getProviderName(),
-    });
+      this.logger.log(`Payment initiated for booking ${booking.id} with transactionId ${session.transactionId}`);
+      return session;
+    } catch (error: any) {
+      this.logger.error(`Database failure during initiatePayment for bookingId=${bookingId} ref=${booking.referenceCode}, rolling back transactionId=${session.transactionId}. Error: ${error.message}`);
+      
+      // Compensating action: refund/cancel the session
+      try {
+        await this.paymentGateway.refund(session.transactionId);
+        this.logger.log(`Successfully executed compensating refund for transactionId=${session.transactionId}`);
+      } catch (refundError: any) {
+        this.logger.error(`CRITICAL: Failed to execute compensating refund for transactionId=${session.transactionId} after DB failure. Manual intervention required. Error: ${refundError.message}`);
+      }
 
-    this.logger.log(`Payment initiated for booking ${booking.id} with transactionId ${session.transactionId}`);
-
-    return session;
+      throw error;
+    }
   }
 
   async handleWebhook(req: any, rawBody: Buffer) {
@@ -142,10 +161,7 @@ export class PaymentsService {
       throw new NotFoundException(`Booking ${bookingId} not found during payment fulfillment`);
     }
 
-    await tx.booking.update({
-      where: { id: bookingId },
-      data: { status: 'PAID' },
-    });
+    // We will update the booking status AFTER we create/update the payment record.
 
     // Update the pending payment or create a new one
     const existingPayment = await tx.payment.findFirst({
@@ -194,7 +210,22 @@ export class PaymentsService {
       });
     }
 
-    this.logger.log(`Payment successful and captured for booking ${bookingId}`);
+    const allCapturedPayments = await tx.payment.findMany({
+      where: { bookingId, status: 'CAPTURED' }
+    });
+
+    const totalCaptured = allCapturedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const newStatus = totalCaptured >= Number(booking.totalAmountUsd) ? 'PAID' : 'PARTIALLY_PAID';
+
+    await tx.booking.update({
+      where: { id: bookingId },
+      data: { 
+        status: newStatus,
+        paidAmountUsd: totalCaptured 
+      },
+    });
+
+    this.logger.log(`Payment successful and captured for booking ${bookingId}. Total captured: ${totalCaptured}. Status updated to ${newStatus}.`);
 
     this.eventEmitter.emit(PAYMENT_EVENTS.SUCCEEDED, {
       paymentId: payment.id,

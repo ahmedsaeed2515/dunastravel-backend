@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -12,6 +12,7 @@ import configuration from './config/configuration';
 import { AsyncContextService } from './common/logging/async-context.service';
 import { JsonLoggerService } from './common/logging/json-logger.service';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { CorrelationIdMiddleware } from './common/logging/correlation-id.middleware';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -31,14 +32,22 @@ import { AiModule } from './modules/ai/ai.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AgentsModule } from './modules/agents/agents.module';
-import { CompanySelfModule } from './modules/company-self/company-self.module';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { CsrfGuard } from './common/guards/csrf.guard';
+import { AdminReviewsModule } from './modules/admin/admin-reviews/admin-reviews.module';
+import { AdminPromotionsModule } from './modules/admin/admin-promotions/admin-promotions.module';
+import { AdminCmsModule } from './modules/admin/admin-cms/admin-cms.module';
+import { AdminReportsModule } from './modules/admin/admin-reports/admin-reports.module';
+import { AdminTemplatesModule } from './modules/admin/admin-templates/admin-templates.module';
+import { CmsModule } from './modules/cms/cms.module';
+import { UsersModule } from './modules/users/users.module';
 
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 import { PaymentsModule } from './modules/payments/payments.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 
 @Module({
   imports: [
@@ -54,12 +63,16 @@ import { PaymentsModule } from './modules/payments/payments.module';
     }),
 
     // Rate limiting — global, 100 req/min per IP
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60_000,
-        limit: 100,
-      },
-    ]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: parseInt(config.get<string>('THROTTLE_TTL', '60000'), 10),
+          limit: parseInt(config.get<string>('THROTTLE_LIMIT', '100'), 10),
+        },
+      ],
+    }),
 
     // Structured Logging
     WinstonModule.forRoot({
@@ -132,13 +145,27 @@ import { PaymentsModule } from './modules/payments/payments.module';
     CurrencyModule,
     AuditModule,
     AgentsModule,
-    CompanySelfModule,
     PaymentsModule,
+    WishlistModule,
+    PromotionsModule,
+    AdminReviewsModule,
+    AdminPromotionsModule,
+    AdminCmsModule,
+    AdminReportsModule,
+    AdminTemplatesModule,
+    CmsModule,
   ],
   providers: [
     AsyncContextService,
     JsonLoggerService,
-    TimeoutInterceptor,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseTransformInterceptor,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

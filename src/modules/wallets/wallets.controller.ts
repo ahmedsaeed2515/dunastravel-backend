@@ -20,6 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('Admin - Finance & Wallets')
 @Controller('admin/finance/wallets')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @ApiBearerAuth()
 export class WalletsController {
   constructor(private readonly walletsService: WalletsService) {}

@@ -6,6 +6,9 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { IPaymentGatewayPort } from '../src/modules/payments/interfaces/payment-gateway.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+jest.mock('axios');
+jest.mock('@anthropic-ai/sdk');
+
 describe('Payments Webhook (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -126,6 +129,7 @@ describe('Payments Webhook (e2e)', () => {
 
     const booking = await prisma.booking.findUnique({ where: { id: testBookingId } });
     expect(booking?.status).toBe('PAID');
+    expect(booking?.paidAmountUsd?.toString()).toBe('100');
 
     const payment = await prisma.payment.findFirst({ where: { bookingId: testBookingId } });
     expect(payment?.status).toBe('CAPTURED');

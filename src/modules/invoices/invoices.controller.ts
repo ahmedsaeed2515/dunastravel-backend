@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Req, Query, UnauthorizedException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
@@ -10,12 +10,14 @@ import {
 } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { ParseInvoiceNumberPipe } from '../../common/pipes';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 
 @ApiTags('Invoices')
 @Controller('invoices')
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':invoiceNumber')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Get invoice details by invoice number' })
@@ -25,7 +27,9 @@ export class InvoicesController {
   @ApiParam({ name: 'invoiceNumber', example: 'INV-2026-001' })
   async findByInvoiceNumber(
     @Param('invoiceNumber', ParseInvoiceNumberPipe) invoiceNumber: string,
+    @Req() req: any,
+    @Query('email') email?: string,
   ) {
-    return this.invoicesService.findByInvoiceNumber(invoiceNumber);
+    return this.invoicesService.findByInvoiceNumber(invoiceNumber, req.user?.id, email);
   }
 }

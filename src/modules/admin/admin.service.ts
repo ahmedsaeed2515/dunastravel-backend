@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Injectable, Logger, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject, ForbiddenException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -201,9 +201,13 @@ export class AdminService {
     return updated;
   }
 
-  async updateBookingStatus(referenceCode: string, dto: UpdateBookingStatusDto, adminUserId: string) {
+  async updateBookingStatus(referenceCode: string, dto: UpdateBookingStatusDto, adminUserId: string, isAgent: boolean = false) {
     const booking = await this.prisma.booking.findUnique({ where: { referenceCode } });
     if (!booking) throw new NotFoundException('Booking not found');
+
+    if (isAgent && booking.assigneeId !== adminUserId) {
+      throw new ForbiddenException('You can only update bookings assigned to you');
+    }
 
     if (booking.status === dto.status) {
       throw new BadRequestException(`Booking is already in status ${dto.status}`);
@@ -222,6 +226,13 @@ export class AdminService {
     const allowed = validTransitions[booking.status] || [];
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(`Cannot transition booking status from ${booking.status} to ${dto.status}`);
+    }
+
+    if (isAgent) {
+      const restrictedStatuses = ['PAID', 'REFUNDED'];
+      if (restrictedStatuses.includes(dto.status) || restrictedStatuses.includes(booking.status)) {
+        throw new ForbiddenException('Agents cannot perform financial status transitions');
+      }
     }
 
     const updated = await this.prisma.booking.update({
@@ -516,13 +527,14 @@ export class AdminService {
     return [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
   }
 
-  async listInquiries(query: ListInquiriesQueryDto, adminUserId: number): Promise<AdminPaginatedResponse<IAdminInquirySummary>> {
-    const { page = 1, limit = 20, status, email, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  async listInquiries(query: ListInquiriesQueryDto, adminUserId: string): Promise<AdminPaginatedResponse<IAdminInquirySummary>> {
+    const { page = 1, limit = 20, status, email, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', assigneeId } = query;
     this.logger.log(`listInquiries invoked by admin ${adminUserId} with filters: ${JSON.stringify(query)}`);
 
     const where: any = {};
     if (status) where.status = status;
     if (email) where.email = { contains: email, mode: 'insensitive' };
+    if (assigneeId) where.assigneeId = assigneeId;
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
@@ -560,10 +572,14 @@ export class AdminService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async getInquiryByReferenceCode(referenceCode: string, adminUserId: number): Promise<IAdminInquiryDetail> {
+  async getInquiryByReferenceCode(referenceCode: string, adminUserId: string, isAgent: boolean = false): Promise<IAdminInquiryDetail> {
     this.logger.log(`getInquiryByReferenceCode invoked by admin ${adminUserId} for Ref: ${referenceCode}`);
     const r = await this.prisma.tailorMadeInquiry.findUnique({ where: { referenceCode } });
     if (!r) throw new NotFoundException(`Inquiry with reference ${referenceCode} not found`);
+    
+    if (isAgent && r.assigneeId !== adminUserId) {
+      throw new ForbiddenException('You can only view inquiries assigned to you');
+    }
     
     const parts = r.fullName.split(' ');
     const firstName = parts[0];
@@ -595,28 +611,39 @@ export class AdminService {
     };
   }
 
-  async updateInquiryStatus(referenceCode: string, dto: UpdateInquiryStatusDto, adminUserId: number): Promise<IAdminInquiryDetail> {
+  async updateInquiry(referenceCode: string, dto: any, adminUserId: string, isAgent: boolean = false): Promise<IAdminInquiryDetail> {
     const inquiry = await this.prisma.tailorMadeInquiry.findUnique({ where: { referenceCode } });
     if (!inquiry) throw new NotFoundException(`Inquiry with reference ${referenceCode} not found`);
 
-    const validTransitions: Record<string, string[]> = {
-      NEWLY_RECEIVED: ['IN_PROGRESS', 'CLOSED'],
-      IN_PROGRESS: ['CLOSED'],
-      CLOSED: [],
-    };
+    if (isAgent && inquiry.assigneeId !== adminUserId) {
+      throw new ForbiddenException('You can only update inquiries assigned to you');
+    }
 
-    const allowed = validTransitions[inquiry.status] || [];
-    if (!allowed.includes(dto.status)) {
-      this.logger.warn(`Admin ${adminUserId} attempted invalid inquiry status transition for ${referenceCode}: ${inquiry.status} -> ${dto.status}`);
-      throw new BadRequestException(`Invalid status transition from ${inquiry.status} to ${dto.status}`);
+    if (dto.status && inquiry.status !== dto.status) {
+      const validTransitions: Record<string, string[]> = {
+        NEWLY_RECEIVED: ['IN_PROGRESS', 'CLOSED'],
+        IN_PROGRESS: ['CLOSED'],
+        CLOSED: [],
+      };
+
+      const allowed = validTransitions[inquiry.status] || [];
+      if (!allowed.includes(dto.status)) {
+        this.logger.warn(`Admin ${adminUserId} attempted invalid inquiry status transition for ${referenceCode}: ${inquiry.status} -> ${dto.status}`);
+        throw new BadRequestException(`Invalid status transition from ${inquiry.status} to ${dto.status}`);
+      }
     }
 
     const updated = await this.prisma.tailorMadeInquiry.update({
       where: { referenceCode },
-      data: { status: dto.status },
+      data: {
+        ...(dto.status && { status: dto.status }),
+        ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
+        ...(dto.followUpAt !== undefined && { followUpAt: dto.followUpAt ? new Date(dto.followUpAt) : null }),
+        ...(dto.internalNote !== undefined && { internalNote: dto.internalNote }),
+      },
     });
 
-    this.logger.log(`Admin ${adminUserId} updated inquiry ${referenceCode} status: ${inquiry.status} -> ${dto.status}`);
+    this.logger.log(`Admin ${adminUserId} updated inquiry ${referenceCode}`);
 
     return this.getInquiryByReferenceCode(referenceCode, adminUserId);
   }
@@ -1156,5 +1183,134 @@ export class AdminService {
     }
 
     return { success: true };
+  }
+
+  async suspendUser(userId: string, reason: string, adminUserId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { suspendedAt: new Date(), suspendReason: reason },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminUserId,
+        actorRole: 'ADMIN',
+        action: 'USER_SUSPENDED',
+        entityType: 'USER',
+        entityId: userId,
+        metadata: { reason },
+      },
+    });
+
+    return updated;
+  }
+
+  async activateUser(userId: string, adminUserId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { suspendedAt: null, suspendReason: null },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminUserId,
+        actorRole: 'ADMIN',
+        action: 'USER_ACTIVATED',
+        entityType: 'USER',
+        entityId: userId,
+      },
+    });
+
+    return updated;
+  }
+
+  async addTourImage(slug: string, dto: any, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} adding image to tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    const image = await this.prisma.tourImage.create({
+      data: {
+        tourId: tour.id,
+        imageUrl: dto.url,
+        isHero: dto.isHero,
+        sortOrder: dto.sortOrder,
+      }
+    });
+    return image;
+  }
+
+  async removeTourImage(slug: string, imageId: string, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} removing image ${imageId} from tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    await this.prisma.tourImage.delete({
+      where: { id: imageId, tourId: tour.id }
+    });
+    return { message: 'Image deleted' };
+  }
+
+  async reorderTourImage(slug: string, imageId: string, sortOrder: number, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} reordering image ${imageId} on tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    const image = await this.prisma.tourImage.update({
+      where: { id: imageId, tourId: tour.id },
+      data: { sortOrder }
+    });
+    return image;
+  }
+
+  async addTourItinerary(slug: string, dto: any, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} adding itinerary day to tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    const itinerary = await this.prisma.tourItinerary.create({
+      data: {
+        tourId: tour.id,
+        dayLabel: dto.dayLabel,
+        descriptionJsonb: dto.descriptionJsonb,
+        mealsJsonb: dto.mealsJsonb || null,
+        sortOrder: dto.sortOrder,
+      }
+    });
+    return itinerary;
+  }
+
+  async updateTourItinerary(slug: string, dayId: string, dto: any, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} updating itinerary ${dayId} on tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    const itinerary = await this.prisma.tourItinerary.update({
+      where: { id: dayId, tourId: tour.id },
+      data: {
+        ...(dto.dayLabel && { dayLabel: dto.dayLabel }),
+        ...(dto.descriptionJsonb && { descriptionJsonb: dto.descriptionJsonb }),
+        ...(dto.mealsJsonb && { mealsJsonb: dto.mealsJsonb }),
+        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      }
+    });
+    return itinerary;
+  }
+
+  async removeTourItinerary(slug: string, dayId: string, adminUserId: string) {
+    this.logger.log(`Admin ${adminUserId} removing itinerary ${dayId} from tour ${slug}`);
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    await this.prisma.tourItinerary.delete({
+      where: { id: dayId, tourId: tour.id }
+    });
+    return { message: 'Itinerary deleted' };
   }
 }

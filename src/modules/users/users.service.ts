@@ -14,6 +14,7 @@ import {
   AddCustomerNoteDto,
   AddCustomerDocumentDto,
 } from './dto/customer-crm.dto';
+import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 
 export type SafeUser = Omit<
   User,
@@ -60,6 +61,11 @@ export class UserService {
   }
 
   async create(data: CreateUserData): Promise<User> {
+    const existing = await this.findByEmail(data.email);
+    if (existing) {
+      throw new ConflictException('Email already in use');
+    }
+
     const count = await this.prisma.user.count();
     const customerNumber = `CUST-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
@@ -104,6 +110,23 @@ export class UserService {
         role: data.role,
       },
     });
+  }
+
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.phone && { phone: dto.phone }),
+        ...(dto.preferredCurrency && { preferredCurrency: dto.preferredCurrency }),
+        ...(dto.preferredLanguage && { preferredLanguage: dto.preferredLanguage }),
+      },
+    });
+
+    return this.toSafeUser(updated);
   }
 
   async findAll(options: {
@@ -203,6 +226,9 @@ export class UserService {
       futureCommissionPlan: user.futureCommissionPlan,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      verifyTokenExp: user.verifyTokenExp,
+      suspendedAt: user.suspendedAt,
+      suspendReason: user.suspendReason,
     };
   }
 

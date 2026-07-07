@@ -4,6 +4,9 @@ import {
   Param,
   Query,
   BadRequestException,
+  Post,
+  Body,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -12,9 +15,12 @@ import {
   ApiNotFoundResponse,
   ApiQuery,
   ApiParam,
+  ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { ToursService } from './tours.service';
-import { GetToursQueryDto, GetTourDetailQueryDto } from './dto';
+import { GetToursQueryDto, GetTourDetailQueryDto, CreateTourReviewDto } from './dto';
+import { JwtAuthGuard } from '../../common/guards';
+import { CurrentUser } from '../../common/decorators';
 
 @ApiTags('Tours')
 @Controller('tours')
@@ -55,5 +61,36 @@ export class ToursController {
       throw new BadRequestException('Invalid tour slug');
     }
     return this.toursService.findBySlug(trimmedSlug, query.lang);
+  }
+
+  @Get(':slug/reviews')
+  @ApiOperation({ summary: 'Get published reviews for a tour' })
+  @ApiOkResponse({ description: 'Paginated list of reviews' })
+  @ApiParam({ name: 'slug', type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getTourReviews(
+    @Param('slug') slug: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const trimmedSlug = slug?.trim();
+    if (!trimmedSlug) throw new BadRequestException('Invalid tour slug');
+    return this.toursService.getTourReviews(trimmedSlug, parseInt(page, 10), parseInt(limit, 10));
+  }
+
+  @Post(':slug/reviews')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Submit a review for a completed tour' })
+  @ApiCreatedResponse({ description: 'Review submitted successfully' })
+  @ApiParam({ name: 'slug', type: String })
+  async addTourReview(
+    @Param('slug') slug: string,
+    @CurrentUser() user: any,
+    @Body() dto: CreateTourReviewDto,
+  ) {
+    const trimmedSlug = slug?.trim();
+    if (!trimmedSlug) throw new BadRequestException('Invalid tour slug');
+    return this.toursService.addTourReview(trimmedSlug, user.id, dto);
   }
 }

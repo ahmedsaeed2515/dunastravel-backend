@@ -35,6 +35,7 @@ export class BookingsController {
 
   @Post()
   @HttpCode(201)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Create a tour booking' })
   @ApiCreatedResponse({ description: 'Booking created successfully' })
@@ -53,8 +54,12 @@ export class BookingsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all bookings for current user' })
   @ApiOkResponse({ description: 'List of user bookings' })
-  async findUserBookings(@CurrentUser() user: any) {
-    return this.bookingsService.findUserBookings(user.id);
+  async findUserBookings(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.bookingsService.findUserBookings(user.id, parseInt(page, 10), parseInt(limit, 10));
   }
 
   @Get(':referenceCode')

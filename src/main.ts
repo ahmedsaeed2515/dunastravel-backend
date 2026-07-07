@@ -11,8 +11,16 @@ import { AppModule } from './app.module';
 import { JsonLoggerService } from './common/logging/json-logger.service';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
+import * as Sentry from '@sentry/nestjs';
 
 async function bootstrap(): Promise<void> {
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+    });
+  }
+
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['log', 'error', 'warn', 'debug'],
@@ -91,6 +99,8 @@ async function bootstrap(): Promise<void> {
       'Authorization',
       'X-Requested-With',
       'Accept',
+      'Idempotency-Key',
+      'X-CSRF-Token',
     ],
     maxAge: 86400,
   });
@@ -146,6 +156,11 @@ async function bootstrap(): Promise<void> {
       .addTag('Inquiries', 'Tailor-made tour and contact form submissions')
       .addTag('AI Tools', 'AI-powered features (Hieroglyphics translator)')
       .addTag('Currency', 'Live exchange rate feed')
+      .addTag('Admin - Reviews', 'Manage and moderate customer reviews')
+      .addTag('Admin - CMS', 'Manage dynamic pages and content')
+      .addTag('Admin - Promotions', 'Manage discount codes and promotions')
+      .addTag('Admin - Reports', 'Financial and analytical reports')
+      .addTag('Wishlist', 'User saved tours')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

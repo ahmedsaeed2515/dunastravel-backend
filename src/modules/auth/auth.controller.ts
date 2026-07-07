@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   Res,
   Req,
@@ -33,10 +34,12 @@ import {
   VerifyEmailDto,
   ChangePasswordDto,
   ResendVerificationDto,
+  UpdateProfileDto,
 } from './dto';
 import { Public, CurrentUser } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards';
 import { AuthenticatedUser } from '../../common/types';
+import { UserService } from '../users/users.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -45,6 +48,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @Public()
@@ -153,6 +157,18 @@ export class AuthController {
     });
 
     return { csrfToken: token };
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update current user profile details' })
+  @ApiOkResponse({ description: 'Profile updated successfully' })
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const updatedUser = await this.userService.updateProfile(user.id, dto);
+    return { user: updatedUser };
   }
 
   @Public()

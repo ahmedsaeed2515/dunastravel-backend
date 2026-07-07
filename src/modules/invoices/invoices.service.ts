@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { extractI18n } from '../../common/utils';
@@ -14,7 +15,7 @@ export class InvoicesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByInvoiceNumber(invoiceNumber: string): Promise<InvoiceResponse> {
+  async findByInvoiceNumber(invoiceNumber: string, userId?: string, email?: string): Promise<InvoiceResponse> {
     this.logger.debug(`Invoice queried | number=${invoiceNumber}`);
 
     const invoice = await this.prisma.invoice.findUnique({
@@ -32,6 +33,14 @@ export class InvoicesService {
     if (!invoice) {
       this.logger.warn(`Invoice not found | number=${invoiceNumber}`);
       throw new NotFoundException('Invoice not found');
+    }
+
+    const isOwner = userId && invoice.booking.userId === userId;
+    const isEmailMatch = email && invoice.booking.billingInfo?.email === email;
+    
+    if (!isOwner && !isEmailMatch) {
+      this.logger.warn(`Unauthorized access attempt to invoice | number=${invoiceNumber}`);
+      throw new UnauthorizedException('You do not have permission to view this invoice');
     }
 
     if (!invoice.booking.billingInfo) {

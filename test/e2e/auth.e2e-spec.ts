@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -23,8 +24,9 @@ describe('Auth (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.use(cookieParser());
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
     );
+    app.useGlobalInterceptors(new TransformInterceptor());
     app.setGlobalPrefix('api');
     await app.init();
 
@@ -41,8 +43,10 @@ describe('Auth (e2e)', () => {
     it('should register a new user and return 201', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send(testUser)
-        .expect(201);
+        .send(testUser);
+      
+      console.log('auth register res.body:', res.body);
+      expect(res.status).toBe(201);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.email).toBe(testUser.email);
@@ -151,7 +155,8 @@ describe('Auth (e2e)', () => {
 
       const logoutRes = await request(app.getHttpServer())
         .post('/api/auth/logout')
-        .set('Cookie', cookie)
+        .set('Cookie', `${cookie}; csrf_token=dummy_csrf`)
+        .set('x-csrf-token', 'dummy_csrf')
         .expect(200);
 
       const setCookies = logoutRes.headers['set-cookie'] as unknown as string[];

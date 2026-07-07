@@ -9,6 +9,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('Admin - Currency Engine')
 @Controller('admin/currency')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @ApiBearerAuth()
 export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}

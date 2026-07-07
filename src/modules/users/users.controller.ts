@@ -11,6 +11,7 @@ import {
   ConflictException,
   ForbiddenException,
   Req,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SuperAdminEscalationGuard } from '../../common/guards/super-admin-escalation.guard';
 import { UserRole } from '@prisma/client';
 import { UserService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -185,17 +187,15 @@ export class UsersController {
   @ApiNotFoundResponse({ description: 'User not found' })
   async getUser(@Param('id') id: string) {
     const user = await this.userService.findById(id);
-    if (!user) throw new ConflictException('User not found');
+    if (!user) throw new NotFoundException('User not found');
     return this.userService.toSafeUser(user);
   }
 
   @Post()
+  @UseGuards(SuperAdminEscalationGuard)
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
   async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
-    if (dto.role === UserRole.SUPER_ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only SUPER_ADMIN can create a SUPER_ADMIN user');
-    }
 
     const existing = await this.userService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
@@ -214,12 +214,10 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UseGuards(SuperAdminEscalationGuard)
   @ApiOperation({ summary: 'Update an existing user.' })
   @ApiOkResponse({ description: 'The updated user' })
   async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() req: any) {
-    if (dto.role === UserRole.SUPER_ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only SUPER_ADMIN can grant SUPER_ADMIN role');
-    }
 
     let passwordHash = undefined;
     if (dto.password) {

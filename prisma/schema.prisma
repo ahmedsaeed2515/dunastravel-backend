@@ -46,6 +46,9 @@ model User {
   tags                 String[]              @default([])
   travelCompanions     Json?                 @map("travel_companions")
   verifyToken          String?               @map("verify_token") @db.VarChar(255)
+  verifyTokenExp       DateTime?             @map("verify_token_exp")
+  suspendedAt          DateTime?             @map("suspended_at")
+  suspendReason        String?               @map("suspend_reason")
   activityLogs         BookingActivityLog[]
   notes                BookingNote[]
   assignedBookings     Booking[]             @relation("BookingAssignee")
@@ -56,12 +59,15 @@ model User {
   customerNotes        CustomerNote[]        @relation("CustomerNotesTarget")
   authoredNotes        CustomerNote[]        @relation("CustomerNotesAuthor")
   company              Company?              @relation(fields: [companyId], references: [id])
+  assignedInquiries    TailorMadeInquiry[]   @relation("InquiryAssignee")
+  tourFavorites        TourFavorite[]
 
   @@index([deletedAt])
   @@index([customerNumber])
   @@index([isVip])
   @@index([status])
   @@index([companyId])
+  @@index([role, deletedAt])
   @@map("users")
 }
 
@@ -185,6 +191,7 @@ model Tour {
   images                  TourImage[]
   itineraries             TourItinerary[]
   reviews                 TourReview[]
+  favorites               TourFavorite[]
 
   @@index([isActive])
   @@index([category])
@@ -238,12 +245,15 @@ model TourReview {
   rating       Int       @default(5)
   reviewerName String    @map("reviewer_name") @db.VarChar(255)
   comment      String?
+  adminReply   String?   @map("admin_reply")
+  isPublished  Boolean   @default(false) @map("is_published")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
   tour         Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
   @@index([tourId])
+  @@index([tourId, isPublished])
   @@index([rating])
   @@index([deletedAt])
   @@map("tour_reviews")
@@ -275,6 +285,7 @@ model Booking {
   children           Int                  @default(0)
   infants            Int                  @default(0)
   totalAmountUsd     Decimal              @map("total_amount_usd") @db.Decimal(10, 2)
+  paidAmountUsd      Decimal              @default(0.00) @map("paid_amount_usd") @db.Decimal(10, 2)
   notes              String?
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
@@ -305,6 +316,8 @@ model Booking {
   @@index([priority])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([status, createdAt])
+  @@index([tourId, createdAt])
   @@map("bookings")
 }
 
@@ -365,12 +378,17 @@ model TailorMadeInquiry {
   budgetAmount      Decimal?                @map("budget_amount") @db.Decimal(10, 2)
   budgetCurrency    String?                 @map("budget_currency") @db.VarChar(10)
   notes             String?
+  assigneeId        String?                 @map("assignee_id")
+  followUpAt        DateTime?               @map("follow_up_at")
+  internalNote      String?                 @map("internal_note")
   status            TailorMadeInquiryStatus @default(NEWLY_RECEIVED)
   createdAt         DateTime                @default(now()) @map("created_at")
   updatedAt         DateTime                @updatedAt @map("updated_at")
+  assignee          User?                   @relation("InquiryAssignee", fields: [assigneeId], references: [id])
 
   @@index([status])
   @@index([createdAt])
+  @@index([assigneeId])
   @@map("tailor_made_inquiries")
 }
 
@@ -441,19 +459,20 @@ model MediaAsset {
 }
 
 model Payment {
-  id            String   @id @default(uuid())
-  bookingId     String   @map("booking_id")
-  amount        Decimal  @db.Decimal(10, 2)
-  currency      String   @default("USD") @db.VarChar(10)
-  method        String   @db.VarChar(100)
-  transactionId String?  @map("transaction_id") @db.VarChar(255)
+  id            String        @id @default(uuid())
+  bookingId     String        @map("booking_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD") @db.VarChar(10)
+  method        String        @db.VarChar(100)
+  transactionId String?       @map("transaction_id") @db.VarChar(255)
   status        PaymentStatus @default(PENDING)
-  isRefund      Boolean  @default(false) @map("is_refund")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  isRefund      Boolean       @default(false) @map("is_refund")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
+  @@index([status, createdAt])
   @@map("payments")
 }
 
@@ -526,6 +545,7 @@ model WalletTransaction {
 
   @@index([walletId])
   @@index([referenceType, referenceId])
+  @@index([walletId, createdAt])
   @@map("wallet_transactions")
 }
 
@@ -676,4 +696,58 @@ model ProcessedWebhookEvent {
   processedAt DateTime @default(now()) @map("processed_at")
 
   @@map("processed_webhook_events")
+}
+
+model TourFavorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tourId    String   @map("tour_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tourId])
+  @@index([userId])
+  @@index([tourId])
+  @@map("tour_favorites")
+}
+
+model Promotion {
+  id              String   @id @default(uuid())
+  code            String   @unique @db.VarChar(50)
+  discountPercent Float    @map("discount_percent")
+  validFrom       DateTime @map("valid_from")
+  validUntil      DateTime @map("valid_until")
+  maxUses         Int      @map("max_uses")
+  currentUses     Int      @default(0) @map("current_uses")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("promotions")
+}
+
+model CmsBlock {
+  id            String   @id @default(uuid())
+  key           String   @unique @db.VarChar(100)
+  content       Json
+  lastUpdatedBy String?  @map("last_updated_by")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("cms_blocks")
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(100)
+  subject   String   @db.VarChar(255)
+  bodyHtml  String   @map("body_html") @db.Text
+  variables Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("email_templates")
 }

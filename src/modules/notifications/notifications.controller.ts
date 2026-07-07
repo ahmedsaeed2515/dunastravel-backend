@@ -9,6 +9,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('Admin - Communications & Notifications')
 @Controller('admin/communications/logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @ApiBearerAuth()
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

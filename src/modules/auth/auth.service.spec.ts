@@ -10,7 +10,8 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { UserService } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
-
+import { NotificationsService } from '../notifications/notifications.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 jest.mock('bcrypt');
 
 describe('AuthService', () => {
@@ -19,6 +20,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
   let prisma: jest.Mocked<PrismaService>;
+  let notificationsService: jest.Mocked<NotificationsService>;
 
   const mockUser = {
     id: 'user-id',
@@ -52,6 +54,14 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
+        {
           provide: UserService,
           useValue: {
             findByEmail: jest.fn(),
@@ -84,6 +94,13 @@ describe('AuthService', () => {
             },
           },
         },
+        {
+          provide: NotificationsService,
+          useValue: {
+            sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+            sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -92,6 +109,7 @@ describe('AuthService', () => {
     jwtService = module.get(JwtService);
     configService = module.get(ConfigService);
     prisma = module.get(PrismaService);
+    notificationsService = module.get(NotificationsService);
   });
 
   afterEach(() => {
@@ -116,7 +134,9 @@ describe('AuthService', () => {
 
       expect(result).toEqual(safeUser);
       expect(userService.findByEmail).toHaveBeenCalledWith(registerDto.email);
+      expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 12);
       expect(prisma.user.create).toHaveBeenCalled();
+      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledTimes(1);
     });
 
     it('should throw ConflictException if email is already in use', async () => {
@@ -217,6 +237,7 @@ describe('AuthService', () => {
         'If that email exists, a password reset link has been sent.',
       );
       expect(prisma.user.update).toHaveBeenCalled();
+      expect(notificationsService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
     });
 
     it('should return generic message even if user does not exist (prevent enumeration)', async () => {

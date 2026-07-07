@@ -32,6 +32,7 @@ import { Response } from 'express';
 @ApiTags('Admin - Companies (B2B)')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @Controller('admin/companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
