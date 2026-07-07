@@ -462,12 +462,12 @@ async function seedSuperAdmin(): Promise<void> {
 async function seedCmsBlocks(): Promise<void> {
   console.log('\n📌 Seeding default CMS blocks...');
   const blocks = [
-    { key: 'homepage-hero', title: 'Homepage Hero', contentJsonb: { en: 'Welcome to Dunas Travel' } },
-    { key: 'footer-info', title: 'Footer Info', contentJsonb: { en: '© 2026 Dunas Travel' } }
+    { key: 'homepage-hero', content: { en: 'Welcome to Dunas Travel' } },
+    { key: 'footer-info', content: { en: '© 2026 Dunas Travel' } }
   ];
 
   for (const block of blocks) {
-    const existing = await prisma.cMSBlock.findUnique({
+    const existing = await prisma.cmsBlock.findUnique({
       where: { key: block.key }
     });
 
@@ -476,12 +476,10 @@ async function seedCmsBlocks(): Promise<void> {
       continue;
     }
 
-    await prisma.cMSBlock.create({
+    await prisma.cmsBlock.create({
       data: {
         key: block.key,
-        title: block.title,
-        contentJsonb: block.contentJsonb,
-        isActive: true,
+        content: block.content,
       }
     });
     console.log(`  ✅ Seeded CMS block: ${block.key}`);

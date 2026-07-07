@@ -23,9 +23,9 @@ export class InquiryCreatedListener {
     try {
       // 1. Compose emails
       const customerAck =
-        this.compositionService.composeInquiryCustomerAcknowledgment(payload);
+        await this.compositionService.composeInquiryCustomerAcknowledgment(payload);
       const internalAlert =
-        this.compositionService.composeInquiryInternalAlert(payload);
+        await this.compositionService.composeInquiryInternalAlert(payload);
 
       // 2. Deliver emails (these handle their own retries and logging)
       await Promise.all([

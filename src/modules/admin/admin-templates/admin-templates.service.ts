@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmailTemplateDto } from '../dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from '../dto/update-email-template.dto';
@@ -34,7 +35,7 @@ export class AdminTemplatesService {
         name: dto.name,
         subject: dto.subject,
         bodyHtml: dto.bodyHtml,
-        variables: dto.variables || null,
+        variables: dto.variables ?? Prisma.JsonNull,
       },
     });
   }
