@@ -75,7 +75,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
       ],
     }),
 
-    // Structured Logging
+    // Structured Logging — console only (serverless has read-only FS)
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console({
@@ -83,13 +83,6 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
             winston.format.timestamp(),
             winston.format.json(),
           ),
-        }),
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error',
-        }),
-        new winston.transports.File({
-          filename: 'logs/combined.log',
         }),
       ],
     }),

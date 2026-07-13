@@ -7,16 +7,15 @@ import compression from 'compression';
 import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { JsonLoggerService } from './common/logging/json-logger.service';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
-import * as Sentry from '@sentry/nestjs';
 
 let cachedApp: NestExpressApplication;
 
 async function bootstrapServerless(): Promise<any> {
   if (!cachedApp) {
     if (process.env.SENTRY_DSN) {
+      const Sentry = await import('@sentry/nestjs');
       Sentry.init({
         dsn: process.env.SENTRY_DSN,
         environment: process.env.NODE_ENV || 'production',
@@ -24,12 +23,12 @@ async function bootstrapServerless(): Promise<any> {
     }
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-      logger: ['log', 'error', 'warn', 'debug'],
+      // Use built-in logger to avoid file-write crash in serverless environment
+      logger: ['log', 'error', 'warn'],
       rawBody: true,
     });
 
     const configService = app.get(ConfigService);
-    app.useLogger(app.get(JsonLoggerService));
     app.enableShutdownHooks();
     app.set('trust proxy', 1);
 
@@ -48,19 +47,19 @@ async function bootstrapServerless(): Promise<any> {
     );
     app.use(cookieParser());
     app.use(compression({ threshold: 1024 }));
+    app.use(express.json({ limit: '1mb', verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
+    app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
 
-    app.use(express.json({ limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
-    app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
-
-    const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins') || process.env.CORS_ALLOWED_ORIGINS || 'https://www.dunastravel.com,https://admin.dunastravel.com';
-    const allowedOrigins = corsAllowedOrigins.split(',').map((o) => o.trim());
+    // Safe CORS — read from env, never crash
+    const rawOrigins = process.env.CORS_ALLOWED_ORIGINS || 'https://www.dunastravel.com,https://admin.dunastravel.com';
+    const allowedOrigins = rawOrigins.split(',').map((o) => o.trim()).filter(Boolean);
 
     app.enableCors({
       origin: allowedOrigins,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
-        'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Idempotency-Key', 'X-CSRF-Token'
+        'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Idempotency-Key', 'X-CSRF-Token',
       ],
       maxAge: 86400,
     });
@@ -80,7 +79,7 @@ async function bootstrapServerless(): Promise<any> {
     const { HttpExceptionFilter } = await import('./common/filters/http-exception.filter');
     const { PrismaExceptionFilter } = await import('./common/filters/prisma-exception.filter');
     const { TransformInterceptor } = await import('./common/interceptors/transform.interceptor');
-    
+
     app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
     app.useGlobalInterceptors(
       new TransformInterceptor(),
@@ -91,20 +90,22 @@ async function bootstrapServerless(): Promise<any> {
     await app.init();
     cachedApp = app;
   }
-  
+
   return cachedApp.getHttpAdapter().getInstance();
 }
 
-export default async function (req: any, res: any) {
+export default async function handler(req: any, res: any) {
   try {
     const server = await bootstrapServerless();
     return server(req, res);
   } catch (error: any) {
-    console.error("VERCEL BOOTSTRAP ERROR:", error);
-    return res.status(500).json({
-      message: "NestJS Bootstrap Failed",
-      error: error.message,
-      stack: error.stack
-    });
+    console.error('[Vercel] Bootstrap Error:', error?.message, error?.stack);
+    if (!res.headersSent) {
+      res.status(500).json({
+        statusCode: 500,
+        message: 'NestJS bootstrap failed',
+        error: error?.message ?? 'Unknown error',
+      });
+    }
   }
 }

@@ -66,32 +66,17 @@ async function bootstrap(): Promise<void> {
   app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
-  const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins');
+  const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins') ?? '';
   if (!corsAllowedOrigins) {
-    logger.error(
-      'CORS_ALLOWED_ORIGINS environment variable is missing or empty. Process exiting.',
+    logger.warn(
+      'CORS_ALLOWED_ORIGINS is missing — defaulting to empty (all origins denied).',
     );
-    process.exit(1);
   }
 
-  const allowedOrigins = corsAllowedOrigins.split(',').map((o) => o.trim());
-  const originRegex = /^https?:\/\/[a-zA-Z0-9.-]+(:[0-9]+)?$/;
-
-  for (const origin of allowedOrigins) {
-    if (origin === '*') {
-      logger.error(
-        'Wildcard CORS origin (*) is forbidden in production with credentials. Process exiting.',
-      );
-      process.exit(1);
-    }
-    if (!originRegex.test(origin)) {
-      logger.error(`Invalid CORS origin format: ${origin}. Process exiting.`);
-      process.exit(1);
-    }
-  }
+  const allowedOrigins = corsAllowedOrigins.split(',').map((o) => o.trim()).filter(Boolean);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: allowedOrigins.length ? allowedOrigins : false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

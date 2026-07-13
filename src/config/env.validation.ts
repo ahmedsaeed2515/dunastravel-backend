@@ -34,14 +34,13 @@ export const envValidationSchema = Joi.object({
   THROTTLE_TTL: Joi.number().integer().positive().default(60000),
   THROTTLE_LIMIT: Joi.number().integer().positive().default(100),
 
-  // Mail
-  RESEND_API_KEY: Joi.string()
-    .pattern(/^re_[a-zA-Z0-9_]{8,}$/)
-    .required(),
-  MAIL_FROM_ADDRESS: Joi.string().email().required(),
-  MAIL_FROM_NAME: Joi.string().max(100).required(),
-  MAIL_INTERNAL_ALERT_RECIPIENT: Joi.string().email().required(),
   MAIL_TRANSPORT: Joi.string().valid('resend', 'mock').optional(),
+
+  // Mail keys — optional so startup doesn't crash if not configured yet
+  RESEND_API_KEY: Joi.string().optional().allow(''),
+  MAIL_FROM_ADDRESS: Joi.string().email().optional().allow(''),
+  MAIL_FROM_NAME: Joi.string().max(100).optional().allow(''),
+  MAIL_INTERNAL_ALERT_RECIPIENT: Joi.string().email().optional().allow(''),
 
   // Media (Cloudinary)
   CLOUDINARY_CLOUD_NAME: Joi.string().required(),
@@ -49,11 +48,11 @@ export const envValidationSchema = Joi.object({
   CLOUDINARY_API_SECRET: Joi.string().required(),
 
   // Currency
-  OPENEXCHANGERATES_APP_ID: Joi.string().required(),
+  OPENEXCHANGERATES_APP_ID: Joi.string().optional().allow(''),
 
   // Stripe
-  STRIPE_SECRET_KEY: Joi.string().required(),
-  STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+  STRIPE_SECRET_KEY: Joi.string().optional().allow(''),
+  STRIPE_WEBHOOK_SECRET: Joi.string().optional().allow(''),
 
   // AI Platform
   AI_PROVIDER: Joi.string().optional(),
