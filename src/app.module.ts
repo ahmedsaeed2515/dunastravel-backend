@@ -43,7 +43,7 @@ import { AdminTemplatesModule } from './modules/admin/admin-templates/admin-temp
 import { CmsModule } from './modules/cms/cms.module';
 import { UsersModule } from './modules/users/users.module';
 import { ToolsModule } from './modules/tools/tools.module';
-
+import { SettingsModule } from './modules/settings/settings.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -149,6 +149,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     AdminTemplatesModule,
     CmsModule,
     ToolsModule,
+    SettingsModule,
   ],
   providers: [
     AsyncContextService,

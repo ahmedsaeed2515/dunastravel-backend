@@ -764,3 +764,13 @@ model EmailTemplate {
 
   @@map("email_templates")
 }
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique @db.VarChar(100)
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

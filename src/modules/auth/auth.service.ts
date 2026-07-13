@@ -25,6 +25,7 @@ import {
   ChangePasswordDto,
   ResendVerificationDto,
 } from './dto';
+import { SettingsService } from '../settings/settings.service';
 import { JwtPayload } from '../../common/types';
 
 export const getCookieOptions = (nodeEnv: string): CookieOptions => ({
@@ -54,6 +55,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly notificationsService: NotificationsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<SafeUser> {
@@ -124,7 +126,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (!user.isVerified) {
+    const requireEmailVerification = await this.settingsService.getSetting('AUTH_REQUIRE_EMAIL_VERIFICATION', true);
+
+    if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
         'Please verify your email before logging in',
       );
