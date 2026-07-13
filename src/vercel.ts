@@ -96,6 +96,15 @@ async function bootstrapServerless(): Promise<any> {
 }
 
 export default async function (req: any, res: any) {
-  const server = await bootstrapServerless();
-  return server(req, res);
+  try {
+    const server = await bootstrapServerless();
+    return server(req, res);
+  } catch (error: any) {
+    console.error("VERCEL BOOTSTRAP ERROR:", error);
+    return res.status(500).json({
+      message: "NestJS Bootstrap Failed",
+      error: error.message,
+      stack: error.stack
+    });
+  }
 }
