@@ -18,6 +18,7 @@ export interface InvoiceBillingResponse {
 
 export interface InvoiceResponse {
   invoiceNumber: string;
+  bookingId: string;
   issuedAt: string;
   status: string;
   tourTitle: string;

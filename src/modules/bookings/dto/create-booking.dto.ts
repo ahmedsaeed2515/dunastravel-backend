@@ -1,145 +1,88 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
-  IsUUID,
   IsNotEmpty,
-  IsDateString,
   IsOptional,
   IsInt,
   Min,
   Max,
   IsString,
   MaxLength,
-  IsArray,
-  ArrayNotEmpty,
-  ValidateNested,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
-  ValidationArguments,
-  registerDecorator,
+  IsEmail,
+  IsObject,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PassengerDto } from './passenger.dto';
-import { BillingInfoDto } from './billing-info.dto';
 
-@ValidatorConstraint({ name: 'isFutureDate', async: false })
-export class IsFutureDateConstraint implements ValidatorConstraintInterface {
-  validate(value: any) {
-    if (!value) return false;
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return false;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    return date > today;
-  }
-
-  defaultMessage() {
-    return 'arrivalDate must be a future date';
-  }
-}
-
-export function IsFutureDate() {
-  return function (object: object, propertyName: string) {
-    registerDecorator({
-      target: object.constructor,
-      propertyName: propertyName,
-      options: {},
-      constraints: [],
-      validator: IsFutureDateConstraint,
-    });
-  };
-}
-
-@ValidatorConstraint({ name: 'passengerCountMatches', async: false })
-export class PassengerCountMatchesConstraint implements ValidatorConstraintInterface {
-  validate(passengerNames: PassengerDto[], args: ValidationArguments) {
-    if (!Array.isArray(passengerNames)) return false;
-    const obj = args.object as any;
-    const adultsCount = obj.adults || 0;
-    const childrenCount = obj.children || 0;
-    const infantsCount = obj.infants || 0;
-
-    const currentAdults = passengerNames.filter(
-      (p) => p.passengerType === 'adult',
-    ).length;
-    const currentChildren = passengerNames.filter(
-      (p) => p.passengerType === 'child',
-    ).length;
-    const currentInfants = passengerNames.filter(
-      (p) => p.passengerType === 'infant',
-    ).length;
-
-    if (currentAdults === 0 && (currentChildren > 0 || currentInfants > 0)) {
-      return false;
-    }
-    if (currentInfants > currentAdults * 2) {
-      return false;
-    }
-
-    return (
-      currentAdults === adultsCount &&
-      currentChildren === childrenCount &&
-      currentInfants <= infantsCount
-    );
-  }
-
-  defaultMessage() {
-    return 'passengerNames count must match adults and children counts, require at least one adult if children/infants present, and maximum 2 infants per adult';
-  }
-}
-
-export function PassengerCountMatches() {
-  return function (object: object, propertyName: string) {
-    registerDecorator({
-      target: object.constructor,
-      propertyName: propertyName,
-      options: {},
-      constraints: [],
-      validator: PassengerCountMatchesConstraint,
-    });
-  };
-}
-
-export class CreateBookingDto {
-  @ApiProperty({ description: 'UUID of the tour to book' })
-  @IsUUID(4)
+export class CalculatePriceDto {
+  @ApiProperty()
+  @IsString()
   @IsNotEmpty()
   tourId!: string;
 
-  @ApiProperty({ example: '2027-03-15', description: 'Must be a future date' })
-  @IsDateString()
-  @IsFutureDate()
-  arrivalDate!: string;
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  adults!: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  children?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  promoCode?: string;
+}
+
+export class CreateBookingDto {
+  @ApiProperty({ description: 'Type of request: booking or inquiry' })
+  @IsString()
+  @IsNotEmpty()
+  type!: 'booking' | 'inquiry';
+
+  @ApiProperty({ description: 'Title of the tour to book (from frontend)' })
+  @IsString()
+  @IsOptional()
+  tourTitle?: string;
+
+  @ApiProperty({ description: 'ID of the tour' })
+  @IsString()
+  @IsNotEmpty()
+  tourId!: string;
+
+  @ApiPropertyOptional({ example: '2027-03-15', description: 'Arrival Date' })
+  @IsOptional()
+  @IsString()
+  arrivalDate?: string;
 
   @ApiPropertyOptional({ example: '2027-03-22' })
   @IsOptional()
-  @IsDateString()
+  @IsString()
   departureDate?: string;
 
-  @ApiProperty({ minimum: 1, maximum: 50, example: 2 })
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  @Type(() => Number)
-  adults!: number;
-
-  @ApiPropertyOptional({ default: 0 })
+  @ApiPropertyOptional({ example: '10:30' })
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(50)
-  @Type(() => Number)
-  children: number = 0;
+  @IsString()
+  arrivalTime?: string;
 
-  @ApiPropertyOptional({ default: 0 })
+  @ApiPropertyOptional({ example: '14:00' })
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(20)
-  @Type(() => Number)
-  infants: number = 0;
+  @IsString()
+  departureTime?: string;
 
-  @ApiPropertyOptional({ example: 'flight' })
+  @ApiPropertyOptional({ example: 'es' })
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiPropertyOptional({ example: 'premium' })
+  @IsOptional()
+  @IsString()
+  activityType?: string;
+
+  @ApiPropertyOptional({ example: 'train' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
@@ -153,18 +96,102 @@ export class CreateBookingDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   notes?: string;
 
-  @ApiProperty({ type: [PassengerDto] })
-  @IsArray()
-  @ArrayNotEmpty()
-  @ValidateNested({ each: true })
-  @Type(() => PassengerDto)
-  @PassengerCountMatches()
-  passengerNames!: PassengerDto[];
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  inquiryMessage?: string;
 
-  @ApiProperty({ type: BillingInfoDto })
-  @ValidateNested()
-  @Type(() => BillingInfoDto)
-  billing!: BillingInfoDto;
+  @ApiPropertyOptional({ minimum: 1, maximum: 50, example: 2 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @Type(() => Number)
+  adults?: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(50)
+  @Type(() => Number)
+  children?: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(20)
+  @Type(() => Number)
+  infants?: number;
+
+  @ApiPropertyOptional({ description: 'Passenger names object e.g. { adult_0: "Name" }' })
+  @IsOptional()
+  @IsObject()
+  passengerNames?: Record<string, string>;
+
+  @ApiProperty({ description: 'Full Name' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  fullName!: string;
+
+  @ApiProperty({ description: 'Email' })
+  @IsEmail()
+  @IsNotEmpty()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase().trim() : value,
+  )
+  email!: string;
+
+  @ApiProperty({ description: 'Phone number' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  phone!: string;
+
+  @ApiPropertyOptional({ example: 'company' })
+  @IsOptional()
+  @IsString()
+  invoiceType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  companyName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  taxId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  country?: string;
 
   @ApiPropertyOptional({ description: 'Optional promotion code to apply discount' })
   @IsOptional()

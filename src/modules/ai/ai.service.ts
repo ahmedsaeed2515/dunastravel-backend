@@ -184,4 +184,37 @@ Return ONLY valid JSON matching this structure:
       })),
     };
   }
+
+  async translateHieroglyphics(dto: { text: string }) {
+    if (!this.isConfigured) {
+      return { translation: 'Mocked Hieroglyphics for ' + dto.text };
+    }
+
+    try {
+      const prompt = `Translate the following name into ancient Egyptian hieroglyphics using unicode characters. Only return the unicode characters and nothing else. Name: ${dto.text}`;
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
+      });
+
+      const response = await Promise.race([
+        this.anthropic.messages.create({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 100,
+          temperature: 0.1,
+          system: 'You are an ancient Egyptian scribe. Return ONLY the unicode hieroglyphic characters. No explanations.',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        timeoutPromise,
+      ]) as Anthropic.Messages.Message;
+
+      const content =
+        response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+      
+      return { translation: content };
+    } catch (error: any) {
+      this.logger.error(`Failed to translate hieroglyphics: ${error.message}`);
+      throw new InternalServerErrorException('Failed to translate hieroglyphics.');
+    }
+  }
 }

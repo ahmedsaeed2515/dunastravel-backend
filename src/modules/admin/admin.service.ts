@@ -42,7 +42,7 @@ export class AdminService {
   ) {}
 
   async listBookings(query: ListBookingsQueryDto, adminUserId: string): Promise<AdminPaginatedResponse<IAdminBookingSummary>> {
-    const { page = 1, limit = 20, status, tourId, dateFrom, dateTo, search, paymentStatus, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const { page = 1, limit = 20, status, tourId, dateFrom, dateTo, search, paymentStatus, sortBy = 'createdAt', sortOrder = 'desc', assigneeId } = query;
     
     this.logger.log(`listBookings invoked by admin ${adminUserId} with filters: ${JSON.stringify(query)}`);
 
@@ -50,6 +50,7 @@ export class AdminService {
     if ((query as any).includeDeleted === 'true' || (query as any).includeDeleted === true) {
       delete where.deletedAt;
     }
+    if (assigneeId) where.assigneeId = assigneeId;
     if (status) where.status = status;
     if (paymentStatus && !status) where.status = paymentStatus;
     if (tourId) where.tourId = tourId;
@@ -110,7 +111,7 @@ export class AdminService {
     };
   }
 
-  async getBookingByReferenceCode(referenceCode: string, adminUserId: string): Promise<any> {
+  async getBookingByReferenceCode(referenceCode: string, adminUserId: string, isAgent: boolean = false): Promise<any> {
     this.logger.log(`getBookingByReferenceCode invoked by admin ${adminUserId} for Ref: ${referenceCode}`);
     
     const b = await this.prisma.booking.findUnique({
@@ -128,6 +129,10 @@ export class AdminService {
     });
 
     if (!b) throw new NotFoundException(`Booking with reference ${referenceCode} not found`);
+
+    if (isAgent && b.assigneeId !== adminUserId) {
+      throw new ForbiddenException('You can only view bookings assigned to you');
+    }
 
     const titleObj: any = b.tour.titleJsonb || {};
     const tourNameEn = titleObj['en'] || 'Unknown';

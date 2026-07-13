@@ -42,6 +42,7 @@ import { AdminReportsModule } from './modules/admin/admin-reports/admin-reports.
 import { AdminTemplatesModule } from './modules/admin/admin-templates/admin-templates.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { UsersModule } from './modules/users/users.module';
+import { ToolsModule } from './modules/tools/tools.module';
 
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
@@ -154,6 +155,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     AdminReportsModule,
     AdminTemplatesModule,
     CmsModule,
+    ToolsModule,
   ],
   providers: [
     AsyncContextService,

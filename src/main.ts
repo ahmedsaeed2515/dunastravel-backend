@@ -61,8 +61,8 @@ async function bootstrap(): Promise<void> {
   // ─── Compression & Limits ──────────────────────────────────────────────────
   app.use(compression({ threshold: 1024 }));
 
-  // Body size limits (10MB json, 1MB urlencoded)
-  app.use(express.json({ limit: '10mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
+  // Body size limits (1mb json, 1MB urlencoded)
+  app.use(express.json({ limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
   app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalInterceptors(
     new TransformInterceptor(),
-    app.get(TimeoutInterceptor),
+    new TimeoutInterceptor(configService),
     new RequestLoggingInterceptor(),
   );
 

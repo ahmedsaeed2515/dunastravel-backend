@@ -49,4 +49,10 @@ export interface IPaymentGatewayPort {
    * @param amount Optional amount to refund for partial refunds. If not provided, full amount is refunded.
    */
   refund(transactionId: string, amount?: number): Promise<{ refundId: string }>;
+
+  /**
+   * Expires a checkout session before its natural TTL.
+   * @param sessionId The ID of the session to expire.
+   */
+  expireSession(sessionId: string): Promise<void>;
 }

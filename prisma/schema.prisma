@@ -80,6 +80,7 @@ model Company {
   email             String?       @db.VarChar(255)
   phone             String?       @db.VarChar(50)
   website           String?       @db.VarChar(255)
+  taxId             String?       @unique @map("tax_id") @db.VarChar(100)
   address           Json?
   primaryContact    Json?         @map("primary_contact")
   commissionRate    Decimal       @default(0.00) @map("commission_rate") @db.Decimal(5, 2)
@@ -280,6 +281,11 @@ model Booking {
   status             BookingStatus        @default(PENDING)
   arrivalDate        DateTime             @map("arrival_date") @db.Date
   departureDate      DateTime?            @map("departure_date") @db.Date
+  arrivalTime        String?              @map("arrival_time") @db.VarChar(20)
+  departureTime      String?              @map("departure_time") @db.VarChar(20)
+  language           String?              @db.VarChar(10)
+  activityType       String?              @map("activity_type") @db.VarChar(50)
+  bookingType        String               @default("BOOKING") @map("booking_type") @db.VarChar(20)
   transportChoice    String?              @map("transport_choice") @db.VarChar(100)
   adults             Int                  @default(1)
   children           Int                  @default(0)
@@ -287,6 +293,7 @@ model Booking {
   totalAmountUsd     Decimal              @map("total_amount_usd") @db.Decimal(10, 2)
   paidAmountUsd      Decimal              @default(0.00) @map("paid_amount_usd") @db.Decimal(10, 2)
   notes              String?
+  inquiryMessage     String?              @map("inquiry_message") @db.Text
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
   assigneeId         String?              @map("assignee_id")
@@ -465,6 +472,9 @@ model Payment {
   currency      String        @default("USD") @db.VarChar(10)
   method        String        @db.VarChar(100)
   transactionId String?       @map("transaction_id") @db.VarChar(255)
+  /// Checkout URL returned by the gateway. Stored so we can replay it on duplicate initiation
+  /// without creating a second Stripe session. Null for admin-added payments.
+  sessionUrl    String?       @map("session_url")
   status        PaymentStatus @default(PENDING)
   isRefund      Boolean       @default(false) @map("is_refund")
   createdAt     DateTime      @default(now()) @map("created_at")
@@ -473,6 +483,8 @@ model Payment {
 
   @@index([bookingId])
   @@index([status, createdAt])
+  // Note: A partial unique index (bookingId WHERE status='PENDING') is enforced via raw SQL
+  // in the accompanying migration: idx_payments_one_pending_per_booking
   @@map("payments")
 }
 

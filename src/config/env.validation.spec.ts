@@ -26,6 +26,8 @@ describe('Environment Validation Schema', () => {
       CLOUDINARY_API_KEY: 'test',
       CLOUDINARY_API_SECRET: 'test',
       OPENEXCHANGERATES_APP_ID: 'test',
+      STRIPE_SECRET_KEY: 'sk_test_123',
+      STRIPE_WEBHOOK_SECRET: 'whsec_test_123',
     };
 
     const { error, value } = envValidationSchema.validate(validEnv);

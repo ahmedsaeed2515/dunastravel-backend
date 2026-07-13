@@ -10,25 +10,87 @@ import { PaymentEntity } from './domain/payment.entity';
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
+  // Sessions expire after 30 minutes — keep in sync with PaymentCronService threshold
+  private static readonly SESSION_TTL_MS = 30 * 60 * 1000;
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(IPaymentGatewayPort) private readonly paymentGateway: IPaymentGatewayPort,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async initiatePayment(bookingId: string) {
+  async initiatePayment(bookingId: string, userId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: { tour: true },
     });
 
-    if (!booking) {
+    if (!booking || booking.userId !== userId) {
       throw new NotFoundException('Booking not found');
     }
 
     if (booking.status !== 'PENDING') {
       throw new BadRequestException(`Booking is in ${booking.status} status and cannot be paid.`);
     }
+
+    // ─── Idempotency gate ────────────────────────────────────────────────────
+    // Check for an existing PENDING Payment record for this booking.
+    // There can be at most one (enforced by the DB partial unique index
+    // idx_payments_one_pending_per_booking), so findFirst is safe here.
+    const existingPendingPayment = await this.prisma.payment.findFirst({
+      where: { bookingId, status: 'PENDING', isRefund: false },
+    });
+
+    if (existingPendingPayment) {
+      const ageMs = Date.now() - existingPendingPayment.createdAt.getTime();
+
+      if (ageMs < PaymentsService.SESSION_TTL_MS) {
+        // Session is still valid — return the stored URL instead of creating a duplicate.
+        if (existingPendingPayment.sessionUrl) {
+          this.logger.log(
+            `Duplicate initiatePayment for booking ${bookingId}: returning existing session ` +
+            `${existingPendingPayment.transactionId} (age ${Math.round(ageMs / 1000)}s)`,
+          );
+          return {
+            url: existingPendingPayment.sessionUrl,
+            transactionId: existingPendingPayment.transactionId,
+          };
+        }
+        // sessionUrl is missing (edge case: pre-migration row or admin-added payment).
+        // Fall through and create a new session — the DB index will block duplicates.
+        this.logger.warn(
+          `PENDING Payment ${existingPendingPayment.id} for booking ${bookingId} has no sessionUrl stored. ` +
+          `Creating a new session. Consider running the idempotency migration.`,
+        );
+      } else {
+        // Session is stale — expire it explicitly before allowing a new one.
+        // This mirrors what the cron job does, but ensures the path is clear immediately
+        // instead of waiting up to 15 minutes for the cron to run.
+        this.logger.log(
+          `PENDING Payment ${existingPendingPayment.id} for booking ${bookingId} is stale ` +
+          `(age ${Math.round(ageMs / 1000)}s). Expiring it before creating a new session.`,
+        );
+        const entity = new PaymentEntity(
+          existingPendingPayment.id,
+          existingPendingPayment.bookingId,
+          Money.fromDecimal(existingPendingPayment.amount.toNumber(), existingPendingPayment.currency),
+          existingPendingPayment.method,
+          existingPendingPayment.transactionId,
+          existingPendingPayment.status as any,
+          existingPendingPayment.createdAt,
+        );
+        entity.expire();
+        await this.prisma.payment.update({
+          where: { id: existingPendingPayment.id },
+          data: { status: entity.status },
+        });
+
+        if (existingPendingPayment.transactionId) {
+          await this.paymentGateway.expireSession(existingPendingPayment.transactionId);
+        }
+      }
+    }
+    // ─── End idempotency gate ─────────────────────────────────────────────────
 
     const money = Money.fromDecimal(booking.totalAmountUsd.toNumber(), 'USD');
 
@@ -56,7 +118,10 @@ export class PaymentsService {
         new Date()
       );
 
-      // Ensure there is a PENDING payment record
+      // Persist the Payment record including the sessionUrl.
+      // If a concurrent request already inserted a PENDING row for this booking,
+      // the partial unique index (idx_payments_one_pending_per_booking) will cause
+      // Prisma to throw P2002, which we handle below.
       await this.prisma.payment.create({
         data: {
           bookingId: booking.id,
@@ -64,6 +129,7 @@ export class PaymentsService {
           currency: money.currency,
           method: this.paymentGateway.getProviderName(),
           transactionId: session.transactionId,
+          sessionUrl: session.url,
           status: mockEntity.status,
         },
       });
@@ -78,14 +144,35 @@ export class PaymentsService {
       this.logger.log(`Payment initiated for booking ${booking.id} with transactionId ${session.transactionId}`);
       return session;
     } catch (error: any) {
-      this.logger.error(`Database failure during initiatePayment for bookingId=${bookingId} ref=${booking.referenceCode}, rolling back transactionId=${session.transactionId}. Error: ${error.message}`);
-      
-      // Compensating action: refund/cancel the session
+      // P2002 from the partial unique index means a concurrent request already created a
+      // PENDING Payment. Retrieve and return that record's session URL.
+      if (error.code === 'P2002') {
+        this.logger.warn(
+          `Concurrent duplicate initiatePayment for booking ${bookingId} caught at DB level (P2002). ` +
+          `Fetching existing PENDING payment to return its session URL.`,
+        );
+        const concurrent = await this.prisma.payment.findFirst({
+          where: { bookingId, status: 'PENDING', isRefund: false },
+        });
+        if (concurrent?.sessionUrl && concurrent?.transactionId) {
+          return { url: concurrent.sessionUrl, transactionId: concurrent.transactionId };
+        }
+      }
+
+      this.logger.error(
+        `Database failure during initiatePayment for bookingId=${bookingId} ref=${booking.referenceCode}, ` +
+        `rolling back transactionId=${session.transactionId}. Error: ${error.message}`,
+      );
+
+      // Compensating action: cancel the Stripe session we just created.
       try {
         await this.paymentGateway.refund(session.transactionId);
         this.logger.log(`Successfully executed compensating refund for transactionId=${session.transactionId}`);
       } catch (refundError: any) {
-        this.logger.error(`CRITICAL: Failed to execute compensating refund for transactionId=${session.transactionId} after DB failure. Manual intervention required. Error: ${refundError.message}`);
+        this.logger.error(
+          `CRITICAL: Failed to execute compensating refund for transactionId=${session.transactionId} ` +
+          `after DB failure. Manual intervention required. Error: ${refundError.message}`,
+        );
       }
 
       throw error;

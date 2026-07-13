@@ -51,6 +51,10 @@ export const envValidationSchema = Joi.object({
   // Currency
   OPENEXCHANGERATES_APP_ID: Joi.string().required(),
 
+  // Stripe
+  STRIPE_SECRET_KEY: Joi.string().required(),
+  STRIPE_WEBHOOK_SECRET: Joi.string().required(),
+
   // AI Platform
   AI_PROVIDER: Joi.string().optional(),
   ANTHROPIC_API_KEY: Joi.string().when('AI_PROVIDER', {

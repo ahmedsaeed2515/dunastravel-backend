@@ -73,12 +73,61 @@ export class BookingsService {
   }
 
   private async generateUniqueInvoiceNumber(tx: any): Promise<string> {
+    const crypto = require('crypto');
+    const randomPart = crypto.randomBytes(4).toString('hex').toUpperCase();
     const year = new Date().getFullYear();
     const seqResult = await tx.$queryRaw<
       [{ nextval: bigint }]
     >`SELECT nextval('invoice_seq')`;
     const num = Number(seqResult[0].nextval);
-    return `INV-${year}-${String(num).padStart(4, '0')}`;
+    return `INV-${year}-${String(num).padStart(4, '0')}-${randomPart}`;
+  }
+
+  async calculatePrice(dto: any) {
+    const tour = await this.prisma.tour.findFirst({
+      where: { id: dto.tourId, isActive: true },
+      select: { basePriceUsd: true },
+    });
+    if (!tour) throw new NotFoundException('Tour not found or inactive');
+
+    let totalAmountUsd = this.calculateTotalAmount(
+      tour.basePriceUsd,
+      dto.adults,
+      dto.children || 0,
+    );
+
+    let discountAmountUsd = new Prisma.Decimal(0);
+    let promoValid = false;
+    let promoMessage = '';
+
+    if (dto.promoCode) {
+      const promo = await this.prisma.promotion.findUnique({ where: { code: dto.promoCode } });
+      if (promo && promo.isActive) {
+        const now = new Date();
+        const valid = (!promo.validFrom || now >= promo.validFrom) && 
+                      (!promo.validUntil || now <= promo.validUntil) && 
+                      (promo.maxUses === null || promo.currentUses < promo.maxUses);
+        if (valid) {
+          discountAmountUsd = totalAmountUsd.mul(promo.discountPercent).div(100);
+          totalAmountUsd = totalAmountUsd.sub(discountAmountUsd);
+          if (totalAmountUsd.lt(0)) totalAmountUsd = new Prisma.Decimal(0);
+          promoValid = true;
+          promoMessage = 'Promo applied successfully';
+        } else {
+          promoMessage = 'Promo code expired or max uses reached';
+        }
+      } else {
+        promoMessage = 'Invalid promo code';
+      }
+    }
+
+    return {
+      totalAmountUsd: totalAmountUsd.toString(),
+      discountAmountUsd: discountAmountUsd.toString(),
+      basePriceUsd: tour.basePriceUsd.toString(),
+      promoValid,
+      promoMessage
+    };
   }
 
   async createBooking(
@@ -86,82 +135,69 @@ export class BookingsService {
     userId: string | null,
     idempotencyKey?: string,
     adminOverride: boolean = false
-  ): Promise<BookingCreatedResponse> {
+  ): Promise<any> {
     if (idempotencyKey) {
-      const cachedResponse =
-        await this.cacheManager.get<BookingCreatedResponse>(
-          `idempotency:${idempotencyKey}`,
-        );
-      if (cachedResponse) {
-        this.logger.log(
-          `Idempotency key hit for ${idempotencyKey}, returning cached booking response`,
-        );
-        return cachedResponse;
-      }
+      const cachedResponse = await this.cacheManager.get<any>(`idempotency:${idempotencyKey}`);
+      if (cachedResponse) return cachedResponse;
     }
 
-    // STEP 1
-    if (
-      !adminOverride && dto.billing &&
-      dto.billing.invoiceType === 'COMPANY' &&
-      (!dto.billing.companyName || dto.billing.companyName.trim() === '')
-    ) {
-      throw new BadRequestException(
-        'companyName is required when invoiceType is COMPANY',
-      );
-    }
+    // We remove the hard requirement for taxId/companyName and auto-create the company below if missing
 
-    // STEP 2
-    const tour = await this.prisma.tour.findFirst({
-      where: { id: dto.tourId, isActive: true },
-      select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
+    const tours = await this.prisma.tour.findMany({ where: { isActive: true }, select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true } });
+    const tour = tours.find(t => {
+      const titleEn = extractI18n(t.titleJsonb, 'en');
+      return titleEn && titleEn.toLowerCase() === dto.tourTitle?.toLowerCase();
     });
-    if (!tour) {
-      this.logger.warn(
-        `Booking attempted for inactive/nonexistent tour | id=${dto.tourId}`,
-      );
-      throw new UnprocessableEntityException(
-        'Tour is not available for booking',
-      );
+
+    if (!tour && !adminOverride) {
+      this.logger.warn(`Booking attempted for non-existent tour title: ${dto.tourTitle}`);
+      throw new UnprocessableEntityException('Tour is not available for booking');
     }
 
-    // Normalize inputs for AdminOverride
-    const adultsCount = adminOverride ? (dto.passengers || 1) : dto.adults;
-    const childrenCount = adminOverride ? 0 : (dto.children ?? 0);
-    const arrivalDate = adminOverride && !dto.arrivalDate ? new Date() : new Date(dto.arrivalDate);
+    if (dto.type === 'inquiry') {
+      const referenceCode = await this.generateUniqueReferenceCode();
+      const booking = await this.prisma.booking.create({
+        data: {
+          referenceCode,
+          userId,
+          tourId: tour?.id || tours[0]?.id || 'uuid-placeholder',
+          status: 'PENDING',
+          bookingType: 'INQUIRY',
+          arrivalDate: new Date(),
+          totalAmountUsd: 0,
+          inquiryMessage: dto.inquiryMessage,
+          language: dto.language,
+          adults: 0,
+          children: 0,
+          infants: 0
+        },
+      });
 
-    // STEP 3
+      const billingInfo = await this.prisma.billingInfo.create({
+        data: {
+          bookingId: booking.id,
+          fullName: dto.fullName?.trim() || 'Inquiry User',
+          email: dto.email?.toLowerCase().trim() || 'noemail@example.com',
+          phone: dto.phone?.trim() || '00000',
+          invoiceType: 'PERSONAL',
+        },
+      });
+      return { id: booking.id, referenceCode: booking.referenceCode, type: 'inquiry', status: 'RECEIVED' };
+    }
+
+    const adultsCount = adminOverride ? (dto.passengers || 1) : (dto.adults || 1);
+    const childrenCount = adminOverride ? 0 : (dto.children ?? 0);
+    // Date corruption fix: If arrivalDate is missing but departureDate is provided, 
+    // it implies the user selected the start date of the tour in the UI (which they sent as departureDate).
+    const arrivalDate = dto.arrivalDate 
+      ? new Date(dto.arrivalDate) 
+      : (dto.departureDate ? new Date(dto.departureDate) : new Date());
+
     let totalAmountUsd = adminOverride && dto.manualAmountUsd !== undefined
       ? new Prisma.Decimal(dto.manualAmountUsd)
-      : this.calculateTotalAmount(
-          tour.basePriceUsd,
-          adultsCount,
-          childrenCount,
-        );
+      : this.calculateTotalAmount(tour?.basePriceUsd || new Prisma.Decimal(0), adultsCount, childrenCount);
 
-    let appliedPromoId = null;
-    if (dto.promoCode) {
-      const promo = await this.prisma.promotion.findUnique({ where: { code: dto.promoCode } });
-      if (!promo || !promo.isActive) {
-        throw new BadRequestException('Invalid or inactive promotion code');
-      }
-      const now = new Date();
-      if (promo.validFrom && now < promo.validFrom) throw new BadRequestException('Promotion code is not yet valid');
-      if (promo.validUntil && now > promo.validUntil) throw new BadRequestException('Promotion code has expired');
-      if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) throw new BadRequestException('Promotion code has reached its usage limit');
-
-      let discountAmountUsd = new Prisma.Decimal(0);
-      discountAmountUsd = totalAmountUsd.mul(promo.discountPercent).div(100);
-      
-      totalAmountUsd = totalAmountUsd.sub(discountAmountUsd);
-      if (totalAmountUsd.lt(0)) totalAmountUsd = new Prisma.Decimal(0);
-      appliedPromoId = promo.id;
-    }
-
-    // STEP 4
     const referenceCode = await this.generateUniqueReferenceCode();
-
-    // STEP 5
     let result;
     let attempt = 0;
     const maxAttempts = 3;
@@ -169,41 +205,73 @@ export class BookingsService {
     while (attempt < maxAttempts) {
       try {
         result = await this.prisma.$transaction(async (tx) => {
-          // 5a — Atomic seat decrement (prevents overselling under concurrency)
           const seatsRequested = adultsCount + childrenCount;
-          if (!adminOverride) {
+          if (!adminOverride && tour) {
             const seatUpdate = await tx.tour.updateMany({
-              where: {
-                id: tour.id,
-                remainingSeats: { gte: seatsRequested },
-              },
+              where: { id: tour.id, remainingSeats: { gte: seatsRequested } },
               data: { remainingSeats: { decrement: seatsRequested } },
             });
             if (seatUpdate.count === 0) {
-              throw new UnprocessableEntityException(
-                'Tour is fully booked or has insufficient seats',
-              );
+              throw new UnprocessableEntityException('Tour is fully booked or has insufficient seats');
             }
           }
 
-          if (appliedPromoId) {
-            await tx.promotion.update({
-              where: { id: appliedPromoId },
-              data: { currentUses: { increment: 1 } },
-            });
+          let companyId = null;
+          if (dto.invoiceType === 'company') {
+            const taxId = dto.taxId?.trim();
+            if (taxId) {
+              const company = await tx.company.findFirst({ where: { taxId } });
+              if (company) {
+                 companyId = company.id;
+              } else {
+                 // Auto-create an unverified 'CORPORATE' profile
+                 const newCompany = await tx.company.create({
+                   data: { 
+                     referenceCode: generateReferenceCode(), 
+                     name: dto.companyName?.trim() || 'Unknown Corporate', 
+                     email: dto.email, 
+                     phone: dto.phone, 
+                     taxId, 
+                     companyType: 'CORPORATE',
+                     status: 'INACTIVE'
+                   }
+                 });
+                 companyId = newCompany.id;
+              }
+            } else if (dto.companyName) {
+              const company = await tx.company.findFirst({ where: { name: { equals: dto.companyName.trim(), mode: 'insensitive' } } });
+              if (company) {
+                 companyId = company.id;
+              } else {
+                 const newCompany = await tx.company.create({
+                   data: { 
+                     referenceCode: generateReferenceCode(), 
+                     name: dto.companyName.trim(), 
+                     email: dto.email, 
+                     phone: dto.phone, 
+                     companyType: 'CORPORATE',
+                     status: 'INACTIVE'
+                   }
+                 });
+                 companyId = newCompany.id;
+              }
+            }
           }
 
-          // 5b
           const booking = await tx.booking.create({
             data: {
               referenceCode,
               userId,
-              tourId: tour.id,
+              companyId,
+              tourId: tour?.id || tours[0]?.id || 'uuid-placeholder',
               status: adminOverride && dto.status ? dto.status : 'PENDING',
+              bookingType: 'BOOKING',
               arrivalDate: arrivalDate,
-              departureDate: dto.departureDate
-                ? new Date(dto.departureDate)
-                : null,
+              departureDate: dto.departureDate ? new Date(dto.departureDate) : null,
+              arrivalTime: dto.arrivalTime ?? null,
+              departureTime: dto.departureTime ?? null,
+              language: dto.language ?? null,
+              activityType: dto.activityType ?? null,
               transportChoice: dto.transportChoice ?? null,
               adults: adultsCount,
               children: childrenCount,
@@ -213,149 +281,84 @@ export class BookingsService {
             },
           });
 
-          if (adminOverride) {
-            await tx.bookingActivityLog.create({
-              data: {
-                bookingId: booking.id,
-                userId: userId,
-                action: 'ADMIN_CREATED',
-                details: { ...dto }
-              }
-            });
-          }
-
-          // 5c
           let passengerData = [];
-          if (adminOverride && !dto.passengerNames) {
-            for (let i = 0; i < adultsCount; i++) {
-              passengerData.push({
-                bookingId: booking.id,
-                passengerType: 'ADULT',
-                fullName: `Passenger ${i + 1}`,
-              });
-            }
-          } else {
-            passengerData = dto.passengerNames.map((p: any) => ({
-              bookingId: booking.id,
-              passengerType: p.passengerType,
-              fullName: p.fullName.trim(),
-            }));
+          if (dto.passengerNames) {
+             for (const [key, name] of Object.entries(dto.passengerNames)) {
+                let type = 'ADULT';
+                if (key.includes('child')) type = 'CHILD';
+                if (key.includes('infant')) type = 'INFANT';
+                passengerData.push({ bookingId: booking.id, passengerType: type, fullName: name as string });
+             }
           }
-          await tx.passenger.createMany({ data: passengerData });
+          if (passengerData.length > 0) {
+             await tx.passenger.createMany({ data: passengerData });
+          }
 
-          // 5d
-          const billingData = dto.billing || {
-            fullName: 'Admin Override',
-            email: 'admin@override.com',
-            phone: '000000000',
-            invoiceType: 'PERSONAL',
-          };
           const billingInfo = await tx.billingInfo.create({
             data: {
               bookingId: booking.id,
-              fullName: billingData.fullName.trim(),
-              email: billingData.email.toLowerCase().trim(),
-              phone: billingData.phone.trim(),
-              invoiceType: billingData.invoiceType as any,
-              companyName: billingData.companyName?.trim() ?? null,
-              taxId: billingData.taxId?.trim() ?? null,
-              address: billingData.address?.trim() ?? null,
-              city: billingData.city?.trim() ?? null,
-              country: billingData.country?.trim() ?? null,
+              fullName: dto.fullName?.trim() || 'Override',
+              email: dto.email?.toLowerCase().trim() || 'admin@override.com',
+              phone: dto.phone?.trim() || '00000',
+              invoiceType: dto.invoiceType === 'company' ? 'COMPANY' : 'PERSONAL',
+              companyName: dto.companyName?.trim() ?? null,
+              taxId: dto.taxId?.trim() ?? null,
+              address: dto.address?.trim() ?? null,
+              city: dto.city?.trim() ?? null,
+              country: dto.country?.trim() ?? null,
             },
           });
 
-          // 5e
           const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
-
-          // 5f
-          await tx.invoice.create({
-            data: {
-              invoiceNumber,
-              bookingId: booking.id,
-              issuedAt: new Date(),
-            },
-          });
-
-          // 5g
-          const passengers = await tx.passenger.findMany({
-            where: { bookingId: booking.id },
-          });
+          await tx.invoice.create({ data: { invoiceNumber, bookingId: booking.id, issuedAt: new Date() } });
+          const passengers = await tx.passenger.findMany({ where: { bookingId: booking.id } });
 
           return { booking, billingInfo, invoiceNumber, passengers };
         });
-
-        break; // Success, exit retry loop
+        break;
       } catch (error: any) {
-        if (
-          error.code === 'P2002' &&
-          error.meta?.target?.includes('invoiceNumber')
-        ) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('invoiceNumber')) {
           attempt++;
-          this.logger.warn(
-            `Invoice number collision, retrying attempt ${attempt}`,
-          );
-          if (attempt >= maxAttempts) {
-            throw new InternalServerErrorException(
-              'Booking transaction failed due to invoice collision',
-            );
-          }
           continue;
         }
-
-        this.logger.error(
-          `Booking transaction failed | ref=${referenceCode} | error=${error.message}`,
-        );
-        throw new InternalServerErrorException('Booking transaction failed');
+        throw error;
       }
     }
 
-    // STEP 6
-    if (!result) {
-      throw new InternalServerErrorException('Booking transaction failed');
-    }
-    const tourTitle = extractI18n(tour.titleJsonb, 'en');
+    if (!result) throw new InternalServerErrorException('Booking transaction failed');
 
-    // STEP 7
-    const payload: BookingCreatedPayload = {
+    const tourTitle = tour ? extractI18n(tour.titleJsonb, 'en') : dto.tourTitle;
+
+    const payload = {
       referenceCode,
       invoiceNumber: result.invoiceNumber,
       tourTitle,
       totalAmountUsd: totalAmountUsd.toString(),
-      arrivalDate: new Date(dto.arrivalDate),
-      customerEmail: dto.billing.email.toLowerCase().trim(),
-      customerName: dto.billing.fullName.trim(),
+      arrivalDate: arrivalDate,
+      customerEmail: dto.email?.toLowerCase().trim(),
+      customerName: dto.fullName?.trim(),
       adults: dto.adults,
       children: dto.children ?? 0,
       infants: dto.infants ?? 0,
     };
     this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
 
-    // STEP 8
-    this.logger.log(
-      `Booking created | ref=${referenceCode} invoice=${result.invoiceNumber} tour=${tour.slug} total=${totalAmountUsd.toString()}`,
-    );
     this.bookingsCounter.inc();
 
     const responseData = {
       id: result.booking.id,
       referenceCode: result.booking.referenceCode,
       invoiceNumber: result.invoiceNumber,
+      type: 'booking',
       status: result.booking.status,
       tourTitle,
       arrivalDate: result.booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: result.booking.departureDate
-        ? result.booking.departureDate.toISOString().split('T')[0]
-        : null,
+      departureDate: result.booking.departureDate ? result.booking.departureDate.toISOString().split('T')[0] : null,
       adults: result.booking.adults,
       children: result.booking.children,
       infants: result.booking.infants,
       totalAmountUsd: result.booking.totalAmountUsd.toString(),
-      passengers: result.passengers.map((p) => ({
-        id: p.id,
-        passengerType: p.passengerType,
-        fullName: p.fullName,
-      })),
+      passengers: result.passengers.map((p: any) => ({ id: p.id, passengerType: p.passengerType, fullName: p.fullName })),
       billing: {
         fullName: result.billingInfo.fullName,
         email: result.billingInfo.email,
@@ -370,15 +373,11 @@ export class BookingsService {
     };
 
     if (idempotencyKey) {
-      await this.cacheManager.set(
-        `idempotency:${idempotencyKey}`,
-        responseData,
-        86400000,
-      );
+      await this.cacheManager.set(`idempotency:${idempotencyKey}`, responseData, 86400000);
     }
-
     return responseData;
   }
+
 
   async findByReferenceCode(
     referenceCode: string,

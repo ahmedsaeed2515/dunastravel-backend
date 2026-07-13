@@ -70,8 +70,8 @@ export class AdminController {
   @ApiOkResponse({ description: 'Full booking record' })
   @ApiNotFoundResponse({ description: 'Booking not found' })
   async getBookingByReferenceCode(@Param('referenceCode') referenceCode: string, @Req() req: any) {
-    const adminUserId = req.user.id;
-    return this.adminService.getBookingByReferenceCode(referenceCode, adminUserId);
+    const isAgent = req.user.role === UserRole.AGENT;
+    return this.adminService.getBookingByReferenceCode(referenceCode, req.user.id, isAgent);
   }
 
   @Post('bookings')

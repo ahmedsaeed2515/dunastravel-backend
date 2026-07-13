@@ -64,6 +64,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const verifyTokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
     const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
 
     const user = await this.prisma.user.create({
@@ -72,7 +73,7 @@ export class AuthService {
         email: dto.email,
         phone: dto.phone,
         passwordHash,
-        verifyToken,
+        verifyToken: verifyTokenHash,
         verifyTokenExp,
       },
     });
@@ -86,8 +87,9 @@ export class AuthService {
   }
 
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
     const user = await this.prisma.user.findFirst({
-      where: { verifyToken: dto.token, deletedAt: null },
+      where: { verifyToken: tokenHash, deletedAt: null },
     });
 
     if (!user) {
@@ -172,11 +174,12 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExp = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { resetToken, resetTokenExp },
+      data: { resetToken: resetTokenHash, resetTokenExp },
     });
 
     this.logger.log(`Password reset token generated for ${user.email}`);
@@ -188,9 +191,10 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
     const user = await this.prisma.user.findFirst({
       where: {
-        resetToken: dto.token,
+        resetToken: tokenHash,
         resetTokenExp: { gt: new Date() },
         deletedAt: null,
       },
@@ -305,10 +309,11 @@ export class AuthService {
     if (user.isVerified) return { message: 'Email is already verified.' };
 
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const verifyTokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
     const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { verifyToken, verifyTokenExp },
+      data: { verifyToken: verifyTokenHash, verifyTokenExp },
     });
 
     this.logger.log(`Resent verification email for: ${user.email}`);

@@ -37,6 +37,11 @@ export class CreateCompanyDto {
   @IsString()
   website?: string;
 
+  @ApiPropertyOptional({ example: '123456789' })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
+
   @ApiPropertyOptional({ example: { street: '123 Elite Ave', city: 'London' } })
   @IsOptional()
   @IsObject()
@@ -117,6 +122,11 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsString()
   website?: string;
+
+  @ApiPropertyOptional({ example: '123456789' })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
 
   @ApiPropertyOptional({ example: { street: '123 Elite Ave', city: 'London' } })
   @IsOptional()

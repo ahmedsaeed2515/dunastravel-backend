@@ -65,6 +65,7 @@ export class InvoicesService {
 
     return {
       invoiceNumber: invoice.invoiceNumber,
+      bookingId: invoice.bookingId,
       issuedAt: invoice.issuedAt.toISOString(),
       status: invoice.booking.status,
       tourTitle: extractI18n(invoice.booking.tour.titleJsonb, 'en'),

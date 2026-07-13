@@ -92,6 +92,7 @@ describe('PaymentsService', () => {
         status: 'PENDING',
         totalAmountUsd: { toNumber: () => 100 },
         currency: 'USD',
+        userId: 'usr-123',
       } as any);
 
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
@@ -99,7 +100,7 @@ describe('PaymentsService', () => {
         url: 'https://checkout.stripe.com/123',
       });
 
-      const result = await service.initiatePayment('bkg-123');
+      const result = await service.initiatePayment('bkg-123', 'usr-123');
 
       expect(result.url).toBe('https://checkout.stripe.com/123');
       expect(prisma.payment.create).toHaveBeenCalled();

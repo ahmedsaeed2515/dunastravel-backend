@@ -4,11 +4,17 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentEntity } from './domain/payment.entity';
 import { Money } from '../../common/domain/value-objects/money.vo';
 
+import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
+import { Inject } from '@nestjs/common';
+
 @Injectable()
 export class PaymentCronService {
   private readonly logger = new Logger(PaymentCronService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(IPaymentGatewayPort) private readonly paymentGateway: IPaymentGatewayPort,
+  ) {}
 
   @Cron('*/15 * * * *')
   async expireStalePayments() {
@@ -53,6 +59,10 @@ export class PaymentCronService {
             where: { id: paymentData.id },
             data: { status: entity.status },
           });
+
+          if (paymentData.transactionId) {
+            await this.paymentGateway.expireSession(paymentData.transactionId);
+          }
 
           // Also cancel the associated booking hold if it's still PENDING
           const booking = await tx.booking.findUnique({ where: { id: paymentData.bookingId } });

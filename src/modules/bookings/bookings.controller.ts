@@ -23,7 +23,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto } from './dto';
+import { CreateBookingDto, CalculatePriceDto } from './dto';
 import { OptionalJwtAuthGuard, JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { ParseBookingRefPipe } from '../../common/pipes/parse-booking-ref.pipe';
@@ -48,6 +48,14 @@ export class BookingsController {
   ) {
     const userId = user?.id ?? null;
     return this.bookingsService.createBooking(dto, userId, idempotencyKey);
+  }
+
+  @Post('calculate')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Calculate booking price' })
+  @ApiOkResponse({ description: 'Calculated price' })
+  async calculatePrice(@Body() dto: CalculatePriceDto) {
+    return this.bookingsService.calculatePrice(dto);
   }
 
   @Get('me')

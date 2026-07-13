@@ -10,7 +10,10 @@ export class StripeAdapter implements IPaymentGatewayPort {
   private stripe: Stripe;
 
   constructor(private readonly configService: ConfigService) {
-    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY') || 'sk_test_placeholder';
+    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY is missing in environment variables');
+    }
     this.stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2025-01-27.acacia' as any,
     });
@@ -60,7 +63,10 @@ export class StripeAdapter implements IPaymentGatewayPort {
       throw new BadRequestException('Missing stripe-signature header');
     }
 
-    const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || 'whsec_placeholder';
+    const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    if (!endpointSecret) {
+      throw new Error('STRIPE_WEBHOOK_SECRET is missing in environment variables');
+    }
 
     let event: Stripe.Event;
 
@@ -120,6 +126,21 @@ export class StripeAdapter implements IPaymentGatewayPort {
     } catch (err: any) {
       this.logger.error(`Stripe refund failed: ${err.message}`);
       throw new BadRequestException(`Refund failed: ${err.message}`);
+    }
+  }
+
+  async expireSession(sessionId: string): Promise<void> {
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+      if (session.status === 'open') {
+        await this.stripe.checkout.sessions.expire(sessionId);
+        this.logger.log(`Expired Stripe session: ${sessionId}`);
+      } else {
+        this.logger.log(`Stripe session ${sessionId} is not open (status: ${session.status}), skipping expiration.`);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to expire Stripe session ${sessionId}: ${err.message}`);
+      // Do not throw, this is a cleanup operation
     }
   }
 }

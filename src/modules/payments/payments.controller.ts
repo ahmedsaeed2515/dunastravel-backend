@@ -2,22 +2,24 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Req, RawBodyRequest, UseG
 import { PaymentsService } from './payments.service';
 import { Request as ExpressRequest } from 'express';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+// Removed duplicate JwtAuthGuard import
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
+
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('initiate')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async initiatePayment(@Body() dto: CreatePaymentDto) {
-    const session = await this.paymentsService.initiatePayment(dto.bookingId);
+  async initiatePayment(@Body() dto: CreatePaymentDto, @Req() req: any) {
+    const session = await this.paymentsService.initiatePayment(dto.bookingId, req.user?.id);
     return { url: session.url, transactionId: session.transactionId };
   }
 
