@@ -486,6 +486,118 @@ async function seedCmsBlocks(): Promise<void> {
   }
 }
 
+async function seedMockBookings(): Promise<void> {
+  console.log('\n📌 Seeding mock bookings, customers, and finance...');
+  const tours = await prisma.tour.findMany();
+  if (tours.length === 0) {
+    console.log('  ⚠  No tours found to attach bookings to.');
+    return;
+  }
+
+  // Create mock users (customers)
+  const customers = [];
+  for (let i = 1; i <= 5; i++) {
+    let customer = await prisma.user.findUnique({ where: { email: `customer${i}@example.com` } });
+    if (!customer) {
+      customer = await prisma.user.create({
+        data: {
+          email: `customer${i}@example.com`,
+          name: `Customer ${i}`,
+          passwordHash: 'dummy',
+          role: 'USER',
+          status: 'ACTIVE',
+          customerNumber: `CUST-100${i}`,
+        }
+      });
+    }
+    customers.push(customer);
+  }
+
+  // Create wallet for first customer
+  let wallet = await prisma.wallet.findUnique({
+    where: { ownerType_ownerId: { ownerType: 'USER', ownerId: customers[0].id } }
+  });
+  if (!wallet) {
+    wallet = await prisma.wallet.create({
+      data: {
+        ownerType: 'USER',
+        ownerId: customers[0].id,
+        balance: 500.00,
+        currency: 'USD'
+      }
+    });
+    await prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        amount: 500.00,
+        type: 'CREDIT',
+        referenceType: 'MANUAL_ADDITION',
+        status: 'COMPLETED'
+      }
+    });
+  }
+
+  // Create some bookings
+  for (let i = 1; i <= 10; i++) {
+    const refCode = `BKG-2026-${i.toString().padStart(3, '0')}`;
+    const existing = await prisma.booking.findUnique({ where: { referenceCode: refCode } });
+    if (existing) continue;
+
+    const tour = tours[i % tours.length];
+    const customer = customers[i % customers.length];
+
+    const booking = await prisma.booking.create({
+      data: {
+        referenceCode: refCode,
+        userId: customer.id,
+        tourId: tour.id,
+        status: i % 3 === 0 ? 'CONFIRMED' : 'PENDING',
+        arrivalDate: new Date(new Date().getTime() + (i * 86400000 * 5)),
+        totalAmountUsd: tour.basePriceUsd,
+        paidAmountUsd: i % 3 === 0 ? tour.basePriceUsd : 0,
+        adults: 2,
+        bookingType: 'BOOKING',
+        priority: 'MEDIUM',
+        billingInfo: {
+          create: {
+            fullName: customer.name,
+            email: customer.email,
+            phone: '+1234567890',
+            invoiceType: 'PERSONAL'
+          }
+        },
+        passengers: {
+          create: [
+            { passengerType: 'ADULT', fullName: customer.name },
+            { passengerType: 'ADULT', fullName: `Partner of ${customer.name}` }
+          ]
+        }
+      }
+    });
+
+    if (Number(booking.paidAmountUsd) > 0) {
+      await prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: booking.paidAmountUsd,
+          currency: 'USD',
+          method: 'CREDIT_CARD',
+          status: 'CAPTURED',
+          transactionId: `txn_${Date.now()}`
+        }
+      });
+      await prisma.invoice.create({
+        data: {
+          bookingId: booking.id,
+          invoiceNumber: `INV-${refCode}`
+        }
+      });
+    }
+
+    console.log(`  ✅ Seeded booking: ${refCode}`);
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -545,6 +657,7 @@ async function main(): Promise<void> {
   await seedCmsBlocks();
 
   await seedMediaAssets(prisma);
+  await seedMockBookings();
 
   console.log('\n✅ Seed complete!\n');
 }
