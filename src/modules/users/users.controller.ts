@@ -196,7 +196,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
   async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
-
     const existing = await this.userService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
 
@@ -217,8 +216,11 @@ export class UsersController {
   @UseGuards(SuperAdminEscalationGuard)
   @ApiOperation({ summary: 'Update an existing user.' })
   @ApiOkResponse({ description: 'The updated user' })
-  async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() req: any) {
-
+  async updateUser(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @Req() req: any,
+  ) {
     let passwordHash = undefined;
     if (dto.password) {
       passwordHash = await bcrypt.hash(dto.password, 12);

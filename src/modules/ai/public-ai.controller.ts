@@ -12,7 +12,9 @@ export class PublicAiController {
   constructor(private readonly aiService: AiService) {}
 
   @Post('hieroglyphics')
-  @ApiOperation({ summary: 'Translate a name to ancient Egyptian Hieroglyphics' })
+  @ApiOperation({
+    summary: 'Translate a name to ancient Egyptian Hieroglyphics',
+  })
   @ApiOkResponse({ description: 'The generated hieroglyphics translation' })
   async translateHieroglyphics(@Body() dto: TranslateHieroglyphicsDto) {
     return this.aiService.translateHieroglyphics(dto);

@@ -4,7 +4,9 @@ import * as bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -20,10 +22,12 @@ async function main() {
       name: 'Admin User',
       role: 'ADMIN',
       isVerified: true,
-      phone: '+1234567890'
-    }
+      phone: '+1234567890',
+    },
   });
   console.log('Admin seeded!');
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

@@ -62,18 +62,37 @@ async function bootstrap(): Promise<void> {
   app.use(compression({ threshold: 1024 }));
 
   // Body size limits (1mb json, 1MB urlencoded)
-  app.use(express.json({ limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, res, buf) => { req.rawBody = buf; } }));
+  app.use(
+    express.json({
+      limit: '1mb',
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
+  app.use(
+    express.urlencoded({
+      extended: true,
+      limit: '1mb',
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
-  const corsAllowedOrigins = configService.get<string>('corsAllowedOrigins') ?? '';
+  const corsAllowedOrigins =
+    configService.get<string>('corsAllowedOrigins') ?? '';
   if (!corsAllowedOrigins) {
     logger.warn(
       'CORS_ALLOWED_ORIGINS is missing — defaulting to empty (all origins denied).',
     );
   }
 
-  const allowedOrigins = corsAllowedOrigins.split(',').map((o) => o.trim()).filter(Boolean);
+  const allowedOrigins = corsAllowedOrigins
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 
   app.enableCors({
     origin: allowedOrigins.length ? allowedOrigins : false,

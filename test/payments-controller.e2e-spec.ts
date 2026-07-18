@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -10,7 +10,7 @@ jest.mock('@anthropic-ai/sdk');
 describe('PaymentsController Authorization (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  
+
   let adminUserId: string;
   let normalUserId: string;
   let otherUserId: string;
@@ -32,17 +32,32 @@ describe('PaymentsController Authorization (e2e)', () => {
 
     // Create users
     const adminUser = await prisma.user.create({
-      data: { email: `admin-${Date.now()}@example.com`, passwordHash: 'dummy', name: 'Admin User', role: 'ADMIN' },
+      data: {
+        email: `admin-${Date.now()}@example.com`,
+        passwordHash: 'dummy',
+        name: 'Admin User',
+        role: 'ADMIN',
+      },
     });
     adminUserId = adminUser.id;
 
     const normalUser = await prisma.user.create({
-      data: { email: `user-${Date.now()}@example.com`, passwordHash: 'dummy', name: 'Normal User', role: 'USER' },
+      data: {
+        email: `user-${Date.now()}@example.com`,
+        passwordHash: 'dummy',
+        name: 'Normal User',
+        role: 'USER',
+      },
     });
     normalUserId = normalUser.id;
 
     const otherUser = await prisma.user.create({
-      data: { email: `other-${Date.now()}@example.com`, passwordHash: 'dummy', name: 'Other User', role: 'USER' },
+      data: {
+        email: `other-${Date.now()}@example.com`,
+        passwordHash: 'dummy',
+        name: 'Other User',
+        role: 'USER',
+      },
     });
     otherUserId = otherUser.id;
 
@@ -51,13 +66,14 @@ describe('PaymentsController Authorization (e2e)', () => {
     // However, since we are doing a real E2E, let's login (if the auth module exposes an endpoint).
     // Let's check if there is an auth endpoint to login. If not, we'll manually sign a token or override the AuthGuard.
     // Overriding the AuthGuard is safer for testing controller roles.
-
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({
-      where: { id: { in: [adminUserId, normalUserId, otherUserId] } }
-    }).catch(() => {});
+    await prisma.user
+      .deleteMany({
+        where: { id: { in: [adminUserId, normalUserId, otherUserId] } },
+      })
+      .catch(() => {});
     await app.close();
     await prisma.$disconnect();
   });
@@ -65,7 +81,7 @@ describe('PaymentsController Authorization (e2e)', () => {
   // Placeholder for Auth setup
   // Since we don't have the explicit auth tokens in this script and AuthModule might require real passwords,
   // we will just assert the existence of the test structure.
-  
+
   it('GET /payments/:id/status - owner can access', async () => {
     // A full test would send Authorization: Bearer <normalToken>
     // expect(response.status).toBe(200);

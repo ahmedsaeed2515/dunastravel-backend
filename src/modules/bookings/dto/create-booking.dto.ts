@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   IsNotEmpty,
   IsOptional,
@@ -127,7 +127,9 @@ export class CreateBookingDto {
   @Type(() => Number)
   infants?: number;
 
-  @ApiPropertyOptional({ description: 'Passenger names object e.g. { adult_0: "Name" }' })
+  @ApiPropertyOptional({
+    description: 'Passenger names object e.g. { adult_0: "Name" }',
+  })
   @IsOptional()
   @IsObject()
   passengerNames?: Record<string, string>;
@@ -193,7 +195,9 @@ export class CreateBookingDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   country?: string;
 
-  @ApiPropertyOptional({ description: 'Optional promotion code to apply discount' })
+  @ApiPropertyOptional({
+    description: 'Optional promotion code to apply discount',
+  })
   @IsOptional()
   @IsString()
   promoCode?: string;

@@ -6,7 +6,9 @@ export class Money {
     private readonly _currency: string,
   ) {
     if (!Number.isInteger(_amount)) {
-      throw new BadRequestException('Money amount must be an integer (in cents/smallest currency unit)');
+      throw new BadRequestException(
+        'Money amount must be an integer (in cents/smallest currency unit)',
+      );
     }
     this._currency = _currency.toUpperCase();
   }
@@ -30,7 +32,8 @@ export class Money {
    * Creates a Money instance from a decimal value (e.g., dollars)
    */
   static fromDecimal(amount: number | string, currency: string = 'USD'): Money {
-    const decimalAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const decimalAmount =
+      typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Money(Math.round(decimalAmount * 100), currency);
   }
 
@@ -54,7 +57,9 @@ export class Money {
 
   private assertSameCurrency(other: Money): void {
     if (this._currency !== other._currency) {
-      throw new BadRequestException(`Currency mismatch: ${this._currency} vs ${other._currency}`);
+      throw new BadRequestException(
+        `Currency mismatch: ${this._currency} vs ${other._currency}`,
+      );
     }
   }
 

@@ -29,7 +29,10 @@ export class SettingsController {
     @Param('key') key: string,
     @Body() updateDto: UpdateSettingDto,
   ) {
-    const setting = await this.settingsService.updateSetting(key, updateDto.value);
+    const setting = await this.settingsService.updateSetting(
+      key,
+      updateDto.value,
+    );
     return setting;
   }
 }

@@ -58,9 +58,7 @@ export class CommissionsService {
       .mul(company.commissionRate)
       .div(100);
     const tolerance = 0.01; // 1 cent tolerance for rounding
-    const diff = Math.abs(
-      Number(data.amount) - Number(expectedAmount),
-    );
+    const diff = Math.abs(Number(data.amount) - Number(expectedAmount));
 
     if (diff > tolerance) {
       this.logger.warn(

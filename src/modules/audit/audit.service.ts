@@ -34,7 +34,9 @@ export class AuditService {
       });
     } catch (err) {
       // Audit failure must NEVER crash the main request
-      this.logger.error(`AuditLog write failed: ${(err as Error).message}`, { opts });
+      this.logger.error(`AuditLog write failed: ${(err as Error).message}`, {
+        opts,
+      });
     }
   }
 }

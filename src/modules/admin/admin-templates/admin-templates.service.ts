@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateEmailTemplateDto } from '../dto/create-email-template.dto';
@@ -18,14 +23,18 @@ export class AdminTemplatesService {
   }
 
   async getTemplate(id: string) {
-    const template = await this.prisma.emailTemplate.findUnique({ where: { id } });
+    const template = await this.prisma.emailTemplate.findUnique({
+      where: { id },
+    });
     if (!template) throw new NotFoundException('Template not found');
     return template;
   }
 
   async createTemplate(dto: CreateEmailTemplateDto, adminUserId: string) {
     this.logger.log(`Admin ${adminUserId} creating template ${dto.name}`);
-    const existing = await this.prisma.emailTemplate.findUnique({ where: { name: dto.name } });
+    const existing = await this.prisma.emailTemplate.findUnique({
+      where: { name: dto.name },
+    });
     if (existing) {
       throw new ConflictException('Template with this name already exists');
     }
@@ -40,14 +49,23 @@ export class AdminTemplatesService {
     });
   }
 
-  async updateTemplate(id: string, dto: UpdateEmailTemplateDto, adminUserId: string) {
+  async updateTemplate(
+    id: string,
+    dto: UpdateEmailTemplateDto,
+    adminUserId: string,
+  ) {
     this.logger.log(`Admin ${adminUserId} updating template ${id}`);
-    const template = await this.prisma.emailTemplate.findUnique({ where: { id } });
+    const template = await this.prisma.emailTemplate.findUnique({
+      where: { id },
+    });
     if (!template) throw new NotFoundException('Template not found');
 
     if (dto.name && dto.name !== template.name) {
-      const existing = await this.prisma.emailTemplate.findUnique({ where: { name: dto.name } });
-      if (existing) throw new ConflictException('Template with this name already exists');
+      const existing = await this.prisma.emailTemplate.findUnique({
+        where: { name: dto.name },
+      });
+      if (existing)
+        throw new ConflictException('Template with this name already exists');
     }
 
     return this.prisma.emailTemplate.update({
@@ -63,7 +81,9 @@ export class AdminTemplatesService {
 
   async deleteTemplate(id: string, adminUserId: string) {
     this.logger.log(`Admin ${adminUserId} deleting template ${id}`);
-    const template = await this.prisma.emailTemplate.findUnique({ where: { id } });
+    const template = await this.prisma.emailTemplate.findUnique({
+      where: { id },
+    });
     if (!template) throw new NotFoundException('Template not found');
 
     await this.prisma.emailTemplate.delete({ where: { id } });

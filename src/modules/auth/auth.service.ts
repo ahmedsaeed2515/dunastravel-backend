@@ -66,7 +66,10 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    const verifyTokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
+    const verifyTokenHash = crypto
+      .createHash('sha256')
+      .update(verifyToken)
+      .digest('hex');
     const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
 
     const user = await this.prisma.user.create({
@@ -83,13 +86,20 @@ export class AuthService {
     this.logger.log(
       `User registered: ${user.email}. Verification token generated.`,
     );
-    await this.notificationsService.sendVerificationEmail(user.email, user.name, verifyToken);
+    await this.notificationsService.sendVerificationEmail(
+      user.email,
+      user.name,
+      verifyToken,
+    );
 
     return this.userService.toSafeUser(user);
   }
 
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
-    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.token)
+      .digest('hex');
     const user = await this.prisma.user.findFirst({
       where: { verifyToken: tokenHash, deletedAt: null },
     });
@@ -99,7 +109,9 @@ export class AuthService {
     }
 
     if (user.verifyTokenExp && user.verifyTokenExp < new Date()) {
-      throw new BadRequestException('Verification link has expired. Please request a new one.');
+      throw new BadRequestException(
+        'Verification link has expired. Please request a new one.',
+      );
     }
 
     await this.prisma.user.update({
@@ -116,7 +128,9 @@ export class AuthService {
 
     const isLocked = await this.cacheManager.get<boolean>(lockoutKey);
     if (isLocked) {
-      throw new UnauthorizedException('Too many failed login attempts. Please try again later.');
+      throw new UnauthorizedException(
+        'Too many failed login attempts. Please try again later.',
+      );
     }
 
     const user = await this.userService.findByEmail(dto.email);
@@ -126,7 +140,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const requireEmailVerification = await this.settingsService.getSetting('AUTH_REQUIRE_EMAIL_VERIFICATION', true);
+    const requireEmailVerification = await this.settingsService.getSetting(
+      'AUTH_REQUIRE_EMAIL_VERIFICATION',
+      true,
+    );
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
@@ -136,7 +153,9 @@ export class AuthService {
 
     if (user.suspendedAt) {
       this.logger.warn(`Failed login attempt for suspended user: ${dto.email}`);
-      throw new UnauthorizedException('Your account has been suspended. Please contact support.');
+      throw new UnauthorizedException(
+        'Your account has been suspended. Please contact support.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -157,8 +176,11 @@ export class AuthService {
     return this.userService.toSafeUser(user);
   }
 
-  private async incrementFailedAttempts(attemptsKey: string, lockoutKey: string) {
-    let attempts = await this.cacheManager.get<number>(attemptsKey) || 0;
+  private async incrementFailedAttempts(
+    attemptsKey: string,
+    lockoutKey: string,
+  ) {
+    let attempts = (await this.cacheManager.get<number>(attemptsKey)) || 0;
     attempts += 1;
     if (attempts >= 5) {
       await this.cacheManager.set(lockoutKey, true, 15 * 60 * 1000); // 15 mins
@@ -178,7 +200,10 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
     const resetTokenExp = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
@@ -187,7 +212,11 @@ export class AuthService {
     });
 
     this.logger.log(`Password reset token generated for ${user.email}`);
-    await this.notificationsService.sendPasswordResetEmail(user.email, user.name, resetToken);
+    await this.notificationsService.sendPasswordResetEmail(
+      user.email,
+      user.name,
+      resetToken,
+    );
 
     return {
       message: 'If that email exists, a password reset link has been sent.',
@@ -195,7 +224,10 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.token)
+      .digest('hex');
     const user = await this.prisma.user.findFirst({
       where: {
         resetToken: tokenHash,
@@ -291,11 +323,17 @@ export class AuthService {
     return this.userService.toSafeUser(user);
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
 
-    const isPasswordValid = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.oldPassword,
+      user.passwordHash,
+    );
     if (!isPasswordValid) throw new BadRequestException('Invalid old password');
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
@@ -307,13 +345,24 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  async resendVerification(dto: ResendVerificationDto): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) return { message: 'If that email is registered, a verification link has been sent.' };
+  async resendVerification(
+    dto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user)
+      return {
+        message:
+          'If that email is registered, a verification link has been sent.',
+      };
     if (user.isVerified) return { message: 'Email is already verified.' };
 
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    const verifyTokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
+    const verifyTokenHash = crypto
+      .createHash('sha256')
+      .update(verifyToken)
+      .digest('hex');
     const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
     await this.prisma.user.update({
       where: { id: user.id },
@@ -321,7 +370,14 @@ export class AuthService {
     });
 
     this.logger.log(`Resent verification email for: ${user.email}`);
-    await this.notificationsService.sendVerificationEmail(user.email, user.name, verifyToken);
-    return { message: 'If that email is registered, a verification link has been sent.' };
+    await this.notificationsService.sendVerificationEmail(
+      user.email,
+      user.name,
+      verifyToken,
+    );
+    return {
+      message:
+        'If that email is registered, a verification link has been sent.',
+    };
   }
 }

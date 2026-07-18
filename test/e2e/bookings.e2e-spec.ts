@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import * as cookieParser from 'cookie-parser';
+import request from 'supertest';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
@@ -87,7 +87,10 @@ describe('Bookings (e2e)', () => {
     // Fetch CSRF token for guest endpoints
     const csrfRes = await request(app.getHttpServer()).get('/api/auth/csrf');
     const csrfCookies = csrfRes.headers['set-cookie'] as unknown as string[];
-    csrfCookie = csrfCookies?.find((c: string) => c.startsWith('csrf_token='))?.split(';')[0] ?? '';
+    csrfCookie =
+      csrfCookies
+        ?.find((c: string) => c.startsWith('csrf_token='))
+        ?.split(';')[0] ?? '';
     csrfToken = csrfRes.body.csrfToken;
   });
 

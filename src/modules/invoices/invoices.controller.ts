@@ -1,4 +1,12 @@
-import { Controller, Get, Param, UseGuards, Req, Query, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  Req,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
@@ -30,6 +38,10 @@ export class InvoicesController {
     @Req() req: any,
     @Query('email') email?: string,
   ) {
-    return this.invoicesService.findByInvoiceNumber(invoiceNumber, req.user?.id, email);
+    return this.invoicesService.findByInvoiceNumber(
+      invoiceNumber,
+      req.user?.id,
+      email,
+    );
   }
 }

@@ -23,7 +23,9 @@ export class InquiryCreatedListener {
     try {
       // 1. Compose emails
       const customerAck =
-        await this.compositionService.composeInquiryCustomerAcknowledgment(payload);
+        await this.compositionService.composeInquiryCustomerAcknowledgment(
+          payload,
+        );
       const internalAlert =
         await this.compositionService.composeInquiryInternalAlert(payload);
 

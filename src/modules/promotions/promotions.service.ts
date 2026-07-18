@@ -24,7 +24,9 @@ export class PromotionsService {
       throw new BadRequestException('Promotion code has expired');
     }
     if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
-      throw new BadRequestException('Promotion code has reached its usage limit');
+      throw new BadRequestException(
+        'Promotion code has reached its usage limit',
+      );
     }
 
     return {

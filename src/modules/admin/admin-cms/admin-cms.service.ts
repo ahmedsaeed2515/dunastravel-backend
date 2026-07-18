@@ -20,7 +20,8 @@ export class AdminCmsService {
 
   async getBlock(key: string) {
     const block = await this.prisma.cmsBlock.findUnique({ where: { key } });
-    if (!block) throw new NotFoundException(`CMS block with key ${key} not found`);
+    if (!block)
+      throw new NotFoundException(`CMS block with key ${key} not found`);
     return block;
   }
 

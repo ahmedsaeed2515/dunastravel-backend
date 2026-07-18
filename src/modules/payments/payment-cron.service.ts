@@ -13,13 +13,14 @@ export class PaymentCronService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(IPaymentGatewayPort) private readonly paymentGateway: IPaymentGatewayPort,
+    @Inject(IPaymentGatewayPort)
+    private readonly paymentGateway: IPaymentGatewayPort,
   ) {}
 
   @Cron('*/15 * * * *')
   async expireStalePayments() {
     this.logger.log('Starting cron job to expire stale pending payments...');
-    
+
     // threshold: 30 minutes ago
     const thresholdDate = new Date(Date.now() - 30 * 60 * 1000);
 
@@ -37,7 +38,9 @@ export class PaymentCronService {
       return;
     }
 
-    this.logger.log(`Found ${stalePayments.length} stale pending payments. Expiring them...`);
+    this.logger.log(
+      `Found ${stalePayments.length} stale pending payments. Expiring them...`,
+    );
 
     let expiredCount = 0;
     for (const paymentData of stalePayments) {
@@ -46,13 +49,16 @@ export class PaymentCronService {
           const entity = new PaymentEntity(
             paymentData.id,
             paymentData.bookingId,
-            Money.fromDecimal(paymentData.amount.toNumber(), paymentData.currency),
+            Money.fromDecimal(
+              paymentData.amount.toNumber(),
+              paymentData.currency,
+            ),
             paymentData.method,
             paymentData.transactionId,
-            paymentData.status as any,
+            paymentData.status,
             paymentData.createdAt,
           );
-          
+
           entity.expire();
 
           await tx.payment.update({
@@ -65,13 +71,16 @@ export class PaymentCronService {
           }
 
           // Also cancel the associated booking hold if it's still PENDING
-          const booking = await tx.booking.findUnique({ where: { id: paymentData.bookingId } });
+          const booking = await tx.booking.findUnique({
+            where: { id: paymentData.bookingId },
+          });
           if (booking && booking.status === 'PENDING') {
             await tx.booking.update({
               where: { id: booking.id },
-              data: { 
+              data: {
                 status: 'CANCELLED',
-                cancellationReason: 'Payment expired automatically after 30 minutes of inactivity',
+                cancellationReason:
+                  'Payment expired automatically after 30 minutes of inactivity',
               },
             });
             // Depending on the domain, we might also restore tour capacity here.
@@ -88,7 +97,9 @@ export class PaymentCronService {
         });
         expiredCount++;
       } catch (error: any) {
-        this.logger.error(`Failed to expire payment ${paymentData.id}: ${error.message}`);
+        this.logger.error(
+          `Failed to expire payment ${paymentData.id}: ${error.message}`,
+        );
       }
     }
 

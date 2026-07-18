@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import Anthropic from '@anthropic-ai/sdk';
@@ -54,10 +59,16 @@ Return ONLY valid JSON matching this structure:
 }`;
 
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
+        setTimeout(
+          () =>
+            reject(
+              new Error('Anthropic API request timed out after 30 seconds'),
+            ),
+          30000,
+        );
       });
 
-      const response = await Promise.race([
+      const response = (await Promise.race([
         this.anthropic.messages.create({
           model: 'claude-3-haiku-20240307',
           max_tokens: 1500,
@@ -67,11 +78,11 @@ Return ONLY valid JSON matching this structure:
           messages: [{ role: 'user', content: prompt }],
         }),
         timeoutPromise,
-      ]) as Anthropic.Messages.Message;
+      ])) as Anthropic.Messages.Message;
 
       const content =
         response.content[0].type === 'text' ? response.content[0].text : '{}';
-      
+
       try {
         return JSON.parse(content);
       } catch (parseError: any) {
@@ -83,7 +94,9 @@ Return ONLY valid JSON matching this structure:
         throw error;
       }
       this.logger.error(`Failed to generate itinerary: ${error.message}`);
-      throw new InternalServerErrorException('Failed to generate AI itinerary. Please try again.');
+      throw new InternalServerErrorException(
+        'Failed to generate AI itinerary. Please try again.',
+      );
     }
   }
 
@@ -137,10 +150,16 @@ Return ONLY valid JSON matching this structure:
 }`;
 
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
+        setTimeout(
+          () =>
+            reject(
+              new Error('Anthropic API request timed out after 30 seconds'),
+            ),
+          30000,
+        );
       });
 
-      const response = await Promise.race([
+      const response = (await Promise.race([
         this.anthropic.messages.create({
           model: 'claude-3-haiku-20240307',
           max_tokens: 1000,
@@ -150,11 +169,11 @@ Return ONLY valid JSON matching this structure:
           messages: [{ role: 'user', content: prompt }],
         }),
         timeoutPromise,
-      ]) as Anthropic.Messages.Message;
+      ])) as Anthropic.Messages.Message;
 
       const content =
         response.content[0].type === 'text' ? response.content[0].text : '{}';
-      
+
       try {
         return JSON.parse(content);
       } catch (parseError: any) {
@@ -166,7 +185,9 @@ Return ONLY valid JSON matching this structure:
         throw error;
       }
       this.logger.error(`Failed to analyze customer: ${error.message}`);
-      throw new InternalServerErrorException('Failed to analyze customer data.');
+      throw new InternalServerErrorException(
+        'Failed to analyze customer data.',
+      );
     }
   }
 
@@ -194,27 +215,38 @@ Return ONLY valid JSON matching this structure:
       const prompt = `Translate the following name into ancient Egyptian hieroglyphics using unicode characters. Only return the unicode characters and nothing else. Name: ${dto.text}`;
 
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Anthropic API request timed out after 30 seconds')), 30000);
+        setTimeout(
+          () =>
+            reject(
+              new Error('Anthropic API request timed out after 30 seconds'),
+            ),
+          30000,
+        );
       });
 
-      const response = await Promise.race([
+      const response = (await Promise.race([
         this.anthropic.messages.create({
           model: 'claude-3-haiku-20240307',
           max_tokens: 100,
           temperature: 0.1,
-          system: 'You are an ancient Egyptian scribe. Return ONLY the unicode hieroglyphic characters. No explanations.',
+          system:
+            'You are an ancient Egyptian scribe. Return ONLY the unicode hieroglyphic characters. No explanations.',
           messages: [{ role: 'user', content: prompt }],
         }),
         timeoutPromise,
-      ]) as Anthropic.Messages.Message;
+      ])) as Anthropic.Messages.Message;
 
       const content =
-        response.content[0].type === 'text' ? response.content[0].text.trim() : '';
-      
+        response.content[0].type === 'text'
+          ? response.content[0].text.trim()
+          : '';
+
       return { translation: content };
     } catch (error: any) {
       this.logger.error(`Failed to translate hieroglyphics: ${error.message}`);
-      throw new InternalServerErrorException('Failed to translate hieroglyphics.');
+      throw new InternalServerErrorException(
+        'Failed to translate hieroglyphics.',
+      );
     }
   }
 }

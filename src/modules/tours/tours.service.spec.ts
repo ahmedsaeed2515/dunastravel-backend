@@ -54,7 +54,11 @@ describe('ToursService', () => {
   describe('findAll', () => {
     it('should apply active filter when resolving tours', async () => {
       jest.spyOn(prisma.tour, 'count').mockResolvedValue(1);
-      jest.spyOn(prisma.tour, 'findMany').mockResolvedValue([{ id: 'tour-1', images: [], basePriceUsd: { toString: () => '100' } }] as any);
+      jest
+        .spyOn(prisma.tour, 'findMany')
+        .mockResolvedValue([
+          { id: 'tour-1', images: [], basePriceUsd: { toString: () => '100' } },
+        ] as any);
 
       const result = await service.findAll({ isActive: true } as any);
 
@@ -69,7 +73,14 @@ describe('ToursService', () => {
 
   describe('findBySlug', () => {
     it('should resolve tour by slug', async () => {
-      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({ id: 'tour-2', slug: 'my-tour', itineraries: [], images: [], titleJsonb: { en: 'test' }, basePriceUsd: { toString: () => '150' } } as any);
+      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({
+        id: 'tour-2',
+        slug: 'my-tour',
+        itineraries: [],
+        images: [],
+        titleJsonb: { en: 'test' },
+        basePriceUsd: { toString: () => '150' },
+      } as any);
 
       const result = await service.findBySlug('my-tour', 'en');
 

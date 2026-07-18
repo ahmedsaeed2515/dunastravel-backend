@@ -105,7 +105,12 @@ export class AgentsService {
         companyId: dto.companyId,
       },
       select: {
-        id: true, name: true, email: true, phone: true, companyId: true, updatedAt: true,
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        companyId: true,
+        updatedAt: true,
       },
     });
   }

@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -69,8 +75,8 @@ export class ToursService {
       ];
     }
 
-    const orderBy: Prisma.TourOrderByWithRelationInput = query.sortPrice 
-      ? { basePriceUsd: query.sortPrice } 
+    const orderBy: Prisma.TourOrderByWithRelationInput = query.sortPrice
+      ? { basePriceUsd: query.sortPrice }
       : { createdAt: 'desc' };
 
     const [total, records] = await this.prisma.$transaction([
@@ -161,11 +167,21 @@ export class ToursService {
       basePriceUsd: tour.basePriceUsd.toString(),
       duration: extractI18n(tour.durationJsonb, lang),
       overview: extractI18n(tour.overviewJsonb, lang),
-      cancellationPolicy: tour.cancellationPolicyJsonb ? extractI18n(tour.cancellationPolicyJsonb, lang) : null,
-      includedServices: tour.includedServicesJsonb ? extractI18n(tour.includedServicesJsonb, lang) : null,
-      excludedServices: tour.excludedServicesJsonb ? extractI18n(tour.excludedServicesJsonb, lang) : null,
-      hotelInfo: tour.hotelInfoJsonb ? extractI18n(tour.hotelInfoJsonb, lang) : null,
-      seasonPricing: tour.seasonPricingJsonb ? extractI18n(tour.seasonPricingJsonb, lang) : null,
+      cancellationPolicy: tour.cancellationPolicyJsonb
+        ? extractI18n(tour.cancellationPolicyJsonb, lang)
+        : null,
+      includedServices: tour.includedServicesJsonb
+        ? extractI18n(tour.includedServicesJsonb, lang)
+        : null,
+      excludedServices: tour.excludedServicesJsonb
+        ? extractI18n(tour.excludedServicesJsonb, lang)
+        : null,
+      hotelInfo: tour.hotelInfoJsonb
+        ? extractI18n(tour.hotelInfoJsonb, lang)
+        : null,
+      seasonPricing: tour.seasonPricingJsonb
+        ? extractI18n(tour.seasonPricingJsonb, lang)
+        : null,
       tags: tour.tags,
       difficultyLevel: tour.difficultyLevel,
       meetingPoint: tour.meetingPoint,
@@ -205,14 +221,20 @@ export class ToursService {
     }
     return deleted;
   }
-  async getTourReviews(slug: string, pageVal: number = 1, limitVal: number = 10): Promise<PaginatedResponse<any>> {
+  async getTourReviews(
+    slug: string,
+    pageVal: number = 1,
+    limitVal: number = 10,
+  ): Promise<PaginatedResponse<any>> {
     const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
-    
+
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException('Tour not found');
 
     const [total, records] = await this.prisma.$transaction([
-      this.prisma.tourReview.count({ where: { tourId: tour.id, isPublished: true } }),
+      this.prisma.tourReview.count({
+        where: { tourId: tour.id, isPublished: true },
+      }),
       this.prisma.tourReview.findMany({
         where: { tourId: tour.id, isPublished: true },
         orderBy: { createdAt: 'desc' },
@@ -245,7 +267,9 @@ export class ToursService {
     });
 
     if (!hasCompletedBooking) {
-      throw new BadRequestException('You must have a COMPLETED booking for this tour to leave a review.');
+      throw new BadRequestException(
+        'You must have a COMPLETED booking for this tour to leave a review.',
+      );
     }
 
     const review = await this.prisma.tourReview.create({
@@ -258,6 +282,9 @@ export class ToursService {
       },
     });
 
-    return { message: 'Review submitted successfully and is pending approval.', reviewId: review.id };
+    return {
+      message: 'Review submitted successfully and is pending approval.',
+      reviewId: review.id,
+    };
   }
 }

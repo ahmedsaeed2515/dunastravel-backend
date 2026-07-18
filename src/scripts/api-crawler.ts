@@ -13,10 +13,16 @@ const sess = axios.create({ baseURL: BASE_URL, validateStatus: () => true });
 
 sess.interceptors.request.use((config) => {
   if (cookieStore.size > 0) {
-    config.headers['Cookie'] = Array.from(cookieStore.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+    config.headers['Cookie'] = Array.from(cookieStore.entries())
+      .map(([k, v]) => `${k}=${v}`)
+      .join('; ');
   }
   const csrfToken = cookieStore.get('csrf_token');
-  if (csrfToken && config.method && !['get', 'head', 'options'].includes(config.method.toLowerCase())) {
+  if (
+    csrfToken &&
+    config.method &&
+    !['get', 'head', 'options'].includes(config.method.toLowerCase())
+  ) {
     config.headers['x-csrf-token'] = csrfToken;
   }
   return config;
@@ -25,13 +31,18 @@ sess.interceptors.request.use((config) => {
 sess.interceptors.response.use((response) => {
   const setCookie = response.headers['set-cookie'];
   if (setCookie) {
-    (Array.isArray(setCookie) ? setCookie : [setCookie]).forEach((cStr: string) => {
-      const [nameValue] = cStr.split(';');
-      const eqIdx = nameValue.indexOf('=');
-      if (eqIdx > -1) {
-        cookieStore.set(nameValue.substring(0, eqIdx).trim(), nameValue.substring(eqIdx + 1).trim());
-      }
-    });
+    (Array.isArray(setCookie) ? setCookie : [setCookie]).forEach(
+      (cStr: string) => {
+        const [nameValue] = cStr.split(';');
+        const eqIdx = nameValue.indexOf('=');
+        if (eqIdx > -1) {
+          cookieStore.set(
+            nameValue.substring(0, eqIdx).trim(),
+            nameValue.substring(eqIdx + 1).trim(),
+          );
+        }
+      },
+    );
   }
   return response;
 });
@@ -85,30 +96,39 @@ async function run() {
   console.log('Logging in as admin...');
   await sess.post('/auth/login', {
     email: 'admin@dunastravel.com',
-    password: 'password123'
+    password: 'password123',
   });
 
   const paths = swaggerSpec.paths;
   for (const [routePath, methods] of Object.entries(paths)) {
-    for (const [method, operation] of Object.entries(methods as Record<string, any>)) {
+    for (const [method, operation] of Object.entries(
+      methods as Record<string, any>,
+    )) {
       // Avoid destroying data if possible, but user wants everything executed
       // We will skip pure logout so we don't invalidate our token midway
-      if (routePath === '/auth/logout' || routePath.includes('export')) continue;
+      if (routePath === '/auth/logout' || routePath.includes('export'))
+        continue;
 
       let url = `${BASE_URL}${routePath}`;
       // Replace path parameters with generic ID
       url = url.replace(/\{([^}]+)\}/g, '1');
 
       let payload = undefined;
-      if (operation.requestBody && operation.requestBody.content && operation.requestBody.content['application/json']) {
-        payload = generatePayload(operation.requestBody.content['application/json'].schema);
+      if (
+        operation.requestBody &&
+        operation.requestBody.content &&
+        operation.requestBody.content['application/json']
+      ) {
+        payload = generatePayload(
+          operation.requestBody.content['application/json'].schema,
+        );
       }
 
       console.log(`Executing ${method.toUpperCase()} ${url}...`);
       await sess({
         method,
         url,
-        data: payload
+        data: payload,
       });
     }
   }

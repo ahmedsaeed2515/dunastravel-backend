@@ -16,18 +16,22 @@ try {
   swagger = JSON.parse(fs.readFileSync(SWAGGER_PATH, 'utf8'));
   traffic = JSON.parse(fs.readFileSync(TRAFFIC_PATH, 'utf8'));
 } catch (e) {
-  console.warn("No traffic file found. Using empty traffic.");
+  console.warn('No traffic file found. Using empty traffic.');
 }
 
 // Find traffic that matches a route (e.g. GET /api/tours/{id})
 function getTrafficForRoute(method: string, route: string) {
   const cleanRoute = route.replace(/\{[^}]+\}/g, '.*');
-  const regex = new RegExp(`^${method.toUpperCase()} (http://[^/]+)?/api${cleanRoute}$`);
-  
+  const regex = new RegExp(
+    `^${method.toUpperCase()} (http://[^/]+)?/api${cleanRoute}$`,
+  );
+
   for (const [key, logs] of Object.entries(traffic)) {
     if (regex.test(key)) {
       const arr = logs as any[];
-      const successfulLog = arr.find(log => log.responseStatus >= 200 && log.responseStatus < 300);
+      const successfulLog = arr.find(
+        (log) => log.responseStatus >= 200 && log.responseStatus < 300,
+      );
       return successfulLog || arr[0];
     }
   }
@@ -45,12 +49,17 @@ function resolveRef(ref: string) {
   return current;
 }
 
-function generateMarkdownForEndpoint(route: string, method: string, op: any, isAdmin: boolean) {
+function generateMarkdownForEndpoint(
+  route: string,
+  method: string,
+  op: any,
+  isAdmin: boolean,
+) {
   let md = `## ${op.summary || 'Endpoint'}\n\n`;
   md += `---\n\n### Method\n\n\`${method.toUpperCase()}\`\n\n`;
   md += `---\n\n### URL\n\n\`/api${route}\`\n\n`;
   md += `---\n\n### Description\n\n${op.description || op.summary || 'No description provided.'}\n\n`;
-  
+
   const isAuthRequired = op.security && op.security.length > 0;
   md += `---\n\n### Authentication\n\n`;
   md += `**Required:** ${isAuthRequired ? 'Yes' : 'No'}\n\n`;
@@ -79,7 +88,7 @@ function generateMarkdownForEndpoint(route: string, method: string, op: any, isA
   md += `\n---\n\n### Path Parameters\n\n`;
   if (pathParams.length > 0) {
     md += `| Name | Type | Required | Description |\n|---|---|---|---|\n`;
-    pathParams.forEach(p => {
+    pathParams.forEach((p) => {
       md += `| \`${p.name}\` | \`${p.schema?.type || 'string'}\` | ${p.required ? 'Yes' : 'No'} | ${p.description || ''} |\n`;
     });
   } else {
@@ -89,7 +98,7 @@ function generateMarkdownForEndpoint(route: string, method: string, op: any, isA
   md += `\n---\n\n### Query Parameters\n\n`;
   if (queryParams.length > 0) {
     md += `| Name | Type | Required | Description |\n|---|---|---|---|\n`;
-    queryParams.forEach(p => {
+    queryParams.forEach((p) => {
       md += `| \`${p.name}\` | \`${p.schema?.type || 'string'}\` | ${p.required ? 'Yes' : 'No'} | ${p.description || ''} |\n`;
     });
   } else {
@@ -162,32 +171,54 @@ function generateDocs() {
           url: {
             raw: `{{baseUrl}}/api${route}`,
             host: ['{{baseUrl}}'],
-            path: ['api', ...route.split('/').filter(Boolean)]
-          }
-        }
+            path: ['api', ...route.split('/').filter(Boolean)],
+          },
+        },
       });
     }
   }
 
-  fs.writeFileSync(path.join(DOCS_DIR, 'WEBSITE_API.md'), websiteDoc.join('\n\n'));
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'WEBSITE_API.md'),
+    websiteDoc.join('\n\n'),
+  );
   fs.writeFileSync(path.join(DOCS_DIR, 'ADMIN_API.md'), adminDoc.join('\n\n'));
 
   const postmanCol = {
     info: {
       name: 'Dunas Travel Frontend Integration',
-      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+      schema:
+        'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     },
     variable: [{ key: 'baseUrl', value: 'http://localhost:5000' }],
-    item: postmanItems
+    item: postmanItems,
   };
-  fs.writeFileSync(path.join(DOCS_DIR, 'POSTMAN_COLLECTION.json'), JSON.stringify(postmanCol, null, 2));
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'POSTMAN_COLLECTION.json'),
+    JSON.stringify(postmanCol, null, 2),
+  );
 
   // Static Docs
-  fs.writeFileSync(path.join(DOCS_DIR, 'AUTH.md'), `# Authentication Flow\n\n- Login via \`/api/auth/login\`\n- CSRF from \`/api/auth/csrf\`\n- HttpOnly Cookies for Tokens\n`);
-  fs.writeFileSync(path.join(DOCS_DIR, 'ERRORS.md'), `# Error Handling\n\n| Code | Meaning |\n|---|---|\n| 400 | Bad Request |\n| 401 | Unauthorized |\n| 403 | Forbidden |\n| 404 | Not Found |\n`);
-  fs.writeFileSync(path.join(DOCS_DIR, 'API_FLOW.md'), `# API Flows\n\n\`\`\`mermaid\ngraph TD\n  Guest --> Login\n  Login --> Bookings\n\`\`\`\n`);
-  fs.writeFileSync(path.join(DOCS_DIR, 'API_EXAMPLES.md'), `# API Examples\n\n## Axios\n\`\`\`javascript\naxios.get('/api/tours');\n\`\`\`\n`);
-  fs.writeFileSync(path.join(DOCS_DIR, 'FRONTEND_INTEGRATION_GUIDE.md'), `# Integration Guide\n\nFollow the standard repository pattern in Flutter and Next.js. Map JSON to strong DTOs.\n`);
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'AUTH.md'),
+    `# Authentication Flow\n\n- Login via \`/api/auth/login\`\n- CSRF from \`/api/auth/csrf\`\n- HttpOnly Cookies for Tokens\n`,
+  );
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'ERRORS.md'),
+    `# Error Handling\n\n| Code | Meaning |\n|---|---|\n| 400 | Bad Request |\n| 401 | Unauthorized |\n| 403 | Forbidden |\n| 404 | Not Found |\n`,
+  );
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'API_FLOW.md'),
+    `# API Flows\n\n\`\`\`mermaid\ngraph TD\n  Guest --> Login\n  Login --> Bookings\n\`\`\`\n`,
+  );
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'API_EXAMPLES.md'),
+    `# API Examples\n\n## Axios\n\`\`\`javascript\naxios.get('/api/tours');\n\`\`\`\n`,
+  );
+  fs.writeFileSync(
+    path.join(DOCS_DIR, 'FRONTEND_INTEGRATION_GUIDE.md'),
+    `# Integration Guide\n\nFollow the standard repository pattern in Flutter and Next.js. Map JSON to strong DTOs.\n`,
+  );
 
   console.log('Frontend Integration Kit generated!');
 }

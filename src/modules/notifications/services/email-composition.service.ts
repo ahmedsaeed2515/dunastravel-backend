@@ -30,12 +30,18 @@ export class EmailCompositionService {
       'http://localhost:3000/admin';
   }
 
-  async getTemplateFromDb(templateName: string, variables: Record<string, any>, fallbackRender: (vars: any) => any): Promise<{ subject: string, html: string, text: string }> {
+  async getTemplateFromDb(
+    templateName: string,
+    variables: Record<string, any>,
+    fallbackRender: (vars: any) => any,
+  ): Promise<{ subject: string; html: string; text: string }> {
     const cacheKey = `email_template:${templateName}`;
     let template = await this.cacheManager.get<any>(cacheKey);
 
     if (!template) {
-      template = await this.prisma.emailTemplate.findUnique({ where: { name: templateName } });
+      template = await this.prisma.emailTemplate.findUnique({
+        where: { name: templateName },
+      });
       if (template) {
         await this.cacheManager.set(cacheKey, template, 3600000); // 1 hour
       }
@@ -44,14 +50,14 @@ export class EmailCompositionService {
     if (template) {
       let html = template.bodyHtml;
       let subject = template.subject;
-      
+
       for (const [key, value] of Object.entries(variables)) {
         const regex = new RegExp(`{{${key}}}`, 'g');
         const strVal = String(value);
         html = html.replace(regex, strVal);
         subject = subject.replace(regex, strVal);
       }
-      
+
       return { subject, html, text: html.replace(/<[^>]*>?/gm, '') };
     }
 
@@ -63,7 +69,7 @@ export class EmailCompositionService {
     payload: InquiryCreatedPayload,
   ): Promise<EmailPayload> {
     this.validateInquiryPayload(payload);
-    
+
     const variables = {
       customerName: payload.fullName,
       referenceCode: payload.referenceCode,
@@ -73,7 +79,11 @@ export class EmailCompositionService {
       submittedAt: new Date(payload.createdAt).toLocaleDateString(),
     };
 
-    const template = await this.getTemplateFromDb('inquiry_customer_ack', variables, renderInquiryCustomerAcknowledgment);
+    const template = await this.getTemplateFromDb(
+      'inquiry_customer_ack',
+      variables,
+      renderInquiryCustomerAcknowledgment,
+    );
 
     return {
       to: payload.email,
@@ -84,9 +94,11 @@ export class EmailCompositionService {
     };
   }
 
-  async composeInquiryInternalAlert(payload: InquiryCreatedPayload): Promise<EmailPayload> {
+  async composeInquiryInternalAlert(
+    payload: InquiryCreatedPayload,
+  ): Promise<EmailPayload> {
     this.validateInquiryPayload(payload);
-    
+
     const variables = {
       customerName: payload.fullName,
       customerEmail: payload.email,
@@ -100,7 +112,11 @@ export class EmailCompositionService {
       adminDashboardUrl: this.adminDashboardUrl,
     };
 
-    const template = await this.getTemplateFromDb('inquiry_internal_alert', variables, renderInquiryInternalAlert);
+    const template = await this.getTemplateFromDb(
+      'inquiry_internal_alert',
+      variables,
+      renderInquiryInternalAlert,
+    );
 
     return {
       to: this.internalSalesEmail,
@@ -115,14 +131,18 @@ export class EmailCompositionService {
     payload: ContactCreatedEvent,
   ): Promise<EmailPayload> {
     this.validateContactPayload(payload);
-    
+
     const variables = {
       customerName: `${payload.firstName} ${payload.lastName}`,
       subject: payload.subject,
       submittedAt: payload.submittedAt.toLocaleDateString(),
     };
 
-    const template = await this.getTemplateFromDb('contact_customer_ack', variables, renderContactCustomerAcknowledgment);
+    const template = await this.getTemplateFromDb(
+      'contact_customer_ack',
+      variables,
+      renderContactCustomerAcknowledgment,
+    );
 
     return {
       to: payload.email,
@@ -133,9 +153,11 @@ export class EmailCompositionService {
     };
   }
 
-  async composeContactInternalAlert(payload: ContactCreatedEvent): Promise<EmailPayload> {
+  async composeContactInternalAlert(
+    payload: ContactCreatedEvent,
+  ): Promise<EmailPayload> {
     this.validateContactPayload(payload);
-    
+
     const variables = {
       customerName: `${payload.firstName} ${payload.lastName}`,
       customerEmail: payload.email,
@@ -145,7 +167,11 @@ export class EmailCompositionService {
       adminDashboardUrl: this.adminDashboardUrl,
     };
 
-    const template = await this.getTemplateFromDb('contact_internal_alert', variables, renderContactInternalAlert);
+    const template = await this.getTemplateFromDb(
+      'contact_internal_alert',
+      variables,
+      renderContactInternalAlert,
+    );
 
     return {
       to: this.internalSalesEmail,

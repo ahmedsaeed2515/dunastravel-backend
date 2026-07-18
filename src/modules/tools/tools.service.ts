@@ -26,16 +26,18 @@ export class ToolsService {
         messages: [
           {
             role: 'user',
-            content: `Translate the following name into ancient Egyptian Hieroglyphics: "${dto.text}". Return a JSON object ONLY with no markdown, like {"glyphs": "hieroglyph characters here", "translit": "transliteration here"}.`
-          }
-        ]
+            content: `Translate the following name into ancient Egyptian Hieroglyphics: "${dto.text}". Return a JSON object ONLY with no markdown, like {"glyphs": "hieroglyph characters here", "translit": "transliteration here"}.`,
+          },
+        ],
       });
 
       const text = (response.content[0] as any).text;
       return JSON.parse(text);
     } catch (error) {
       // Return a fallback so the frontend doesn't crash completely, or let frontend handle the 500 error and fallback.
-      throw new InternalServerErrorException('Failed to communicate with AI Service');
+      throw new InternalServerErrorException(
+        'Failed to communicate with AI Service',
+      );
     }
   }
 }

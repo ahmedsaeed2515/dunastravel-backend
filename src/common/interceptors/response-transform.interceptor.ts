@@ -11,9 +11,10 @@ import { Reflector } from '@nestjs/core';
 export const IGNORE_TRANSFORM_KEY = 'ignoreTransform';
 
 @Injectable()
-export class ResponseTransformInterceptor<T>
-  implements NestInterceptor<T, any>
-{
+export class ResponseTransformInterceptor<T> implements NestInterceptor<
+  T,
+  any
+> {
   constructor(private reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -29,7 +30,12 @@ export class ResponseTransformInterceptor<T>
     return next.handle().pipe(
       map((data) => {
         // If data is already paginated (has data and meta), return as is or wrap cleanly
-        if (data && typeof data === 'object' && 'data' in data && 'meta' in data) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          'data' in data &&
+          'meta' in data
+        ) {
           return data;
         }
 
@@ -38,7 +44,7 @@ export class ResponseTransformInterceptor<T>
           data: data !== undefined ? data : null,
           meta: {
             timestamp: new Date().toISOString(),
-          }
+          },
         };
       }),
     );

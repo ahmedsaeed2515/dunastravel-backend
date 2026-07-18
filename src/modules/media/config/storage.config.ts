@@ -22,9 +22,12 @@ export default registerAs('storage', (): StorageConfig => {
 
   if (
     process.env.NODE_ENV === 'production' &&
-    (cloudinaryCloudName === 'mock' || cloudinaryCloudName === 'your_cloud_name')
+    (cloudinaryCloudName === 'mock' ||
+      cloudinaryCloudName === 'your_cloud_name')
   ) {
-    throw new Error('FATAL: Cannot use mock Cloudinary credentials in production.');
+    throw new Error(
+      'FATAL: Cannot use mock Cloudinary credentials in production.',
+    );
   }
 
   const maxFileSizeBytes = process.env.STORAGE_MAX_FILE_SIZE_BYTES

@@ -3,12 +3,17 @@ import { TailorMadeInquiryStatus } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateInquiryDto {
-  @ApiPropertyOptional({ enum: TailorMadeInquiryStatus, description: 'Status of the inquiry' })
+  @ApiPropertyOptional({
+    enum: TailorMadeInquiryStatus,
+    description: 'Status of the inquiry',
+  })
   @IsOptional()
   @IsEnum(TailorMadeInquiryStatus)
   status?: TailorMadeInquiryStatus;
 
-  @ApiPropertyOptional({ description: 'ID of the agent assigned to this inquiry' })
+  @ApiPropertyOptional({
+    description: 'ID of the agent assigned to this inquiry',
+  })
   @IsOptional()
   @IsString()
   assigneeId?: string;

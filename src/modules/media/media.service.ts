@@ -164,11 +164,15 @@ export class MediaService {
       this.logger.error(
         `Database transaction failed during upload { error: ${dbError.message} }`,
       );
-      this.logger.warn(`Cleaning up orphaned asset on storage provider: ${result.publicId}`);
+      this.logger.warn(
+        `Cleaning up orphaned asset on storage provider: ${result.publicId}`,
+      );
       try {
         await this.storageProvider.delete(result.publicId);
       } catch (cleanupError: any) {
-        this.logger.error(`Failed to cleanup orphaned asset ${result.publicId}: ${cleanupError.message}`);
+        this.logger.error(
+          `Failed to cleanup orphaned asset ${result.publicId}: ${cleanupError.message}`,
+        );
       }
       throw dbError;
     }

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { IPaymentGatewayPort } from '../src/modules/payments/interfaces/payment-gateway.port';
@@ -14,7 +14,7 @@ describe('Payments Webhook (e2e)', () => {
   let prisma: PrismaService;
   let mockGatewayPort: Partial<IPaymentGatewayPort>;
   let eventEmitter: EventEmitter2;
-  
+
   let testUserId: string;
   let testTourId: string;
   let testBookingId: string;
@@ -35,7 +35,7 @@ describe('Payments Webhook (e2e)', () => {
     app = moduleFixture.createNestApplication({ rawBody: true });
     prisma = app.get(PrismaService);
     eventEmitter = app.get(EventEmitter2);
-    
+
     await app.init();
 
     // Setup Test Data
@@ -58,7 +58,6 @@ describe('Payments Webhook (e2e)', () => {
       },
     });
     testTourId = tour.id;
-
   });
 
   afterAll(async () => {
@@ -81,25 +80,31 @@ describe('Payments Webhook (e2e)', () => {
         status: 'PENDING',
         totalAmountUsd: 100,
         referenceCode: `REF-${Date.now()}`,
-      }
+      },
     });
     testBookingId = booking.id;
   });
 
   afterEach(async () => {
     await prisma.processedWebhookEvent.deleteMany({}).catch(() => {});
-    await prisma.payment.deleteMany({ where: { bookingId: testBookingId } }).catch(() => {});
-    await prisma.booking.delete({ where: { id: testBookingId } }).catch(() => {});
+    await prisma.payment
+      .deleteMany({ where: { bookingId: testBookingId } })
+      .catch(() => {});
+    await prisma.booking
+      .delete({ where: { id: testBookingId } })
+      .catch(() => {});
   });
 
   it('/payments/webhook/stripe (POST) - invalid signature', async () => {
-    (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockRejectedValue(new Error('Invalid signature'));
+    (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockRejectedValue(
+      new Error('Invalid signature'),
+    );
 
     const response = await request(app.getHttpServer())
       .post('/payments/webhook/stripe')
       .send({ type: 'checkout.session.completed' });
-    
-    // The adapter might throw an error. In NestJS unhandled errors are 500, 
+
+    // The adapter might throw an error. In NestJS unhandled errors are 500,
     // but in a real app a bad request exception would return 400. Let's just expect it not to be 200.
     expect(response.status).not.toBe(200);
   });
@@ -124,14 +129,20 @@ describe('Payments Webhook (e2e)', () => {
     expect(res.status).toBe(200);
 
     // Verify DB
-    const processed = await prisma.processedWebhookEvent.findUnique({ where: { id: eventId } });
+    const processed = await prisma.processedWebhookEvent.findUnique({
+      where: { id: eventId },
+    });
     expect(processed).toBeDefined();
 
-    const booking = await prisma.booking.findUnique({ where: { id: testBookingId } });
+    const booking = await prisma.booking.findUnique({
+      where: { id: testBookingId },
+    });
     expect(booking?.status).toBe('PAID');
     expect(booking?.paidAmountUsd?.toString()).toBe('100');
 
-    const payment = await prisma.payment.findFirst({ where: { bookingId: testBookingId } });
+    const payment = await prisma.payment.findFirst({
+      where: { bookingId: testBookingId },
+    });
     expect(payment?.status).toBe('CAPTURED');
 
     // Verify side-effects
@@ -165,7 +176,7 @@ describe('Payments Webhook (e2e)', () => {
       .send({ id: eventId });
     expect(res2.status).toBe(200);
     // Should NOT emit event again
-    expect(spy).toHaveBeenCalledTimes(1); 
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('Two concurrent duplicate deliveries -> only one processed safely', async () => {
@@ -182,8 +193,12 @@ describe('Payments Webhook (e2e)', () => {
     const spy = jest.spyOn(eventEmitter, 'emit');
 
     // Fire concurrently
-    const req1 = request(app.getHttpServer()).post('/payments/webhook/stripe').send({ id: eventId });
-    const req2 = request(app.getHttpServer()).post('/payments/webhook/stripe').send({ id: eventId });
+    const req1 = request(app.getHttpServer())
+      .post('/payments/webhook/stripe')
+      .send({ id: eventId });
+    const req2 = request(app.getHttpServer())
+      .post('/payments/webhook/stripe')
+      .send({ id: eventId });
 
     const [res1, res2] = await Promise.all([req1, req2]);
 
@@ -192,7 +207,9 @@ describe('Payments Webhook (e2e)', () => {
     expect(res2.status).toBe(200);
 
     // DB row count for this event should be exactly 1
-    const count = await prisma.processedWebhookEvent.count({ where: { id: eventId } });
+    const count = await prisma.processedWebhookEvent.count({
+      where: { id: eventId },
+    });
     expect(count).toBe(1);
 
     // Side effect should only fire once

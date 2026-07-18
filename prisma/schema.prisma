@@ -69,6 +69,8 @@ model User {
   @@index([status])
   @@index([companyId])
   @@index([role, deletedAt])
+  @@index([createdAt])
+  @@index([name])
   @@map("users")
 }
 

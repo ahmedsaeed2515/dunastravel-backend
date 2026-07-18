@@ -1,4 +1,7 @@
-import { PaymentEntity, InvalidPaymentTransitionException } from './payment.entity';
+import {
+  PaymentEntity,
+  InvalidPaymentTransitionException,
+} from './payment.entity';
 import { Money } from '../../../common/domain/value-objects/money.vo';
 import { PaymentStatus } from '@prisma/client';
 
@@ -60,16 +63,22 @@ describe('PaymentEntity', () => {
 
   it('should throw when refund exceeds captured amount', () => {
     payment.markCaptured();
-    expect(() => payment.markRefunded(Money.fromCents(15000, 'USD'))).toThrow('Refund amount cannot exceed captured amount');
+    expect(() => payment.markRefunded(Money.fromCents(15000, 'USD'))).toThrow(
+      'Refund amount cannot exceed captured amount',
+    );
   });
 
   it('should throw when refund currency does not match', () => {
     payment.markCaptured();
-    expect(() => payment.markRefunded(Money.fromCents(10000, 'EUR'))).toThrow('Refund currency EUR does not match payment currency USD');
+    expect(() => payment.markRefunded(Money.fromCents(10000, 'EUR'))).toThrow(
+      'Refund currency EUR does not match payment currency USD',
+    );
   });
 
   it('should throw on invalid transition PENDING to REFUNDED', () => {
-    expect(() => payment.markRefunded(Money.fromCents(10000, 'USD'))).toThrow(InvalidPaymentTransitionException);
+    expect(() => payment.markRefunded(Money.fromCents(10000, 'USD'))).toThrow(
+      InvalidPaymentTransitionException,
+    );
   });
 
   it('should allow PENDING to EXPIRED', () => {

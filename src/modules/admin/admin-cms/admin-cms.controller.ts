@@ -1,5 +1,18 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -36,7 +49,11 @@ export class AdminCmsController {
 
   @Patch(':key')
   @ApiOperation({ summary: 'Update a specific CMS block' })
-  async updateBlock(@Param('key') key: string, @Body() dto: UpdateCmsBlockDto, @Req() req: any) {
+  async updateBlock(
+    @Param('key') key: string,
+    @Body() dto: UpdateCmsBlockDto,
+    @Req() req: any,
+  ) {
     return this.adminCmsService.updateBlock(key, dto.content, req.user.id);
   }
 }

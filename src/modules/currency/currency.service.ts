@@ -31,13 +31,21 @@ export class CurrencyService implements OnModuleInit {
     try {
       const appId = process.env.OPENEXCHANGERATES_APP_ID;
       let rates = this.FALLBACK_RATES;
-      if (appId && appId !== 'your-openexchangerates-key-here' && !appId.includes('your_')) {
-        const res = await axios.get(`https://openexchangerates.org/api/latest.json?app_id=${appId}`);
+      if (
+        appId &&
+        appId !== 'your-openexchangerates-key-here' &&
+        !appId.includes('your_')
+      ) {
+        const res = await axios.get(
+          `https://openexchangerates.org/api/latest.json?app_id=${appId}`,
+        );
         if (res.data && res.data.rates) {
           rates = res.data.rates;
         }
       } else {
-        this.logger.warn('No OpenExchangeRates APP_ID provided, using fallback rates.');
+        this.logger.warn(
+          'No OpenExchangeRates APP_ID provided, using fallback rates.',
+        );
       }
 
       await this.cacheManager.set(this.CACHE_KEY, rates, 43200000); // 12 hours TTL in ms

@@ -1,4 +1,11 @@
-import { IsString, IsEmail, IsOptional, IsUUID, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsUUID,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateAgentDto {
@@ -22,7 +29,10 @@ export class CreateAgentDto {
   @MinLength(8)
   password!: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-company', description: 'Link agent to a B2B company' })
+  @ApiPropertyOptional({
+    example: 'uuid-of-company',
+    description: 'Link agent to a B2B company',
+  })
   @IsUUID()
   @IsOptional()
   companyId?: string;

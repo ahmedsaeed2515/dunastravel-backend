@@ -15,7 +15,7 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
     if (!file) {
       throw new BadRequestException('File is missing.');
     }
-    
+
     if (!file.buffer && file.path) {
       const fs = require('fs');
       file.buffer = fs.readFileSync(file.path);

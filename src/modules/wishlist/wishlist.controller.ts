@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Param, UseGuards, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  UseGuards,
+  HttpCode,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WishlistService } from './wishlist.service';
 import { JwtAuthGuard } from '../../common/guards';
@@ -27,7 +35,10 @@ export class WishlistController {
   @Delete('tours/:tourId/favorite')
   @HttpCode(200)
   @ApiOperation({ summary: 'Remove a tour from favorites' })
-  async removeFavorite(@CurrentUser() user: any, @Param('tourId') tourId: string) {
+  async removeFavorite(
+    @CurrentUser() user: any,
+    @Param('tourId') tourId: string,
+  ) {
     return this.wishlistService.removeFavorite(user.id, tourId);
   }
 }

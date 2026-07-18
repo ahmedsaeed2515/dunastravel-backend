@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -13,7 +23,9 @@ import { CreatePromotionDto, UpdatePromotionDto } from './dto/promotion.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminPromotionsController {
-  constructor(private readonly adminPromotionsService: AdminPromotionsService) {}
+  constructor(
+    private readonly adminPromotionsService: AdminPromotionsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List all promotions' })
@@ -35,7 +47,11 @@ export class AdminPromotionsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an existing promotion' })
-  async updatePromotion(@Param('id') id: string, @Body() dto: UpdatePromotionDto, @Req() req: any) {
+  async updatePromotion(
+    @Param('id') id: string,
+    @Body() dto: UpdatePromotionDto,
+    @Req() req: any,
+  ) {
     return this.adminPromotionsService.updatePromotion(id, dto, req.user.id);
   }
 

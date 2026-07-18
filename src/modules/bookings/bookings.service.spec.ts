@@ -60,7 +60,10 @@ describe('BookingsService', () => {
   beforeEach(async () => {
     let seq = 0n;
     mockTx = {
-      booking: { create: jest.fn().mockResolvedValue(mockBookingResult), update: jest.fn().mockResolvedValue(mockBookingResult) },
+      booking: {
+        create: jest.fn().mockResolvedValue(mockBookingResult),
+        update: jest.fn().mockResolvedValue(mockBookingResult),
+      },
       tour: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       passenger: {
         createMany: jest.fn(),
@@ -334,7 +337,11 @@ describe('BookingsService', () => {
     it('should successfully cancel booking for the owner', async () => {
       (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
 
-      const result = await service.cancelBooking('BKG-ABC123', 'user-1', 'Reason');
+      const result = await service.cancelBooking(
+        'BKG-ABC123',
+        'user-1',
+        'Reason',
+      );
 
       expect(result.message).toBe('Booking cancelled successfully');
       expect(prisma['$transaction']).toHaveBeenCalled();

@@ -15,7 +15,11 @@ export class InvoicesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByInvoiceNumber(invoiceNumber: string, userId?: string, email?: string): Promise<InvoiceResponse> {
+  async findByInvoiceNumber(
+    invoiceNumber: string,
+    userId?: string,
+    email?: string,
+  ): Promise<InvoiceResponse> {
     this.logger.debug(`Invoice queried | number=${invoiceNumber}`);
 
     const invoice = await this.prisma.invoice.findUnique({
@@ -37,10 +41,14 @@ export class InvoicesService {
 
     const isOwner = userId && invoice.booking.userId === userId;
     const isEmailMatch = email && invoice.booking.billingInfo?.email === email;
-    
+
     if (!isOwner && !isEmailMatch) {
-      this.logger.warn(`Unauthorized access attempt to invoice | number=${invoiceNumber}`);
-      throw new UnauthorizedException('You do not have permission to view this invoice');
+      this.logger.warn(
+        `Unauthorized access attempt to invoice | number=${invoiceNumber}`,
+      );
+      throw new UnauthorizedException(
+        'You do not have permission to view this invoice',
+      );
     }
 
     if (!invoice.booking.billingInfo) {

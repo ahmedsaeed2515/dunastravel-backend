@@ -1,4 +1,15 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, RawBodyRequest, UseGuards, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+  RawBodyRequest,
+  UseGuards,
+  Param,
+  Get,
+} from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Request as ExpressRequest } from 'express';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -19,7 +30,10 @@ export class PaymentsController {
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async initiatePayment(@Body() dto: CreatePaymentDto, @Req() req: any) {
-    const session = await this.paymentsService.initiatePayment(dto.bookingId, req.user?.id);
+    const session = await this.paymentsService.initiatePayment(
+      dto.bookingId,
+      req.user?.id,
+    );
     return { url: session.url, transactionId: session.transactionId };
   }
 
@@ -30,12 +44,14 @@ export class PaymentsController {
     @Param('provider') provider: string,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
-    // We pass the raw request and rawBody down. The specific adapter will 
+    // We pass the raw request and rawBody down. The specific adapter will
     // handle signature verification (e.g. stripe-signature header)
     if (!req.rawBody) {
-      throw new Error('Raw body is required for webhook signature verification');
+      throw new Error(
+        'Raw body is required for webhook signature verification',
+      );
     }
-    
+
     // In a multi-provider setup, the provider param would dictate which gateway adapter to use.
     // Since we only have Stripe right now, PaymentsService uses the injected IPaymentGatewayPort directly.
     return this.paymentsService.handleWebhook(req, req.rawBody);
@@ -53,10 +69,7 @@ export class PaymentsController {
 
   @Get(':id/status')
   @UseGuards(JwtAuthGuard)
-  async getPaymentStatus(
-    @Param('id') id: string,
-    @Req() req: any,
-  ) {
+  async getPaymentStatus(@Param('id') id: string, @Req() req: any) {
     return this.paymentsService.getPaymentStatus(id, req.user.id);
   }
 }

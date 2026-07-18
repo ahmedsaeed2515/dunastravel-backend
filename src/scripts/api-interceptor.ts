@@ -39,7 +39,7 @@ export function injectInterceptor(instance: AxiosInstance) {
         logTraffic(error.response);
       }
       return Promise.reject(error);
-    }
+    },
   );
 }
 
@@ -47,8 +47,8 @@ function logTraffic(response: any) {
   const req = response.config;
   const method = (req.method || 'GET').toUpperCase();
   const url = req.url || '';
-  
-  // Create a key based on method and route. 
+
+  // Create a key based on method and route.
   // Note: For dynamic URLs like /api/tours/123, we might have multiple entries. We'll group them later.
   const routeKey = `${method} ${url}`;
 
@@ -67,7 +67,11 @@ function logTraffic(response: any) {
   }
 
   // We only keep the most recent request for a specific exact URL to avoid bloating
-  const existingIndex = trafficLog[routeKey].findIndex(log => log.url === url && JSON.stringify(log.requestBody) === JSON.stringify(requestBody));
+  const existingIndex = trafficLog[routeKey].findIndex(
+    (log) =>
+      log.url === url &&
+      JSON.stringify(log.requestBody) === JSON.stringify(requestBody),
+  );
 
   const logEntry: ApiLog = {
     method,
@@ -76,7 +80,7 @@ function logTraffic(response: any) {
     requestBody,
     responseStatus: response.status,
     responseBody: response.data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   if (existingIndex > -1) {

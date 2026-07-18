@@ -10,12 +10,16 @@ describe('InvoicesController', () => {
 
   beforeEach(async () => {
     const mockInvoicesService = {
-      findByInvoiceNumber: jest.fn().mockImplementation((invoiceNum, userId, email) => {
-        if (!userId && !email) {
-          throw new UnauthorizedException('You do not have permission to view this invoice');
-        }
-        return Promise.resolve({ invoiceNumber: invoiceNum });
-      }),
+      findByInvoiceNumber: jest
+        .fn()
+        .mockImplementation((invoiceNum, userId, email) => {
+          if (!userId && !email) {
+            throw new UnauthorizedException(
+              'You do not have permission to view this invoice',
+            );
+          }
+          return Promise.resolve({ invoiceNumber: invoiceNum });
+        }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -55,7 +59,11 @@ describe('InvoicesController', () => {
       const req = { user: undefined };
       const email = 'test@example.com';
 
-      const result = await controller.findByInvoiceNumber('INV-2027-0001', req, email);
+      const result = await controller.findByInvoiceNumber(
+        'INV-2027-0001',
+        req,
+        email,
+      );
 
       expect(result).toBeDefined();
       expect(service.findByInvoiceNumber).toHaveBeenCalledWith(
@@ -69,7 +77,11 @@ describe('InvoicesController', () => {
       const req = { user: { id: 'user-1' } };
       const email = undefined;
 
-      const result = await controller.findByInvoiceNumber('INV-2027-0001', req, email);
+      const result = await controller.findByInvoiceNumber(
+        'INV-2027-0001',
+        req,
+        email,
+      );
 
       expect(result).toBeDefined();
       expect(service.findByInvoiceNumber).toHaveBeenCalledWith(

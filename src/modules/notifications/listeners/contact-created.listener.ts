@@ -26,7 +26,9 @@ export class ContactCreatedListener {
     try {
       // 1. Compose emails
       const customerAck =
-        await this.compositionService.composeContactCustomerAcknowledgment(event);
+        await this.compositionService.composeContactCustomerAcknowledgment(
+          event,
+        );
       const internalAlert =
         await this.compositionService.composeContactInternalAlert(event);
 

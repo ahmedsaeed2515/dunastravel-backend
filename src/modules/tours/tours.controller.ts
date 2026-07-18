@@ -18,7 +18,11 @@ import {
   ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { ToursService } from './tours.service';
-import { GetToursQueryDto, GetTourDetailQueryDto, CreateTourReviewDto } from './dto';
+import {
+  GetToursQueryDto,
+  GetTourDetailQueryDto,
+  CreateTourReviewDto,
+} from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 
@@ -76,7 +80,11 @@ export class ToursController {
   ) {
     const trimmedSlug = slug?.trim();
     if (!trimmedSlug) throw new BadRequestException('Invalid tour slug');
-    return this.toursService.getTourReviews(trimmedSlug, parseInt(page, 10), parseInt(limit, 10));
+    return this.toursService.getTourReviews(
+      trimmedSlug,
+      parseInt(page, 10),
+      parseInt(limit, 10),
+    );
   }
 
   @Post(':slug/reviews')

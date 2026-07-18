@@ -136,7 +136,9 @@ describe('AuthService', () => {
       expect(userService.findByEmail).toHaveBeenCalledWith(registerDto.email);
       expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 12);
       expect(prisma.user.create).toHaveBeenCalled();
-      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledTimes(1);
+      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledTimes(
+        1,
+      );
     });
 
     it('should throw ConflictException if email is already in use', async () => {
@@ -237,7 +239,9 @@ describe('AuthService', () => {
         'If that email exists, a password reset link has been sent.',
       );
       expect(prisma.user.update).toHaveBeenCalled();
-      expect(notificationsService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+      expect(notificationsService.sendPasswordResetEmail).toHaveBeenCalledTimes(
+        1,
+      );
     });
 
     it('should return generic message even if user does not exist (prevent enumeration)', async () => {

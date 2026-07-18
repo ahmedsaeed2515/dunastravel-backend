@@ -1,5 +1,21 @@
-import { Controller, Get, Patch, Delete, Param, Query, Body, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -9,7 +25,10 @@ import { IsBoolean, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 class ListReviewsQueryDto {
-  @ApiPropertyOptional({ description: 'Filter by published status', type: Boolean })
+  @ApiPropertyOptional({
+    description: 'Filter by published status',
+    type: Boolean,
+  })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
@@ -51,7 +70,11 @@ export class AdminReviewsController {
 
   @Patch(':id/reply')
   @ApiOperation({ summary: 'Reply to a review' })
-  async replyToReview(@Param('id') id: string, @Body() dto: ReplyReviewDto, @Req() req: any) {
+  async replyToReview(
+    @Param('id') id: string,
+    @Body() dto: ReplyReviewDto,
+    @Req() req: any,
+  ) {
     return this.adminReviewsService.replyToReview(id, dto.reply, req.user.id);
   }
 }

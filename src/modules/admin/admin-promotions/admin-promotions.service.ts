@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -20,7 +25,9 @@ export class AdminPromotionsService {
   }
 
   async createPromotion(dto: any, adminUserId: string) {
-    const existing = await this.prisma.promotion.findUnique({ where: { code: dto.code } });
+    const existing = await this.prisma.promotion.findUnique({
+      where: { code: dto.code },
+    });
     if (existing) {
       throw new ConflictException('Promotion code already exists');
     }
@@ -45,7 +52,9 @@ export class AdminPromotionsService {
     if (!promo) throw new NotFoundException('Promotion not found');
 
     if (dto.code && dto.code !== promo.code) {
-      const existing = await this.prisma.promotion.findUnique({ where: { code: dto.code } });
+      const existing = await this.prisma.promotion.findUnique({
+        where: { code: dto.code },
+      });
       if (existing) {
         throw new ConflictException('Promotion code already exists');
       }
@@ -55,7 +64,9 @@ export class AdminPromotionsService {
       where: { id },
       data: {
         ...(dto.code && { code: dto.code }),
-        ...(dto.discountPercent !== undefined && { discountPercent: dto.discountPercent }),
+        ...(dto.discountPercent !== undefined && {
+          discountPercent: dto.discountPercent,
+        }),
         ...(dto.validFrom && { validFrom: new Date(dto.validFrom) }),
         ...(dto.validUntil && { validUntil: new Date(dto.validUntil) }),
         ...(dto.maxUses !== undefined && { maxUses: dto.maxUses }),
@@ -63,7 +74,9 @@ export class AdminPromotionsService {
       },
     });
 
-    this.logger.log(`Promotion ${updated.code} updated by admin ${adminUserId}`);
+    this.logger.log(
+      `Promotion ${updated.code} updated by admin ${adminUserId}`,
+    );
     return updated;
   }
 

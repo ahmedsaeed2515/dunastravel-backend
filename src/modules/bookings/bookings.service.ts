@@ -101,14 +101,19 @@ export class BookingsService {
     let promoMessage = '';
 
     if (dto.promoCode) {
-      const promo = await this.prisma.promotion.findUnique({ where: { code: dto.promoCode } });
+      const promo = await this.prisma.promotion.findUnique({
+        where: { code: dto.promoCode },
+      });
       if (promo && promo.isActive) {
         const now = new Date();
-        const valid = (!promo.validFrom || now >= promo.validFrom) && 
-                      (!promo.validUntil || now <= promo.validUntil) && 
-                      (promo.maxUses === null || promo.currentUses < promo.maxUses);
+        const valid =
+          (!promo.validFrom || now >= promo.validFrom) &&
+          (!promo.validUntil || now <= promo.validUntil) &&
+          (promo.maxUses === null || promo.currentUses < promo.maxUses);
         if (valid) {
-          discountAmountUsd = totalAmountUsd.mul(promo.discountPercent).div(100);
+          discountAmountUsd = totalAmountUsd
+            .mul(promo.discountPercent)
+            .div(100);
           totalAmountUsd = totalAmountUsd.sub(discountAmountUsd);
           if (totalAmountUsd.lt(0)) totalAmountUsd = new Prisma.Decimal(0);
           promoValid = true;
@@ -126,7 +131,7 @@ export class BookingsService {
       discountAmountUsd: discountAmountUsd.toString(),
       basePriceUsd: tour.basePriceUsd.toString(),
       promoValid,
-      promoMessage
+      promoMessage,
     };
   }
 
@@ -134,24 +139,33 @@ export class BookingsService {
     dto: any,
     userId: string | null,
     idempotencyKey?: string,
-    adminOverride: boolean = false
+    adminOverride: boolean = false,
   ): Promise<any> {
     if (idempotencyKey) {
-      const cachedResponse = await this.cacheManager.get<any>(`idempotency:${idempotencyKey}`);
+      const cachedResponse = await this.cacheManager.get<any>(
+        `idempotency:${idempotencyKey}`,
+      );
       if (cachedResponse) return cachedResponse;
     }
 
     // We remove the hard requirement for taxId/companyName and auto-create the company below if missing
 
-    const tours = await this.prisma.tour.findMany({ where: { isActive: true }, select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true } });
-    const tour = tours.find(t => {
+    const tours = await this.prisma.tour.findMany({
+      where: { isActive: true },
+      select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
+    });
+    const tour = tours.find((t) => {
       const titleEn = extractI18n(t.titleJsonb, 'en');
       return titleEn && titleEn.toLowerCase() === dto.tourTitle?.toLowerCase();
     });
 
     if (!tour && !adminOverride) {
-      this.logger.warn(`Booking attempted for non-existent tour title: ${dto.tourTitle}`);
-      throw new UnprocessableEntityException('Tour is not available for booking');
+      this.logger.warn(
+        `Booking attempted for non-existent tour title: ${dto.tourTitle}`,
+      );
+      throw new UnprocessableEntityException(
+        'Tour is not available for booking',
+      );
     }
 
     if (dto.type === 'inquiry') {
@@ -169,7 +183,7 @@ export class BookingsService {
           language: dto.language,
           adults: 0,
           children: 0,
-          infants: 0
+          infants: 0,
         },
       });
 
@@ -182,20 +196,34 @@ export class BookingsService {
           invoiceType: 'PERSONAL',
         },
       });
-      return { id: booking.id, referenceCode: booking.referenceCode, type: 'inquiry', status: 'RECEIVED' };
+      return {
+        id: booking.id,
+        referenceCode: booking.referenceCode,
+        type: 'inquiry',
+        status: 'RECEIVED',
+      };
     }
 
-    const adultsCount = adminOverride ? (dto.passengers || 1) : (dto.adults || 1);
+    const adultsCount = adminOverride
+      ? dto.passengers?.length || 1
+      : dto.adults || 1;
     const childrenCount = adminOverride ? 0 : (dto.children ?? 0);
-    // Date corruption fix: If arrivalDate is missing but departureDate is provided, 
+    // Date corruption fix: If arrivalDate is missing but departureDate is provided,
     // it implies the user selected the start date of the tour in the UI (which they sent as departureDate).
-    const arrivalDate = dto.arrivalDate 
-      ? new Date(dto.arrivalDate) 
-      : (dto.departureDate ? new Date(dto.departureDate) : new Date());
+    const arrivalDate = dto.arrivalDate
+      ? new Date(dto.arrivalDate)
+      : dto.departureDate
+        ? new Date(dto.departureDate)
+        : new Date();
 
-    let totalAmountUsd = adminOverride && dto.manualAmountUsd !== undefined
-      ? new Prisma.Decimal(dto.manualAmountUsd)
-      : this.calculateTotalAmount(tour?.basePriceUsd || new Prisma.Decimal(0), adultsCount, childrenCount);
+    const totalAmountUsd =
+      adminOverride && dto.manualAmountUsd !== undefined
+        ? new Prisma.Decimal(dto.manualAmountUsd)
+        : this.calculateTotalAmount(
+            tour?.basePriceUsd || new Prisma.Decimal(0),
+            adultsCount,
+            childrenCount,
+          );
 
     const referenceCode = await this.generateUniqueReferenceCode();
     let result;
@@ -212,7 +240,9 @@ export class BookingsService {
               data: { remainingSeats: { decrement: seatsRequested } },
             });
             if (seatUpdate.count === 0) {
-              throw new UnprocessableEntityException('Tour is fully booked or has insufficient seats');
+              throw new UnprocessableEntityException(
+                'Tour is fully booked or has insufficient seats',
+              );
             }
           }
 
@@ -222,38 +252,42 @@ export class BookingsService {
             if (taxId) {
               const company = await tx.company.findFirst({ where: { taxId } });
               if (company) {
-                 companyId = company.id;
+                companyId = company.id;
               } else {
-                 // Auto-create an unverified 'CORPORATE' profile
-                 const newCompany = await tx.company.create({
-                   data: { 
-                     referenceCode: generateReferenceCode(), 
-                     name: dto.companyName?.trim() || 'Unknown Corporate', 
-                     email: dto.email, 
-                     phone: dto.phone, 
-                     taxId, 
-                     companyType: 'CORPORATE',
-                     status: 'INACTIVE'
-                   }
-                 });
-                 companyId = newCompany.id;
+                // Auto-create an unverified 'CORPORATE' profile
+                const newCompany = await tx.company.create({
+                  data: {
+                    referenceCode: generateReferenceCode(),
+                    name: dto.companyName?.trim() || 'Unknown Corporate',
+                    email: dto.email,
+                    phone: dto.phone,
+                    taxId,
+                    companyType: 'CORPORATE',
+                    status: 'INACTIVE',
+                  },
+                });
+                companyId = newCompany.id;
               }
             } else if (dto.companyName) {
-              const company = await tx.company.findFirst({ where: { name: { equals: dto.companyName.trim(), mode: 'insensitive' } } });
+              const company = await tx.company.findFirst({
+                where: {
+                  name: { equals: dto.companyName.trim(), mode: 'insensitive' },
+                },
+              });
               if (company) {
-                 companyId = company.id;
+                companyId = company.id;
               } else {
-                 const newCompany = await tx.company.create({
-                   data: { 
-                     referenceCode: generateReferenceCode(), 
-                     name: dto.companyName.trim(), 
-                     email: dto.email, 
-                     phone: dto.phone, 
-                     companyType: 'CORPORATE',
-                     status: 'INACTIVE'
-                   }
-                 });
-                 companyId = newCompany.id;
+                const newCompany = await tx.company.create({
+                  data: {
+                    referenceCode: generateReferenceCode(),
+                    name: dto.companyName.trim(),
+                    email: dto.email,
+                    phone: dto.phone,
+                    companyType: 'CORPORATE',
+                    status: 'INACTIVE',
+                  },
+                });
+                companyId = newCompany.id;
               }
             }
           }
@@ -267,7 +301,9 @@ export class BookingsService {
               status: adminOverride && dto.status ? dto.status : 'PENDING',
               bookingType: 'BOOKING',
               arrivalDate: arrivalDate,
-              departureDate: dto.departureDate ? new Date(dto.departureDate) : null,
+              departureDate: dto.departureDate
+                ? new Date(dto.departureDate)
+                : null,
               arrivalTime: dto.arrivalTime ?? null,
               departureTime: dto.departureTime ?? null,
               language: dto.language ?? null,
@@ -282,16 +318,30 @@ export class BookingsService {
           });
 
           let passengerData = [];
-          if (dto.passengerNames) {
-             for (const [key, name] of Object.entries(dto.passengerNames)) {
-                let type = 'ADULT';
-                if (key.includes('child')) type = 'CHILD';
-                if (key.includes('infant')) type = 'INFANT';
-                passengerData.push({ bookingId: booking.id, passengerType: type, fullName: name as string });
-             }
+          if (
+            adminOverride &&
+            dto.passengers &&
+            Array.isArray(dto.passengers)
+          ) {
+            passengerData = dto.passengers.map((p: any) => ({
+              bookingId: booking.id,
+              passengerType: p.passengerType || 'ADULT',
+              fullName: p.fullName,
+            }));
+          } else if (dto.passengerNames) {
+            for (const [key, name] of Object.entries(dto.passengerNames)) {
+              let type = 'ADULT';
+              if (key.includes('child')) type = 'CHILD';
+              if (key.includes('infant')) type = 'INFANT';
+              passengerData.push({
+                bookingId: booking.id,
+                passengerType: type,
+                fullName: name as string,
+              });
+            }
           }
           if (passengerData.length > 0) {
-             await tx.passenger.createMany({ data: passengerData });
+            await tx.passenger.createMany({ data: passengerData });
           }
 
           const billingInfo = await tx.billingInfo.create({
@@ -300,7 +350,8 @@ export class BookingsService {
               fullName: dto.fullName?.trim() || 'Override',
               email: dto.email?.toLowerCase().trim() || 'admin@override.com',
               phone: dto.phone?.trim() || '00000',
-              invoiceType: dto.invoiceType === 'company' ? 'COMPANY' : 'PERSONAL',
+              invoiceType:
+                dto.invoiceType === 'company' ? 'COMPANY' : 'PERSONAL',
               companyName: dto.companyName?.trim() ?? null,
               taxId: dto.taxId?.trim() ?? null,
               address: dto.address?.trim() ?? null,
@@ -310,14 +361,25 @@ export class BookingsService {
           });
 
           const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
-          await tx.invoice.create({ data: { invoiceNumber, bookingId: booking.id, issuedAt: new Date() } });
-          const passengers = await tx.passenger.findMany({ where: { bookingId: booking.id } });
+          await tx.invoice.create({
+            data: {
+              invoiceNumber,
+              bookingId: booking.id,
+              issuedAt: new Date(),
+            },
+          });
+          const passengers = await tx.passenger.findMany({
+            where: { bookingId: booking.id },
+          });
 
           return { booking, billingInfo, invoiceNumber, passengers };
         });
         break;
       } catch (error: any) {
-        if (error.code === 'P2002' && error.meta?.target?.includes('invoiceNumber')) {
+        if (
+          error.code === 'P2002' &&
+          error.meta?.target?.includes('invoiceNumber')
+        ) {
           attempt++;
           continue;
         }
@@ -325,7 +387,8 @@ export class BookingsService {
       }
     }
 
-    if (!result) throw new InternalServerErrorException('Booking transaction failed');
+    if (!result)
+      throw new InternalServerErrorException('Booking transaction failed');
 
     const tourTitle = tour ? extractI18n(tour.titleJsonb, 'en') : dto.tourTitle;
 
@@ -353,12 +416,18 @@ export class BookingsService {
       status: result.booking.status,
       tourTitle,
       arrivalDate: result.booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: result.booking.departureDate ? result.booking.departureDate.toISOString().split('T')[0] : null,
+      departureDate: result.booking.departureDate
+        ? result.booking.departureDate.toISOString().split('T')[0]
+        : null,
       adults: result.booking.adults,
       children: result.booking.children,
       infants: result.booking.infants,
       totalAmountUsd: result.booking.totalAmountUsd.toString(),
-      passengers: result.passengers.map((p: any) => ({ id: p.id, passengerType: p.passengerType, fullName: p.fullName })),
+      passengers: result.passengers.map((p: any) => ({
+        id: p.id,
+        passengerType: p.passengerType,
+        fullName: p.fullName,
+      })),
       billing: {
         fullName: result.billingInfo.fullName,
         email: result.billingInfo.email,
@@ -373,11 +442,14 @@ export class BookingsService {
     };
 
     if (idempotencyKey) {
-      await this.cacheManager.set(`idempotency:${idempotencyKey}`, responseData, 86400000);
+      await this.cacheManager.set(
+        `idempotency:${idempotencyKey}`,
+        responseData,
+        86400000,
+      );
     }
     return responseData;
   }
-
 
   async findByReferenceCode(
     referenceCode: string,
@@ -501,7 +573,7 @@ export class BookingsService {
     }
 
     const nonCancellableStatuses = ['CANCELLED', 'COMPLETED', 'NO_SHOW'];
-    if (nonCancellableStatuses.includes(booking.status as string)) {
+    if (nonCancellableStatuses.includes(booking.status)) {
       throw new BadRequestException(
         `Booking cannot be cancelled in status: ${booking.status}`,
       );
@@ -525,7 +597,9 @@ export class BookingsService {
       });
     });
 
-    this.logger.log(`Booking cancelled | ref=${referenceCode} by userId=${userId}`);
+    this.logger.log(
+      `Booking cancelled | ref=${referenceCode} by userId=${userId}`,
+    );
 
     return { message: 'Booking cancelled successfully' };
   }

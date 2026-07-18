@@ -47,19 +47,44 @@ async function bootstrapServerless(): Promise<any> {
     );
     app.use(cookieParser());
     app.use(compression({ threshold: 1024 }));
-    app.use(express.json({ limit: '1mb', verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
-    app.use(express.urlencoded({ extended: true, limit: '1mb', verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
+    app.use(
+      express.json({
+        limit: '1mb',
+        verify: (req: any, _res, buf) => {
+          req.rawBody = buf;
+        },
+      }),
+    );
+    app.use(
+      express.urlencoded({
+        extended: true,
+        limit: '1mb',
+        verify: (req: any, _res, buf) => {
+          req.rawBody = buf;
+        },
+      }),
+    );
 
     // Safe CORS — read from env, never crash
-    const rawOrigins = process.env.CORS_ALLOWED_ORIGINS || 'https://www.dunastravel.com,https://admin.dunastravel.com';
-    const allowedOrigins = rawOrigins.split(',').map((o) => o.trim()).filter(Boolean);
+    const rawOrigins =
+      process.env.CORS_ALLOWED_ORIGINS ||
+      'https://www.dunastravel.com,https://admin.dunastravel.com';
+    const allowedOrigins = rawOrigins
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
 
     app.enableCors({
       origin: allowedOrigins,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
-        'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Idempotency-Key', 'X-CSRF-Token',
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Idempotency-Key',
+        'X-CSRF-Token',
       ],
       maxAge: 86400,
     });
@@ -76,11 +101,17 @@ async function bootstrapServerless(): Promise<any> {
       }),
     );
 
-    const { HttpExceptionFilter } = await import('./common/filters/http-exception.filter');
-    const { PrismaExceptionFilter } = await import('./common/filters/prisma-exception.filter');
-    const { TransformInterceptor } = await import('./common/interceptors/transform.interceptor');
+    const { HttpExceptionFilter } =
+      await import('./common/filters/http-exception.filter');
+    const { PrismaExceptionFilter } =
+      await import('./common/filters/prisma-exception.filter');
+    const { TransformInterceptor } =
+      await import('./common/interceptors/transform.interceptor');
 
-    app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
+    app.useGlobalFilters(
+      new HttpExceptionFilter(),
+      new PrismaExceptionFilter(),
+    );
     app.useGlobalInterceptors(
       new TransformInterceptor(),
       new TimeoutInterceptor(configService),

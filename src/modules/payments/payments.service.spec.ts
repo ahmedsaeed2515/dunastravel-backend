@@ -19,7 +19,9 @@ describe('PaymentsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            $transaction: jest.fn().mockImplementation(async (cb) => cb(prisma)),
+            $transaction: jest
+              .fn()
+              .mockImplementation(async (cb) => cb(prisma)),
             booking: {
               findUnique: jest.fn(),
               update: jest.fn(),
@@ -77,9 +79,14 @@ describe('PaymentsService', () => {
       });
 
       // Mock that this eventId has already been processed
-      jest.spyOn(prisma.processedWebhookEvent, 'findUnique').mockResolvedValue({ id: 'duplicate-event-id' } as any);
+      jest
+        .spyOn(prisma.processedWebhookEvent, 'findUnique')
+        .mockResolvedValue({ id: 'duplicate-event-id' } as any);
 
-      const result = await service.handleWebhook({ headers: {} }, Buffer.from(''));
+      const result = await service.handleWebhook(
+        { headers: {} },
+        Buffer.from(''),
+      );
       expect(result).toEqual({ received: true });
       expect(prisma.booking.update).not.toHaveBeenCalled();
     });
@@ -126,9 +133,14 @@ describe('PaymentsService', () => {
       const result = await service.refundPayment('payment-123');
 
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith(PAYMENT_EVENTS.REFUNDED, expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        PAYMENT_EVENTS.REFUNDED,
+        expect.any(Object),
+      );
       expect(prisma.payment.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: 'REFUNDED' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'REFUNDED' }),
+        }),
       );
     });
   });

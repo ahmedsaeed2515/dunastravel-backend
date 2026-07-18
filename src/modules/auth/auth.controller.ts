@@ -163,10 +163,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update current user profile details' })
   @ApiOkResponse({ description: 'Profile updated successfully' })
-  async updateProfile(
-    @CurrentUser() user: any,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
     const updatedUser = await this.userService.updateProfile(user.id, dto);
     return { user: updatedUser };
   }

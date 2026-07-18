@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 
 describe('Rate Limiting (e2e)', () => {
@@ -13,11 +13,11 @@ describe('Rate Limiting (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    
+
     // Replace express with any type to set trust proxy
     const expressApp = app.getHttpAdapter().getInstance();
     expressApp.set('trust proxy', 1);
-    
+
     await app.init();
   });
 
@@ -36,7 +36,9 @@ describe('Rate Limiting (e2e)', () => {
     }
 
     // The (limit + 1)th request must be rate-limited
-    const res = await request(app.getHttpServer()).get('/api/admin/currency/rates');
+    const res = await request(app.getHttpServer()).get(
+      '/api/admin/currency/rates',
+    );
 
     // Assuming throttling catches it
     expect(res.status).toBe(429);

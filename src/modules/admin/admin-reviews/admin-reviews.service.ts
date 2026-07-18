@@ -13,8 +13,8 @@ export class AdminReviewsService {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        tour: { select: { slug: true } }
-      }
+        tour: { select: { slug: true } },
+      },
     });
   }
 

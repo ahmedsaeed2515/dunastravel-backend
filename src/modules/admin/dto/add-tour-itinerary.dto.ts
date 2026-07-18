@@ -1,4 +1,10 @@
-import { IsString, IsInt, IsOptional, IsNotEmpty, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsNotEmpty,
+  IsObject,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AddTourItineraryDto {

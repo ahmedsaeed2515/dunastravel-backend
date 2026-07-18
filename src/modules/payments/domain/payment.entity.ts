@@ -29,34 +29,56 @@ export class PaymentEntity {
 
   markAuthorized(): void {
     if (this._status !== PaymentStatus.PENDING) {
-      throw new InvalidPaymentTransitionException(this._status, PaymentStatus.AUTHORIZED);
+      throw new InvalidPaymentTransitionException(
+        this._status,
+        PaymentStatus.AUTHORIZED,
+      );
     }
     this._status = PaymentStatus.AUTHORIZED;
   }
 
   markCaptured(): void {
-    if (this._status !== PaymentStatus.PENDING && this._status !== PaymentStatus.AUTHORIZED) {
-      throw new InvalidPaymentTransitionException(this._status, PaymentStatus.CAPTURED);
+    if (
+      this._status !== PaymentStatus.PENDING &&
+      this._status !== PaymentStatus.AUTHORIZED
+    ) {
+      throw new InvalidPaymentTransitionException(
+        this._status,
+        PaymentStatus.CAPTURED,
+      );
     }
     this._status = PaymentStatus.CAPTURED;
   }
 
   markFailed(): void {
-    if (this._status !== PaymentStatus.PENDING && this._status !== PaymentStatus.AUTHORIZED) {
-      throw new InvalidPaymentTransitionException(this._status, PaymentStatus.FAILED);
+    if (
+      this._status !== PaymentStatus.PENDING &&
+      this._status !== PaymentStatus.AUTHORIZED
+    ) {
+      throw new InvalidPaymentTransitionException(
+        this._status,
+        PaymentStatus.FAILED,
+      );
     }
     this._status = PaymentStatus.FAILED;
   }
 
   markRefunded(refundAmount: Money): void {
     if (this._status !== PaymentStatus.CAPTURED) {
-      throw new InvalidPaymentTransitionException(this._status, PaymentStatus.REFUNDED);
+      throw new InvalidPaymentTransitionException(
+        this._status,
+        PaymentStatus.REFUNDED,
+      );
     }
     if (refundAmount.currency !== this.money.currency) {
-      throw new BadRequestException(`Refund currency ${refundAmount.currency} does not match payment currency ${this.money.currency}`);
+      throw new BadRequestException(
+        `Refund currency ${refundAmount.currency} does not match payment currency ${this.money.currency}`,
+      );
     }
     if (refundAmount.toDecimal() > this.money.toDecimal()) {
-      throw new BadRequestException('Refund amount cannot exceed captured amount');
+      throw new BadRequestException(
+        'Refund amount cannot exceed captured amount',
+      );
     }
     // Note: If partial refunds are allowed, status might become PARTIALLY_REFUNDED, but for now we transition to REFUNDED.
     // In a more complex domain, we might track amountRefunded.
@@ -65,7 +87,10 @@ export class PaymentEntity {
 
   expire(): void {
     if (this._status !== PaymentStatus.PENDING) {
-      throw new InvalidPaymentTransitionException(this._status, PaymentStatus.EXPIRED);
+      throw new InvalidPaymentTransitionException(
+        this._status,
+        PaymentStatus.EXPIRED,
+      );
     }
     this._status = PaymentStatus.EXPIRED;
   }

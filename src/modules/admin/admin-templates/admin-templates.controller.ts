@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -36,7 +46,11 @@ export class AdminTemplatesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an existing email template' })
-  async updateTemplate(@Param('id') id: string, @Body() dto: UpdateEmailTemplateDto, @Req() req: any) {
+  async updateTemplate(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmailTemplateDto,
+    @Req() req: any,
+  ) {
     return this.adminTemplatesService.updateTemplate(id, dto, req.user.id);
   }
 

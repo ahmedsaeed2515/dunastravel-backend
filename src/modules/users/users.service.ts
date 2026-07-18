@@ -121,8 +121,12 @@ export class UserService {
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.phone && { phone: dto.phone }),
-        ...(dto.preferredCurrency && { preferredCurrency: dto.preferredCurrency }),
-        ...(dto.preferredLanguage && { preferredLanguage: dto.preferredLanguage }),
+        ...(dto.preferredCurrency && {
+          preferredCurrency: dto.preferredCurrency,
+        }),
+        ...(dto.preferredLanguage && {
+          preferredLanguage: dto.preferredLanguage,
+        }),
       },
     });
 
