@@ -10,6 +10,7 @@ import {
   UseGuards,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Req,
   NotFoundException,
 } from '@nestjs/common';
@@ -196,6 +197,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
   async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
+    if (dto.confirmPassword && dto.password !== dto.confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     const existing = await this.userService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
 
@@ -207,6 +212,7 @@ export class UsersController {
       phone: dto.phone,
       role: dto.role,
       passwordHash,
+      isVerified: true,
     });
 
     return this.userService.toSafeUser(user);

@@ -24,10 +24,15 @@ export class CreateUserDto {
   @IsOptional()
   phone?: string;
 
-  @ApiProperty({ description: 'Password' })
+  @ApiProperty({ description: 'Initial password' })
   @IsString()
   @MinLength(6)
   password!: string;
+
+  @ApiPropertyOptional({ description: 'Confirm password' })
+  @IsString()
+  @IsOptional()
+  confirmPassword?: string;
 
   @ApiProperty({ description: 'User role', enum: UserRole })
   @IsEnum(UserRole)

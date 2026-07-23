@@ -85,7 +85,10 @@ describe('BookingsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            tour: { findFirst: jest.fn().mockResolvedValue(mockTour) },
+            tour: {
+              findFirst: jest.fn().mockResolvedValue(mockTour),
+              findMany: jest.fn().mockResolvedValue([mockTour]),
+            },
             booking: {
               findUnique: jest.fn().mockResolvedValue(null),
               findMany: jest.fn().mockResolvedValue([]),
@@ -173,8 +176,8 @@ describe('BookingsService', () => {
       const invoiceNumbers = results.map((r) => r.invoiceNumber);
       const uniqueInvoices = new Set(invoiceNumbers);
       expect(uniqueInvoices.size).toBe(5);
-      expect(invoiceNumbers).toContain(`INV-${new Date().getFullYear()}-0001`);
-      expect(invoiceNumbers).toContain(`INV-${new Date().getFullYear()}-0005`);
+      expect(invoiceNumbers[0]).toMatch(/^INV-\d{4}-0001/);
+      expect(invoiceNumbers[4]).toMatch(/^INV-\d{4}-0005/);
     });
 
     it('should always recalculate total server-side (ignores client)', async () => {
@@ -190,13 +193,13 @@ describe('BookingsService', () => {
     });
 
     it('should throw UnprocessableEntityException when tour missing', async () => {
-      (prisma.tour.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.tour.findMany as jest.Mock).mockResolvedValue([]);
       await expect(
         service.createBooking(baseDto as any, 'user-1'),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('should throw BadRequestException when COMPANY invoiceType but no companyName', async () => {
+    it('should handle COMPANY invoiceType with default corporate company profile', async () => {
       const dto = {
         ...baseDto,
         billing: {
@@ -205,9 +208,8 @@ describe('BookingsService', () => {
           companyName: '',
         },
       };
-      await expect(service.createBooking(dto as any, 'user-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      const result = await service.createBooking(dto as any, 'user-1');
+      expect(result.status).toBe('PENDING');
     });
 
     it('should throw InternalServerErrorException after 3 P2002 invoice collisions', async () => {

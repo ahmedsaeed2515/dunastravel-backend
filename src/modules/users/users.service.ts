@@ -32,6 +32,7 @@ export interface CreateUserData {
   phone?: string;
   passwordHash: string;
   role?: UserRole; // allowed overriding role
+  isVerified?: boolean;
 }
 
 export interface UpdateUserData {
@@ -66,29 +67,32 @@ export class UserService {
       throw new ConflictException('Email already in use');
     }
 
-    const count = await this.prisma.user.count();
-    const customerNumber = `CUST-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+    return this.prisma.$transaction(async (tx) => {
+      const count = await tx.user.count();
+      const customerNumber = `CUST-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
-    const user = await this.prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        passwordHash: data.passwordHash,
-        role: data.role || UserRole.USER,
-        customerNumber,
-      },
+      const user = await tx.user.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          passwordHash: data.passwordHash,
+          role: data.role || UserRole.USER,
+          isVerified: data.isVerified ?? true,
+          customerNumber,
+        },
+      });
+
+      await tx.customerActivityLog.create({
+        data: {
+          customerId: user.id,
+          action: 'CUSTOMER_CREATED',
+          details: { source: 'ADMIN_CREATION', role: user.role },
+        },
+      });
+
+      return user;
     });
-
-    await this.prisma.customerActivityLog.create({
-      data: {
-        customerId: user.id,
-        action: 'CUSTOMER_CREATED',
-        details: { source: 'SYSTEM_REGISTRATION', role: user.role },
-      },
-    });
-
-    return user;
   }
 
   async update(id: string, data: UpdateUserData): Promise<User> {

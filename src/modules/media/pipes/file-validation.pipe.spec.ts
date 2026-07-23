@@ -13,21 +13,21 @@ describe('FileValidationPipe', () => {
   });
 
   describe('transform', () => {
-    it('should pass for valid JPEG magic numbers', () => {
+    it('should pass for valid JPEG magic numbers', async () => {
       const validJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
       const file = { buffer: validJpeg, mimetype: 'image/jpeg' } as any;
-      expect(() => pipe.transform(file)).not.toThrow();
+      await expect(pipe.transform(file)).resolves.toBeDefined();
     });
 
-    it('should pass for valid PNG magic numbers', () => {
+    it('should pass for valid PNG magic numbers', async () => {
       const validPng = Buffer.from([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
       ]);
       const file = { buffer: validPng, mimetype: 'image/png' } as any;
-      expect(() => pipe.transform(file)).not.toThrow();
+      await expect(pipe.transform(file)).resolves.toBeDefined();
     });
 
-    it('should pass for valid WebP magic numbers', () => {
+    it('should pass for valid WebP magic numbers', async () => {
       const validWebP = Buffer.from([
         0x52,
         0x49,
@@ -43,19 +43,19 @@ describe('FileValidationPipe', () => {
         0x50, // WEBP
       ]);
       const file = { buffer: validWebP, mimetype: 'image/webp' } as any;
-      expect(() => pipe.transform(file)).not.toThrow();
+      await expect(pipe.transform(file)).resolves.toBeDefined();
     });
 
-    it('should throw BadRequestException for PHP disguised as JPG', () => {
+    it('should throw BadRequestException for PHP disguised as JPG', async () => {
       const maliciousPhp = Buffer.from('<?php echo "hello"; ?>');
       const file = { buffer: maliciousPhp, mimetype: 'image/jpeg' } as any;
-      expect(() => pipe.transform(file)).toThrow(BadRequestException);
+      await expect(pipe.transform(file)).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException for empty buffer', () => {
+    it('should throw BadRequestException for empty buffer', async () => {
       const emptyBuffer = Buffer.from([]);
       const file = { buffer: emptyBuffer, mimetype: 'image/jpeg' } as any;
-      expect(() => pipe.transform(file)).toThrow(BadRequestException);
+      await expect(pipe.transform(file)).rejects.toThrow(BadRequestException);
     });
   });
 });

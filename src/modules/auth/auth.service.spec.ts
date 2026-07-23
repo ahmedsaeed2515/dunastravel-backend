@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { UserService } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SettingsService } from '../settings/settings.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 jest.mock('bcrypt');
 
@@ -99,6 +100,13 @@ describe('AuthService', () => {
           useValue: {
             sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
             sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: SettingsService,
+          useValue: {
+            getSetting: jest.fn().mockImplementation((key, defaultValue) => Promise.resolve(defaultValue ?? true)),
+            getPublicSettings: jest.fn(),
           },
         },
       ],

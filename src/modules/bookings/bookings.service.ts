@@ -155,6 +155,7 @@ export class BookingsService {
       select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
     });
     const tour = tours.find((t) => {
+      if (dto.tourId && t.id === dto.tourId) return true;
       const titleEn = extractI18n(t.titleJsonb, 'en');
       return titleEn && titleEn.toLowerCase() === dto.tourTitle?.toLowerCase();
     });
