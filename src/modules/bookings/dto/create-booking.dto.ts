@@ -201,4 +201,14 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   promoCode?: string;
+
+  @ApiPropertyOptional({ description: 'Visitor analytics session ID' })
+  @IsOptional()
+  @IsString()
+  analyticsSessionId?: string;
+
+  @ApiPropertyOptional({ description: 'Origin landing page interface slug' })
+  @IsOptional()
+  @IsString()
+  originInterfaceSlug?: string;
 }

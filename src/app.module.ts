@@ -44,6 +44,8 @@ import { CmsModule } from './modules/cms/cms.module';
 import { UsersModule } from './modules/users/users.module';
 import { ToolsModule } from './modules/tools/tools.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -150,6 +152,8 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     CmsModule,
     ToolsModule,
     SettingsModule,
+    AnalyticsModule,
+    DashboardModule,
   ],
   providers: [
     AsyncContextService,

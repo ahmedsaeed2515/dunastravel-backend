@@ -598,6 +598,215 @@ async function seedMockBookings(): Promise<void> {
   }
 }
 
+async function seedTourLandingPages(): Promise<void> {
+  console.log('\n📌 Seeding Tour Landing Pages (Interfaces)...');
+
+  const landingPagesData = [
+    {
+      slug: 'egypt',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Egypt', es: 'Egipto', ar: 'مصر', pt: 'Egito', it: 'Egitto' },
+      subtitleJsonb: { en: 'Land of the Pharaohs', es: 'Tierra de los Faraones', ar: 'أرض الفراعنة', pt: 'Terra dos Faraós', it: 'Terra dei Faraoni' },
+      descriptionJsonb: {
+        en: 'From the timeless Pyramids of Giza to the golden temples of Luxor and the crystal waters of the Red Sea, Egypt offers a journey through history like no other.',
+        es: 'Desde las pirámides hasta el mar Rojo, descubre la cuna de la civilización.',
+        ar: 'من أهرامات الجيزة إلى معابد الأقصر وشواطئ البحر الأحمر الساحرة.',
+        pt: 'Das pirâmides ao Rio Nilo, viva uma experiência inesquecível.',
+        it: 'Dalle piramidi al Nilo, un viaggio straordinario.'
+      },
+      heroImageUrl: '/imgs/egyothero.png',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 1,
+    },
+    {
+      slug: 'turkey',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Turkey', es: 'Turquía', ar: 'تركيا', pt: 'Turquia', it: 'Turchia' },
+      subtitleJsonb: { en: 'Where East Meets West', es: 'Donde Oriente se encuentra con Occidente', ar: 'ملتقى الشرق والغرب', pt: 'Onde o Oriente se Encontra com o Ocidente', it: 'Dove l\'Oriente Incontra l\'Occidente' },
+      descriptionJsonb: {
+        en: 'Explore Istanbul, the fairy chimneys of Cappadocia, ancient Ephesus, and travertine pools of Pamukkale.',
+        es: 'Descubre Estambul, Capadoccia y los tesoros de Turquía.',
+        ar: 'استكشف إسطنبول وكابادوكيا ومناظر تركيا الطبيعية التاريخية.',
+        pt: 'Conheça Istambul e os balões da Capadócia.',
+        it: 'Esplora Istanbul e la Cappadocia.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 2,
+    },
+    {
+      slug: 'jordan',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Jordan', es: 'Jordania', ar: 'الأردن', pt: 'Jordânia', it: 'Giordania' },
+      subtitleJsonb: { en: 'Kingdom of Wonder', es: 'Reino de Maravillas', ar: 'مملكة العجائب', pt: 'Reino das Maravilhas', it: 'Regno delle Meraviglie' },
+      descriptionJsonb: {
+        en: 'Walk in the pink-red sandstone canyons of Petra and float on the Dead Sea.',
+        es: 'Explora la legendaria ciudad de Petra y el desierto de Wadi Rum.',
+        ar: 'زيارة مدينة البتراء الوردية ووادي رم والبحر الميت.',
+        pt: 'Descubra Petra e o deserto de Wadi Rum.',
+        it: 'Visita la magica città di Petra.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 3,
+    },
+    {
+      slug: 'morocco',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Morocco', es: 'Marruecos', ar: 'المغرب', pt: 'Marrocos', it: 'Marocco' },
+      subtitleJsonb: { en: 'Land of Colors & Spices', es: 'Tierra de Colores y Especias', ar: 'أرض الألوان والتوابل', pt: 'Terra de Cores e Especiarias', it: 'Terra di Colori e Spezie' },
+      descriptionJsonb: {
+        en: 'Discover Marrakech, Fes, Chefchaouen, and the Sahara desert dunes.',
+        es: 'Descubre Marrakech, Fez y las dunas del Sahara.',
+        ar: 'رحلات عبر مراكش وفاس والصحراء الكبرى.',
+        pt: 'Explore as cidades imperiais de Marrocos.',
+        it: 'Scopri le città imperiali del Marocco.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 4,
+    },
+    {
+      slug: 'greece',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Greece', es: 'Grecia', ar: 'اليونان', pt: 'Grécia', it: 'Grecia' },
+      subtitleJsonb: { en: 'Cradle of Civilization', es: 'Cuna de la Civilización', ar: 'مهد الحضارة', pt: 'Berço da Civilização', it: 'Culla della Civiltà' },
+      descriptionJsonb: {
+        en: 'Experience Athens Acropolis and breathtaking Aegean islands.',
+        es: 'Atenas, Santorini y las islas griegas.',
+        ar: 'استكشف أثينا وجزر اليونان الساحرة.',
+        pt: 'Visite Atenas e as ilhas gregas.',
+        it: 'Visita Atene e le isole greche.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 5,
+    },
+    {
+      slug: 'dubai',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Dubai', es: 'Dubái', ar: 'دبي', pt: 'Dubai', it: 'Dubai' },
+      subtitleJsonb: { en: 'City of the Future', es: 'Ciudad del Futuro', ar: 'مدينة المستقبل', pt: 'Cidade do Futuro', it: 'Città del Futuro' },
+      descriptionJsonb: {
+        en: 'Ultra-modern architecture, desert safaris, and luxury shopping.',
+        es: 'Lujo, arquitectura moderna y safaris en el desierto.',
+        ar: 'ناطحات السحاب والسفاري والتسوق الفاخر.',
+        pt: 'O luxo e a modernidade de Dubai.',
+        it: 'Lusso e modernità a Dubai.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 6,
+    },
+    {
+      slug: 'tunisia',
+      type: 'DESTINATION',
+      titleJsonb: { en: 'Tunisia', es: 'Túnez', ar: 'تونس', pt: 'Tunísia', it: 'Tunisia' },
+      subtitleJsonb: { en: 'Oasis & Mediterranean Charm', es: 'Oasis y Encanto Mediterráneo', ar: 'سحر الواحات والمتوسط', pt: 'Oásis e Charme Mediterrâneo', it: 'Oasi e Fascino Mediterraneo' },
+      descriptionJsonb: {
+        en: 'Carthage ruins, Sidi Bou Said, and Sahara oases.',
+        es: 'Cartago, Sidi Bou Said y los oasis de Túnez.',
+        ar: 'آثار قرطاج وسيدي بوسعيد وواحات الصحراء.',
+        pt: 'Conheça as ruínas de Cartago e Sidi Bou Said.',
+        it: 'Scopri Cartagine e Sidi Bou Said.'
+      },
+      heroImageUrl: 'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 7,
+    },
+    {
+      slug: 'multi-country',
+      type: 'THEME',
+      titleJsonb: { en: 'Multi-Country Tours', es: 'Tours Multipaís', ar: 'رحلات متعددة الدول', pt: 'Tours Multi-Países', it: 'Tour Multi-Paese' },
+      subtitleJsonb: { en: 'Grand Middle East Expeditions', es: 'Grandes Expediciones por Medio Oriente', ar: 'رحلات شاملة عبر الشرق الأوسط', pt: 'Grandes Expedições pelo Oriente Médio', it: 'Grandi Spedizioni in Medio Oriente' },
+      descriptionJsonb: {
+        en: 'Combined travel packages covering Egypt, Jordan, Turkey, Dubai, and Morocco.',
+        es: 'Paquetes combinados visitando varios países de Medio Oriente.',
+        ar: 'رحلات تجمع بين مصر والأردن وتركيا والإمارات والمغرب.',
+        pt: 'Pacotes combinando Egito, Jordânia e Turquia.',
+        it: 'Pacchetti combinati in Medio Oriente.'
+      },
+      heroImageUrl: 'https://res.cloudinary.com/degbrq3ck/image/upload/v1783030113/Gemini_Generated_Image_cb2enncb2enncb2e_wvyejn.jpg',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 8,
+    },
+    {
+      slug: 'religious',
+      type: 'THEME',
+      titleJsonb: { en: 'Religious Tours', es: 'Tours Religiosos', ar: 'رحلات دينية', pt: 'Tours Religiosos', it: 'Tour Religiosi' },
+      subtitleJsonb: { en: 'Sacred Footsteps & Pilgrimages', es: 'Huellas Sagradas y Peregrinaciones', ar: 'مسارات مقدسة ورحلات إيمانية', pt: 'Pegadas Sagradas e Peregrinações', it: 'Impronte Sacre e Pellegrinaggi' },
+      descriptionJsonb: {
+        en: 'Holy land pilgrimages and spiritual journeys across sacred historical sites.',
+        es: 'Peregrinaciones a Tierra Santa y sitios sagrados.',
+        ar: 'رحلات إيمانية وزيارة المعالم المقدسة.',
+        pt: 'Peregrinações pela Terra Santa.',
+        it: 'Pellegrinaggi in Terra Santa.'
+      },
+      heroImageUrl: 'https://www.saintjeromechurch.org/wp-content/uploads/2025/03/14714-what-is-ccd-in-catholic-church-religious-education-programs-explained.png',
+      status: 'PUBLISHED',
+      isActive: true,
+      sortOrder: 9,
+    },
+  ];
+
+  for (const page of landingPagesData) {
+    const existing = await prisma.tourLandingPage.findUnique({ where: { slug: page.slug } });
+    let landingPageId: string;
+
+    if (existing) {
+      console.log(`  ↩  Landing Page exists: ${page.slug}`);
+      landingPageId = existing.id;
+    } else {
+      const created = await prisma.tourLandingPage.create({ data: page });
+      console.log(`  ✅ Seeded Landing Page: ${page.slug}`);
+      landingPageId = created.id;
+    }
+
+    // Connect tours matching category, country or slug
+    const matchingTours = await prisma.tour.findMany({
+      where: {
+        OR: [
+          { category: { equals: page.slug, mode: 'insensitive' } },
+          { country: { equals: page.slug, mode: 'insensitive' } },
+          { slug: { contains: page.slug, mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    let sortIndex = 1;
+    for (const tour of matchingTours) {
+      await prisma.tourLandingPageTour.upsert({
+        where: {
+          landingPageId_tourId: {
+            landingPageId,
+            tourId: tour.id,
+          },
+        },
+        create: {
+          landingPageId,
+          tourId: tour.id,
+          sortOrder: sortIndex++,
+          isFeatured: tour.isFeatured,
+          isVisible: true,
+        },
+        update: {},
+      });
+    }
+
+    if (matchingTours.length > 0) {
+      console.log(`     └ Attached ${matchingTours.length} tours to '${page.slug}'`);
+    }
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -651,6 +860,7 @@ async function main(): Promise<void> {
     await seedFallbackTours();
   }
 
+  await seedTourLandingPages();
   await seedContactSubmissions();
 
   await seedSuperAdmin();

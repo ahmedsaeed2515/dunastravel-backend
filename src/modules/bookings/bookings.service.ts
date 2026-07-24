@@ -315,6 +315,8 @@ export class BookingsService {
               infants: dto.infants ?? 0,
               totalAmountUsd,
               notes: dto.notes ?? null,
+              analyticsSessionId: dto.analyticsSessionId ?? null,
+              originInterfaceSlug: dto.originInterfaceSlug ?? null,
             },
           });
 
@@ -406,6 +408,40 @@ export class BookingsService {
       infants: dto.infants ?? 0,
     };
     this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
+
+    this.prisma.analyticsEvent.create({
+      data: {
+        eventId: `booking:${result.booking.id}:submitted`,
+        eventName: 'booking_submitted',
+        bookingRef: referenceCode,
+        tourSlug: tour?.slug,
+        sessionId: dto.analyticsSessionId || undefined,
+        interfaceSlug: dto.originInterfaceSlug || undefined,
+        locale: dto.language || 'en',
+        properties: {
+          totalAmountUsd: totalAmountUsd.toString(),
+          adults: dto.adults,
+          children: dto.children || 0,
+        },
+      },
+    }).catch((err) => this.logger.warn(`Failed to log server analytics event: ${err.message}`));
+
+    if (result.booking.status === 'CONFIRMED') {
+      this.prisma.analyticsEvent.create({
+        data: {
+          eventId: `booking:${result.booking.id}:confirmed`,
+          eventName: 'booking_confirmed',
+          bookingRef: referenceCode,
+          tourSlug: tour?.slug,
+          sessionId: dto.analyticsSessionId || undefined,
+          interfaceSlug: dto.originInterfaceSlug || undefined,
+          locale: dto.language || 'en',
+          properties: {
+            totalAmountUsd: totalAmountUsd.toString(),
+          },
+        },
+      }).catch((err) => this.logger.warn(`Failed to log server analytics event booking_confirmed: ${err.message}`));
+    }
 
     this.bookingsCounter.inc();
 
@@ -597,6 +633,20 @@ export class BookingsService {
         data: { remainingSeats: { increment: seatsToRestore } },
       });
     });
+
+    this.prisma.analyticsEvent.create({
+      data: {
+        eventId: `booking:${booking.id}:cancelled`,
+        eventName: 'booking_cancelled',
+        bookingRef: referenceCode,
+        sessionId: booking.analyticsSessionId || undefined,
+        interfaceSlug: booking.originInterfaceSlug || undefined,
+        properties: {
+          bookingId: booking.id,
+          reason: reason || 'Customer requested cancellation',
+        },
+      },
+    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event booking_cancelled: ${err.message}`));
 
     this.logger.log(
       `Booking cancelled | ref=${referenceCode} by userId=${userId}`,

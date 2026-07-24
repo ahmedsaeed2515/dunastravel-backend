@@ -878,7 +878,14 @@ export class AdminService {
         orderBy: { [sortBy]: sortOrder },
         include: {
           _count: { select: { bookings: true, reviews: true } },
-          images: { where: { isHero: true }, take: 1, select: { imageUrl: true } }
+          images: { where: { isHero: true }, take: 1, select: { imageUrl: true } },
+          landingPages: {
+            include: {
+              landingPage: {
+                select: { id: true, slug: true, titleJsonb: true, type: true }
+              }
+            }
+          }
         }
       })
     ]);
@@ -900,6 +907,14 @@ export class AdminService {
       bookingCount: t._count.bookings,
       reviewCount: t._count.reviews,
       heroImage: t.images[0]?.imageUrl || null,
+      landingPages: t.landingPages.map(lp => ({
+        id: lp.landingPage.id,
+        slug: lp.landingPage.slug,
+        titleJsonb: lp.landingPage.titleJsonb,
+        type: lp.landingPage.type,
+        isFeatured: lp.isFeatured,
+        sortOrder: lp.sortOrder,
+      })),
       createdAt: t.createdAt,
     }));
 
@@ -994,6 +1009,13 @@ export class AdminService {
         images: { orderBy: { sortOrder: 'asc' } },
         reviews: { orderBy: { createdAt: 'desc' } },
         activityLogs: { orderBy: { createdAt: 'desc' } },
+        landingPages: {
+          include: {
+            landingPage: {
+              select: { id: true, slug: true, titleJsonb: true, type: true }
+            }
+          }
+        },
         bookings: {
           orderBy: { createdAt: 'desc' },
           include: { billingInfo: { select: { fullName: true, email: true } } }

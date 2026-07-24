@@ -196,6 +196,7 @@ model Tour {
   itineraries             TourItinerary[]
   reviews                 TourReview[]
   favorites               TourFavorite[]
+  landingPages            TourLandingPageTour[]
 
   @@index([isActive])
   @@index([category])
@@ -297,6 +298,8 @@ model Booking {
   paidAmountUsd      Decimal              @default(0.00) @map("paid_amount_usd") @db.Decimal(10, 2)
   notes              String?
   inquiryMessage     String?              @map("inquiry_message") @db.Text
+  analyticsSessionId String?              @map("analytics_session_id") @db.VarChar(100)
+  originInterfaceSlug String?             @map("origin_interface_slug") @db.VarChar(100)
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
   assigneeId         String?              @map("assignee_id")
@@ -776,3 +779,88 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+model TourLandingPage {
+  id                  String                @id @default(uuid())
+  slug                String                @unique @db.VarChar(255)
+  type                String                @default("DESTINATION") @db.VarChar(50)
+  titleJsonb          Json                  @map("title_jsonb")
+  subtitleJsonb       Json?                 @map("subtitle_jsonb")
+  descriptionJsonb    Json?                 @map("description_jsonb")
+  briefJsonb          Json?                 @map("brief_jsonb")
+  heroImageUrl        String?               @map("hero_image_url")
+  heroVideoUrl        String?               @map("hero_video_url")
+  seoTitleJsonb       Json?                 @map("seo_title_jsonb")
+  seoDescriptionJsonb Json?                 @map("seo_description_jsonb")
+  seoKeywordsJsonb    Json?                 @map("seo_keywords_jsonb")
+  sectionsJsonb       Json?                 @map("sections_jsonb")
+  status              String                @default("PUBLISHED") @db.VarChar(50)
+  isActive            Boolean               @default(true) @map("is_active")
+  sortOrder           Int                   @default(0) @map("sort_order")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  deletedAt           DateTime?             @map("deleted_at")
+  tours               TourLandingPageTour[]
+
+  @@index([status])
+  @@index([type])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("tour_landing_pages")
+}
+
+model TourLandingPageTour {
+  id            String          @id @default(uuid())
+  landingPageId String          @map("landing_page_id")
+  tourId        String          @map("tour_id")
+  sortOrder     Int             @default(0) @map("sort_order")
+  isFeatured    Boolean         @default(false) @map("is_featured")
+  isVisible     Boolean         @default(true) @map("is_visible")
+  customBadge   Json?           @map("custom_badge")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  landingPage   TourLandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  tour          Tour            @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([landingPageId, tourId])
+  @@index([landingPageId])
+  @@index([tourId])
+  @@index([sortOrder])
+  @@map("tour_landing_page_tours")
+}
+
+model AnalyticsEvent {
+  id             String   @id @default(uuid())
+  eventId        String   @unique @map("event_id") @db.VarChar(100)
+  eventName      String   @map("event_name") @db.VarChar(100)
+  sessionId      String?  @map("session_id") @db.VarChar(100)
+  userId         String?  @map("user_id") @db.VarChar(100)
+  interfaceSlug  String?  @map("interface_slug") @db.VarChar(100)
+  tourSlug       String?  @map("tour_slug") @db.VarChar(100)
+  bookingRef     String?  @map("booking_ref") @db.VarChar(50)
+  locale         String?  @default("en") @db.VarChar(10)
+  pathname       String?  @db.VarChar(255)
+  referrer       String?  @db.VarChar(500)
+  utmSource      String?  @map("utm_source") @db.VarChar(100)
+  utmMedium      String?  @map("utm_medium") @db.VarChar(100)
+  utmCampaign    String?  @map("utm_campaign") @db.VarChar(100)
+  deviceCategory String?  @default("desktop") @map("device_category") @db.VarChar(20)
+  properties     Json?
+  occurredAt     DateTime? @map("occurred_at")
+  receivedAt     DateTime @default(now()) @map("received_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([eventName])
+  @@index([createdAt])
+  @@index([tourSlug])
+  @@index([interfaceSlug])
+  @@index([sessionId])
+  @@index([eventName, createdAt])
+  @@index([tourSlug, eventName, createdAt])
+  @@index([interfaceSlug, eventName, createdAt])
+  @@index([sessionId, eventName, createdAt])
+  @@map("analytics_events")
+}
+
+
+

@@ -381,6 +381,22 @@ export class PaymentsService {
       transactionId: transactionId,
       gateway: this.paymentGateway.getProviderName(),
     });
+
+    tx.analyticsEvent.create({
+      data: {
+        eventId: `payment:${payment.id}:succeeded`,
+        eventName: 'payment_succeeded',
+        bookingRef: booking.referenceCode || undefined,
+        tourSlug: booking.tourId || undefined,
+        sessionId: booking.analyticsSessionId || undefined,
+        interfaceSlug: booking.originInterfaceSlug || undefined,
+        properties: {
+          paymentId: payment.id,
+          amountUsd: money.toDecimal(),
+          gateway: this.paymentGateway.getProviderName(),
+        },
+      },
+    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event payment_succeeded: ${err.message}`));
   }
 
   async refundPayment(paymentId: string, amount?: number) {
@@ -446,6 +462,19 @@ export class PaymentsService {
       currency: refundMoney.currency,
       refundId,
     });
+
+    this.prisma.analyticsEvent.create({
+      data: {
+        eventId: `refund:${existingPayment.id}:completed`,
+        eventName: 'refund_completed',
+        properties: {
+          paymentId: existingPayment.id,
+          bookingId: existingPayment.bookingId,
+          refundAmount: refundMoney.toDecimal(),
+          refundId,
+        },
+      },
+    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event refund_completed: ${err.message}`));
 
     this.logger.log(
       `Refund ${refundId} issued for payment ${existingPayment.id} (booking ${existingPayment.bookingId})`,
