@@ -2,14 +2,17 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateTourLandingPageDto } from './dto/create-tour-landing-page.dto';
 import { UpdateTourLandingPageDto } from './dto/update-tour-landing-page.dto';
-import { AttachToursDto, UpdateTourRelationDto, ReorderToursDto } from './dto/attach-tours.dto';
+import {
+  AttachToursDto,
+  UpdateTourRelationDto,
+  ReorderToursDto,
+} from './dto/attach-tours.dto';
 import { extractI18n, getPaginationParams, paginate } from '../../common/utils';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
@@ -21,15 +24,29 @@ export class TourLandingPagesService {
   constructor(private readonly prisma: PrismaService) {}
 
   private calculateLocaleCompletion(landingPage: any) {
-    const completion: Record<string, { title: boolean; subtitle: boolean; description: boolean; isComplete: boolean }> = {};
-    const titleObj = (landingPage.titleJsonb as Record<string, any>) || {};
-    const subObj = (landingPage.subtitleJsonb as Record<string, any>) || {};
-    const descObj = (landingPage.descriptionJsonb as Record<string, any>) || {};
+    const completion: Record<
+      string,
+      {
+        title: boolean;
+        subtitle: boolean;
+        description: boolean;
+        isComplete: boolean;
+      }
+    > = {};
+    const titleObj =
+      (landingPage.titleJsonb as Record<string, string> | null) || {};
+    const subObj =
+      (landingPage.subtitleJsonb as Record<string, string> | null) || {};
+    const descObj =
+      (landingPage.descriptionJsonb as Record<string, string> | null) || {};
 
     for (const locale of SUPPORTED_LOCALES) {
-      const hasTitle = Boolean(titleObj[locale] && titleObj[locale].trim());
-      const hasSub = Boolean(subObj[locale] && subObj[locale].trim());
-      const hasDesc = Boolean(descObj[locale] && descObj[locale].trim());
+      const titleVal = titleObj[locale];
+      const subVal = subObj[locale];
+      const descVal = descObj[locale];
+      const hasTitle = Boolean(typeof titleVal === 'string' && titleVal.trim());
+      const hasSub = Boolean(typeof subVal === 'string' && subVal.trim());
+      const hasDesc = Boolean(typeof descVal === 'string' && descVal.trim());
       completion[locale] = {
         title: hasTitle,
         subtitle: hasSub,
@@ -42,23 +59,27 @@ export class TourLandingPagesService {
 
   // --- ADMIN METHODS ---
 
-  async findAllAdmin(query: any) {
-    const { page, limit, skip } = getPaginationParams(query);
+  async findAllAdmin(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    type?: string;
+    isActive?: string | boolean;
+  }) {
+    const { page, limit, skip } = getPaginationParams(query.page, query.limit);
     const { search, status, type, isActive } = query;
 
-    const where: any = {
+    const where: Prisma.TourLandingPageWhereInput = {
       deletedAt: null,
     };
 
     if (status) where.status = status;
     if (type) where.type = type;
-    if (isActive !== undefined) where.isActive = isActive === 'true' || isActive === true;
+    if (isActive !== undefined)
+      where.isActive = isActive === 'true' || isActive === true;
     if (search) {
-      where.OR = [
-        { slug: { contains: search, mode: 'insensitive' } },
-        { titleJsonb: { path: ['en'], string_contains: search } },
-        { titleJsonb: { path: ['ar'], string_contains: search } },
-      ];
+      where.OR = [{ slug: { contains: search, mode: 'insensitive' } }];
     }
 
     const [total, items] = await Promise.all([
@@ -89,7 +110,9 @@ export class TourLandingPagesService {
     const formattedItems = items.map((lp) => {
       const completion = this.calculateLocaleCompletion(lp);
       const totalTours = lp.tours.length;
-      const activeTours = lp.tours.filter((t) => t.tour.isActive && t.tour.status === 'PUBLISHED').length;
+      const activeTours = lp.tours.filter(
+        (t) => t.tour.isActive && t.tour.status === 'PUBLISHED',
+      ).length;
 
       return {
         ...lp,
@@ -142,7 +165,9 @@ export class TourLandingPagesService {
       where: { slug: dto.slug },
     });
     if (existing && !existing.deletedAt) {
-      throw new ConflictException(`Landing page with slug '${dto.slug}' already exists.`);
+      throw new ConflictException(
+        `Landing page with slug '${dto.slug}' already exists.`,
+      );
     }
 
     const created = await this.prisma.tourLandingPage.create({
@@ -185,7 +210,9 @@ export class TourLandingPagesService {
         where: { slug: dto.slug },
       });
       if (slugConflict && slugConflict.id !== existing.id) {
-        throw new ConflictException(`Landing page with slug '${dto.slug}' already exists.`);
+        throw new ConflictException(
+          `Landing page with slug '${dto.slug}' already exists.`,
+        );
       }
     }
 
@@ -198,10 +225,16 @@ export class TourLandingPagesService {
         ...(dto.subtitleJsonb && { subtitleJsonb: dto.subtitleJsonb }),
         ...(dto.descriptionJsonb && { descriptionJsonb: dto.descriptionJsonb }),
         ...(dto.briefJsonb && { briefJsonb: dto.briefJsonb }),
-        ...(dto.heroImageUrl !== undefined && { heroImageUrl: dto.heroImageUrl }),
-        ...(dto.heroVideoUrl !== undefined && { heroVideoUrl: dto.heroVideoUrl }),
+        ...(dto.heroImageUrl !== undefined && {
+          heroImageUrl: dto.heroImageUrl,
+        }),
+        ...(dto.heroVideoUrl !== undefined && {
+          heroVideoUrl: dto.heroVideoUrl,
+        }),
         ...(dto.seoTitleJsonb && { seoTitleJsonb: dto.seoTitleJsonb }),
-        ...(dto.seoDescriptionJsonb && { seoDescriptionJsonb: dto.seoDescriptionJsonb }),
+        ...(dto.seoDescriptionJsonb && {
+          seoDescriptionJsonb: dto.seoDescriptionJsonb,
+        }),
         ...(dto.seoKeywordsJsonb && { seoKeywordsJsonb: dto.seoKeywordsJsonb }),
         ...(dto.sectionsJsonb && { sectionsJsonb: dto.sectionsJsonb }),
         ...(dto.status && { status: dto.status }),
@@ -217,7 +250,8 @@ export class TourLandingPagesService {
     const existing = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!existing) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!existing)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     await this.prisma.tourLandingPage.update({
       where: { id: existing.id },
@@ -234,7 +268,8 @@ export class TourLandingPagesService {
     const existing = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!existing) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!existing)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     await this.prisma.tourLandingPage.update({
       where: { id: existing.id },
@@ -244,7 +279,10 @@ export class TourLandingPagesService {
       },
     });
 
-    return { success: true, message: `Landing page '${existing.slug}' deleted.` };
+    return {
+      success: true,
+      message: `Landing page '${existing.slug}' deleted.`,
+    };
   }
 
   async reorderInterfacesAdmin(items: { id: string; sortOrder: number }[]) {
@@ -265,7 +303,8 @@ export class TourLandingPagesService {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!landingPage) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!landingPage)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     const highestOrder = await this.prisma.tourLandingPageTour.aggregate({
       where: { landingPageId: landingPage.id },
@@ -308,7 +347,8 @@ export class TourLandingPagesService {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!landingPage) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!landingPage)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     await this.prisma.tourLandingPageTour.deleteMany({
       where: {
@@ -317,17 +357,27 @@ export class TourLandingPagesService {
       },
     });
 
-    return { success: true, message: `Tour '${tourId}' detached from interface '${landingPage.slug}'. Global tour remains intact.` };
+    return {
+      success: true,
+      message: `Tour '${tourId}' detached from interface '${landingPage.slug}'. Global tour remains intact.`,
+    };
   }
 
-  async updateTourRelation(idOrSlug: string, tourId: string, dto: UpdateTourRelationDto) {
+  async updateTourRelation(
+    idOrSlug: string,
+    tourId: string,
+    dto: UpdateTourRelationDto,
+  ) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!landingPage) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!landingPage)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     const relation = await this.prisma.tourLandingPageTour.findUnique({
-      where: { landingPageId_tourId: { landingPageId: landingPage.id, tourId } },
+      where: {
+        landingPageId_tourId: { landingPageId: landingPage.id, tourId },
+      },
     });
     if (!relation) throw new NotFoundException(`Relation not found.`);
 
@@ -348,7 +398,8 @@ export class TourLandingPagesService {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
-    if (!landingPage) throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+    if (!landingPage)
+      throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     await this.prisma.$transaction(
       dto.items.map((item) =>
@@ -369,11 +420,16 @@ export class TourLandingPagesService {
 
   // --- PUBLIC API METHODS ---
 
-  async findAllPublic(query: any) {
-    const { page, limit, skip } = getPaginationParams(query);
+  async findAllPublic(query: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    locale?: string;
+  }) {
+    const { page, limit, skip } = getPaginationParams(query.page, query.limit);
     const { type, locale = 'en' } = query;
 
-    const where: any = {
+    const where: Prisma.TourLandingPageWhereInput = {
       status: 'PUBLISHED',
       isActive: true,
       deletedAt: null,
@@ -389,7 +445,10 @@ export class TourLandingPagesService {
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
         include: {
           tours: {
-            where: { isVisible: true, tour: { isActive: true, status: 'PUBLISHED', deletedAt: null } },
+            where: {
+              isVisible: true,
+              tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+            },
             orderBy: { sortOrder: 'asc' },
             include: {
               tour: {
@@ -433,7 +492,10 @@ export class TourLandingPagesService {
       },
       include: {
         tours: {
-          where: { isVisible: true, tour: { isActive: true, status: 'PUBLISHED', deletedAt: null } },
+          where: {
+            isVisible: true,
+            tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+          },
           orderBy: { sortOrder: 'asc' },
           include: {
             tour: {
@@ -448,7 +510,9 @@ export class TourLandingPagesService {
     });
 
     if (!lp) {
-      throw new NotFoundException(`Landing page '${slug}' not found or not published.`);
+      throw new NotFoundException(
+        `Landing page '${slug}' not found or not published.`,
+      );
     }
 
     return {
@@ -478,7 +542,10 @@ export class TourLandingPagesService {
         category: t.tour.category,
         isFeatured: t.isFeatured || t.tour.isFeatured,
         customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
-        heroImage: t.tour.images.find((img) => img.isHero)?.imageUrl || t.tour.images[0]?.imageUrl || null,
+        heroImage:
+          t.tour.images.find((img) => img.isHero)?.imageUrl ||
+          t.tour.images[0]?.imageUrl ||
+          null,
         images: t.tour.images.map((img) => img.imageUrl),
         sortOrder: t.sortOrder,
       })),

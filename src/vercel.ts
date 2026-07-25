@@ -12,7 +12,7 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
 
 let cachedApp: NestExpressApplication;
 
-async function bootstrapServerless(): Promise<any> {
+async function bootstrapServerless(): Promise<express.Express> {
   if (!cachedApp) {
     if (process.env.SENTRY_DSN) {
       const Sentry = await import('@sentry/nestjs');
@@ -50,7 +50,7 @@ async function bootstrapServerless(): Promise<any> {
     app.use(
       express.json({
         limit: '1mb',
-        verify: (req: any, _res, buf) => {
+        verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
           req.rawBody = buf;
         },
       }),
@@ -59,7 +59,7 @@ async function bootstrapServerless(): Promise<any> {
       express.urlencoded({
         extended: true,
         limit: '1mb',
-        verify: (req: any, _res, buf) => {
+        verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
           req.rawBody = buf;
         },
       }),
@@ -122,20 +122,24 @@ async function bootstrapServerless(): Promise<any> {
     cachedApp = app;
   }
 
-  return cachedApp.getHttpAdapter().getInstance();
+  return cachedApp.getHttpAdapter().getInstance() as express.Express;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: express.Request,
+  res: express.Response,
+): Promise<void> {
   try {
     const server = await bootstrapServerless();
-    return server(req, res);
-  } catch (error: any) {
-    console.error('[Vercel] Bootstrap Error:', error?.message, error?.stack);
+    server(req, res);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[Vercel] Bootstrap Error:', err?.message, err?.stack);
     if (!res.headersSent) {
       res.status(500).json({
         statusCode: 500,
         message: 'NestJS bootstrap failed',
-        error: error?.message ?? 'Unknown error',
+        error: err?.message ?? 'Unknown error',
       });
     }
   }

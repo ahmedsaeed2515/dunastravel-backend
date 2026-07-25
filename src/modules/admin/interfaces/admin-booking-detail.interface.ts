@@ -23,5 +23,9 @@ export interface IAdminBookingDetail extends IAdminBookingSummary {
     readonly invoiceNumber: string;
     readonly createdAt: Date;
   } | null;
+  readonly payments?: ReadonlyArray<unknown>;
+  readonly activityLogs?: ReadonlyArray<unknown>;
+  readonly notes?: ReadonlyArray<unknown>;
+  readonly attachments?: ReadonlyArray<unknown>;
   readonly updatedAt: Date;
 }

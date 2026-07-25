@@ -1,94 +1,226 @@
-import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import axios from 'axios';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+
+export const SUPPORTED_CURRENCIES = [
+  'USD',
+  'EUR',
+  'GBP',
+  'BRL',
+  'EGP',
+  'SAR',
+  'AED',
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+export interface CurrencyRateInfo {
+  code: string;
+  rateToBase: string;
+  lastUpdated: string;
+  provider: string;
+  isStale: boolean;
+}
 
 @Injectable()
-export class CurrencyService implements OnModuleInit {
+export class CurrencyService {
   private readonly logger = new Logger(CurrencyService.name);
-  private readonly CACHE_KEY = 'global_exchange_rates';
-  private readonly FALLBACK_RATES = {
-    USD: 1,
-    EUR: 0.92,
-    GBP: 0.79,
-    EGP: 47.5,
-    AED: 3.67,
-    SAR: 3.75,
-    CHF: 0.9,
-    JPY: 151.0,
-  };
+  private readonly CACHE_KEY = 'global_exchange_rates_v2';
+  private readonly STALENESS_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
-  async onModuleInit() {
-    await this.fetchAndCacheRates();
-  }
-
-  @Cron(CronExpression.EVERY_12_HOURS)
-  async fetchAndCacheRates() {
-    this.logger.log('Fetching latest exchange rates...');
-    try {
-      const appId = process.env.OPENEXCHANGERATES_APP_ID;
-      let rates = this.FALLBACK_RATES;
-      if (
-        appId &&
-        appId !== 'your-openexchangerates-key-here' &&
-        !appId.includes('your_')
-      ) {
-        const res = await axios.get(
-          `https://openexchangerates.org/api/latest.json?app_id=${appId}`,
-        );
-        if (res.data && res.data.rates) {
-          rates = res.data.rates;
-        }
-      } else {
-        this.logger.warn(
-          'No OpenExchangeRates APP_ID provided, using fallback rates.',
-        );
-      }
-
-      await this.cacheManager.set(this.CACHE_KEY, rates, 43200000); // 12 hours TTL in ms
-      this.logger.log('Exchange rates updated in Redis cache.');
-    } catch (error: any) {
-      this.logger.error(`Failed to fetch exchange rates: ${error.message}`);
-      // Don't overwrite cache if it fails, rely on existing cache or fallback inline
-    }
-  }
-
-  async getRates(): Promise<Record<string, number>> {
-    const cachedRates = await this.cacheManager.get<Record<string, number>>(
-      this.CACHE_KEY,
+  isSupported(code: string): boolean {
+    return SUPPORTED_CURRENCIES.includes(
+      code.toUpperCase() as SupportedCurrency,
     );
-    if (cachedRates) {
-      return cachedRates;
-    }
-
-    // Fallback if cache is empty
-    return this.FALLBACK_RATES;
   }
 
-  async convert(amount: number, from: string, to: string): Promise<number> {
-    const fromUpper = from.toUpperCase();
-    const toUpper = to.toUpperCase();
+  async getRates(): Promise<{
+    base: string;
+    rates: Record<string, string>;
+    details: CurrencyRateInfo[];
+    timestamp: string;
+  }> {
+    const cached = await this.cacheManager.get<{
+      base: string;
+      rates: Record<string, string>;
+      details: CurrencyRateInfo[];
+      timestamp: string;
+    }>(this.CACHE_KEY);
 
-    if (fromUpper === toUpper) return amount;
+    if (cached) {
+      return cached;
+    }
 
-    const rates = await this.getRates();
+    const dbRates = await this.prisma.currencyRate.findMany();
+    const now = Date.now();
 
-    const rateFrom = rates[fromUpper];
-    const rateTo = rates[toUpper];
+    const ratesMap: Record<string, string> = { USD: '1.000000' };
+    const details: CurrencyRateInfo[] = [
+      {
+        code: 'USD',
+        rateToBase: '1.000000',
+        lastUpdated: new Date().toISOString(),
+        provider: 'SYSTEM_BASE',
+        isStale: false,
+      },
+    ];
 
-    if (!rateFrom || !rateTo) {
-      throw new Error(
-        `Exchange rate not found for ${!rateFrom ? fromUpper : toUpper}`,
+    for (const r of dbRates) {
+      const upperCode = r.code.toUpperCase();
+      if (this.isSupported(upperCode)) {
+        const rateStr = new Prisma.Decimal(r.rateToBase).toFixed(6);
+        const lastUpdatedMs = new Date(r.lastUpdated).getTime();
+        const isStale = now - lastUpdatedMs > this.STALENESS_THRESHOLD_MS;
+
+        ratesMap[upperCode] = rateStr;
+        details.push({
+          code: upperCode,
+          rateToBase: rateStr,
+          lastUpdated: r.lastUpdated.toISOString(),
+          provider: r.provider || 'DB_INGESTION',
+          isStale,
+        });
+      }
+    }
+
+    const response = {
+      base: 'USD',
+      rates: ratesMap,
+      details,
+      timestamp: new Date().toISOString(),
+    };
+
+    await this.cacheManager.set(this.CACHE_KEY, response, 300000); // 5 min TTL
+    return response;
+  }
+
+  async convert(
+    amountVal: number | string,
+    fromCode: string,
+    toCode: string,
+  ): Promise<{
+    originalAmount: string;
+    from: string;
+    to: string;
+    convertedAmount: string;
+    rateUsed: string;
+  }> {
+    const fromUpper = fromCode.toUpperCase();
+    const toUpper = toCode.toUpperCase();
+
+    if (!this.isSupported(fromUpper)) {
+      throw new BadRequestException(
+        `Unsupported source currency: ${fromUpper}`,
+      );
+    }
+    if (!this.isSupported(toUpper)) {
+      throw new BadRequestException(`Unsupported target currency: ${toUpper}`);
+    }
+
+    const amountDecimal = new Prisma.Decimal(amountVal);
+    if (amountDecimal.isNegative()) {
+      throw new BadRequestException('Amount cannot be negative');
+    }
+
+    if (fromUpper === toUpper) {
+      return {
+        originalAmount: amountDecimal.toFixed(2),
+        from: fromUpper,
+        to: toUpper,
+        convertedAmount: amountDecimal.toFixed(2),
+        rateUsed: '1.000000',
+      };
+    }
+
+    const rateData = await this.getRates();
+    const rateFromStr = rateData.rates[fromUpper];
+    const rateToStr = rateData.rates[toUpper];
+
+    if (!rateFromStr || !rateToStr) {
+      throw new ServiceUnavailableException(
+        `Exchange rate not available for currency conversion (${fromUpper} -> ${toUpper})`,
       );
     }
 
-    // Convert to USD base first, then to target currency
-    const baseUsd = amount / rateFrom;
-    const converted = baseUsd * rateTo;
+    const rateFrom = new Prisma.Decimal(rateFromStr);
+    const rateTo = new Prisma.Decimal(rateToStr);
 
-    return Number(converted.toFixed(2));
+    // Convert from source currency to USD base, then to target currency
+    const baseUsd = amountDecimal.div(rateFrom);
+    const converted = baseUsd.mul(rateTo);
+    const effectiveRate = rateTo.div(rateFrom);
+
+    return {
+      originalAmount: amountDecimal.toFixed(2),
+      from: fromUpper,
+      to: toUpper,
+      convertedAmount: converted.toFixed(2),
+      rateUsed: effectiveRate.toFixed(6),
+    };
+  }
+
+  async updateRatesAdmin(
+    rates: Array<{
+      code: string;
+      rateToBase: number | string;
+      provider?: string;
+    }>,
+    adminUserId: string,
+  ) {
+    if (!rates || !Array.isArray(rates) || rates.length === 0) {
+      throw new BadRequestException('Rates array is required');
+    }
+
+    const results = [];
+    for (const item of rates) {
+      const codeUpper = item.code?.toUpperCase();
+      if (!codeUpper || !this.isSupported(codeUpper)) {
+        throw new BadRequestException(
+          `Currency ${item.code} is not in the supported ISO allowlist (${SUPPORTED_CURRENCIES.join(', ')})`,
+        );
+      }
+
+      const rateDecimal = new Prisma.Decimal(item.rateToBase);
+      if (rateDecimal.lte(0)) {
+        throw new BadRequestException(
+          `Exchange rate for ${codeUpper} must be positive`,
+        );
+      }
+
+      const updated = await this.prisma.currencyRate.upsert({
+        where: { code: codeUpper },
+        update: {
+          rateToBase: rateDecimal,
+          lastUpdated: new Date(),
+          provider: item.provider || 'ADMIN_MANUAL',
+        },
+        create: {
+          code: codeUpper,
+          rateToBase: rateDecimal,
+          lastUpdated: new Date(),
+          provider: item.provider || 'ADMIN_MANUAL',
+        },
+      });
+      results.push(updated);
+    }
+
+    await this.cacheManager.del(this.CACHE_KEY);
+    this.logger.log(
+      `Updated ${results.length} currency rates by admin ${adminUserId}`,
+    );
+    return { success: true, updatedCount: results.length, rates: results };
   }
 }

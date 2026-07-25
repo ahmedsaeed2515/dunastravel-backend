@@ -1,49 +1,92 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { BookingsService } from '../bookings/bookings.service';
 import { NotFoundException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { BookingStatus } from '@prisma/client';
 
 describe('AdminService', () => {
   let service: AdminService;
-  let prisma: PrismaService;
+  let bookingsServiceMock: any;
+  let prisma: {
+    $transaction: jest.Mock;
+    booking: {
+      count: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      updateMany: jest.Mock;
+      update: jest.Mock;
+    };
+    bookingActivityLog: {
+      createMany: jest.Mock;
+      create: jest.Mock;
+    };
+    tailorMadeInquiry: {
+      count: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+    };
+    contactSubmission: {
+      count: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+    };
+    notificationDeliveryLog: {
+      count: jest.Mock;
+      findMany: jest.Mock;
+    };
+  };
 
   beforeEach(async () => {
+    bookingsServiceMock = {
+      transitionBookingStatus: jest
+        .fn()
+        .mockResolvedValue({ id: 'b1', status: 'CANCELLED' }),
+      createBooking: jest.fn(),
+    };
+
+    prisma = {
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: any) => Promise<any>) => cb(prisma)),
+      booking: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        update: jest.fn().mockResolvedValue({ id: 'b1' }),
+      },
+      bookingActivityLog: {
+        createMany: jest.fn(),
+        create: jest.fn(),
+      },
+      tailorMadeInquiry: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn(),
+      },
+      contactSubmission: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn(),
+      },
+      notificationDeliveryLog: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminService,
         {
           provide: PrismaService,
-          useValue: {
-            $transaction: jest
-              .fn()
-              .mockImplementation(async (cb) => cb(prisma)),
-            booking: {
-              count: jest.fn().mockResolvedValue(0),
-              findMany: jest.fn().mockResolvedValue([]),
-              findUnique: jest.fn(),
-              updateMany: jest.fn(),
-              update: jest.fn(),
-            },
-            bookingActivityLog: {
-              createMany: jest.fn(),
-              create: jest.fn(),
-            },
-            tailorMadeInquiry: {
-              count: jest.fn().mockResolvedValue(0),
-              findMany: jest.fn().mockResolvedValue([]),
-              findUnique: jest.fn(),
-            },
-            contactSubmission: {
-              count: jest.fn().mockResolvedValue(0),
-              findMany: jest.fn().mockResolvedValue([]),
-              findUnique: jest.fn(),
-            },
-            notificationDeliveryLog: {
-              count: jest.fn().mockResolvedValue(0),
-              findMany: jest.fn().mockResolvedValue([]),
-            },
-          },
+          useValue: prisma,
+        },
+        {
+          provide: BookingsService,
+          useValue: bookingsServiceMock,
         },
         {
           provide: CACHE_MANAGER,
@@ -57,7 +100,6 @@ describe('AdminService', () => {
     }).compile();
 
     service = module.get<AdminService>(AdminService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -70,18 +112,16 @@ describe('AdminService', () => {
 
   describe('getDashboardMetrics', () => {
     it('should aggregate metrics properly when zero bookings exist', async () => {
-      // Mock counts to 0
-      jest.spyOn(prisma.booking, 'count').mockResolvedValue(0);
-      jest.spyOn(prisma.tailorMadeInquiry, 'count').mockResolvedValue(0);
-      jest.spyOn(prisma.contactSubmission, 'count').mockResolvedValue(0);
-      jest.spyOn(prisma.notificationDeliveryLog, 'count').mockResolvedValue(0);
+      prisma.booking.count.mockResolvedValue(0);
+      prisma.tailorMadeInquiry.count.mockResolvedValue(0);
+      prisma.contactSubmission.count.mockResolvedValue(0);
+      prisma.notificationDeliveryLog.count.mockResolvedValue(0);
 
       const result = await service.getDashboardMetrics('admin-uuid');
 
       expect(result.totalBookings).toBe(0);
       expect(result.totalInquiries).toBe(0);
       expect(result.totalContactSubmissions).toBe(0);
-      // expect(result.recentFailedNotifications).toBe(0);
     });
   });
 
@@ -89,20 +129,21 @@ describe('AdminService', () => {
     it('should update multiple bookings and log activity', async () => {
       const dto = {
         referenceCodes: ['BKG-1', 'BKG-2'],
-        status: 'CONFIRMED' as any,
+        status: BookingStatus.CONFIRMED,
       };
 
-      jest.spyOn(prisma.booking, 'updateMany').mockResolvedValue({ count: 2 });
-      jest
-        .spyOn(prisma.booking, 'findMany')
-        .mockResolvedValue([{ id: 'uuid-1' }, { id: 'uuid-2' }] as any);
+      prisma.booking.updateMany.mockResolvedValue({ count: 2 });
+      prisma.booking.findMany.mockResolvedValue([
+        { id: 'uuid-1' },
+        { id: 'uuid-2' },
+      ]);
 
       const result = await service.bulkUpdateBookings(dto, 'admin-uuid');
 
       expect(result.count).toBe(2);
       expect(prisma.booking.updateMany).toHaveBeenCalledWith({
         where: { referenceCode: { in: dto.referenceCodes } },
-        data: { status: 'CONFIRMED' },
+        data: { status: BookingStatus.CONFIRMED },
       });
       expect(prisma.bookingActivityLog.createMany).toHaveBeenCalledWith({
         data: [
@@ -110,13 +151,13 @@ describe('AdminService', () => {
             bookingId: 'uuid-1',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: 'CONFIRMED' },
+            details: { status: BookingStatus.CONFIRMED },
           },
           {
             bookingId: 'uuid-2',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: 'CONFIRMED' },
+            details: { status: BookingStatus.CONFIRMED },
           },
         ],
       });
@@ -125,26 +166,22 @@ describe('AdminService', () => {
     it('should handle partial failure gracefully if updateMany succeeds but some records not found', async () => {
       const dto = {
         referenceCodes: ['BKG-1', 'BKG-MISSING'],
-        status: 'CANCELLED' as any,
+        status: BookingStatus.CANCELLED,
       };
 
-      jest.spyOn(prisma.booking, 'updateMany').mockResolvedValue({ count: 1 });
-      // Only 1 is returned
-      jest
-        .spyOn(prisma.booking, 'findMany')
-        .mockResolvedValue([{ id: 'uuid-1' }] as any);
+      prisma.booking.updateMany.mockResolvedValue({ count: 1 });
+      prisma.booking.findMany.mockResolvedValue([{ id: 'uuid-1' }]);
 
       const result = await service.bulkUpdateBookings(dto, 'admin-uuid');
 
       expect(result.count).toBe(1);
-      // Ensure logs are only created for the found booking
       expect(prisma.bookingActivityLog.createMany).toHaveBeenCalledWith({
         data: [
           {
             bookingId: 'uuid-1',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: 'CANCELLED' },
+            details: { status: BookingStatus.CANCELLED },
           },
         ],
       });
@@ -162,16 +199,18 @@ describe('AdminService', () => {
 
   describe('softDeleteBooking and restoreBooking', () => {
     it('should soft delete and cascade log', async () => {
-      jest
-        .spyOn(prisma.booking, 'findUnique')
-        .mockResolvedValue({ id: 'uuid-1', referenceCode: 'BKG-1' } as any);
+      prisma.booking.findUnique.mockResolvedValue({
+        id: 'uuid-1',
+        referenceCode: 'BKG-1',
+      });
 
       await service.softDeleteBooking('BKG-1', 'admin-uuid');
 
-      expect(prisma.booking.update).toHaveBeenCalledWith({
-        where: { referenceCode: 'BKG-1' },
-        data: { deletedAt: expect.any(Date) },
-      });
+      expect(prisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { referenceCode: 'BKG-1' },
+        }),
+      );
       expect(prisma.bookingActivityLog.create).toHaveBeenCalledWith({
         data: {
           bookingId: 'uuid-1',
@@ -183,22 +222,30 @@ describe('AdminService', () => {
     });
 
     it('should throw NotFoundException if booking to delete not found', async () => {
-      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue(null);
+      prisma.booking.findUnique.mockResolvedValue(null);
       await expect(
         service.softDeleteBooking('MISSING', 'admin-uuid'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should restore booking and log', async () => {
-      jest
-        .spyOn(prisma.booking, 'findUnique')
-        .mockResolvedValue({ id: 'uuid-1' } as any);
+      prisma.booking.findUnique.mockResolvedValue({
+        id: 'uuid-1',
+        deletedAt: new Date(),
+        status: 'CANCELLED',
+      });
       await service.restoreBooking('BKG-1', 'admin-uuid');
 
       expect(prisma.booking.update).toHaveBeenCalledWith({
         where: { referenceCode: 'BKG-1' },
         data: { deletedAt: null },
       });
+      expect(bookingsServiceMock.transitionBookingStatus).toHaveBeenCalledWith(
+        'BKG-1',
+        'CONFIRMED',
+        { id: 'admin-uuid', role: 'ADMIN' },
+        'Restored by admin',
+      );
     });
   });
 });

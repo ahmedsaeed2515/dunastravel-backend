@@ -9,11 +9,11 @@ export interface BillingInfoResponse {
   email: string;
   phone: string;
   invoiceType: string;
-  companyName: string | null;
-  taxId: string | null;
-  address: string | null;
-  city: string | null;
-  country: string | null;
+  companyName?: string | null;
+  taxId?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
 }
 
 export interface BookingCreatedResponse {
@@ -30,6 +30,7 @@ export interface BookingCreatedResponse {
   totalAmountUsd: string;
   passengers: PassengerResponse[];
   billing: BillingInfoResponse;
+  guestToken?: string | null;
 }
 
 export interface BookingSummaryResponse {

@@ -81,49 +81,139 @@ export class CommissionsService {
   }
 
   async updateCommissionStatus(id: string, data: UpdateCommissionStatusDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const commission = await tx.commission.findUnique({ where: { id } });
-      if (!commission) throw new NotFoundException('Commission not found');
-
-      // If no change, return
-      if (commission.status === data.status) return commission;
-
-      const updated = await tx.commission.update({
-        where: { id },
-        data: { status: data.status },
-      });
-
-      // If transitioning to APPROVED, credit the company's wallet
-      if (
-        data.status === CommissionStatus.APPROVED &&
-        commission.status === CommissionStatus.PENDING
-      ) {
-        // We use the WalletsService for consistency, but we pass `tx` implicitly if we could.
-        // Actually, since WalletsService uses its own $transaction, it's safer to just call it.
-        // But doing it outside this tx is better to avoid nested tx issues in Prisma.
-      }
-
-      return updated;
+    const commission = await this.prisma.commission.findUnique({
+      where: { id },
     });
+    if (!commission) throw new NotFoundException('Commission not found');
+
+    if (commission.status === data.status) return commission;
+
+    const oldStatus = commission.status;
+    const updated = await this.prisma.commission.update({
+      where: { id },
+      data: { status: data.status },
+    });
+
+    if (
+      (data.status === CommissionStatus.APPROVED ||
+        data.status === CommissionStatus.PAID) &&
+      oldStatus === CommissionStatus.PENDING
+    ) {
+      await this.processCommissionApproval(id);
+    } else if (
+      data.status === CommissionStatus.CANCELLED &&
+      (oldStatus === CommissionStatus.APPROVED ||
+        oldStatus === CommissionStatus.PAID)
+    ) {
+      await this.processCommissionReversal(id);
+    }
+
+    return updated;
   }
 
-  // Helper function to trigger wallet credit. Should be called after the transaction commits.
   async processCommissionApproval(commissionId: string) {
     const commission = await this.prisma.commission.findUnique({
       where: { id: commissionId },
     });
-    if (commission?.status === CommissionStatus.APPROVED) {
-      await this.walletsService.addTransaction({
-        ownerType: WalletOwnerType.COMPANY,
-        ownerId: commission.companyId,
-        amount: Number(commission.amount),
-        type: WalletTransactionType.CREDIT,
-        referenceType: 'COMMISSION',
-        referenceId: commission.id,
-        description: `Commission for Booking ${commission.bookingId}`,
-        status: WalletTransactionStatus.COMPLETED,
+    if (
+      commission &&
+      (commission.status === CommissionStatus.APPROVED ||
+        commission.status === CommissionStatus.PAID)
+    ) {
+      // Check if wallet credit transaction already exists to ensure idempotency
+      const existingTx = await this.prisma.walletTransaction.findFirst({
+        where: {
+          referenceType: 'COMMISSION',
+          referenceId: commission.id,
+          type: WalletTransactionType.CREDIT,
+        },
       });
+
+      if (!existingTx) {
+        await this.walletsService.addTransaction({
+          ownerType: WalletOwnerType.COMPANY,
+          ownerId: commission.companyId,
+          amount: Number(commission.amount),
+          type: WalletTransactionType.CREDIT,
+          referenceType: 'COMMISSION',
+          referenceId: commission.id,
+          description: `Commission for Booking ${commission.bookingId}`,
+          status: WalletTransactionStatus.COMPLETED,
+        });
+      }
     }
+  }
+
+  async processCommissionReversal(commissionId: string) {
+    const commission = await this.prisma.commission.findUnique({
+      where: { id: commissionId },
+    });
+    if (commission && commission.status === CommissionStatus.CANCELLED) {
+      // Check if reversal transaction already exists for idempotency
+      const existingReversal = await this.prisma.walletTransaction.findFirst({
+        where: {
+          referenceType: 'COMMISSION_REVERSAL',
+          referenceId: commission.id,
+          type: WalletTransactionType.DEBIT,
+        },
+      });
+
+      if (!existingReversal) {
+        await this.walletsService.addTransaction({
+          ownerType: WalletOwnerType.COMPANY,
+          ownerId: commission.companyId,
+          amount: Number(commission.amount),
+          type: WalletTransactionType.DEBIT,
+          referenceType: 'COMMISSION_REVERSAL',
+          referenceId: commission.id,
+          description: `Commission Reversal for Cancelled/Refunded Booking ${commission.bookingId}`,
+          status: WalletTransactionStatus.COMPLETED,
+        });
+      }
+    }
+  }
+
+  async createCommissionForBooking(bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { company: true },
+    });
+
+    if (!booking || !booking.companyId || !booking.company) {
+      return null;
+    }
+
+    const existing = await this.prisma.commission.findUnique({
+      where: { bookingId },
+    });
+    if (existing) return existing;
+
+    const rate = booking.company.commissionRate;
+    if (Number(rate) <= 0) return null;
+
+    const amount = booking.totalAmountUsd.mul(rate).div(100);
+
+    return this.prisma.commission.create({
+      data: {
+        companyId: booking.companyId,
+        bookingId,
+        rate,
+        amount,
+        status: CommissionStatus.PENDING,
+      },
+    });
+  }
+
+  async reverseCommissionForBooking(bookingId: string) {
+    const commission = await this.prisma.commission.findUnique({
+      where: { bookingId },
+    });
+
+    if (!commission) return null;
+
+    return this.updateCommissionStatus(commission.id, {
+      status: CommissionStatus.CANCELLED,
+    });
   }
 
   async findAll(filters: CommissionQueryFilters) {

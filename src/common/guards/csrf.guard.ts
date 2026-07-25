@@ -24,12 +24,29 @@ export class CsrfGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<Request>();
 
+    // Exempt Stripe webhook endpoints
+    if (request.url.includes('/payments/webhook')) {
+      return true;
+    }
+
     // Only check state-changing methods
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
       return true;
     }
 
-    const csrfCookie = request.cookies['csrf_token'];
+    // Exempt requests authenticated explicitly via Bearer token (non-browser-ambient auth)
+    const authHeader = request.headers['authorization'];
+    if (
+      authHeader &&
+      typeof authHeader === 'string' &&
+      authHeader.toLowerCase().startsWith('bearer ')
+    ) {
+      return true;
+    }
+
+    const csrfCookie = (request.cookies as Record<string, string>)?.[
+      'csrf_token'
+    ];
     const csrfHeader = request.headers['x-csrf-token'];
 
     if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
 import { ResendEmailProvider } from './providers/resend-email.provider';
@@ -25,6 +27,7 @@ const EmailProviderFactory = {
 };
 
 @Module({
+  imports: [ConfigModule, PrismaModule, CacheModule.register()],
   controllers: [NotificationsController],
   providers: [
     EmailProviderFactory,

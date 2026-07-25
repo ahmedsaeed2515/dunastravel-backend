@@ -30,19 +30,18 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
     // Skip wrapping for health check endpoint to preserve Terminus response shape
     if (request.url.startsWith('/api/health')) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return next.handle() as any;
+      return next.handle() as Observable<Response<T>>;
     }
 
     return next.handle().pipe(
-      map((resData: any) => {
+      map((resData: unknown) => {
         // Avoid double-enveloping if the response is already paginated or wrapped
         if (resData && typeof resData === 'object' && 'data' in resData) {
-          const { data, ...meta } = resData;
+          const { data, ...meta } = resData as Record<string, unknown>;
           return {
             success: true,
             statusCode: response.statusCode,
-            data,
+            data: data as T,
             ...meta,
             timestamp: new Date().toISOString(),
           };
@@ -51,7 +50,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
         return {
           success: true,
           statusCode: response.statusCode,
-          data: resData,
+          data: resData as T,
           timestamp: new Date().toISOString(),
         };
       }),

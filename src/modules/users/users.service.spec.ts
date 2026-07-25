@@ -1,14 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './users.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { UserRole, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 describe('UserService - Create Admin User', () => {
   let service: UserService;
-  let prisma: any;
+  let prisma: {
+    user: {
+      findFirst: jest.Mock;
+      create: jest.Mock;
+      count: jest.Mock;
+    };
+    customerActivityLog: {
+      create: jest.Mock;
+    };
+    $transaction: jest.Mock;
+  };
 
-  const mockUser = {
+  const mockUser: Partial<User> = {
     id: 'user-uuid-123',
     name: 'Admin Test User',
     email: 'admin-created@example.com',
@@ -33,14 +43,13 @@ describe('UserService - Create Admin User', () => {
       customerActivityLog: {
         create: jest.fn().mockResolvedValue({ id: 'log-1' }),
       },
-      $transaction: jest.fn((callback) => callback(prisma)),
+      $transaction: jest.fn((callback: (p: typeof prisma) => unknown) =>
+        callback(prisma),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UserService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [UserService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<UserService>(UserService);
@@ -69,12 +78,12 @@ describe('UserService - Create Admin User', () => {
         email: 'admin-created@example.com',
         role: UserRole.ADMIN,
         isVerified: true,
-      }),
+      }) as Record<string, unknown>,
     });
   });
 
   it('should strip sensitive fields in toSafeUser', () => {
-    const safeUser = service.toSafeUser(mockUser as any);
+    const safeUser = service.toSafeUser(mockUser as unknown as User);
     expect(safeUser).not.toHaveProperty('passwordHash');
     expect(safeUser).not.toHaveProperty('refreshToken');
     expect(safeUser).not.toHaveProperty('resetToken');

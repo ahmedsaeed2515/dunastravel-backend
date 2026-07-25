@@ -8,7 +8,9 @@ export class TourLandingPagesPublicController {
   constructor(private readonly landingPagesService: TourLandingPagesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all published active tour landing pages/interfaces' })
+  @ApiOperation({
+    summary: 'Get all published active tour landing pages/interfaces',
+  })
   async findAll(@Query() query: any) {
     return this.landingPagesService.findAllPublic(query);
   }

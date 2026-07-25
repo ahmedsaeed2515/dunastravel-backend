@@ -2,6 +2,8 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
+  BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,38 +11,90 @@ import { PrismaService } from '../../prisma/prisma.service';
 import Anthropic from '@anthropic-ai/sdk';
 import { GenerateItineraryDto } from './dto/ai.dto';
 
+const INJECTION_PATTERNS = [
+  /ignore\s+previous\s+instructions/i,
+  /system\s+prompt/i,
+  /override\s+rules/i,
+  /forget\s+all\s+rules/i,
+  /<script>/i,
+];
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private anthropic!: Anthropic;
+  private anthropic?: Anthropic;
   private readonly isConfigured: boolean;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
+    const apiKey =
+      this.configService.get<string>('ANTHROPIC_API_KEY') ||
+      this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey) {
       this.anthropic = new Anthropic({ apiKey });
       this.isConfigured = true;
     } else {
       this.logger.warn(
-        'ANTHROPIC_API_KEY is not set. AI Features will return mocked responses.',
+        'AI API Key (ANTHROPIC_API_KEY / GEMINI_API_KEY) is not configured.',
       );
       this.isConfigured = false;
     }
   }
 
+  private validateInput(text?: string, fieldName = 'input') {
+    if (!text) return;
+    if (text.length > 1000) {
+      throw new BadRequestException(
+        `Field '${fieldName}' exceeds maximum length of 1000 characters`,
+      );
+    }
+    for (const pattern of INJECTION_PATTERNS) {
+      if (pattern.test(text)) {
+        throw new BadRequestException(
+          `Security violation: malicious input pattern detected in '${fieldName}'`,
+        );
+      }
+    }
+  }
+
   async generateItinerary(dto: GenerateItineraryDto) {
-    if (!this.isConfigured) {
-      return this.mockItinerary(dto);
+    this.validateInput(dto.preferences, 'preferences');
+    if (dto.destinations) {
+      dto.destinations.forEach((d) => this.validateInput(d, 'destinations'));
     }
 
+    if (!this.isConfigured || !this.anthropic) {
+      throw new ServiceUnavailableException(
+        'AI Provider is currently unavailable or unconfigured.',
+      );
+    }
+
+    // Catalog Grounding: Query available active tours matching destinations
+    const matchedTours = await this.prisma.tour.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        OR: dto.destinations.map((dest) => ({
+          city: { contains: dest, mode: 'insensitive' as const },
+        })),
+      },
+      take: 5,
+      select: { slug: true, basePriceUsd: true, category: true },
+    });
+
+    const catalogContext =
+      matchedTours.length > 0
+        ? `Grounded Active Catalog Tours: ${matchedTours.map((t) => `${t.slug} (${t.category}, $${String(t.basePriceUsd)})`).join(', ')}`
+        : 'No exact catalog matches found.';
+
     try {
-      const prompt = `Act as a luxury travel concierge for Dunas Travel (an elite B2B and B2C travel agency).
+      const prompt = `Act as a luxury travel concierge for Dunas Travel.
 Generate a ${dto.days}-day structured itinerary for ${dto.destinations.join(', ')}.
 Travelers: ${dto.pax || 2}. Budget: ${dto.budgetUsd ? '$' + dto.budgetUsd : 'Luxury'}.
 Preferences: ${dto.preferences || 'None'}.
+${catalogContext}
 
 Return ONLY valid JSON matching this structure:
 {
@@ -61,9 +115,7 @@ Return ONLY valid JSON matching this structure:
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
           () =>
-            reject(
-              new Error('Anthropic API request timed out after 30 seconds'),
-            ),
+            reject(new Error('AI Provider request timed out after 30 seconds')),
           30000,
         );
       });
@@ -74,7 +126,7 @@ Return ONLY valid JSON matching this structure:
           max_tokens: 1500,
           temperature: 0.7,
           system:
-            'You are a senior luxury travel designer. Return ONLY raw JSON without any markdown formatting.',
+            'You are a senior luxury travel designer. Return ONLY raw JSON without markdown.',
           messages: [{ role: 'user', content: prompt }],
         }),
         timeoutPromise,
@@ -84,18 +136,22 @@ Return ONLY valid JSON matching this structure:
         response.content[0].type === 'text' ? response.content[0].text : '{}';
 
       try {
-        return JSON.parse(content);
-      } catch (parseError: any) {
+        return JSON.parse(content) as Record<string, unknown>;
+      } catch {
         this.logger.error(`Failed to parse AI JSON response: ${content}`);
         throw new InternalServerErrorException('AI returned unexpected format');
       }
-    } catch (error: any) {
-      if (error instanceof InternalServerErrorException) {
+    } catch (error: unknown) {
+      if (
+        error instanceof InternalServerErrorException ||
+        error instanceof ServiceUnavailableException
+      ) {
         throw error;
       }
-      this.logger.error(`Failed to generate itinerary: ${error.message}`);
-      throw new InternalServerErrorException(
-        'Failed to generate AI itinerary. Please try again.',
+      const err = error as Error;
+      this.logger.error(`Failed to generate itinerary: ${err.message}`);
+      throw new ServiceUnavailableException(
+        'Failed to reach AI Provider. Service currently unavailable.',
       );
     }
   }
@@ -115,23 +171,20 @@ Return ONLY valid JSON matching this structure:
       throw new NotFoundException('Customer not found');
     }
 
-    // Build context
+    if (!this.isConfigured || !this.anthropic) {
+      throw new ServiceUnavailableException(
+        'AI Provider is currently unavailable or unconfigured.',
+      );
+    }
+
     const bookingsSummary = user.bookings
       .map(
-        (b) => `${b.tour.country} (${b.tour.category}) - $${b.totalAmountUsd}`,
+        (b) =>
+          `${b.tour.country || 'Egypt'} (${b.tour.category || 'Luxury'}) - $${String(b.totalAmountUsd)}`,
       )
       .join(', ');
 
     const notesSummary = user.customerNotes.map((n) => n.content).join(' | ');
-
-    if (!this.isConfigured) {
-      return {
-        summary: `${user.name} is a valued customer with past travels including: ${bookingsSummary || 'None'}.`,
-        suggestedDestinations: ['Maldives', 'Dubai', 'Swiss Alps'],
-        salesStrategy: 'Focus on wellness and exclusive private tours.',
-        churnRisk: 'Low',
-      };
-    }
 
     try {
       const prompt = `Analyze this luxury travel customer profile and provide actionable CRM insights.
@@ -152,9 +205,7 @@ Return ONLY valid JSON matching this structure:
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
           () =>
-            reject(
-              new Error('Anthropic API request timed out after 30 seconds'),
-            ),
+            reject(new Error('AI Provider request timed out after 30 seconds')),
           30000,
         );
       });
@@ -175,40 +226,34 @@ Return ONLY valid JSON matching this structure:
         response.content[0].type === 'text' ? response.content[0].text : '{}';
 
       try {
-        return JSON.parse(content);
-      } catch (parseError: any) {
+        return JSON.parse(content) as Record<string, unknown>;
+      } catch {
         this.logger.error(`Failed to parse AI JSON response: ${content}`);
         throw new InternalServerErrorException('AI returned unexpected format');
       }
-    } catch (error: any) {
-      if (error instanceof InternalServerErrorException) {
+    } catch (error: unknown) {
+      if (
+        error instanceof InternalServerErrorException ||
+        error instanceof ServiceUnavailableException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
-      this.logger.error(`Failed to analyze customer: ${error.message}`);
-      throw new InternalServerErrorException(
-        'Failed to analyze customer data.',
+      const err = error as Error;
+      this.logger.error(`Failed to analyze customer: ${err.message}`);
+      throw new ServiceUnavailableException(
+        'Failed to reach AI Provider. Service currently unavailable.',
       );
     }
   }
 
-  private mockItinerary(dto: GenerateItineraryDto) {
-    return {
-      title: `Luxury Escape to ${dto.destinations.join(' & ')}`,
-      description: 'An exclusive, hand-crafted journey (Mock Data)',
-      days: Array.from({ length: dto.days }).map((_, i) => ({
-        dayNumber: i + 1,
-        location: dto.destinations[0] || 'Unknown',
-        morning: 'Private guided tour of historical landmarks.',
-        afternoon: 'Exclusive culinary experience.',
-        evening: 'Sunset cruise with champagne.',
-        hotelRecommendation: 'Four Seasons or similar 5-star property',
-      })),
-    };
-  }
-
   async translateHieroglyphics(dto: { text: string }) {
-    if (!this.isConfigured) {
-      return { translation: 'Mocked Hieroglyphics for ' + dto.text };
+    this.validateInput(dto.text, 'text');
+
+    if (!this.isConfigured || !this.anthropic) {
+      throw new ServiceUnavailableException(
+        'AI Provider is currently unavailable or unconfigured.',
+      );
     }
 
     try {
@@ -217,9 +262,7 @@ Return ONLY valid JSON matching this structure:
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
           () =>
-            reject(
-              new Error('Anthropic API request timed out after 30 seconds'),
-            ),
+            reject(new Error('AI Provider request timed out after 30 seconds')),
           30000,
         );
       });
@@ -230,7 +273,7 @@ Return ONLY valid JSON matching this structure:
           max_tokens: 100,
           temperature: 0.1,
           system:
-            'You are an ancient Egyptian scribe. Return ONLY the unicode hieroglyphic characters. No explanations.',
+            'You are an ancient Egyptian scribe. Return ONLY unicode hieroglyphic characters. No explanations.',
           messages: [{ role: 'user', content: prompt }],
         }),
         timeoutPromise,
@@ -242,9 +285,16 @@ Return ONLY valid JSON matching this structure:
           : '';
 
       return { translation: content };
-    } catch (error: any) {
-      this.logger.error(`Failed to translate hieroglyphics: ${error.message}`);
-      throw new InternalServerErrorException(
+    } catch (error: unknown) {
+      if (
+        error instanceof ServiceUnavailableException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      const err = error as Error;
+      this.logger.error(`Failed to translate hieroglyphics: ${err.message}`);
+      throw new ServiceUnavailableException(
         'Failed to translate hieroglyphics.',
       );
     }

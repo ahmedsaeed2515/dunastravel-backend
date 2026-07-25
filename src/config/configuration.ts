@@ -13,6 +13,9 @@ export default () => ({
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },
+  auth: {
+    guestTokenSecret: process.env.GUEST_TOKEN_SECRET,
+  },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
   },

@@ -9,17 +9,16 @@ import {
   UseGuards,
   Param,
   Get,
+  BadRequestException,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Request as ExpressRequest } from 'express';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-// Removed duplicate JwtAuthGuard import
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
-
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 
 @Controller('payments')
@@ -29,12 +28,28 @@ export class PaymentsController {
   @Post('initiate')
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async initiatePayment(@Body() dto: CreatePaymentDto, @Req() req: any) {
+  async initiatePayment(
+    @Body() dto: CreatePaymentDto,
+    @Req() req: ExpressRequest & { user?: { id: string } },
+  ) {
+    const rawGuestToken = req.headers['x-guest-token'];
+    const guestToken =
+      typeof rawGuestToken === 'string'
+        ? rawGuestToken
+        : Array.isArray(rawGuestToken)
+          ? rawGuestToken[0]
+          : undefined;
+
     const session = await this.paymentsService.initiatePayment(
       dto.bookingId,
       req.user?.id,
+      guestToken,
     );
-    return { url: session.url, transactionId: session.transactionId };
+    return {
+      sessionUrl: session.url,
+      url: session.url,
+      transactionId: session.transactionId,
+    };
   }
 
   @Post('webhook/:provider')
@@ -44,16 +59,18 @@ export class PaymentsController {
     @Param('provider') provider: string,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
-    // We pass the raw request and rawBody down. The specific adapter will
-    // handle signature verification (e.g. stripe-signature header)
+    if (!provider || provider.toUpperCase() !== 'STRIPE') {
+      throw new BadRequestException(
+        `Unsupported payment provider: ${provider}`,
+      );
+    }
+
     if (!req.rawBody) {
-      throw new Error(
+      throw new BadRequestException(
         'Raw body is required for webhook signature verification',
       );
     }
 
-    // In a multi-provider setup, the provider param would dictate which gateway adapter to use.
-    // Since we only have Stripe right now, PaymentsService uses the injected IPaymentGatewayPort directly.
     return this.paymentsService.handleWebhook(req, req.rawBody);
   }
 
@@ -62,14 +79,25 @@ export class PaymentsController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async refundPayment(
     @Param('id') id: string,
-    @Body('amount') amount?: number,
+    @Body()
+    dto: { amount?: number; reason?: string; idempotencyKey?: string },
+    @Req() req: ExpressRequest & { user: { id: string; role: string } },
   ) {
-    return this.paymentsService.refundPayment(id, amount);
+    return this.paymentsService.refundPayment(
+      id,
+      dto.amount,
+      dto.reason,
+      dto.idempotencyKey,
+      req.user,
+    );
   }
 
   @Get(':id/status')
   @UseGuards(JwtAuthGuard)
-  async getPaymentStatus(@Param('id') id: string, @Req() req: any) {
+  async getPaymentStatus(
+    @Param('id') id: string,
+    @Req() req: ExpressRequest & { user: { id: string } },
+  ) {
     return this.paymentsService.getPaymentStatus(id, req.user.id);
   }
 }

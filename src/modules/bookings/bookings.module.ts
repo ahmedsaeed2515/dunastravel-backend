@@ -1,13 +1,22 @@
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
 import { ToursModule } from '../tours/tours.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PricingModule } from '../pricing/pricing.module';
+import { AvailabilityModule } from '../availability/availability.module';
+import { CommissionsModule } from '../commissions/commissions.module';
 import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
-import { PrismaService } from '../../prisma/prisma.service';
 
 @Module({
-  imports: [ToursModule, PaymentsModule],
+  imports: [
+    ToursModule,
+    PaymentsModule,
+    PricingModule,
+    AvailabilityModule,
+    CommissionsModule,
+  ],
+
   controllers: [BookingsController],
   providers: [
     BookingsService,
@@ -18,19 +27,4 @@ import { PrismaService } from '../../prisma/prisma.service';
   ],
   exports: [BookingsService],
 })
-export class BookingsModule implements OnModuleInit {
-  private readonly logger = new Logger(BookingsModule.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  async onModuleInit() {
-    try {
-      await this.prisma.$executeRawUnsafe(
-        'CREATE SEQUENCE IF NOT EXISTS invoice_seq START 1 INCREMENT 1;',
-      );
-      this.logger.log('invoice_seq PostgreSQL sequence ensured');
-    } catch (error) {
-      this.logger.error('Failed to ensure invoice_seq sequence', error);
-    }
-  }
-}
+export class BookingsModule {}

@@ -20,11 +20,10 @@ import { SettingsModule } from '../settings/settings.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const expiresIn: any = configService.get<string>('jwt.expiresIn');
+        const expiresIn = configService.get<string | number>('jwt.expiresIn');
         return {
           secret: configService.get<string>('jwt.secret'),
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          signOptions: { expiresIn },
+          signOptions: { expiresIn: (expiresIn ?? '1d') as unknown as number },
         };
       },
     }),

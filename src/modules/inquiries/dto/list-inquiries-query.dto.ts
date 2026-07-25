@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   IsOptional,
   IsInt,
@@ -17,9 +16,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 @ValidatorConstraint({ name: 'IsCreatedAtEndAfterStart', async: false })
 class IsCreatedAtEndAfterStartConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args: ValidationArguments) {
-    const obj = args.object as any;
-    if (!obj.createdAtStart || !value) return true;
-    return new Date(value as string) >= new Date(obj.createdAtStart);
+    const obj = args.object as Record<string, unknown>;
+    if (!obj['createdAtStart'] || !value) return true;
+    return (
+      new Date(value as string) >= new Date(obj['createdAtStart'] as string)
+    );
   }
   defaultMessage() {
     return 'createdAtEnd must not be before createdAtStart';

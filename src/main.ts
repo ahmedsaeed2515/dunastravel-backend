@@ -65,7 +65,7 @@ async function bootstrap(): Promise<void> {
   app.use(
     express.json({
       limit: '1mb',
-      verify: (req: any, res, buf) => {
+      verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
         req.rawBody = buf;
       },
     }),
@@ -74,7 +74,7 @@ async function bootstrap(): Promise<void> {
     express.urlencoded({
       extended: true,
       limit: '1mb',
-      verify: (req: any, res, buf) => {
+      verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
         req.rawBody = buf;
       },
     }),
@@ -105,6 +105,7 @@ async function bootstrap(): Promise<void> {
       'Accept',
       'Idempotency-Key',
       'X-CSRF-Token',
+      'X-Guest-Token',
     ],
     maxAge: 86400,
   });

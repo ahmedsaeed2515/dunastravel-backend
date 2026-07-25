@@ -4,8 +4,7 @@ import {
   Param,
   UseGuards,
   Req,
-  Query,
-  UnauthorizedException,
+  Headers,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -19,6 +18,13 @@ import {
 import { InvoicesService } from './invoices.service';
 import { ParseInvoiceNumberPipe } from '../../common/pipes';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
+import { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user?: {
+    id: string;
+  };
+}
 
 @ApiTags('Invoices')
 @Controller('invoices')
@@ -32,16 +38,16 @@ export class InvoicesController {
   @ApiOkResponse({ description: 'Full invoice for display or printing' })
   @ApiBadRequestResponse({ description: 'Invalid invoice number format' })
   @ApiNotFoundResponse({ description: 'Invoice not found' })
-  @ApiParam({ name: 'invoiceNumber', example: 'INV-2026-001' })
+  @ApiParam({ name: 'invoiceNumber', example: 'INV-2026-0001' })
   async findByInvoiceNumber(
     @Param('invoiceNumber', ParseInvoiceNumberPipe) invoiceNumber: string,
-    @Req() req: any,
-    @Query('email') email?: string,
+    @Req() req: RequestWithUser,
+    @Headers('x-guest-token') guestToken?: string,
   ) {
     return this.invoicesService.findByInvoiceNumber(
       invoiceNumber,
       req.user?.id,
-      email,
+      guestToken,
     );
   }
 }

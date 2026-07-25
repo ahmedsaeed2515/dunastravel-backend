@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -16,12 +15,14 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { AdminPromotionsService } from './admin-promotions.service';
 import { CreatePromotionDto, UpdatePromotionDto } from './dto/promotion.dto';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../../common/types';
 
 @ApiTags('Admin Promotions')
 @ApiBearerAuth()
 @Controller('admin/promotions')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class AdminPromotionsController {
   constructor(
     private readonly adminPromotionsService: AdminPromotionsService,
@@ -41,8 +42,11 @@ export class AdminPromotionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new promotion' })
-  async createPromotion(@Body() dto: CreatePromotionDto, @Req() req: any) {
-    return this.adminPromotionsService.createPromotion(dto, req.user.id);
+  async createPromotion(
+    @Body() dto: CreatePromotionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminPromotionsService.createPromotion(dto, user.id);
   }
 
   @Patch(':id')
@@ -50,14 +54,17 @@ export class AdminPromotionsController {
   async updatePromotion(
     @Param('id') id: string,
     @Body() dto: UpdatePromotionDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.adminPromotionsService.updatePromotion(id, dto, req.user.id);
+    return this.adminPromotionsService.updatePromotion(id, dto, user.id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a promotion' })
-  async deletePromotion(@Param('id') id: string, @Req() req: any) {
-    return this.adminPromotionsService.deletePromotion(id, req.user.id);
+  async deletePromotion(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminPromotionsService.deletePromotion(id, user.id);
   }
 }

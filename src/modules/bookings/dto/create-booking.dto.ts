@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   IsNotEmpty,
   IsOptional,
@@ -9,32 +8,11 @@ import {
   MaxLength,
   IsEmail,
   IsObject,
+  IsIn,
+  Matches,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export class CalculatePriceDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  tourId!: string;
-
-  @ApiProperty()
-  @IsInt()
-  @Min(1)
-  adults!: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  children?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  promoCode?: string;
-}
 
 export class CreateBookingDto {
   @ApiProperty({ description: 'Type of request: booking or inquiry' })
@@ -52,14 +30,36 @@ export class CreateBookingDto {
   @IsNotEmpty()
   tourId!: string;
 
-  @ApiPropertyOptional({ example: '2027-03-15', description: 'Arrival Date' })
+  @ApiPropertyOptional({ description: 'ID of the availability/departure slot' })
   @IsOptional()
   @IsString()
-  arrivalDate?: string;
+  availabilityId?: string;
 
-  @ApiPropertyOptional({ example: '2027-03-22' })
+  @ApiPropertyOptional({ description: 'ID of departure slot' })
   @IsOptional()
   @IsString()
+  departureId?: string;
+
+  @ApiProperty({
+    example: '2027-03-15',
+    description: 'Arrival Date (YYYY-MM-DD)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'arrivalDate must be in YYYY-MM-DD format',
+  })
+  arrivalDate!: string;
+
+  @ApiPropertyOptional({
+    example: '2027-03-22',
+    description: 'Departure Date (YYYY-MM-DD)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'departureDate must be in YYYY-MM-DD format',
+  })
   departureDate?: string;
 
   @ApiPropertyOptional({ example: '10:30' })
@@ -75,6 +75,9 @@ export class CreateBookingDto {
   @ApiPropertyOptional({ example: 'es' })
   @IsOptional()
   @IsString()
+  @IsIn(['en', 'ar', 'es', 'pt', 'it'], {
+    message: 'language must be one of: en, ar, es, pt, it',
+  })
   language?: string;
 
   @ApiPropertyOptional({ example: 'premium' })
@@ -86,21 +89,27 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   transportChoice?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   notes?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   inquiryMessage?: string;
 
   @ApiPropertyOptional({ minimum: 1, maximum: 50, example: 2 })
@@ -138,13 +147,15 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   fullName!: string;
 
   @ApiProperty({ description: 'Email' })
   @IsEmail()
   @IsNotEmpty()
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.toLowerCase().trim() : value,
   )
   email!: string;
@@ -164,35 +175,45 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   companyName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   taxId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   address?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   city?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   country?: string;
 
   @ApiPropertyOptional({

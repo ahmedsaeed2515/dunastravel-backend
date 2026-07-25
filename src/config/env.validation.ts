@@ -24,6 +24,14 @@ export const envValidationSchema = Joi.object({
       'any.invalid':
         'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
     }),
+  GUEST_TOKEN_SECRET: Joi.string()
+    .min(32)
+    .invalid(Joi.ref('JWT_SECRET'), Joi.ref('JWT_REFRESH_SECRET'))
+    .required()
+    .messages({
+      'any.invalid':
+        'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
+    }),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
 
   // Logging & Limits

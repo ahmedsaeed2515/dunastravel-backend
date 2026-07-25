@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { BookingCreatedListener } from './booking-created.listener';
@@ -13,7 +12,7 @@ import { NotificationDeliveryStatus } from '../types';
 describe('BookingCreatedListener', () => {
   let listener: BookingCreatedListener;
   let emailProvider: jest.Mocked<IEmailProvider>;
-  let prismaService: any;
+  let prismaService: Record<string, any>;
 
   beforeEach(async () => {
     emailProvider = {

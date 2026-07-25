@@ -1,71 +1,60 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiOkResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AuditService } from './audit.service';
-import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('Admin - Audit Log')
 @Controller('admin/audit-log')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SUPER_ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 @ApiBearerAuth()
 export class AuditController {
-  constructor(
-    private readonly auditService: AuditService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly auditService: AuditService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List audit log entries (SUPER_ADMIN only)' })
+  @ApiOperation({ summary: 'List audit log entries (guarded, paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'action', required: false, type: String })
+  @ApiQuery({ name: 'actorId', required: false, type: String })
+  @ApiQuery({ name: 'actorRole', required: false, type: String })
+  @ApiQuery({ name: 'entityType', required: false, type: String })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
   @ApiOkResponse({ description: 'Paginated audit log entries' })
   async findAll(
-    @Query('page') page = '1',
-    @Query('limit') limit = '50',
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('action') action?: string,
     @Query('actorId') actorId?: string,
+    @Query('actorRole') actorRole?: string,
     @Query('entityType') entityType?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
-    const skip = (pageNum - 1) * limitNum;
-
-    const where: any = {};
-    if (action) where.action = { contains: action, mode: 'insensitive' };
-    if (actorId) where.actorId = actorId;
-    if (entityType) where.entityType = entityType;
-    if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo);
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limitNum,
-      }),
-      this.prisma.auditLog.count({ where }),
-    ]);
-
-    return {
-      data,
-      meta: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-      },
-    };
+    return this.auditService.findAllAdmin({
+      page,
+      limit,
+      action,
+      actorId,
+      actorRole,
+      entityType,
+      dateFrom,
+      dateTo,
+    });
   }
 }

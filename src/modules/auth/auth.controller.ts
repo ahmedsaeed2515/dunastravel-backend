@@ -21,6 +21,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
+import crypto from 'crypto';
 import {
   AuthService,
   getCookieOptions,
@@ -100,12 +101,14 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const oldRefreshToken = req.cookies['refresh_token'];
+    const oldRefreshToken = (req.cookies as Record<string, string>)?.[
+      'refresh_token'
+    ];
     if (!oldRefreshToken) {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    const { user, accessToken, refreshToken } =
+    const { accessToken, refreshToken } =
       await this.authService.refresh(oldRefreshToken);
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
     res.cookie('access_token', accessToken, getCookieOptions(nodeEnv));
@@ -124,8 +127,21 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.clearRefreshToken(user.id);
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
+    const accessOpts = getCookieOptions(nodeEnv);
+    const refreshOpts = getRefreshCookieOptions(nodeEnv);
+    res.clearCookie('access_token', {
+      path: accessOpts.path,
+      httpOnly: accessOpts.httpOnly,
+      secure: accessOpts.secure,
+      sameSite: accessOpts.sameSite,
+    });
+    res.clearCookie('refresh_token', {
+      path: refreshOpts.path,
+      httpOnly: refreshOpts.httpOnly,
+      secure: refreshOpts.secure,
+      sameSite: refreshOpts.sameSite,
+    });
     return { message: 'Logged out successfully' };
   }
 
@@ -144,8 +160,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Get CSRF token' })
   @ApiOkResponse()
   getCsrfToken(@Res({ passthrough: true }) res: Response) {
-    // Generate a random 32 byte hex string
-    const crypto = require('crypto');
     const token = crypto.randomBytes(32).toString('hex');
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
 
@@ -163,7 +177,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update current user profile details' })
   @ApiOkResponse({ description: 'Profile updated successfully' })
-  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
     const updatedUser = await this.userService.updateProfile(user.id, dto);
     return { user: updatedUser };
   }
@@ -200,7 +217,7 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Change password' })
   async changePassword(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.id, dto);
@@ -219,12 +236,25 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Logout from all devices' })
   async logoutAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.clearRefreshToken(user.id);
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
+    const accessOpts = getCookieOptions(nodeEnv);
+    const refreshOpts = getRefreshCookieOptions(nodeEnv);
+    res.clearCookie('access_token', {
+      path: accessOpts.path,
+      httpOnly: accessOpts.httpOnly,
+      secure: accessOpts.secure,
+      sameSite: accessOpts.sameSite,
+    });
+    res.clearCookie('refresh_token', {
+      path: refreshOpts.path,
+      httpOnly: refreshOpts.httpOnly,
+      secure: refreshOpts.secure,
+      sameSite: refreshOpts.sameSite,
+    });
     return { message: 'Logged out from all devices successfully' };
   }
 }

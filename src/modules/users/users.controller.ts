@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
   ConflictException,
-  ForbiddenException,
   BadRequestException,
   Req,
   NotFoundException,
@@ -24,9 +23,12 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../common/types';
 import { SuperAdminEscalationGuard } from '../../common/guards/super-admin-escalation.guard';
 import { UserRole } from '@prisma/client';
 import { UserService } from './users.service';
@@ -59,8 +61,8 @@ export class UsersController {
   @Get('crm/metrics')
   @ApiOperation({ summary: 'Get live CRM analytics and dashboard metrics.' })
   @ApiOkResponse({ description: 'Aggregated CRM metrics object' })
-  async getCrmDashboardMetrics(@Req() req: any) {
-    return this.userService.getCrmDashboardMetrics(req.user.id);
+  async getCrmDashboardMetrics(@CurrentUser() user: AuthenticatedUser) {
+    return this.userService.getCrmDashboardMetrics(user.id);
   }
 
   @Get('crm/export/csv')
@@ -68,9 +70,9 @@ export class UsersController {
   @ApiOkResponse({ description: 'CSV data string' })
   async exportCustomersCsv(
     @Query() query: ListCustomersQueryDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.exportCustomersCsv(query, req.user.id);
+    return this.userService.exportCustomersCsv(query, user.id);
   }
 
   @Get('crm/list')
@@ -83,9 +85,9 @@ export class UsersController {
   })
   async listCustomersCrm(
     @Query() query: ListCustomersQueryDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.findCustomersCrm(query, req.user.id);
+    return this.userService.findCustomersCrm(query, user.id);
   }
 
   @Patch('crm/bulk/update')
@@ -96,9 +98,9 @@ export class UsersController {
   @ApiOkResponse({ description: 'Customers bulk updated successfully' })
   async bulkUpdateCustomers(
     @Body() dto: BulkUpdateCustomersDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.bulkUpdateCustomers(dto, req.user.id);
+    return this.userService.bulkUpdateCustomers(dto, user.id);
   }
 
   @Get('crm/:id')
@@ -108,8 +110,11 @@ export class UsersController {
     description:
       'Rich customer profile including bookings, payments, notes, documents, and timeline.',
   })
-  async getCustomerCrmDetail(@Param('id') id: string, @Req() req: any) {
-    return this.userService.getCustomerCrmDetail(id, req.user.id);
+  async getCustomerCrmDetail(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.userService.getCustomerCrmDetail(id, user.id);
   }
 
   @Patch('crm/:id')
@@ -120,9 +125,9 @@ export class UsersController {
   async updateCustomerCrm(
     @Param('id') id: string,
     @Body() dto: UpdateCustomerCrmDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.updateCustomerCrm(id, dto, req.user.id);
+    return this.userService.updateCustomerCrm(id, dto, user.id);
   }
 
   @Post('crm/:id/notes')
@@ -135,9 +140,9 @@ export class UsersController {
   async addCustomerNote(
     @Param('id') id: string,
     @Body() dto: AddCustomerNoteDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.addCustomerNote(id, dto, req.user.id);
+    return this.userService.addCustomerNote(id, dto, user.id);
   }
 
   @Post('crm/:id/documents')
@@ -151,9 +156,9 @@ export class UsersController {
   async addCustomerDocument(
     @Param('id') id: string,
     @Body() dto: AddCustomerDocumentDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.userService.addCustomerDocument(id, dto, req.user.id);
+    return this.userService.addCustomerDocument(id, dto, user.id);
   }
 
   // ─── LEGACY USERS ENDPOINTS ────────────────────────────────────
@@ -196,7 +201,7 @@ export class UsersController {
   @UseGuards(SuperAdminEscalationGuard)
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
-  async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
+  async createUser(@Body() dto: CreateUserDto) {
     if (dto.confirmPassword && dto.password !== dto.confirmPassword) {
       throw new BadRequestException('Passwords do not match');
     }
@@ -225,14 +230,15 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
-    @Req() req: any,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
   ) {
     let passwordHash = undefined;
     if (dto.password) {
       passwordHash = await bcrypt.hash(dto.password, 12);
     }
 
-    const user = await this.userService.update(id, {
+    const updatedUser = await this.userService.update(id, {
       name: dto.name,
       email: dto.email,
       phone: dto.phone,
@@ -242,31 +248,35 @@ export class UsersController {
 
     if (dto.role) {
       void this.auditService.log({
-        actorId: req.user.id,
-        actorRole: req.user.role,
+        actorId: user.id,
+        actorRole: user.role,
         action: 'USER_ROLE_CHANGED',
         entityType: 'User',
         entityId: id,
         metadata: { newRole: dto.role },
-        ipAddress: req.ip,
+        ipAddress: req.ip || 'unknown',
       });
     }
 
-    return this.userService.toSafeUser(user);
+    return this.userService.toSafeUser(updatedUser);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a user.' })
   @ApiOkResponse({ description: 'User deleted' })
-  async deleteUser(@Param('id') id: string, @Req() req: any) {
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
     await this.userService.softDelete(id);
     void this.auditService.log({
-      actorId: req.user.id,
-      actorRole: req.user.role,
+      actorId: user.id,
+      actorRole: user.role,
       action: 'USER_DELETED',
       entityType: 'User',
       entityId: id,
-      ipAddress: req.ip,
+      ipAddress: req.ip || 'unknown',
     });
     return { success: true };
   }

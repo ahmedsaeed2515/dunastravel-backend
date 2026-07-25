@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { generateInquiryReferenceCode } from '../../common/utils';
+import { generateReferenceCode } from '../../common/utils';
 import {
   Prisma,
   TailorMadeInquiryStatus,
@@ -29,7 +29,7 @@ export class InquiriesService {
   async create(dto: CreateInquiryDto): Promise<InquiryResponse> {
     this.logger.log('Processing new tailor-made inquiry submission');
 
-    let referenceCode = generateInquiryReferenceCode();
+    let referenceCode = generateReferenceCode('INQ');
     let collision = true;
     let attempts = 0;
 
@@ -39,7 +39,7 @@ export class InquiriesService {
         select: { id: true },
       });
       if (existing) {
-        referenceCode = generateInquiryReferenceCode();
+        referenceCode = generateReferenceCode('INQ');
         attempts++;
       } else {
         collision = false;

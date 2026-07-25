@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MediaAsset } from '@prisma/client';
+import { IMediaAsset } from '../interfaces/media-asset.interface';
 
 export class MediaAssetResponseDto {
   @ApiProperty()
@@ -56,7 +57,7 @@ export class MediaAssetResponseDto {
   @ApiProperty()
   updatedAt!: Date;
 
-  static fromPrisma(asset: MediaAsset): MediaAssetResponseDto {
+  static fromPrisma(asset: IMediaAsset | MediaAsset): MediaAssetResponseDto {
     const dto = new MediaAssetResponseDto();
     dto.id = asset.id;
     dto.publicId = asset.publicId;

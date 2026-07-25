@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { User, UserRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
 import {
   ListCustomersQueryDto,
   UpdateCustomerCrmDto,
@@ -542,7 +541,7 @@ export class UserService {
         }
       });
 
-      const titleObj: any = b.tour.titleJsonb || {};
+      const titleObj = (b.tour.titleJsonb as Record<string, string>) || {};
       const tourName = titleObj['en'] || b.tour.slug;
       tourCounts[tourName] = (tourCounts[tourName] || 0) + 1;
     });
@@ -572,7 +571,9 @@ export class UserService {
       bookings: user.bookings.map((b) => ({
         ...b,
         totalAmountUsd: b.totalAmountUsd.toString(),
-        tourNameEn: (b.tour.titleJsonb as any)?.['en'] || b.tour.slug,
+        tourNameEn:
+          (b.tour.titleJsonb as Record<string, string> | null)?.['en'] ||
+          b.tour.slug,
         payments: b.payments.map((p) => ({
           ...p,
           amount: p.amount.toString(),
@@ -658,7 +659,7 @@ export class UserService {
         customerId: id,
         userId: adminUserId,
         action: 'PROFILE_UPDATED',
-        details: dto as any,
+        details: dto as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -666,7 +667,7 @@ export class UserService {
   }
 
   async bulkUpdateCustomers(dto: BulkUpdateCustomersDto, adminUserId: string) {
-    const data: any = {};
+    const data: Prisma.UserUpdateInput = {};
     if (dto.tags) data.tags = dto.tags;
     if (dto.segments) data.segments = dto.segments;
     if (dto.isVip !== undefined) data.isVip = dto.isVip;
@@ -691,7 +692,7 @@ export class UserService {
             customerId: u.id,
             userId: adminUserId,
             action: 'BULK_UPDATE',
-            details: data,
+            details: data as unknown as Prisma.InputJsonValue,
           })),
         });
       }

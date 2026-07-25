@@ -6,41 +6,53 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ToursService } from '../tours/tours.service';
+import { PricingService } from '../pricing/pricing.service';
+import { AvailabilityService } from '../availability/availability.service';
+import { CommissionsService } from '../commissions/commissions.service';
 import { getToken } from '@willsoto/nestjs-prometheus';
+
+import * as crypto from 'crypto';
 
 describe('BookingsService', () => {
   let service: BookingsService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: PrismaService;
+
+  const TEST_GUEST_SECRET =
+    'super-secret-guest-token-key-that-is-at-least-32-chars-long';
 
   const mockTour = {
     id: 'tour-123',
     slug: 'test-tour',
     titleJsonb: { en: 'Test Tour' },
     basePriceUsd: new Prisma.Decimal(100),
+    status: 'PUBLISHED',
+    isActive: true,
+    deletedAt: null,
+    currency: 'USD',
   };
 
   const baseDto = {
+    type: 'booking' as const,
     tourId: 'tour-123',
     arrivalDate: '2027-06-15',
     adults: 2,
     children: 1,
     infants: 0,
-    passengerNames: [
-      { passengerType: 'ADULT', fullName: 'John Doe' },
-      { passengerType: 'ADULT', fullName: 'Jane Doe' },
-      { passengerType: 'CHILD', fullName: 'Jimmy Doe' },
-    ],
-    billing: {
-      fullName: 'John Doe',
-      email: 'john@test.com',
-      phone: '123456789',
-      invoiceType: 'PERSONAL',
+    fullName: 'John Doe',
+    email: 'john@test.com',
+    phone: '123456789',
+    passengerNames: {
+      adult_0: 'John Doe',
+      adult_1: 'Jane Doe',
+      child_0: 'Jimmy Doe',
     },
+    invoiceType: 'PERSONAL',
   };
 
   const mockBookingResult = {
@@ -52,24 +64,104 @@ describe('BookingsService', () => {
     adults: 2,
     children: 1,
     infants: 0,
-    totalAmountUsd: new Prisma.Decimal(275),
+    totalAmountUsd: new Prisma.Decimal(250),
   };
 
-  let mockTx: any;
+  interface MockTxType {
+    tour: {
+      findUnique: jest.Mock;
+      findFirst: jest.Mock;
+    };
+    booking: {
+      create: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    tourAvailability: {
+      findFirst: jest.Mock;
+      findUnique: jest.Mock;
+      updateMany: jest.Mock;
+      update: jest.Mock;
+    };
+    promotion: {
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    promotionRedemption: {
+      create: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    passenger: {
+      createMany: jest.Mock;
+      findMany: jest.Mock;
+    };
+    billingInfo: {
+      create: jest.Mock;
+    };
+    invoice: {
+      create: jest.Mock;
+    };
+    $queryRaw: jest.Mock;
+  }
+
+  let mockTx: MockTxType;
 
   beforeEach(async () => {
     let seq = 0n;
     mockTx = {
+      tour: {
+        findUnique: jest.fn().mockResolvedValue(mockTour),
+        findFirst: jest.fn().mockResolvedValue(mockTour),
+      },
       booking: {
         create: jest.fn().mockResolvedValue(mockBookingResult),
         update: jest.fn().mockResolvedValue(mockBookingResult),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
-      tour: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      tourAvailability: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'avail-123',
+          tourId: 'tour-123',
+          date: new Date('2027-06-15'),
+          remainingSeats: 10,
+          status: 'AVAILABLE',
+        }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'avail-123',
+          tourId: 'tour-123',
+          date: new Date('2027-06-15'),
+          remainingSeats: 10,
+          status: 'AVAILABLE',
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'avail-123', remainingSeats: 10 }),
+      },
+      promotion: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      promotionRedemption: {
+        create: jest.fn().mockResolvedValue({ id: 'red-1' }),
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'red-1', status: 'REVERSED' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
       passenger: {
-        createMany: jest.fn(),
+        createMany: jest.fn().mockResolvedValue({ count: 3 }),
         findMany: jest.fn().mockResolvedValue([]),
       },
-      billingInfo: { create: jest.fn().mockResolvedValue(baseDto.billing) },
+      billingInfo: {
+        create: jest.fn().mockResolvedValue({
+          fullName: 'John Doe',
+          email: 'john@test.com',
+          phone: '123456789',
+          invoiceType: 'PERSONAL',
+        }),
+      },
       invoice: {
         create: jest.fn().mockResolvedValue({ invoiceNumber: 'INV-2027-0001' }),
       },
@@ -83,9 +175,24 @@ describe('BookingsService', () => {
       providers: [
         BookingsService,
         {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((key: string) => {
+              if (
+                key === 'GUEST_TOKEN_SECRET' ||
+                key === 'auth.guestTokenSecret'
+              ) {
+                return TEST_GUEST_SECRET;
+              }
+              return null;
+            }),
+          },
+        },
+        {
           provide: PrismaService,
           useValue: {
             tour: {
+              findUnique: jest.fn().mockResolvedValue(mockTour),
               findFirst: jest.fn().mockResolvedValue(mockTour),
               findMany: jest.fn().mockResolvedValue([mockTour]),
             },
@@ -94,15 +201,52 @@ describe('BookingsService', () => {
               findMany: jest.fn().mockResolvedValue([]),
               count: jest.fn().mockResolvedValue(1),
             },
-            $transaction: jest.fn((arg: any) => {
-              if (Array.isArray(arg)) {
-                return Promise.all(arg);
-              }
-              return arg(mockTx);
-            }),
+            $transaction: jest.fn(
+              (
+                arg:
+                  | ((tx: MockTxType) => Promise<unknown>)
+                  | Array<Promise<unknown>>,
+              ) => {
+                if (Array.isArray(arg)) {
+                  return Promise.all(arg);
+                }
+                return arg(mockTx);
+              },
+            ),
           },
         },
         { provide: ToursService, useValue: {} },
+        {
+          provide: PricingService,
+          useValue: {
+            calculatePrice: jest.fn().mockResolvedValue({
+              basePriceUsd: '100.00',
+              adultTotalUsd: '200.00',
+              childTotalUsd: '50.00',
+              seasonalAdjustmentUsd: '0.00',
+              discountAmountUsd: '0.00',
+              totalAmountUsd: '250.00',
+              currency: 'USD',
+              promoValid: true,
+              promoMessage: null,
+              discounts: [],
+            }),
+          },
+        },
+        {
+          provide: AvailabilityService,
+          useValue: {
+            reserveCapacity: jest.fn().mockResolvedValue(undefined),
+            releaseCapacity: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CommissionsService,
+          useValue: {
+            createCommissionForBooking: jest.fn().mockResolvedValue(null),
+            reverseCommissionForBooking: jest.fn().mockResolvedValue(null),
+          },
+        },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         {
           provide: getToken('bookings_created_total'),
@@ -119,47 +263,31 @@ describe('BookingsService', () => {
     }).compile();
 
     service = module.get<BookingsService>(BookingsService);
-    prisma = module.get(PrismaService);
+    prisma = module.get<PrismaService>(PrismaService);
 
     jest
-      .spyOn(service as any, 'generateUniqueReferenceCode')
+      .spyOn(service, 'generateUniqueReferenceCode')
       .mockResolvedValue('BKG-ABC123');
   });
 
   afterEach(() => jest.clearAllMocks());
 
-  // ?? Price Calculation ??????????????????????????????????????????????????????
-
   describe('calculateTotalAmount', () => {
     it('2 adults at $100 = $200', () => {
-      const r = (service as any).calculateTotalAmount(
-        new Prisma.Decimal(100),
-        2,
-        0,
-      );
+      const r = service.calculateTotalAmount(new Prisma.Decimal(100), 2, 0);
       expect(r.toString()).toBe('200');
     });
 
-    it('1 child at 75% of $100 = $75', () => {
-      const r = (service as any).calculateTotalAmount(
-        new Prisma.Decimal(100),
-        0,
-        1,
-      );
-      expect(r.toString()).toBe('75');
+    it('1 child at 50% of $100 = $50 (P1-007 Blueprint Rule)', () => {
+      const r = service.calculateTotalAmount(new Prisma.Decimal(100), 0, 1);
+      expect(r.toString()).toBe('50');
     });
 
-    it('2 adults + 1 child at $100 = $275', () => {
-      const r = (service as any).calculateTotalAmount(
-        new Prisma.Decimal(100),
-        2,
-        1,
-      );
-      expect(r.toString()).toBe('275');
+    it('2 adults + 1 child at $100 = $250', () => {
+      const r = service.calculateTotalAmount(new Prisma.Decimal(100), 2, 1);
+      expect(r.toString()).toBe('250');
     });
   });
-
-  // ?? createBooking ??????????????????????????????????????????????????????????
 
   describe('createBooking', () => {
     it('should return valid booking structure', async () => {
@@ -170,7 +298,7 @@ describe('BookingsService', () => {
 
     it('should handle concurrent booking requests without duplicate invoice numbers', async () => {
       const promises = Array.from({ length: 5 }, () =>
-        service.createBooking(baseDto as any, 'user-1'),
+        service.createBooking(baseDto, 'user-1'),
       );
       const results = await Promise.all(promises);
       const invoiceNumbers = results.map((r) => r.invoiceNumber);
@@ -181,63 +309,74 @@ describe('BookingsService', () => {
     });
 
     it('should always recalculate total server-side (ignores client)', async () => {
-      await service.createBooking(baseDto, null);
-      const data = mockTx.booking.create.mock.calls[0][0].data;
-      expect(data.totalAmountUsd.toString()).toBe('275');
+      await service.createBooking(baseDto, undefined);
+      const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
+        data: { totalAmountUsd: Prisma.Decimal };
+      }>;
+      const createdData = firstCall[0].data;
+      expect(createdData.totalAmountUsd.toString()).toBe('250');
     });
 
     it('should support guest checkout (userId=null)', async () => {
-      await service.createBooking(baseDto, null);
-      const data = mockTx.booking.create.mock.calls[0][0].data;
-      expect(data.userId).toBeNull();
+      await service.createBooking(baseDto, undefined);
+      const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
+        data: { userId: string | null };
+      }>;
+      const createdData = firstCall[0].data;
+      expect(createdData.userId).toBeNull();
     });
 
     it('should throw UnprocessableEntityException when tour missing', async () => {
-      (prisma.tour.findMany as jest.Mock).mockResolvedValue([]);
-      await expect(
-        service.createBooking(baseDto as any, 'user-1'),
-      ).rejects.toThrow(UnprocessableEntityException);
+      mockTx.tour.findUnique.mockResolvedValue(null);
+      await expect(service.createBooking(baseDto, 'user-1')).rejects.toThrow(
+        UnprocessableEntityException,
+      );
     });
 
-    it('should handle COMPANY invoiceType with default corporate company profile', async () => {
+    it('should handle COMPANY invoiceType', async () => {
       const dto = {
         ...baseDto,
-        billing: {
-          ...baseDto.billing,
-          invoiceType: 'COMPANY',
-          companyName: '',
-        },
+        invoiceType: 'COMPANY',
+        companyName: 'Acme Corp',
+        taxId: 'TAX-123',
       };
-      const result = await service.createBooking(dto as any, 'user-1');
+      const result = await service.createBooking(dto, 'user-1');
       expect(result.status).toBe('PENDING');
     });
 
     it('should throw InternalServerErrorException after 3 P2002 invoice collisions', async () => {
       const p2002 = Object.assign(new Error('unique'), {
         code: 'P2002',
-        meta: { target: ['invoiceNumber'] },
+        meta: { target: ['idempotency_key'] },
       });
-      (prisma['$transaction'] as jest.Mock).mockRejectedValue(p2002);
-      await expect(
-        service.createBooking(baseDto as any, 'user-1'),
-      ).rejects.toThrow(InternalServerErrorException);
+      jest.spyOn(prisma, '$transaction').mockRejectedValue(p2002);
+      await expect(service.createBooking(baseDto, 'user-1')).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
-  // ?? findByReferenceCode ????????????????????????????????????????????????????
-
   describe('findByReferenceCode', () => {
+    const guestTokenHash = crypto
+      .createHmac('sha256', TEST_GUEST_SECRET)
+      .update(`booking-1:BKG-ABC123`)
+      .digest('hex');
+
     const mockBooking = {
       id: 'booking-1',
       referenceCode: 'BKG-ABC123',
       userId: 'user-1',
+      guestTokenHash: crypto
+        .createHash('sha256')
+        .update(guestTokenHash)
+        .digest('hex'),
       status: 'PENDING',
       arrivalDate: new Date('2027-06-15'),
       departureDate: null,
       adults: 2,
       children: 1,
       infants: 0,
-      totalAmountUsd: new Prisma.Decimal(275),
+      totalAmountUsd: new Prisma.Decimal(250),
       createdAt: new Date(),
       tour: { titleJsonb: { en: 'Test Tour' }, slug: 'test-tour' },
       invoice: { invoiceNumber: 'INV-2027-0001' },
@@ -249,37 +388,22 @@ describe('BookingsService', () => {
     });
 
     it('should allow owner access by userId', async () => {
+      const r = await service.findByReferenceCode('BKG-ABC123', 'user-1');
+      expect(r.referenceCode).toBe('BKG-ABC123');
+    });
+
+    it('should allow guest access with valid guestToken header', async () => {
       const r = await service.findByReferenceCode(
         'BKG-ABC123',
         undefined,
-        'user-1',
+        guestTokenHash,
       );
       expect(r.referenceCode).toBe('BKG-ABC123');
     });
 
-    it('should allow guest access by matching email', async () => {
-      const r = await service.findByReferenceCode(
-        'BKG-ABC123',
-        'john@test.com',
-      );
-      expect(r.referenceCode).toBe('BKG-ABC123');
-    });
-
-    it('should be case-insensitive on email', async () => {
-      const r = await service.findByReferenceCode(
-        'BKG-ABC123',
-        'JOHN@TEST.COM',
-      );
-      expect(r.referenceCode).toBe('BKG-ABC123');
-    });
-
-    it('should throw NotFoundException when no credentials match (IDOR protection)', async () => {
+    it('should throw NotFoundException when guest token is invalid', async () => {
       await expect(
-        service.findByReferenceCode(
-          'BKG-ABC123',
-          'hacker@evil.com',
-          'other-user',
-        ),
+        service.findByReferenceCode('BKG-ABC123', undefined, 'invalid-token'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -292,43 +416,25 @@ describe('BookingsService', () => {
     it('should throw NotFoundException when booking does not exist', async () => {
       (prisma.booking.findUnique as jest.Mock).mockResolvedValue(null);
       await expect(
-        service.findByReferenceCode('BKG-ZZZZZZ', 'x@x.com'),
+        service.findByReferenceCode('BKG-ZZZZZZ', undefined, guestTokenHash),
       ).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('findUserBookings', () => {
-    it('should return user bookings', async () => {
-      (prisma.booking.findMany as jest.Mock).mockResolvedValue([
-        {
-          id: 'booking-1',
-          referenceCode: 'BKG-ABC123',
-          userId: 'user-1',
-          status: 'PENDING',
-          arrivalDate: new Date('2027-06-15'),
-          departureDate: null,
-          adults: 2,
-          children: 1,
-          infants: 0,
-          totalAmountUsd: new Prisma.Decimal(275),
-          createdAt: new Date(),
-          tour: { titleJsonb: { en: 'Test Tour' }, slug: 'test-tour' },
-          invoice: { invoiceNumber: 'INV-2027-0001' },
-        },
-      ]);
-      const r = await service.findUserBookings('user-1');
-      expect(r.items).toHaveLength(1);
-      expect(r.items[0].referenceCode).toBe('BKG-ABC123');
-    });
-  });
-
-  // ─── cancelBooking ──────────────────────────────────────────────────────────
-
   describe('cancelBooking', () => {
+    const guestTokenHash = crypto
+      .createHmac('sha256', TEST_GUEST_SECRET)
+      .update(`booking-1:BKG-ABC123`)
+      .digest('hex');
+
     const mockBooking = {
       id: 'booking-1',
       referenceCode: 'BKG-ABC123',
       userId: 'user-1',
+      guestTokenHash: crypto
+        .createHash('sha256')
+        .update(guestTokenHash)
+        .digest('hex'),
       status: 'PENDING',
       adults: 2,
       children: 1,
@@ -346,10 +452,22 @@ describe('BookingsService', () => {
       );
 
       expect(result.message).toBe('Booking cancelled successfully');
-      expect(prisma['$transaction']).toHaveBeenCalled();
     });
 
-    it('should reject cancellation by non-owner (IDOR)', async () => {
+    it('should successfully cancel booking with guestToken', async () => {
+      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+
+      const result = await service.cancelBooking(
+        'BKG-ABC123',
+        undefined,
+        'Reason',
+        guestTokenHash,
+      );
+
+      expect(result.message).toBe('Booking cancelled successfully');
+    });
+
+    it('should reject cancellation by non-owner without guestToken (IDOR)', async () => {
       (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
 
       await expect(

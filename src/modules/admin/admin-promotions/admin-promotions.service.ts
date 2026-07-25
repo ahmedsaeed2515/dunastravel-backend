@@ -2,9 +2,28 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+
+export interface AdminCreatePromotionDto {
+  code: string;
+  discountPercent: number;
+  validFrom: string | Date;
+  validUntil: string | Date;
+  maxUses: number;
+  isActive?: boolean;
+}
+
+export interface AdminUpdatePromotionDto {
+  code?: string;
+  discountPercent?: number;
+  validFrom?: string | Date;
+  validUntil?: string | Date;
+  maxUses?: number;
+  isActive?: boolean;
+}
 
 @Injectable()
 export class AdminPromotionsService {
@@ -24,9 +43,32 @@ export class AdminPromotionsService {
     return promo;
   }
 
-  async createPromotion(dto: any, adminUserId: string) {
+  async createPromotion(dto: AdminCreatePromotionDto, adminUserId: string) {
+    if (!dto.code || dto.code.trim().length === 0) {
+      throw new BadRequestException('Promotion code is required');
+    }
+    const code = dto.code.trim().toUpperCase();
+
+    if (dto.discountPercent <= 0 || dto.discountPercent > 100) {
+      throw new BadRequestException(
+        'Discount percentage must be greater than 0 and less than or equal to 100',
+      );
+    }
+
+    const validFrom = new Date(dto.validFrom);
+    const validUntil = new Date(dto.validUntil);
+    if (
+      isNaN(validFrom.getTime()) ||
+      isNaN(validUntil.getTime()) ||
+      validFrom >= validUntil
+    ) {
+      throw new BadRequestException(
+        'validFrom must be a valid date before validUntil',
+      );
+    }
+
     const existing = await this.prisma.promotion.findUnique({
-      where: { code: dto.code },
+      where: { code },
     });
     if (existing) {
       throw new ConflictException('Promotion code already exists');
@@ -34,10 +76,10 @@ export class AdminPromotionsService {
 
     const promo = await this.prisma.promotion.create({
       data: {
-        code: dto.code,
+        code,
         discountPercent: dto.discountPercent,
-        validFrom: new Date(dto.validFrom),
-        validUntil: new Date(dto.validUntil),
+        validFrom,
+        validUntil,
         maxUses: dto.maxUses,
         isActive: dto.isActive !== undefined ? dto.isActive : true,
       },
@@ -47,28 +89,53 @@ export class AdminPromotionsService {
     return promo;
   }
 
-  async updatePromotion(id: string, dto: any, adminUserId: string) {
+  async updatePromotion(
+    id: string,
+    dto: AdminUpdatePromotionDto,
+    adminUserId: string,
+  ) {
     const promo = await this.prisma.promotion.findUnique({ where: { id } });
     if (!promo) throw new NotFoundException('Promotion not found');
 
-    if (dto.code && dto.code !== promo.code) {
-      const existing = await this.prisma.promotion.findUnique({
-        where: { code: dto.code },
-      });
-      if (existing) {
-        throw new ConflictException('Promotion code already exists');
+    let code = promo.code;
+    if (dto.code && dto.code.trim().length > 0) {
+      code = dto.code.trim().toUpperCase();
+      if (code !== promo.code) {
+        const existing = await this.prisma.promotion.findUnique({
+          where: { code },
+        });
+        if (existing) {
+          throw new ConflictException('Promotion code already exists');
+        }
       }
+    }
+
+    if (
+      dto.discountPercent !== undefined &&
+      (dto.discountPercent <= 0 || dto.discountPercent > 100)
+    ) {
+      throw new BadRequestException(
+        'Discount percentage must be greater than 0 and less than or equal to 100',
+      );
+    }
+
+    const validFrom = dto.validFrom ? new Date(dto.validFrom) : promo.validFrom;
+    const validUntil = dto.validUntil
+      ? new Date(dto.validUntil)
+      : promo.validUntil;
+    if (validFrom >= validUntil) {
+      throw new BadRequestException('validFrom must be before validUntil');
     }
 
     const updated = await this.prisma.promotion.update({
       where: { id },
       data: {
-        ...(dto.code && { code: dto.code }),
+        code,
         ...(dto.discountPercent !== undefined && {
           discountPercent: dto.discountPercent,
         }),
-        ...(dto.validFrom && { validFrom: new Date(dto.validFrom) }),
-        ...(dto.validUntil && { validUntil: new Date(dto.validUntil) }),
+        ...(dto.validFrom && { validFrom }),
+        ...(dto.validUntil && { validUntil }),
         ...(dto.maxUses !== undefined && { maxUses: dto.maxUses }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },

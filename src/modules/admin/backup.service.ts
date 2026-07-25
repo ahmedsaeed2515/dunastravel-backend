@@ -62,9 +62,10 @@ export class BackupService {
       try {
         await execAsync(`pg_dump "${dbUrl}" > "${fullPath}"`);
         this.logger.log(`Database dump successfully created at ${fullPath}`);
-      } catch (dumpErr: any) {
+      } catch (dumpErr: unknown) {
+        const err = dumpErr as Error;
         this.logger.warn(
-          `pg_dump execution skipped/simulated (pg_dump may not be present in local/CI environment): ${dumpErr.message}`,
+          `pg_dump execution skipped/simulated (pg_dump may not be present in local/CI environment): ${err.message}`,
         );
         fs.writeFileSync(
           fullPath,
@@ -86,10 +87,11 @@ export class BackupService {
           `Cleaned up temporary local backup file: ${fullPath}`,
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       this.logger.error(
-        `Scheduled database backup encountered a fatal error: ${error.message}`,
-        error.stack,
+        `Scheduled database backup encountered a fatal error: ${err.message}`,
+        err.stack,
       );
     }
   }

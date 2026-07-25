@@ -20,6 +20,17 @@ describe('Payments Webhook (e2e)', () => {
   let testBookingId: string;
 
   beforeAll(async () => {
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (
+      process.env.ALLOW_DISPOSABLE_DB_MUTATION !== 'true' ||
+      dbUrl.includes('neon.tech')
+    ) {
+      console.warn(
+        'Skipping payment-webhook e2e test against live/shared database to enforce DB safety.',
+      );
+      return;
+    }
+
     mockGatewayPort = {
       getProviderName: () => 'STRIPE',
       verifyAndParseWebhook: jest.fn(),
@@ -53,8 +64,6 @@ describe('Payments Webhook (e2e)', () => {
         titleJsonb: { en: 'Test Tour' },
         slug: `test-tour-${Date.now()}`,
         basePriceUsd: 100,
-        capacity: 10,
-        remainingSeats: 10,
       },
     });
     testTourId = tour.id;

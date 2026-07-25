@@ -1,18 +1,21 @@
-/* eslint-disable */
 import {
   Injectable,
   Logger,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
+import { ListContactSubmissionsQueryDto } from '../admin/dto/list-contact-submissions-query.dto';
+import { ContactSubmissionStatus, Prisma } from '@prisma/client';
 import {
   ContactCreatedEvent,
   CONTACT_CREATED_EVENT,
 } from './events/contact-created.event';
 import * as crypto from 'crypto';
 import { sanitizeString } from '../../common/utils/sanitize.util';
+import { paginate, getPaginationParams } from '../../common/utils';
 
 @Injectable()
 export class ContactSubmissionsService {
@@ -63,15 +66,92 @@ export class ContactSubmissionsService {
       );
 
       return submission;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       this.logger.error(
-        `Failed to persist contact submission: ${error.message}`,
-        error.stack,
+        `Failed to persist contact submission: ${err.message}`,
+        err.stack,
       );
       throw new InternalServerErrorException(
         'Failed to process contact submission',
       );
     }
+  }
+
+  async findAll(query: ListContactSubmissionsQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const { skip, take } = getPaginationParams(page, limit);
+
+    const where: Prisma.ContactSubmissionWhereInput = {};
+    if (query.status) where.status = query.status;
+    if (query.email)
+      where.email = { contains: query.email, mode: 'insensitive' };
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo) where.createdAt.lte = new Date(query.dateTo);
+    }
+
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+
+    const [total, records] = await Promise.all([
+      this.prisma.contactSubmission.count({ where }),
+      this.prisma.contactSubmission.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { [sortBy]: sortOrder },
+      }),
+    ]);
+
+    return paginate(records, total, page, limit);
+  }
+
+  async findById(id: string) {
+    const numId = parseInt(id, 10);
+    const where: Prisma.ContactSubmissionWhereUniqueInput = isNaN(numId)
+      ? { referenceCode: id }
+      : { id: numId };
+
+    const submission = await this.prisma.contactSubmission.findUnique({
+      where,
+    });
+    if (!submission) {
+      throw new NotFoundException(
+        `Contact submission with ID/Ref ${id} not found`,
+      );
+    }
+    return submission;
+  }
+
+  async updateStatus(
+    id: string,
+    status: ContactSubmissionStatus,
+    adminUserId: string,
+  ) {
+    const submission = await this.findById(id);
+    const updated = await this.prisma.contactSubmission.update({
+      where: { id: submission.id },
+      data: { status },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminUserId,
+        actorRole: 'ADMIN',
+        action: 'CONTACT_SUBMISSION_STATUS_UPDATED',
+        entityType: 'CONTACT_SUBMISSION',
+        entityId: id,
+        metadata: {
+          oldStatus: submission.status,
+          newStatus: status,
+        },
+      },
+    });
+
+    return updated;
   }
 
   private async generateUniqueReferenceCode(): Promise<string> {

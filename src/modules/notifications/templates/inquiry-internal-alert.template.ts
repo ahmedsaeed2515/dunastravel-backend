@@ -10,7 +10,12 @@ export function renderInquiryInternalAlert(
   const safeName = escapeHtml(data.customerName);
   const safeEmail = escapeHtml(data.customerEmail);
   const safePhone = escapeHtml(data.customerPhone || 'N/A');
-  const safeDests = data.destinations.map(escapeHtml).join(', ');
+  const destsArray = Array.isArray(data.destinations)
+    ? data.destinations
+    : typeof data.destinations === 'string'
+      ? [data.destinations]
+      : [];
+  const safeDests = destsArray.map(escapeHtml).join(', ');
   const safeDates = escapeHtml(data.travelDateRange);
   const safeRequests = escapeHtml(data.specialRequests || 'None provided');
 

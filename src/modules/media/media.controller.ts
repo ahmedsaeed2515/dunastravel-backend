@@ -43,6 +43,8 @@ import { ListMediaDto } from './dto/list-media.dto';
 import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { MediaEntityType } from '@prisma/client';
 
+import { AuthenticatedUser } from '../../common/types';
+
 @ApiTags('Admin — Media')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
@@ -104,9 +106,13 @@ export class MediaAdminController {
   async upload(
     @UploadedFile(FileValidationPipe) file: Express.Multer.File,
     @Body() dto: UploadMediaDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user?: AuthenticatedUser,
   ): Promise<MediaAssetResponseDto> {
-    const asset = await this.mediaService.uploadAsset(file, dto, user.id);
+    const asset = await this.mediaService.uploadAsset(
+      file,
+      dto,
+      user?.id ?? null,
+    );
     return MediaAssetResponseDto.fromPrisma(asset);
   }
 
@@ -157,9 +163,7 @@ export class MediaAdminController {
   async listAssets(@Query() query: ListMediaDto) {
     const result = await this.mediaService.listAssets(query);
     return {
-      data: result.data.map((asset) =>
-        MediaAssetResponseDto.fromPrisma(asset as any),
-      ),
+      data: result.data.map((asset) => MediaAssetResponseDto.fromPrisma(asset)),
       meta: result.meta,
     };
   }
@@ -179,8 +183,6 @@ export class MediaPublicController {
     @Param('tourId', ParseUUIDPipe) tourId: string,
   ): Promise<MediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByTourId(tourId);
-    return assets.map((asset) =>
-      MediaAssetResponseDto.fromPrisma(asset as any),
-    );
+    return assets.map((asset) => MediaAssetResponseDto.fromPrisma(asset));
   }
 }

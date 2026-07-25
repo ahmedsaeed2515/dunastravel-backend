@@ -2,12 +2,12 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  InternalServerErrorException,
+  UnprocessableEntityException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { extractI18n } from '../../common/utils';
-import { InvoiceResponse, InvoiceBillingResponse } from './types';
+import { InvoiceResponse, InvoiceSnapshot } from './types';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class InvoicesService {
@@ -18,7 +18,7 @@ export class InvoicesService {
   async findByInvoiceNumber(
     invoiceNumber: string,
     userId?: string,
-    email?: string,
+    guestToken?: string,
   ): Promise<InvoiceResponse> {
     this.logger.debug(`Invoice queried | number=${invoiceNumber}`);
 
@@ -26,9 +26,10 @@ export class InvoicesService {
       where: { invoiceNumber },
       include: {
         booking: {
-          include: {
-            tour: { select: { titleJsonb: true, slug: true } },
-            billingInfo: true,
+          select: {
+            id: true,
+            userId: true,
+            guestTokenHash: true,
           },
         },
       },
@@ -39,10 +40,26 @@ export class InvoicesService {
       throw new NotFoundException('Invoice not found');
     }
 
-    const isOwner = userId && invoice.booking.userId === userId;
-    const isEmailMatch = email && invoice.booking.billingInfo?.email === email;
+    let isAuthorized = false;
 
-    if (!isOwner && !isEmailMatch) {
+    if (userId && invoice.booking.userId === userId) {
+      isAuthorized = true;
+    } else if (guestToken && invoice.booking.guestTokenHash) {
+      const computedHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      const hashBufferA = Buffer.from(computedHash, 'utf8');
+      const hashBufferB = Buffer.from(invoice.booking.guestTokenHash, 'utf8');
+      if (
+        hashBufferA.length === hashBufferB.length &&
+        crypto.timingSafeEqual(hashBufferA, hashBufferB)
+      ) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
       this.logger.warn(
         `Unauthorized access attempt to invoice | number=${invoiceNumber}`,
       );
@@ -51,42 +68,42 @@ export class InvoicesService {
       );
     }
 
-    if (!invoice.booking.billingInfo) {
+    if (!invoice.snapshotJsonb) {
       this.logger.error(
-        `Invoice data integrity error — no billingInfo | invoiceId=${invoice.id}`,
+        `Invoice data integrity error — missing snapshot | invoiceId=${invoice.id}`,
       );
-      throw new InternalServerErrorException('Invoice data is incomplete');
+      throw new UnprocessableEntityException(
+        'Invoice snapshot is missing or corrupted',
+      );
     }
 
-    const billingInfo = invoice.booking.billingInfo;
-    const billing: InvoiceBillingResponse = {
-      fullName: billingInfo.fullName,
-      email: billingInfo.email,
-      phone: billingInfo.phone,
-      invoiceType: billingInfo.invoiceType,
-      companyName: billingInfo.companyName,
-      taxId: billingInfo.taxId,
-      address: billingInfo.address,
-      city: billingInfo.city,
-      country: billingInfo.country,
-    };
+    const snap = invoice.snapshotJsonb as unknown as InvoiceSnapshot;
+
+    if (!snap.billingRecipient || !snap.tourTitle) {
+      throw new UnprocessableEntityException(
+        'Invoice snapshot is missing required business fields',
+      );
+    }
 
     return {
       invoiceNumber: invoice.invoiceNumber,
       bookingId: invoice.bookingId,
       issuedAt: invoice.issuedAt.toISOString(),
-      status: invoice.booking.status,
-      tourTitle: extractI18n(invoice.booking.tour.titleJsonb, 'en'),
-      tourSlug: invoice.booking.tour.slug,
-      arrivalDate: invoice.booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: invoice.booking.departureDate
-        ? invoice.booking.departureDate.toISOString().split('T')[0]
-        : null,
-      adults: invoice.booking.adults,
-      children: invoice.booking.children,
-      infants: invoice.booking.infants,
-      totalAmountUsd: invoice.booking.totalAmountUsd.toString(),
-      billing,
+      status: invoice.status,
+      subtotal: invoice.subtotal.toString(),
+      tax: invoice.tax.toString(),
+      total: invoice.total.toString(),
+      totalAmountUsd: invoice.total.toString(),
+      currency: invoice.currency || snap.currency || 'USD',
+      tourTitle: snap.tourTitle,
+      tourSlug: snap.tourSlug || 'custom-tour',
+      arrivalDate: snap.arrivalDate,
+      departureDate: snap.departureDate || null,
+      adults: snap.adults ?? 1,
+      children: snap.children ?? 0,
+      infants: snap.infants ?? 0,
+      snapshot: snap,
+      billing: snap.billingRecipient,
     };
   }
 }

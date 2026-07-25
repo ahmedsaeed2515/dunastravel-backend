@@ -44,7 +44,10 @@ export class ToursService {
       query.limit,
     );
 
-    const where: Prisma.TourWhereInput = { isActive: true };
+    const where: Prisma.TourWhereInput = {
+      isActive: true,
+      status: 'PUBLISHED',
+    };
     if (query.category) {
       where.category = { equals: query.category, mode: 'insensitive' };
     }
@@ -112,7 +115,7 @@ export class ToursService {
       slug: record.slug,
       title: extractI18n(record.titleJsonb, query.lang),
       category: record.category,
-      basePriceUsd: record.basePriceUsd.toString(),
+      basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
       duration: extractI18n(record.durationJsonb, query.lang),
       heroImage: record.images[0]?.imageUrl ?? null,
     }));
@@ -129,7 +132,7 @@ export class ToursService {
     }
 
     const tour = await this.prisma.tour.findFirst({
-      where: { slug, isActive: true },
+      where: { slug, isActive: true, status: 'PUBLISHED' },
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
         images: { orderBy: { sortOrder: 'asc' } },
@@ -164,7 +167,8 @@ export class ToursService {
       slug: tour.slug,
       title: extractI18n(tour.titleJsonb, lang),
       category: tour.category,
-      basePriceUsd: tour.basePriceUsd.toString(),
+      basePriceUsd: new Prisma.Decimal(tour.basePriceUsd).toFixed(2),
+
       duration: extractI18n(tour.durationJsonb, lang),
       overview: extractI18n(tour.overviewJsonb, lang),
       cancellationPolicy: tour.cancellationPolicyJsonb
@@ -185,8 +189,7 @@ export class ToursService {
       tags: tour.tags,
       difficultyLevel: tour.difficultyLevel,
       meetingPoint: tour.meetingPoint,
-      capacity: tour.capacity,
-      remainingSeats: tour.remainingSeats,
+
       itinerary,
       images,
     };
@@ -195,7 +198,7 @@ export class ToursService {
     return response;
   }
 
-  async update(slug: string, data: any) {
+  async update(slug: string, data: Prisma.TourUpdateInput) {
     const updated = await this.prisma.tour.update({
       where: { slug },
       data,

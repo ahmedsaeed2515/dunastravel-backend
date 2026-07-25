@@ -8,7 +8,11 @@ import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [],
-  controllers: [ToursController, TourLandingPagesAdminController, TourLandingPagesPublicController],
+  controllers: [
+    ToursController,
+    TourLandingPagesAdminController,
+    TourLandingPagesPublicController,
+  ],
   providers: [
     ToursService,
     TourLandingPagesService,

@@ -1,0 +1,77 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  ParseUUIDPipe,
+  ParseIntPipe,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
+import { JourneyMapsService } from './journey-maps.service';
+import { CreateJourneyRouteDto } from './dto/create-journey-route.dto';
+import { UpdateJourneyRouteDto } from './dto/update-journey-route.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+
+@ApiTags('Admin — Journey Maps')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'SUPER_ADMIN')
+@Controller('admin/journey-maps')
+export class AdminJourneyMapsController {
+  constructor(private readonly journeyMapsService: JourneyMapsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List all journey routes (admin, paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async list(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    return this.journeyMapsService.findAllAdmin(page || 1, limit || 20);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new journey route' })
+  @ApiCreatedResponse({ description: 'Journey route created' })
+  async create(@Body() dto: CreateJourneyRouteDto) {
+    return this.journeyMapsService.createAdmin(dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a journey route' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiOkResponse({ description: 'Journey route updated' })
+  @ApiNotFoundResponse()
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateJourneyRouteDto,
+  ) {
+    return this.journeyMapsService.updateAdmin(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a journey route' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiOkResponse({ description: 'Journey route deleted' })
+  @ApiNotFoundResponse()
+  async delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.journeyMapsService.deleteAdmin(id);
+  }
+}

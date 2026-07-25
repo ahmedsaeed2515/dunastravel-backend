@@ -1,12 +1,15 @@
-/* eslint-disable */
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
-  NotificationDeliveryStatus,
-  NotificationType,
-} from '../types';
+  NotificationDeliveryStatus as PrismaDeliveryStatus,
+  NotificationType as PrismaNotificationType,
+} from '@prisma/client';
+import { NotificationType } from '../types';
 import { EmailPayload } from '../types/email-payload.type';
-import { IEmailProvider, EMAIL_PROVIDER_TOKEN } from '../providers/email-provider.interface';
+import {
+  IEmailProvider,
+  EMAIL_PROVIDER_TOKEN,
+} from '../providers/email-provider.interface';
 
 @Injectable()
 export class EmailDeliveryService {
@@ -28,11 +31,11 @@ export class EmailDeliveryService {
     // 1. Create PENDING log entry
     const logRecord = await this.prisma.notificationDeliveryLog.create({
       data: {
-        notificationType: notificationType as any,
+        notificationType: notificationType as unknown as PrismaNotificationType,
         originReferenceCode,
         originEntityType,
         recipientEmail: payload.to,
-        status: NotificationDeliveryStatus.PENDING,
+        status: PrismaDeliveryStatus.PENDING,
       },
     });
 
@@ -49,10 +52,10 @@ export class EmailDeliveryService {
           await this.prisma.notificationDeliveryLog.update({
             where: { id: logRecord.id },
             data: {
-              status: NotificationDeliveryStatus.SENT,
+              status: PrismaDeliveryStatus.SENT,
               attempts,
               lastAttemptAt: new Date(),
-              providerResponseId: result.providerMessageId,
+              providerResponseId: result.providerMessageId || null,
             },
           });
           this.logger.log(
@@ -63,9 +66,10 @@ export class EmailDeliveryService {
             result.providerError || 'Provider reported failure without reason',
           );
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as Error;
         this.logger.warn(
-          `Failed to send ${notificationType} (attempt ${attempts}): ${error.message}`,
+          `Failed to send ${notificationType} (attempt ${attempts}): ${err.message}`,
         );
 
         const isExhausted = attempts >= this.MAX_RETRIES;
@@ -74,20 +78,18 @@ export class EmailDeliveryService {
           where: { id: logRecord.id },
           data: {
             status: isExhausted
-              ? NotificationDeliveryStatus.EXHAUSTED
-              : NotificationDeliveryStatus.FAILED,
+              ? PrismaDeliveryStatus.EXHAUSTED
+              : PrismaDeliveryStatus.FAILED,
             attempts,
             lastAttemptAt: new Date(),
-            failureReason: error.message,
+            failureReason: err.message,
           },
         });
 
         if (isExhausted) {
-          if (this.logger.fatal) {
-            this.logger.fatal(`[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`);
-          } else {
-            this.logger.error(`[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`);
-          }
+          this.logger.error(
+            `[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`,
+          );
         } else {
           // In-process backoff
           await new Promise((res) => setTimeout(res, 1000 * attempts));

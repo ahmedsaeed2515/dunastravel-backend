@@ -1,11 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentEntity } from './domain/payment.entity';
-import { Money } from '../../common/domain/value-objects/money.vo';
-
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
-import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class PaymentCronService {
@@ -21,7 +17,6 @@ export class PaymentCronService {
   async expireStalePayments() {
     this.logger.log('Starting cron job to expire stale pending payments...');
 
-    // threshold: 30 minutes ago
     const thresholdDate = new Date(Date.now() - 30 * 60 * 1000);
 
     const stalePayments = await this.prisma.payment.findMany({
@@ -29,6 +24,13 @@ export class PaymentCronService {
         status: 'PENDING',
         createdAt: {
           lt: thresholdDate,
+        },
+      },
+      include: {
+        booking: {
+          include: {
+            promotionRedemption: true,
+          },
         },
       },
     });
@@ -46,34 +48,12 @@ export class PaymentCronService {
     for (const paymentData of stalePayments) {
       try {
         await this.prisma.$transaction(async (tx) => {
-          const entity = new PaymentEntity(
-            paymentData.id,
-            paymentData.bookingId,
-            Money.fromDecimal(
-              paymentData.amount.toNumber(),
-              paymentData.currency,
-            ),
-            paymentData.method,
-            paymentData.transactionId,
-            paymentData.status,
-            paymentData.createdAt,
-          );
-
-          entity.expire();
-
           await tx.payment.update({
             where: { id: paymentData.id },
-            data: { status: entity.status },
+            data: { status: 'EXPIRED' },
           });
 
-          if (paymentData.transactionId) {
-            await this.paymentGateway.expireSession(paymentData.transactionId);
-          }
-
-          // Also cancel the associated booking hold if it's still PENDING
-          const booking = await tx.booking.findUnique({
-            where: { id: paymentData.bookingId },
-          });
+          const booking = paymentData.booking;
           if (booking && booking.status === 'PENDING') {
             await tx.booking.update({
               where: { id: booking.id },
@@ -83,23 +63,55 @@ export class PaymentCronService {
                   'Payment expired automatically after 30 minutes of inactivity',
               },
             });
-            // Depending on the domain, we might also restore tour capacity here.
-            // If the booking creation deducted remainingSeats, we would increment them back.
-            await tx.tour.update({
-              where: { id: booking.tourId },
-              data: {
-                remainingSeats: {
-                  increment: booking.adults + booking.children,
+
+            if (booking.availabilityId) {
+              const totalPassengers = booking.adults + booking.children;
+              await tx.tourAvailability.update({
+                where: { id: booking.availabilityId },
+                data: {
+                  remainingSeats: { increment: totalPassengers },
+                  status: 'AVAILABLE',
                 },
-              },
-            });
+              });
+            }
+
+            if (
+              booking.promotionRedemption &&
+              booking.promotionRedemption.status === 'ACTIVE'
+            ) {
+              await tx.promotionRedemption.update({
+                where: { id: booking.promotionRedemption.id },
+                data: {
+                  status: 'REVERSED',
+                  reversedAt: new Date(),
+                },
+              });
+              await tx.promotion.update({
+                where: { id: booking.promotionRedemption.promotionId },
+                data: { currentUses: { decrement: 1 } },
+              });
+            }
           }
         });
+
+        if (paymentData.transactionId) {
+          try {
+            await this.paymentGateway.expireSession(paymentData.transactionId);
+          } catch (expErr: unknown) {
+            const msg =
+              expErr instanceof Error
+                ? expErr.message
+                : 'Unknown gateway error';
+            this.logger.warn(
+              `Failed to expire gateway session ${paymentData.transactionId}: ${msg}`,
+            );
+          }
+        }
+
         expiredCount++;
-      } catch (error: any) {
-        this.logger.error(
-          `Failed to expire payment ${paymentData.id}: ${error.message}`,
-        );
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Failed to expire payment ${paymentData.id}: ${msg}`);
       }
     }
 

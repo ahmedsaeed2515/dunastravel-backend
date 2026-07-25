@@ -3,6 +3,7 @@ import { ToursService } from './tours.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { getToken } from '@willsoto/nestjs-prometheus';
+import { Prisma } from '@prisma/client';
 
 describe('ToursService', () => {
   let service: ToursService;
@@ -21,12 +22,17 @@ describe('ToursService', () => {
               findFirst: jest.fn(),
               count: jest.fn(),
             },
-            $transaction: jest.fn((arg: any) => {
-              if (Array.isArray(arg)) {
-                return Promise.all(arg);
-              }
-              return arg({});
-            }),
+            $transaction: jest.fn(
+              (
+                arg:
+                  Array<Promise<unknown>> | ((tx: unknown) => Promise<unknown>),
+              ) => {
+                if (Array.isArray(arg)) {
+                  return Promise.all(arg);
+                }
+                return arg({});
+              },
+            ),
           },
         },
         {
@@ -53,18 +59,30 @@ describe('ToursService', () => {
 
   describe('findAll', () => {
     it('should apply active filter when resolving tours', async () => {
-      jest.spyOn(prisma.tour, 'count').mockResolvedValue(1);
-      jest
+      const countSpy = jest.spyOn(prisma.tour, 'count').mockResolvedValue(1);
+      const findManySpy = jest
         .spyOn(prisma.tour, 'findMany')
         .mockResolvedValue([
-          { id: 'tour-1', images: [], basePriceUsd: { toString: () => '100' } },
+          {
+            id: 'tour-1',
+            slug: 'tour-1',
+            titleJsonb: { en: 'Tour 1' },
+            category: 'CULTURE',
+            durationJsonb: { en: '3 Days' },
+            images: [],
+            basePriceUsd: new Prisma.Decimal('100.00'),
+          },
         ] as any);
 
-      const result = await service.findAll({ isActive: true } as any);
+      const result = await service.findAll({ lang: 'en', page: 1, limit: 10 });
 
-      expect(prisma.tour.findMany).toHaveBeenCalledWith(
+      expect(countSpy).toHaveBeenCalled();
+      expect(findManySpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ isActive: true }),
+          where: expect.objectContaining({
+            isActive: true,
+            status: 'PUBLISHED',
+          }),
         }),
       );
       expect(result.items).toHaveLength(1);
@@ -73,21 +91,23 @@ describe('ToursService', () => {
 
   describe('findBySlug', () => {
     it('should resolve tour by slug', async () => {
-      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({
-        id: 'tour-2',
-        slug: 'my-tour',
-        itineraries: [],
-        images: [],
-        titleJsonb: { en: 'test' },
-        basePriceUsd: { toString: () => '150' },
-      } as any);
+      const findFirstSpy = jest
+        .spyOn(prisma.tour, 'findFirst')
+        .mockResolvedValue({
+          id: 'tour-2',
+          slug: 'my-tour',
+          itineraries: [],
+          images: [],
+          titleJsonb: { en: 'test' },
+          basePriceUsd: new Prisma.Decimal('150.00'),
+        } as any);
 
       const result = await service.findBySlug('my-tour', 'en');
 
       expect(result?.slug).toBe('my-tour');
-      expect(prisma.tour.findFirst).toHaveBeenCalledWith(
+      expect(findFirstSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { slug: 'my-tour', isActive: true },
+          where: { slug: 'my-tour', isActive: true, status: 'PUBLISHED' },
         }),
       );
     });

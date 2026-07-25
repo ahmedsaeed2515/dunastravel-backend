@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
 export const SUPPORTED_LANGUAGES = ['en', 'es', 'pt', 'it', 'ar'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -53,5 +52,7 @@ export function extractI18n(
     }
   }
 
-  return String(jsonb);
+  return typeof jsonb === 'number' || typeof jsonb === 'boolean'
+    ? String(jsonb)
+    : '';
 }

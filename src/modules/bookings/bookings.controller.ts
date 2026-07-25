@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   Controller,
   Post,
@@ -7,7 +6,6 @@ import {
   Param,
   HttpCode,
   UseGuards,
-  BadRequestException,
   Query,
   Headers,
 } from '@nestjs/common';
@@ -28,6 +26,12 @@ import { OptionalJwtAuthGuard, JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { ParseBookingRefPipe } from '../../common/pipes/parse-booking-ref.pipe';
 
+interface AuthenticatedUser {
+  id: string;
+  email?: string;
+  role?: string;
+}
+
 @ApiTags('Bookings')
 @Controller('bookings')
 export class BookingsController {
@@ -43,10 +47,10 @@ export class BookingsController {
   @ApiUnprocessableEntityResponse({ description: 'Tour not available' })
   async createBooking(
     @Body() dto: CreateBookingDto,
-    @CurrentUser() user: any | null,
+    @CurrentUser() user: AuthenticatedUser | null,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    const userId = user?.id ?? null;
+    const userId = user?.id ?? undefined;
     return this.bookingsService.createBooking(dto, userId, idempotencyKey);
   }
 
@@ -63,7 +67,7 @@ export class BookingsController {
   @ApiOperation({ summary: 'Get all bookings for current user' })
   @ApiOkResponse({ description: 'List of user bookings' })
   async findUserBookings(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
@@ -84,28 +88,37 @@ export class BookingsController {
   @ApiParam({ name: 'referenceCode', example: 'BKG-A4X7Z2' })
   async findByReferenceCode(
     @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
-    @CurrentUser() user: any | null,
-    @Query('email') email?: string,
+    @CurrentUser() user: AuthenticatedUser | null,
+    @Headers('x-guest-token') guestToken?: string,
   ) {
-    const userId = user?.id ?? null;
+    const userId = user?.id ?? undefined;
     return this.bookingsService.findByReferenceCode(
       referenceCode,
-      email,
       userId,
+      guestToken,
     );
   }
 
   @Post(':referenceCode/cancel')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(200)
-  @ApiOperation({ summary: 'Cancel a booking (authenticated owner only)' })
+  @ApiOperation({
+    summary: 'Cancel a booking (authenticated owner or guest token)',
+  })
   @ApiOkResponse({ description: 'Booking cancelled' })
   @ApiParam({ name: 'referenceCode', example: 'BKG-A4X7Z2' })
   async cancelBooking(
     @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser | null,
     @Body('reason') reason?: string,
+    @Headers('x-guest-token') guestToken?: string,
   ) {
-    return this.bookingsService.cancelBooking(referenceCode, user.id, reason);
+    const userId = user?.id ?? undefined;
+    return this.bookingsService.cancelBooking(
+      referenceCode,
+      userId,
+      reason,
+      guestToken,
+    );
   }
 }

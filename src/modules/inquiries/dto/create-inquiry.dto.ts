@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   IsString,
   IsNotEmpty,
@@ -28,9 +27,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 @ValidatorConstraint({ name: 'IsEndDateAfterStart', async: false })
 class IsEndDateAfterStartConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args: ValidationArguments) {
-    const obj = args.object as any;
-    if (!obj.startDate || !value) return true;
-    return new Date(value as string) >= new Date(obj.startDate);
+    const obj = args.object as Record<string, unknown>;
+    if (!obj['startDate'] || !value) return true;
+    return new Date(value as string) >= new Date(obj['startDate'] as string);
   }
 
   defaultMessage() {

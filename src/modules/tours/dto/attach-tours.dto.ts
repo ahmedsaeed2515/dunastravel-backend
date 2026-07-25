@@ -1,4 +1,12 @@
-import { IsArray, IsString, IsNotEmpty, IsOptional, IsBoolean, IsInt, IsObject } from 'class-validator';
+import {
+  IsArray,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  IsObject,
+} from 'class-validator';
 
 export class AttachToursDto {
   @IsArray()

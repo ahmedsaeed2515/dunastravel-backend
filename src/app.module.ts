@@ -1,12 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { envValidationSchema } from './config/env.validation';
 import configuration from './config/configuration';
 import { AsyncContextService } from './common/logging/async-context.service';
@@ -19,6 +17,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ToursModule } from './modules/tours/tours.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { TransportationModule } from './modules/transportation/transportation.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { InquiriesModule } from './modules/inquiries/inquiries.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -46,11 +46,17 @@ import { ToolsModule } from './modules/tools/tools.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AvailabilityModule } from './modules/availability/availability.module';
+import { AgenciesModule } from './modules/agencies/agencies.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-
 import { PaymentsModule } from './modules/payments/payments.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
+import { DestinationsModule } from './modules/destinations/destinations.module';
+import { BlogsModule } from './modules/blogs/blogs.module';
+import { FaqModule } from './modules/faq/faq.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
 
 @Module({
   imports: [
@@ -77,7 +83,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
       ],
     }),
 
-    // Structured Logging — console only (serverless has read-only FS)
+    // Structured Logging — console only
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console({
@@ -89,19 +95,17 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
       ],
     }),
 
-    // Redis Caching
+    // Redis / Memory Caching
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async (config: ConfigService) => ({
-        // store: redisStore, // Disabled for local audit to use memory store
         host: config.get<string>('REDIS_HOST', 'localhost'),
         port: config.get<number>('REDIS_PORT', 6379),
-        ttl: 300, // 5 minutes default
+        ttl: 300,
       }),
       inject: [ConfigService],
     }),
 
-    // Cron jobs — needed by CurrencyModule (Phase 10)
     ScheduleModule.forRoot(),
 
     EventEmitterModule.forRoot({
@@ -114,20 +118,17 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
       ignoreErrors: false,
     }),
 
-    // Database — global provider, available in all modules
     PrismaModule,
-
-    // Health check
     HealthModule,
-
-    // Prometheus Metrics
     PrometheusModule.register(),
 
-    // Feature modules — added in later phases:
+    // Feature modules
     AdminModule,
     AuthModule,
     ToursModule,
     BookingsModule,
+    PricingModule,
+    TransportationModule,
     InvoicesModule,
     InquiriesModule,
     NotificationsModule,
@@ -136,7 +137,6 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     CompaniesModule,
     WalletsModule,
     CommissionsModule,
-    // MailModule      ← Phase 8
     AiModule,
     CurrencyModule,
     AuditModule,
@@ -154,7 +154,16 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     SettingsModule,
     AnalyticsModule,
     DashboardModule,
+    AvailabilityModule,
+    AgenciesModule,
+    DestinationsModule,
+    BlogsModule,
+    FaqModule,
+    ReviewsModule,
+    UsersModule,
+    JourneyMapsModule,
   ],
+
   providers: [
     AsyncContextService,
     JsonLoggerService,

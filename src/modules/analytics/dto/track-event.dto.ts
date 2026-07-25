@@ -7,7 +7,9 @@ export class TrackEventDto {
   @IsNotEmpty()
   eventId!: string;
 
-  @ApiProperty({ description: 'Event name (e.g. page_view, tour_view, booking_started)' })
+  @ApiProperty({
+    description: 'Event name (e.g. page_view, tour_view, booking_started)',
+  })
   @IsString()
   @IsNotEmpty()
   eventName!: string;
@@ -67,7 +69,9 @@ export class TrackEventDto {
   @IsString()
   utmCampaign?: string;
 
-  @ApiPropertyOptional({ description: 'Device category (desktop, mobile, tablet)' })
+  @ApiPropertyOptional({
+    description: 'Device category (desktop, mobile, tablet)',
+  })
   @IsOptional()
   @IsString()
   deviceCategory?: string;

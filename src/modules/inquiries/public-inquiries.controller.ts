@@ -11,11 +11,11 @@ import { InquiriesService } from './inquiries.service';
 import { CreateInquiryDto } from './dto';
 
 @ApiTags('Inquiries (Public)')
-@Controller('inquiries')
+@Controller()
 export class PublicInquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 
-  @Post()
+  @Post(['inquiries', 'inquiries/tailor-made', 'tailor-tour'])
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @ApiOperation({ summary: 'Submit a new tailor-made tour inquiry' })

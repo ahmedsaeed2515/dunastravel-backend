@@ -25,6 +25,7 @@ import {
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
+import { AuthenticatedUser } from '../../common/types';
 
 @ApiTags('Tours')
 @Controller('tours')
@@ -94,7 +95,7 @@ export class ToursController {
   @ApiParam({ name: 'slug', type: String })
   async addTourReview(
     @Param('slug') slug: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateTourReviewDto,
   ) {
     const trimmedSlug = slug?.trim();

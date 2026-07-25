@@ -3,14 +3,18 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  UnprocessableEntityException,
   Inject,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { Request as ExpressRequest } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PAYMENT_EVENTS } from '../../common/events/payment-events';
 import { Money } from '../../common/domain/value-objects/money.vo';
 import { PaymentEntity } from './domain/payment.entity';
+import crypto from 'crypto';
 
 @Injectable()
 export class PaymentsService {
@@ -26,13 +30,41 @@ export class PaymentsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async initiatePayment(bookingId: string, userId: string) {
+  async initiatePayment(
+    bookingId: string,
+    userId?: string,
+    guestToken?: string,
+  ) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { tour: true },
+      include: { tour: true, invoice: true },
     });
 
-    if (!booking || booking.userId !== userId) {
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    // Ownership verification
+    let isAuthorized = false;
+    if (userId && booking.userId === userId) {
+      isAuthorized = true;
+    } else if (guestToken && booking.guestTokenHash) {
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      if (
+        crypto.timingSafeEqual(
+          Buffer.from(tokenHash),
+          Buffer.from(booking.guestTokenHash),
+        )
+      ) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      // Mask foreign/unauthorized booking as 404 Not Found to prevent leaking existence
       throw new NotFoundException('Booking not found');
     }
 
@@ -43,9 +75,6 @@ export class PaymentsService {
     }
 
     // ─── Idempotency gate ────────────────────────────────────────────────────
-    // Check for an existing PENDING Payment record for this booking.
-    // There can be at most one (enforced by the DB partial unique index
-    // idx_payments_one_pending_per_booking), so findFirst is safe here.
     const existingPendingPayment = await this.prisma.payment.findFirst({
       where: { bookingId, status: 'PENDING', isRefund: false },
     });
@@ -54,7 +83,6 @@ export class PaymentsService {
       const ageMs = Date.now() - existingPendingPayment.createdAt.getTime();
 
       if (ageMs < PaymentsService.SESSION_TTL_MS) {
-        // Session is still valid — return the stored URL instead of creating a duplicate.
         if (existingPendingPayment.sessionUrl) {
           this.logger.log(
             `Duplicate initiatePayment for booking ${bookingId}: returning existing session ` +
@@ -65,16 +93,10 @@ export class PaymentsService {
             transactionId: existingPendingPayment.transactionId,
           };
         }
-        // sessionUrl is missing (edge case: pre-migration row or admin-added payment).
-        // Fall through and create a new session — the DB index will block duplicates.
         this.logger.warn(
-          `PENDING Payment ${existingPendingPayment.id} for booking ${bookingId} has no sessionUrl stored. ` +
-            `Creating a new session. Consider running the idempotency migration.`,
+          `PENDING Payment ${existingPendingPayment.id} for booking ${bookingId} has no sessionUrl stored. Creating a new session.`,
         );
       } else {
-        // Session is stale — expire it explicitly before allowing a new one.
-        // This mirrors what the cron job does, but ensures the path is clear immediately
-        // instead of waiting up to 15 minutes for the cron to run.
         this.logger.log(
           `PENDING Payment ${existingPendingPayment.id} for booking ${bookingId} is stale ` +
             `(age ${Math.round(ageMs / 1000)}s). Expiring it before creating a new session.`,
@@ -106,7 +128,11 @@ export class PaymentsService {
     }
     // ─── End idempotency gate ─────────────────────────────────────────────────
 
-    const money = Money.fromDecimal(booking.totalAmountUsd.toNumber(), 'USD');
+    const chargeCurrency = booking.invoice?.currency || 'USD';
+    const money = Money.fromDecimal(
+      booking.totalAmountUsd.toNumber(),
+      chargeCurrency,
+    );
 
     let session;
     try {
@@ -116,9 +142,11 @@ export class PaymentsService {
         money.currency,
         booking.referenceCode,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error ? error.message : 'Unknown gateway error';
       this.logger.error(
-        `Failed to create payment session for bookingId=${bookingId} ref=${booking.referenceCode}: ${error.message}`,
+        `Failed to create payment session for bookingId=${bookingId} ref=${booking.referenceCode}: ${msg}`,
       );
       throw error;
     }
@@ -134,10 +162,6 @@ export class PaymentsService {
         new Date(),
       );
 
-      // Persist the Payment record including the sessionUrl.
-      // If a concurrent request already inserted a PENDING row for this booking,
-      // the partial unique index (idx_payments_one_pending_per_booking) will cause
-      // Prisma to throw P2002, which we handle below.
       await this.prisma.payment.create({
         data: {
           bookingId: booking.id,
@@ -161,14 +185,26 @@ export class PaymentsService {
         `Payment initiated for booking ${booking.id} with transactionId ${session.transactionId}`,
       );
       return session;
-    } catch (error: any) {
-      // P2002 from the partial unique index means a concurrent request already created a
-      // PENDING Payment. Retrieve and return that record's session URL.
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      const errObj = error as { code?: string; message?: string };
+      // P2002 from partial unique index: clean up losing orphan session
+      if (errObj.code === 'P2002') {
         this.logger.warn(
           `Concurrent duplicate initiatePayment for booking ${bookingId} caught at DB level (P2002). ` +
-            `Fetching existing PENDING payment to return its session URL.`,
+            `Expiring orphan session ${session.transactionId} and fetching winning session.`,
         );
+        try {
+          await this.paymentGateway.expireSession(session.transactionId);
+        } catch (expireErr: unknown) {
+          const expMsg =
+            expireErr instanceof Error
+              ? expireErr.message
+              : 'Unknown expire error';
+          this.logger.error(
+            `Failed to expire orphan session ${session.transactionId}: ${expMsg}`,
+          );
+        }
+
         const concurrent = await this.prisma.payment.findFirst({
           where: { bookingId, status: 'PENDING', isRefund: false },
         });
@@ -182,19 +218,22 @@ export class PaymentsService {
 
       this.logger.error(
         `Database failure during initiatePayment for bookingId=${bookingId} ref=${booking.referenceCode}, ` +
-          `rolling back transactionId=${session.transactionId}. Error: ${error.message}`,
+          `expiring session ${session.transactionId}. Error: ${errObj.message}`,
       );
 
-      // Compensating action: cancel the Stripe session we just created.
+      // Compensating action: expire the unpaid session we just created
       try {
-        await this.paymentGateway.refund(session.transactionId);
+        await this.paymentGateway.expireSession(session.transactionId);
         this.logger.log(
-          `Successfully executed compensating refund for transactionId=${session.transactionId}`,
+          `Successfully expired unpaid session ${session.transactionId} after DB failure`,
         );
-      } catch (refundError: any) {
+      } catch (expireError: unknown) {
+        const expMsg =
+          expireError instanceof Error
+            ? expireError.message
+            : 'Unknown expire error';
         this.logger.error(
-          `CRITICAL: Failed to execute compensating refund for transactionId=${session.transactionId} ` +
-            `after DB failure. Manual intervention required. Error: ${refundError.message}`,
+          `CRITICAL: Failed to expire session ${session.transactionId} after DB failure: ${expMsg}`,
         );
       }
 
@@ -202,20 +241,13 @@ export class PaymentsService {
     }
   }
 
-  async handleWebhook(req: any, rawBody: Buffer) {
+  async handleWebhook(req: ExpressRequest, rawBody: Buffer) {
     const payload = await this.paymentGateway.verifyAndParseWebhook(
       req,
       rawBody,
     );
     const provider = this.paymentGateway.getProviderName();
 
-    // STRIPE RETRY SEMANTICS:
-    // If we return anything other than a 2xx status code (e.g. 400 Bad Request),
-    // Stripe will forcefully retry the exact same malformed payload for up to 3 days
-    // with exponential backoff. Because a missing eventId is a fatal edge-case that
-    // cannot be "fixed" on retry, throwing an exception here would cause an endless
-    // retry storm and spam our logs. Thus, we log a critical error but return a
-    // silent 200 OK to immediately terminate Stripe's retry loop.
     if (!payload.eventId) {
       this.logger.error(
         `Webhook payload missing eventId, cannot guarantee idempotency. Rejecting silently (200) to prevent Stripe retry storms.`,
@@ -223,10 +255,16 @@ export class PaymentsService {
       return { received: true };
     }
 
-    try {
-      await this.prisma.$transaction(
-        async (tx) => {
-          if (payload.eventId) {
+    const maxRetries = 3;
+    let attempt = 0;
+    let success = false;
+    let lastError: unknown = null;
+
+    while (attempt < maxRetries && !success) {
+      attempt++;
+      try {
+        await this.prisma.$transaction(
+          async (tx) => {
             const existingEvent = await tx.processedWebhookEvent.findUnique({
               where: { id: payload.eventId },
             });
@@ -237,72 +275,132 @@ export class PaymentsService {
               );
               return;
             }
-          }
 
-          if (payload.status === 'COMPLETED') {
-            await this.handleSuccessfulPaymentTx(
-              tx,
-              payload.bookingId,
-              payload.amountUsd,
-              payload.paymentId,
-            );
-          } else {
-            this.logger.log(
-              `Unhandled or pending payment status: ${payload.status} for booking ${payload.bookingId}`,
-            );
-          }
+            if (payload.status === 'COMPLETED') {
+              await this.handleSuccessfulPaymentTx(
+                tx,
+                payload.bookingId,
+                payload.amountUsd,
+                payload.paymentId,
+                payload.currency || 'USD',
+              );
+            } else {
+              this.logger.log(
+                `Unhandled or pending payment status: ${payload.status} for booking ${payload.bookingId}`,
+              );
+            }
 
-          if (payload.eventId) {
             await tx.processedWebhookEvent.create({
               data: {
                 id: payload.eventId,
                 provider,
-                payload: payload.rawEvent,
+                payload: payload.rawEvent as unknown as Prisma.InputJsonValue,
               },
             });
-          }
-        },
-        { isolationLevel: 'Serializable' },
-      );
-    } catch (error: any) {
-      if (error.code === 'P2002' || error.code === 'P2034') {
-        this.logger.log(
-          `Webhook event ${payload.eventId} concurrently processed (code: ${error.code}). Returning 200.`,
+          },
+          { isolationLevel: 'Serializable' },
         );
-        return { received: true };
+        success = true;
+      } catch (error: unknown) {
+        const errObj = error as { code?: string };
+        if (errObj.code === 'P2002') {
+          // Unique constraint collision on processedWebhookEvent means duplicate concurrent delivery already succeeded
+          this.logger.log(
+            `Webhook event ${payload.eventId} concurrently processed (P2002). Returning 200.`,
+          );
+          return { received: true };
+        }
+        if (errObj.code === 'P2034' && attempt < maxRetries) {
+          this.logger.warn(
+            `P2034 serialization failure on webhook ${payload.eventId}, retrying attempt ${attempt}/${maxRetries}...`,
+          );
+          await new Promise((res) => setTimeout(res, 50 * attempt));
+          continue;
+        }
+        lastError = error;
+        break;
       }
-      throw error;
     }
+
+    if (!success) {
+      this.logger.error(
+        `Webhook transaction failed for event ${payload.eventId} after ${attempt} attempts. Throwing to trigger gateway retry.`,
+      );
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('Webhook transaction processing failed');
+    }
+
+    // Post-commit side-effects
+    this.eventEmitter.emit(PAYMENT_EVENTS.SUCCEEDED, {
+      paymentId: payload.paymentId,
+      bookingId: payload.bookingId,
+      amountUsd: payload.amountUsd,
+      transactionId: payload.paymentId,
+      gateway: provider,
+    });
+
+    this.prisma.analyticsEvent
+      .create({
+        data: {
+          eventId: `payment:${payload.paymentId}:succeeded`,
+          eventName: 'payment_succeeded',
+          bookingRef: payload.bookingId,
+          properties: {
+            paymentId: payload.paymentId,
+            amountUsd: payload.amountUsd,
+            currency: payload.currency || 'USD',
+            gateway: provider,
+          },
+        },
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : 'Unknown analytics error';
+        this.logger.warn(`Failed to log server analytics event: ${msg}`);
+      });
 
     return { received: true };
   }
 
   private async handleSuccessfulPaymentTx(
-    tx: any,
+    tx: Prisma.TransactionClient,
     bookingId: string,
     amountUsd: number,
     transactionId: string,
+    currency: string,
   ) {
     if (!bookingId) {
       this.logger.warn('Received successful payment without bookingId');
       return;
     }
 
-    const money = Money.fromDecimal(amountUsd, 'USD');
-
-    const booking = await tx.booking.findUnique({ where: { id: bookingId } });
+    const booking = await tx.booking.findUnique({
+      where: { id: bookingId },
+      include: { invoice: true },
+    });
     if (!booking) {
       throw new NotFoundException(
         `Booking ${bookingId} not found during payment fulfillment`,
       );
     }
 
-    // We will update the booking status AFTER we create/update the payment record.
-
-    // Update the pending payment or create a new one
     const existingPayment = await tx.payment.findFirst({
-      where: { bookingId, transactionId },
+      where: {
+        OR: [{ transactionId }, { bookingId, status: 'PENDING' }],
+      },
     });
+
+    if (existingPayment) {
+      if (
+        existingPayment.amount.toNumber() !== amountUsd ||
+        existingPayment.currency !== currency
+      ) {
+        throw new UnprocessableEntityException(
+          `Webhook amount (${amountUsd} ${currency}) does not match expected payment record (${existingPayment.amount.toNumber()} ${existingPayment.currency})`,
+        );
+      }
+    }
 
     let payment;
     if (existingPayment) {
@@ -325,7 +423,7 @@ export class PaymentsService {
         data: { status: paymentEntity.status },
       });
     } else {
-      // For a new payment created during webhook fulfillment (e.g. captured immediately)
+      const money = Money.fromDecimal(amountUsd, currency);
       const mockEntity = new PaymentEntity(
         'mock-id',
         bookingId,
@@ -354,7 +452,7 @@ export class PaymentsService {
     });
 
     const totalCaptured = allCapturedPayments.reduce(
-      (sum: number, p: any) => sum + Number(p.amount),
+      (sum: number, p: { amount: Prisma.Decimal }) => sum + Number(p.amount),
       0,
     );
     const newStatus =
@@ -370,71 +468,84 @@ export class PaymentsService {
       },
     });
 
+    if (booking.invoice) {
+      await tx.invoice.update({
+        where: { id: booking.invoice.id },
+        data: {
+          status: newStatus === 'PAID' ? 'PAID' : 'SENT',
+          paymentId: payment.id,
+        },
+      });
+    }
+
+    await tx.bookingActivityLog.create({
+      data: {
+        bookingId,
+        action: 'PAYMENT_CAPTURED',
+        details: {
+          paymentId: payment.id,
+          amountCaptured: amountUsd,
+          currency,
+          newBookingStatus: newStatus,
+        },
+      },
+    });
+
     this.logger.log(
       `Payment successful and captured for booking ${bookingId}. Total captured: ${totalCaptured}. Status updated to ${newStatus}.`,
     );
-
-    this.eventEmitter.emit(PAYMENT_EVENTS.SUCCEEDED, {
-      paymentId: payment.id,
-      bookingId: bookingId,
-      amountUsd: money.toDecimal(),
-      transactionId: transactionId,
-      gateway: this.paymentGateway.getProviderName(),
-    });
-
-    tx.analyticsEvent.create({
-      data: {
-        eventId: `payment:${payment.id}:succeeded`,
-        eventName: 'payment_succeeded',
-        bookingRef: booking.referenceCode || undefined,
-        tourSlug: booking.tourId || undefined,
-        sessionId: booking.analyticsSessionId || undefined,
-        interfaceSlug: booking.originInterfaceSlug || undefined,
-        properties: {
-          paymentId: payment.id,
-          amountUsd: money.toDecimal(),
-          gateway: this.paymentGateway.getProviderName(),
-        },
-      },
-    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event payment_succeeded: ${err.message}`));
   }
 
-  async refundPayment(paymentId: string, amount?: number) {
+  async refundPayment(
+    paymentId: string,
+    amount?: number,
+    reason?: string,
+    idempotencyKey?: string,
+    actor?: { id: string; role: string },
+  ) {
     const existingPayment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
+      include: { booking: true, invoices: true },
     });
 
     if (!existingPayment) {
       throw new NotFoundException(`Payment ${paymentId} not found`);
     }
 
-    const paymentEntity = new PaymentEntity(
-      existingPayment.id,
-      existingPayment.bookingId,
-      Money.fromDecimal(
-        existingPayment.amount.toNumber(),
-        existingPayment.currency,
-      ),
-      existingPayment.method,
-      existingPayment.transactionId,
-      existingPayment.status,
-      existingPayment.createdAt,
-    );
+    if (existingPayment.status !== 'CAPTURED') {
+      throw new BadRequestException(
+        `Payment ${paymentId} is in status ${existingPayment.status} and cannot be refunded. Only CAPTURED payments can be refunded.`,
+      );
+    }
 
-    // Enforce full refund only (known limitation due to missing amountRefunded schema)
-    if (amount !== undefined && amount !== paymentEntity.money.toDecimal()) {
+    const paymentAmountDecimal = existingPayment.amount.toNumber();
+    if (amount !== undefined && amount !== paymentAmountDecimal) {
       throw new BadRequestException(
         'Partial refunds are not currently supported. You must refund the full amount.',
       );
     }
 
+    const ikey = idempotencyKey || `ref_${existingPayment.id}`;
+
+    const existingRefundRecord = await this.prisma.refundRecord.findUnique({
+      where: { idempotencyKey: ikey },
+    });
+
+    if (existingRefundRecord && existingRefundRecord.status === 'COMPLETED') {
+      this.logger.log(
+        `Duplicate refund request caught by idempotency key ${ikey}. Returning cached result.`,
+      );
+      return {
+        success: true,
+        refundId: existingRefundRecord.providerRefundId,
+        status: 'REFUNDED',
+      };
+    }
+
     const refundMoney = Money.fromDecimal(
-      paymentEntity.money.toDecimal(),
+      paymentAmountDecimal,
       existingPayment.currency,
     );
-
-    // This validates state and currency
-    paymentEntity.markRefunded(refundMoney);
 
     if (!existingPayment.transactionId) {
       throw new BadRequestException(
@@ -442,17 +553,121 @@ export class PaymentsService {
       );
     }
 
-    const { refundId } = await this.paymentGateway.refund(
-      existingPayment.transactionId,
-      amount,
-    );
+    let refundRecord = existingRefundRecord;
+    if (!refundRecord) {
+      refundRecord = await this.prisma.refundRecord.create({
+        data: {
+          idempotencyKey: ikey,
+          paymentId: existingPayment.id,
+          amount: refundMoney.toDecimal(),
+          currency: refundMoney.currency,
+          status: 'PENDING',
+          actorId: actor?.id || null,
+          actorRole: actor?.role || null,
+          reason: reason || null,
+        },
+      });
+    }
 
-    const updatedPayment = await this.prisma.payment.update({
-      where: { id: existingPayment.id },
-      data: {
-        status: paymentEntity.status,
-        isRefund: true,
-      },
+    let refundResult: { refundId: string };
+    try {
+      refundResult = await this.paymentGateway.refund(
+        existingPayment.transactionId,
+        amount,
+        ikey,
+      );
+    } catch (refundErr: unknown) {
+      const msg =
+        refundErr instanceof Error
+          ? refundErr.message
+          : 'Unknown gateway error';
+      await this.prisma.refundRecord.update({
+        where: { id: refundRecord.id },
+        data: { status: 'FAILED', failureReason: msg },
+      });
+      throw refundErr;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          status: 'REFUNDED',
+          isRefund: true,
+        },
+      });
+
+      await tx.booking.update({
+        where: { id: existingPayment.bookingId },
+        data: {
+          status: 'REFUNDED',
+          paidAmountUsd: 0,
+          cancellationReason: reason || 'Payment refunded by admin',
+        },
+      });
+
+      const invoice = existingPayment.invoices[0];
+      if (invoice) {
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { status: 'CREDIT_NOTE' },
+        });
+      }
+
+      await tx.refundRecord.update({
+        where: { id: refundRecord.id },
+        data: {
+          status: 'COMPLETED',
+          providerRefundId: refundResult.refundId,
+        },
+      });
+
+      // Reverse promotion redemption if exists
+      const redemption = await tx.promotionRedemption.findUnique({
+        where: { bookingId: existingPayment.bookingId },
+      });
+      if (redemption && redemption.status === 'ACTIVE') {
+        await tx.promotionRedemption.update({
+          where: { id: redemption.id },
+          data: {
+            status: 'REVERSED',
+            reversedAt: new Date(),
+          },
+        });
+        await tx.promotion.update({
+          where: { id: redemption.promotionId },
+          data: { currentUses: { decrement: 1 } },
+        });
+      }
+
+      // Restore availability capacity if slot present
+      if (existingPayment.booking.availabilityId) {
+        const totalPassengers =
+          existingPayment.booking.adults + existingPayment.booking.children;
+        await tx.tourAvailability.update({
+          where: { id: existingPayment.booking.availabilityId },
+          data: {
+            remainingSeats: { increment: totalPassengers },
+            status: 'AVAILABLE',
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor?.id || null,
+          actorRole: actor?.role || null,
+          action: 'PAYMENT_REFUNDED',
+          entityType: 'Payment',
+          entityId: existingPayment.id,
+          metadata: {
+            refundId: refundResult.refundId,
+            amount: refundMoney.toDecimal(),
+            currency: refundMoney.currency,
+            reason: reason || null,
+          },
+        },
+      });
     });
 
     this.eventEmitter.emit(PAYMENT_EVENTS.REFUNDED, {
@@ -460,27 +675,39 @@ export class PaymentsService {
       bookingId: existingPayment.bookingId,
       amount: refundMoney.toDecimal(),
       currency: refundMoney.currency,
-      refundId,
+      refundId: refundResult.refundId,
     });
 
-    this.prisma.analyticsEvent.create({
-      data: {
-        eventId: `refund:${existingPayment.id}:completed`,
-        eventName: 'refund_completed',
-        properties: {
-          paymentId: existingPayment.id,
-          bookingId: existingPayment.bookingId,
-          refundAmount: refundMoney.toDecimal(),
-          refundId,
+    this.prisma.analyticsEvent
+      .create({
+        data: {
+          eventId: `refund:${existingPayment.id}:completed`,
+          eventName: 'refund_completed',
+          properties: {
+            paymentId: existingPayment.id,
+            bookingId: existingPayment.bookingId,
+            refundAmount: refundMoney.toDecimal(),
+            refundId: refundResult.refundId,
+          },
         },
-      },
-    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event refund_completed: ${err.message}`));
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : 'Unknown analytics error';
+        this.logger.warn(
+          `Failed to log server analytics event refund_completed: ${msg}`,
+        );
+      });
 
     this.logger.log(
-      `Refund ${refundId} issued for payment ${existingPayment.id} (booking ${existingPayment.bookingId})`,
+      `Refund ${refundResult.refundId} issued for payment ${existingPayment.id} (booking ${existingPayment.bookingId})`,
     );
 
-    return { success: true, refundId, status: paymentEntity.status };
+    return {
+      success: true,
+      refundId: refundResult.refundId,
+      status: 'REFUNDED',
+    };
   }
 
   async getPaymentStatus(paymentId: string, userId: string) {
@@ -489,18 +716,13 @@ export class PaymentsService {
       include: { booking: true },
     });
 
-    if (!payment) {
+    if (!payment || payment.booking.userId !== userId) {
       throw new NotFoundException(`Payment ${paymentId} not found`);
-    }
-
-    // Verify ownership
-    if (payment.booking.userId !== userId) {
-      throw new NotFoundException(`Payment ${paymentId} not found`); // Mask unauthorized as not found
     }
 
     return {
       status: payment.status,
-      amount: payment.amount,
+      amount: payment.amount.toFixed(2),
       currency: payment.currency,
       updatedAt: payment.updatedAt,
     };

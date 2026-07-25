@@ -2,6 +2,7 @@ import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { PromotionsService } from './promotions.service';
 import { ValidatePromotionDto } from './dto/validate-promotion.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Promotions')
 @Controller('promotions')
@@ -9,6 +10,7 @@ export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
 
   @Post('validate')
+  @Public()
   @HttpCode(200)
   @ApiOperation({ summary: 'Validate a promotion code' })
   @ApiOkResponse({ description: 'Promotion details if valid' })

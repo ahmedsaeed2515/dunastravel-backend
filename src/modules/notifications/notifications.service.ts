@@ -6,11 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
-import { NotificationDeliveryStatus } from '@prisma/client';
+import { NotificationDeliveryStatus, Prisma } from '@prisma/client';
 import { NotificationType } from './types';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class NotificationsService {
@@ -20,7 +19,6 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly emailComposition: EmailCompositionService,
     private readonly emailDelivery: EmailDeliveryService,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAllLogs(filters: NotificationDeliveryLogQueryFilters) {
@@ -33,9 +31,11 @@ export class NotificationsService {
     } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.NotificationDeliveryLogWhereInput = {};
     if (status) where.status = status;
-    if (notificationType) where.notificationType = notificationType;
+    if (notificationType)
+      where.notificationType =
+        notificationType as unknown as Prisma.EnumNotificationTypeFilter;
     if (recipientEmail)
       where.recipientEmail = { contains: recipientEmail, mode: 'insensitive' };
 
@@ -101,66 +101,97 @@ export class NotificationsService {
       );
     }
 
-    // Reconstruct payload based on entity type to retry
-    // In a full production system, we would serialize the exact payload to S3 or a DB blob.
-    // For now, we will re-emit the domain event, which will trigger the listener and start fresh,
-    // OR we can manually fetch the entity and re-compose.
-    // The safest architectural way is to fetch the entity and manually call the services,
-    // but to avoid massive switch-case, we can just reset the log status to PENDING and trigger
-    // a background job. Here, we'll implement a simple switch for the supported types.
-
     this.logger.log(
       `Retrying notification ${id} for ${log.originEntityType} ${log.originReferenceCode}`,
     );
 
     switch (log.originEntityType) {
-      case 'INQUIRY':
+      case 'INQUIRY': {
         const inquiry = await this.prisma.tailorMadeInquiry.findUnique({
           where: { referenceCode: log.originReferenceCode },
         });
         if (inquiry) {
+          const inquiryPayload = {
+            referenceCode: inquiry.referenceCode,
+            fullName: inquiry.fullName,
+            email: inquiry.email,
+            phone: inquiry.phone,
+            preferredLanguage: inquiry.preferredLanguage,
+            destinations: inquiry.destinations,
+            startDate: inquiry.startDate
+              ? inquiry.startDate.toISOString()
+              : null,
+            endDate: inquiry.endDate ? inquiry.endDate.toISOString() : null,
+            adults: inquiry.adults,
+            children: inquiry.children,
+            budgetAmountUsd: inquiry.budgetAmount
+              ? Number(inquiry.budgetAmount)
+              : null,
+            notes: inquiry.notes,
+            createdAt: inquiry.createdAt.toISOString(),
+          };
+
           const payload =
             log.notificationType === 'CUSTOMER_ACKNOWLEDGMENT'
               ? await this.emailComposition.composeInquiryCustomerAcknowledgment(
-                  inquiry as any,
+                  inquiryPayload as unknown as Parameters<
+                    EmailCompositionService['composeInquiryCustomerAcknowledgment']
+                  >[0],
                 )
               : await this.emailComposition.composeInquiryInternalAlert(
-                  inquiry as any,
+                  inquiryPayload as unknown as Parameters<
+                    EmailCompositionService['composeInquiryInternalAlert']
+                  >[0],
                 );
 
-          // Deliver will create a NEW log entry since it doesn't take log ID.
-          // To avoid duplicates, we would typically update the existing log, but
-          // since EmailDeliveryService creates a new one, we will just call it and mark this one as EXHAUSTED/REPLACED.
           await this.prisma.notificationDeliveryLog.update({
             where: { id: log.id },
             data: { failureReason: 'Retried manually (new log created)' },
           });
 
-          // Fire and forget
           this.emailDelivery
             .deliver(
-              log.notificationType as any,
+              log.notificationType as unknown as NotificationType,
               inquiry.referenceCode,
               'INQUIRY',
               payload,
             )
-            .catch((e) => console.error(e));
+            .catch((e: unknown) =>
+              this.logger.error(
+                `Retry notification failed: ${(e as Error).message}`,
+              ),
+            );
           return { success: true, message: 'Retry initiated' };
         }
         break;
+      }
 
-      case 'CONTACT':
+      case 'CONTACT': {
         const contact = await this.prisma.contactSubmission.findUnique({
           where: { referenceCode: log.originReferenceCode },
         });
         if (contact) {
+          const contactEvent = {
+            submissionId: contact.id,
+            referenceCode: contact.referenceCode,
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            email: contact.email,
+            phone: contact.phone || undefined,
+            subject: contact.subject,
+            message: contact.message,
+            locale: contact.locale,
+            ipAddress: contact.ipAddress || undefined,
+            submittedAt: contact.createdAt,
+          };
+
           const payload =
             log.notificationType === 'CUSTOMER_ACKNOWLEDGMENT'
               ? await this.emailComposition.composeContactCustomerAcknowledgment(
-                  contact as any,
+                  contactEvent,
                 )
               : await this.emailComposition.composeContactInternalAlert(
-                  contact as any,
+                  contactEvent,
                 );
 
           await this.prisma.notificationDeliveryLog.update({
@@ -170,15 +201,20 @@ export class NotificationsService {
 
           this.emailDelivery
             .deliver(
-              log.notificationType as any,
+              log.notificationType as unknown as NotificationType,
               contact.referenceCode,
               'CONTACT',
               payload,
             )
-            .catch((e) => console.error(e));
+            .catch((e: unknown) =>
+              this.logger.error(
+                `Retry notification failed: ${(e as Error).message}`,
+              ),
+            );
           return { success: true, message: 'Retry initiated' };
         }
         break;
+      }
 
       default:
         throw new BadRequestException(
@@ -202,10 +238,10 @@ export class NotificationsService {
     const template = await this.emailComposition.getTemplateFromDb(
       'user_verification',
       { name, verifyUrl },
-      (vars) => ({
+      (vars: Record<string, string>) => ({
         subject: 'Verify your Dunas Travel Account',
-        html: `<p>Hi ${vars.name},</p><p>Please verify your email by clicking the link below:</p><p><a href="${vars.verifyUrl}">${vars.verifyUrl}</a></p>`,
-        text: `Hi ${vars.name},\n\nPlease verify your email using this link: ${vars.verifyUrl}`,
+        html: `<p>Hi ${vars['name']}</p><p>Please verify your email by clicking the link below:</p><p><a href="${vars['verifyUrl']}">${vars['verifyUrl']}</a></p>`,
+        text: `Hi ${vars['name']},\n\nPlease verify your email using this link: ${vars['verifyUrl']}`,
       }),
     );
 
@@ -219,7 +255,11 @@ export class NotificationsService {
 
     this.emailDelivery
       .deliver(NotificationType.USER_VERIFICATION, 'AUTH', 'USER', payload)
-      .catch((e) => this.logger.error(e));
+      .catch((e: unknown) =>
+        this.logger.error(
+          `Send verification email failed: ${(e as Error).message}`,
+        ),
+      );
   }
 
   async sendPasswordResetEmail(
@@ -233,10 +273,10 @@ export class NotificationsService {
     const template = await this.emailComposition.getTemplateFromDb(
       'password_reset',
       { name, resetUrl },
-      (vars) => ({
+      (vars: Record<string, string>) => ({
         subject: 'Reset your Dunas Travel Password',
-        html: `<p>Hi ${vars.name},</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="${vars.resetUrl}">${vars.resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`,
-        text: `Hi ${vars.name},\n\nYou requested a password reset. Use this link: ${vars.resetUrl}`,
+        html: `<p>Hi ${vars['name']}</p><p>You requested a password reset. Click the link below to set a new password:</p><p><a href="${vars['resetUrl']}">${vars['resetUrl']}</a></p><p>If you did not request this, please ignore this email.</p>`,
+        text: `Hi ${vars['name']},\n\nYou requested a password reset. Use this link: ${vars['resetUrl']}`,
       }),
     );
 
@@ -250,6 +290,10 @@ export class NotificationsService {
 
     this.emailDelivery
       .deliver(NotificationType.PASSWORD_RESET, 'AUTH', 'USER', payload)
-      .catch((e) => this.logger.error(e));
+      .catch((e: unknown) =>
+        this.logger.error(
+          `Send password reset email failed: ${(e as Error).message}`,
+        ),
+      );
   }
 }

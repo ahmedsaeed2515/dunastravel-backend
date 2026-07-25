@@ -140,10 +140,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const requireEmailVerification = await this.settingsService.getSetting(
+    const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
       true,
-    );
+    )) as boolean;
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
@@ -283,8 +283,8 @@ export class AuthService {
     token: string,
   ): Promise<{ user: SafeUser; accessToken: string; refreshToken: string }> {
     try {
-      const payload = this.jwtService.verify(token, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      const payload = this.jwtService.verify<{ sub: string }>(token, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
       const user = await this.userService.findById(payload.sub);
@@ -305,7 +305,7 @@ export class AuthService {
       const newRefreshToken = await this.generateRefreshToken(user.id);
 
       return { user: safeUser, accessToken, refreshToken: newRefreshToken };
-    } catch (e) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }

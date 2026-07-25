@@ -1,7 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { CurrencyService } from './currency.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { ConvertCurrencyDto } from './dto/currency.dto';
 
 @ApiTags('Currency Engine')
 @Controller('currency')
@@ -15,11 +16,13 @@ export class PublicCurrencyController {
   })
   @ApiOkResponse({ description: 'Current exchange rates' })
   async getRates() {
-    const rates = await this.currencyService.getRates();
-    return {
-      base: 'USD',
-      rates,
-      timestamp: new Date().toISOString(),
-    };
+    return this.currencyService.getRates();
+  }
+
+  @Get('convert')
+  @Public()
+  @ApiOperation({ summary: 'Convert an amount between two currencies' })
+  async convert(@Query() query: ConvertCurrencyDto) {
+    return this.currencyService.convert(query.amount, query.from, query.to);
   }
 }

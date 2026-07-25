@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
   Logger,
@@ -6,16 +5,27 @@ import {
   UnprocessableEntityException,
   InternalServerErrorException,
   NotFoundException,
+  ForbiddenException,
   Inject,
 } from '@nestjs/common';
+
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ToursService } from '../tours/tours.service';
+import { AvailabilityService } from '../availability/availability.service';
+import {
+  PricingService,
+  CalculatedPriceResponse,
+} from '../pricing/pricing.service';
+import { CommissionsService } from '../commissions/commissions.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CreateBookingDto } from './dto';
+
+import { CreateBookingDto, CalculatePriceDto } from './dto';
 import { BookingCreatedResponse, BookingSummaryResponse } from './types';
-import { Prisma } from '@prisma/client';
+import { InvoiceSnapshot } from '../invoices/types';
+import { Prisma, InvoiceType } from '@prisma/client';
+import * as crypto from 'crypto';
 import {
   generateReferenceCode,
   generateInvoiceNumber,
@@ -28,470 +38,763 @@ import { BOOKING_EVENTS, BookingCreatedPayload } from '../../common/events';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 
+export interface IdempotencyCacheEnvelope {
+  version: number;
+  userId: string | null;
+  requestHash: string;
+  bookingId: string;
+  referenceCode: string;
+  responsePayload: BookingCreatedResponse;
+}
+
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
+  private readonly guestTokenSecret: string;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly toursService: ToursService,
+    private readonly availabilityService: AvailabilityService,
+    private readonly pricingService: PricingService,
+    private readonly commissionsService: CommissionsService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly configService: ConfigService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     @InjectMetric('bookings_created_total')
     private readonly bookingsCounter: Counter<string>,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    const secret =
+      this.configService.get<string>('GUEST_TOKEN_SECRET') ||
+      this.configService.get<string>('auth.guestTokenSecret');
+    if (!secret || secret.length < 32) {
+      throw new Error(
+        'FATAL: GUEST_TOKEN_SECRET must be configured with at least 32 characters',
+      );
+    }
+    this.guestTokenSecret = secret;
+  }
 
-  private calculateTotalAmount(
-    basePriceUsd: Prisma.Decimal,
+  generateUniqueReferenceCode(tx?: Prisma.TransactionClient): Promise<string> {
+    if (tx) {
+      this.logger.debug('Sequencing reference code inside transaction context');
+    }
+    return Promise.resolve(generateReferenceCode('BKG'));
+  }
+
+  calculateTotalAmount(
+    basePrice: Prisma.Decimal,
     adults: number,
-    children: number,
+    children: number = 0,
   ): Prisma.Decimal {
-    const adultTotal = basePriceUsd.mul(adults);
-    const childTotal = basePriceUsd.mul(0.75).mul(children);
+    const adultTotal = basePrice.mul(adults);
+    // Blueprint P1-007: Child price is 50% of adult base price
+    const childTotal = basePrice.mul(0.5).mul(children);
     return adultTotal.add(childTotal);
   }
 
-  private async generateUniqueReferenceCode(
-    attempt: number = 0,
-  ): Promise<string> {
-    if (attempt >= 3) {
-      throw new InternalServerErrorException(
-        'Unable to generate unique booking reference. Please try again.',
+  calculatePrice(dto: CalculatePriceDto): Promise<CalculatedPriceResponse> {
+    return this.pricingService.calculatePrice(dto);
+  }
+
+  private generateGuestToken(bookingId: string, referenceCode: string): string {
+    return crypto
+      .createHmac('sha256', this.guestTokenSecret)
+      .update(`${bookingId}:${referenceCode}`)
+      .digest('hex');
+  }
+
+  private hashIdempotencyKey(key: string): string {
+    return `idempotency:${crypto.createHash('sha256').update(key).digest('hex')}`;
+  }
+
+  private computeRequestHash(dto: CreateBookingDto, userId?: string): string {
+    const rawFullName = (dto.fullName || '').trim();
+    const rawEmail = (dto.email || '').trim().toLowerCase();
+    const rawPhone = (dto.phone || '').trim();
+
+    let sortedPassengerNames: Record<string, string> | null = null;
+    if (dto.passengerNames && typeof dto.passengerNames === 'object') {
+      sortedPassengerNames = {};
+      Object.keys(dto.passengerNames)
+        .sort()
+        .forEach((key) => {
+          sortedPassengerNames![key] = (dto.passengerNames![key] || '').trim();
+        });
+    }
+
+    const canonicalPayload = {
+      userId: userId || null,
+      tourId: dto.tourId,
+      availabilityId: dto.availabilityId || dto.departureId || null,
+      arrivalDate: dto.arrivalDate || null,
+      departureDate: dto.departureDate || null,
+      adults: dto.adults ?? 1,
+      children: dto.children ?? 0,
+      infants: dto.infants ?? 0,
+      fullName: rawFullName,
+      email: rawEmail,
+      phone: rawPhone,
+      passengerNames: sortedPassengerNames,
+      promoCode: dto.promoCode?.trim().toUpperCase() || null,
+      language: dto.language || 'en',
+      invoiceType: dto.invoiceType || 'PERSONAL',
+      companyName: dto.companyName?.trim() || null,
+      taxId: dto.taxId?.trim() || null,
+      address: dto.address?.trim() || null,
+      city: dto.city?.trim() || null,
+      country: dto.country?.trim() || null,
+      transportChoice: dto.transportChoice?.trim() || null,
+      notes: dto.notes?.trim() || null,
+    };
+
+    return crypto
+      .createHash('sha256')
+      .update(JSON.stringify(canonicalPayload))
+      .digest('hex');
+  }
+
+  private isP2002IdempotencyTarget(target: unknown): boolean {
+    if (!target) return false;
+    if (Array.isArray(target)) {
+      return target.some(
+        (t) =>
+          typeof t === 'string' &&
+          (t.includes('idempotency') || t.includes('idempotency_key')),
       );
     }
-    const referenceCode = generateReferenceCode();
-    const existing = await this.prisma.booking.findUnique({
-      where: { referenceCode },
-    });
-    if (!existing) {
-      return referenceCode;
+    if (typeof target === 'string') {
+      return (
+        target.includes('idempotency') || target.includes('idempotency_key')
+      );
     }
-    this.logger.warn(
-      `Reference code collision on attempt ${attempt}, retrying`,
-    );
-    return this.generateUniqueReferenceCode(attempt + 1);
-  }
-
-  private async generateUniqueInvoiceNumber(tx: any): Promise<string> {
-    const crypto = require('crypto');
-    const randomPart = crypto.randomBytes(4).toString('hex').toUpperCase();
-    const year = new Date().getFullYear();
-    const seqResult = await tx.$queryRaw<
-      [{ nextval: bigint }]
-    >`SELECT nextval('invoice_seq')`;
-    const num = Number(seqResult[0].nextval);
-    return `INV-${year}-${String(num).padStart(4, '0')}-${randomPart}`;
-  }
-
-  async calculatePrice(dto: any) {
-    const tour = await this.prisma.tour.findFirst({
-      where: { id: dto.tourId, isActive: true },
-      select: { basePriceUsd: true },
-    });
-    if (!tour) throw new NotFoundException('Tour not found or inactive');
-
-    let totalAmountUsd = this.calculateTotalAmount(
-      tour.basePriceUsd,
-      dto.adults,
-      dto.children || 0,
-    );
-
-    let discountAmountUsd = new Prisma.Decimal(0);
-    let promoValid = false;
-    let promoMessage = '';
-
-    if (dto.promoCode) {
-      const promo = await this.prisma.promotion.findUnique({
-        where: { code: dto.promoCode },
-      });
-      if (promo && promo.isActive) {
-        const now = new Date();
-        const valid =
-          (!promo.validFrom || now >= promo.validFrom) &&
-          (!promo.validUntil || now <= promo.validUntil) &&
-          (promo.maxUses === null || promo.currentUses < promo.maxUses);
-        if (valid) {
-          discountAmountUsd = totalAmountUsd
-            .mul(promo.discountPercent)
-            .div(100);
-          totalAmountUsd = totalAmountUsd.sub(discountAmountUsd);
-          if (totalAmountUsd.lt(0)) totalAmountUsd = new Prisma.Decimal(0);
-          promoValid = true;
-          promoMessage = 'Promo applied successfully';
-        } else {
-          promoMessage = 'Promo code expired or max uses reached';
-        }
-      } else {
-        promoMessage = 'Invalid promo code';
-      }
-    }
-
-    return {
-      totalAmountUsd: totalAmountUsd.toString(),
-      discountAmountUsd: discountAmountUsd.toString(),
-      basePriceUsd: tour.basePriceUsd.toString(),
-      promoValid,
-      promoMessage,
-    };
+    return false;
   }
 
   async createBooking(
-    dto: any,
-    userId: string | null,
+    dto: CreateBookingDto,
+    userId?: string,
     idempotencyKey?: string,
-    adminOverride: boolean = false,
-  ): Promise<any> {
+  ): Promise<BookingCreatedResponse> {
+    this.logger.log(`Initiating booking creation | tourId=${dto.tourId}`);
+
+    const requestHash = this.computeRequestHash(dto, userId);
+
     if (idempotencyKey) {
-      const cachedResponse = await this.cacheManager.get<any>(
-        `idempotency:${idempotencyKey}`,
-      );
-      if (cachedResponse) return cachedResponse;
-    }
+      const cacheKey = this.hashIdempotencyKey(idempotencyKey);
+      const cachedEnvelope =
+        await this.cacheManager.get<IdempotencyCacheEnvelope>(cacheKey);
 
-    // We remove the hard requirement for taxId/companyName and auto-create the company below if missing
-
-    const tours = await this.prisma.tour.findMany({
-      where: { isActive: true },
-      select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
-    });
-    const tour = tours.find((t) => {
-      if (dto.tourId && t.id === dto.tourId) return true;
-      const titleEn = extractI18n(t.titleJsonb, 'en');
-      return titleEn && titleEn.toLowerCase() === dto.tourTitle?.toLowerCase();
-    });
-
-    if (!tour && !adminOverride) {
-      this.logger.warn(
-        `Booking attempted for non-existent tour title: ${dto.tourTitle}`,
-      );
-      throw new UnprocessableEntityException(
-        'Tour is not available for booking',
-      );
-    }
-
-    if (dto.type === 'inquiry') {
-      const referenceCode = await this.generateUniqueReferenceCode();
-      const booking = await this.prisma.booking.create({
-        data: {
-          referenceCode,
-          userId,
-          tourId: tour?.id || tours[0]?.id || 'uuid-placeholder',
-          status: 'PENDING',
-          bookingType: 'INQUIRY',
-          arrivalDate: new Date(),
-          totalAmountUsd: 0,
-          inquiryMessage: dto.inquiryMessage,
-          language: dto.language,
-          adults: 0,
-          children: 0,
-          infants: 0,
-        },
-      });
-
-      const billingInfo = await this.prisma.billingInfo.create({
-        data: {
-          bookingId: booking.id,
-          fullName: dto.fullName?.trim() || 'Inquiry User',
-          email: dto.email?.toLowerCase().trim() || 'noemail@example.com',
-          phone: dto.phone?.trim() || '00000',
-          invoiceType: 'PERSONAL',
-        },
-      });
-      return {
-        id: booking.id,
-        referenceCode: booking.referenceCode,
-        type: 'inquiry',
-        status: 'RECEIVED',
-      };
-    }
-
-    const adultsCount = adminOverride
-      ? dto.passengers?.length || 1
-      : dto.adults || 1;
-    const childrenCount = adminOverride ? 0 : (dto.children ?? 0);
-    // Date corruption fix: If arrivalDate is missing but departureDate is provided,
-    // it implies the user selected the start date of the tour in the UI (which they sent as departureDate).
-    const arrivalDate = dto.arrivalDate
-      ? new Date(dto.arrivalDate)
-      : dto.departureDate
-        ? new Date(dto.departureDate)
-        : new Date();
-
-    const totalAmountUsd =
-      adminOverride && dto.manualAmountUsd !== undefined
-        ? new Prisma.Decimal(dto.manualAmountUsd)
-        : this.calculateTotalAmount(
-            tour?.basePriceUsd || new Prisma.Decimal(0),
-            adultsCount,
-            childrenCount,
+      if (
+        cachedEnvelope &&
+        typeof cachedEnvelope === 'object' &&
+        cachedEnvelope.version === 1
+      ) {
+        if (cachedEnvelope.userId !== (userId || null)) {
+          throw new UnprocessableEntityException(
+            'Idempotency key belongs to another user',
           );
+        }
+        if (cachedEnvelope.requestHash !== requestHash) {
+          throw new UnprocessableEntityException(
+            'Idempotency key reused with mismatched request payload',
+          );
+        }
+        return cachedEnvelope.responsePayload;
+      }
 
-    const referenceCode = await this.generateUniqueReferenceCode();
-    let result;
+      const existingBooking = await this.prisma.booking.findUnique({
+        where: { idempotencyKey },
+        include: {
+          tour: { select: { titleJsonb: true } },
+          billingInfo: true,
+          invoice: { select: { invoiceNumber: true } },
+          passengers: true,
+        },
+      });
+
+      if (existingBooking) {
+        if (existingBooking.userId !== (userId || null)) {
+          throw new UnprocessableEntityException(
+            'Idempotency key belongs to another user',
+          );
+        }
+        if (
+          !existingBooking.requestHash ||
+          existingBooking.requestHash !== requestHash
+        ) {
+          throw new UnprocessableEntityException(
+            'Idempotency key reused with mismatched request payload',
+          );
+        }
+        const guestToken = !userId
+          ? this.generateGuestToken(
+              existingBooking.id,
+              existingBooking.referenceCode,
+            )
+          : null;
+        return this.buildCreatedResponse(
+          existingBooking,
+          existingBooking.billingInfo!,
+          existingBooking.invoice?.invoiceNumber ?? null,
+          existingBooking.passengers,
+          extractI18n(
+            existingBooking.tour?.titleJsonb || { en: 'Tour' },
+            dto.language || 'en',
+          ),
+          guestToken,
+        );
+      }
+    }
+
+    const rawFullName = (dto.fullName || '').trim();
+    const rawEmail = (dto.email || '').trim().toLowerCase();
+    const rawPhone = (dto.phone || '').trim();
+
+    if (!rawFullName || !rawEmail || !rawPhone) {
+      throw new BadRequestException(
+        'Billing information (fullName, email, phone) is required',
+      );
+    }
+
+    if (!dto.arrivalDate) {
+      throw new BadRequestException(
+        'Arrival date is required for tour bookings',
+      );
+    }
+
+    const arrivalDateObj = new Date(dto.arrivalDate);
+    if (isNaN(arrivalDateObj.getTime())) {
+      throw new BadRequestException('Invalid arrival date format');
+    }
+
+    const arrivalDateStr = arrivalDateObj.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (arrivalDateStr < todayStr) {
+      throw new BadRequestException('Arrival date cannot be in the past');
+    }
+
+    let departureDateObj: Date | null = null;
+    if (dto.departureDate) {
+      departureDateObj = new Date(dto.departureDate);
+      if (isNaN(departureDateObj.getTime())) {
+        throw new BadRequestException('Invalid departure date format');
+      }
+      const departureDateStr = departureDateObj.toISOString().split('T')[0];
+      if (departureDateStr < arrivalDateStr) {
+        throw new BadRequestException(
+          'Departure date cannot be before arrival date',
+        );
+      }
+    }
+
+    const adultsCount = dto.adults ?? 1;
+    const childrenCount = dto.children ?? 0;
+    const totalPassengers = adultsCount + childrenCount;
+
     let attempt = 0;
     const maxAttempts = 3;
 
     while (attempt < maxAttempts) {
       try {
-        result = await this.prisma.$transaction(async (tx) => {
-          const seatsRequested = adultsCount + childrenCount;
-          if (!adminOverride && tour) {
-            const seatUpdate = await tx.tour.updateMany({
-              where: { id: tour.id, remainingSeats: { gte: seatsRequested } },
-              data: { remainingSeats: { decrement: seatsRequested } },
+        const result = await this.prisma.$transaction(async (tx) => {
+          // 1. Load exact active, published, non-deleted tour
+          const tour = await tx.tour.findUnique({
+            where: { id: dto.tourId },
+          });
+
+          if (
+            !tour ||
+            tour.status !== 'PUBLISHED' ||
+            !tour.isActive ||
+            tour.deletedAt !== null
+          ) {
+            throw new UnprocessableEntityException(
+              'Tour is not available for booking',
+            );
+          }
+
+          // 2. Resolve & Validate Availability
+          const availId = dto.availabilityId || dto.departureId;
+          let availIdToStore: string;
+
+          if (availId) {
+            const avail = await tx.tourAvailability.findUnique({
+              where: { id: availId },
             });
-            if (seatUpdate.count === 0) {
+            if (
+              !avail ||
+              avail.tourId !== tour.id ||
+              !['AVAILABLE', 'LIMITED'].includes(avail.status) ||
+              avail.remainingSeats < totalPassengers
+            ) {
               throw new UnprocessableEntityException(
-                'Tour is fully booked or has insufficient seats',
+                'Selected availability is not available or has insufficient seats',
+              );
+            }
+            const availDateStr = new Date(avail.date)
+              .toISOString()
+              .split('T')[0];
+            if (availDateStr !== arrivalDateStr) {
+              throw new UnprocessableEntityException(
+                'Selected availability slot date does not match arrival date',
+              );
+            }
+            availIdToStore = avail.id;
+          } else {
+            // Find unique slot by (tourId, arrivalDate)
+            const matchedAvail = await tx.tourAvailability.findFirst({
+              where: {
+                tourId: tour.id,
+                date: arrivalDateObj,
+                status: { in: ['AVAILABLE', 'LIMITED'] },
+                remainingSeats: { gte: totalPassengers },
+              },
+            });
+            if (!matchedAvail) {
+              throw new UnprocessableEntityException(
+                'No bookable availability slot found for the selected tour and date',
+              );
+            }
+            availIdToStore = matchedAvail.id;
+          }
+
+          // 3. Calculate price against PRE-reservation state
+          const breakdownResult = await this.pricingService.calculatePrice(
+            {
+              tourId: tour.id,
+              availabilityId: availIdToStore,
+              date: arrivalDateStr,
+              adults: adultsCount,
+              children: childrenCount,
+              infants: dto.infants ?? 0,
+              promoCode: dto.promoCode,
+              language: dto.language,
+            },
+            tx,
+          );
+
+          if (dto.promoCode && !breakdownResult.promoValid) {
+            throw new BadRequestException(
+              breakdownResult.promoMessage || 'Invalid or expired promo code',
+            );
+          }
+
+          const finalTotalAmountUsd = new Prisma.Decimal(
+            breakdownResult.totalAmountUsd,
+          );
+
+          // 4. Acquire promotion quota conditionally inside transaction
+          let promoToRedeem: { id: string; discount: Prisma.Decimal } | null =
+            null;
+          if (
+            dto.promoCode &&
+            breakdownResult.promoValid &&
+            breakdownResult.discounts &&
+            breakdownResult.discounts.length > 0
+          ) {
+            const codeUpper = dto.promoCode.trim().toUpperCase();
+            const promo = await tx.promotion.findFirst({
+              where: {
+                code: codeUpper,
+                isActive: true,
+                validFrom: { lte: new Date() },
+                validUntil: { gte: new Date() },
+              },
+            });
+
+            if (!promo) {
+              throw new BadRequestException('Invalid or expired promo code');
+            }
+
+            const updatedPromo = await tx.promotion.updateMany({
+              where: {
+                id: promo.id,
+                currentUses: { lt: promo.maxUses },
+                isActive: true,
+              },
+              data: {
+                currentUses: { increment: 1 },
+              },
+            });
+
+            if (updatedPromo.count === 0) {
+              throw new BadRequestException(
+                'Promotion code usage limit reached',
+              );
+            }
+
+            promoToRedeem = {
+              id: promo.id,
+              discount: new Prisma.Decimal(
+                breakdownResult.discounts[0].amountUsd,
+              ),
+            };
+          }
+
+          // 5. Atomically reserve capacity
+          await this.availabilityService.reserveCapacity(
+            tx,
+            availIdToStore,
+            totalPassengers,
+          );
+
+          // 6. Create booking, passengers, billing, redemption, invoice
+          const referenceCode = await this.generateUniqueReferenceCode(tx);
+          const bookingId = crypto.randomUUID();
+          const guestToken = !userId
+            ? this.generateGuestToken(bookingId, referenceCode)
+            : null;
+          const guestTokenHash = guestToken
+            ? crypto.createHash('sha256').update(guestToken).digest('hex')
+            : null;
+
+          const booking = await tx.booking.create({
+            data: {
+              id: bookingId,
+              referenceCode,
+              userId: userId ?? null,
+              tourId: tour.id,
+              availabilityId: availIdToStore,
+              arrivalDate: arrivalDateObj,
+              departureDate: departureDateObj,
+              adults: adultsCount,
+              children: childrenCount,
+              infants: dto.infants ?? 0,
+              totalAmountUsd: finalTotalAmountUsd,
+              idempotencyKey: idempotencyKey || null,
+              requestHash,
+              guestTokenHash,
+            },
+          });
+
+          const passengerData: Array<{
+            bookingId: string;
+            passengerType: string;
+            fullName: string;
+          }> = [];
+
+          if (dto.passengerNames && typeof dto.passengerNames === 'object') {
+            let adultKeysCount = 0;
+            let childKeysCount = 0;
+            let infantKeysCount = 0;
+
+            for (const [key, name] of Object.entries(dto.passengerNames)) {
+              if (name && typeof name === 'string' && name.trim()) {
+                let type = 'ADULT';
+                const lowerKey = key.toLowerCase();
+                if (lowerKey.includes('child')) {
+                  type = 'CHILD';
+                  childKeysCount++;
+                } else if (lowerKey.includes('infant')) {
+                  type = 'INFANT';
+                  infantKeysCount++;
+                } else {
+                  adultKeysCount++;
+                }
+                passengerData.push({
+                  bookingId: booking.id,
+                  passengerType: type,
+                  fullName: name.trim(),
+                });
+              }
+            }
+
+            if (
+              adultKeysCount !== adultsCount ||
+              childKeysCount !== childrenCount ||
+              infantKeysCount !== (dto.infants ?? 0)
+            ) {
+              throw new BadRequestException(
+                'Passenger roster counts do not match declared adult/child/infant counts',
               );
             }
           }
 
-          let companyId = null;
-          if (dto.invoiceType === 'company') {
-            const taxId = dto.taxId?.trim();
-            if (taxId) {
-              const company = await tx.company.findFirst({ where: { taxId } });
-              if (company) {
-                companyId = company.id;
-              } else {
-                // Auto-create an unverified 'CORPORATE' profile
-                const newCompany = await tx.company.create({
-                  data: {
-                    referenceCode: generateReferenceCode(),
-                    name: dto.companyName?.trim() || 'Unknown Corporate',
-                    email: dto.email,
-                    phone: dto.phone,
-                    taxId,
-                    companyType: 'CORPORATE',
-                    status: 'INACTIVE',
-                  },
-                });
-                companyId = newCompany.id;
-              }
-            } else if (dto.companyName) {
-              const company = await tx.company.findFirst({
-                where: {
-                  name: { equals: dto.companyName.trim(), mode: 'insensitive' },
-                },
-              });
-              if (company) {
-                companyId = company.id;
-              } else {
-                const newCompany = await tx.company.create({
-                  data: {
-                    referenceCode: generateReferenceCode(),
-                    name: dto.companyName.trim(),
-                    email: dto.email,
-                    phone: dto.phone,
-                    companyType: 'CORPORATE',
-                    status: 'INACTIVE',
-                  },
-                });
-                companyId = newCompany.id;
-              }
-            }
-          }
-
-          const booking = await tx.booking.create({
-            data: {
-              referenceCode,
-              userId,
-              companyId,
-              tourId: tour?.id || tours[0]?.id || 'uuid-placeholder',
-              status: adminOverride && dto.status ? dto.status : 'PENDING',
-              bookingType: 'BOOKING',
-              arrivalDate: arrivalDate,
-              departureDate: dto.departureDate
-                ? new Date(dto.departureDate)
-                : null,
-              arrivalTime: dto.arrivalTime ?? null,
-              departureTime: dto.departureTime ?? null,
-              language: dto.language ?? null,
-              activityType: dto.activityType ?? null,
-              transportChoice: dto.transportChoice ?? null,
-              adults: adultsCount,
-              children: childrenCount,
-              infants: dto.infants ?? 0,
-              totalAmountUsd,
-              notes: dto.notes ?? null,
-              analyticsSessionId: dto.analyticsSessionId ?? null,
-              originInterfaceSlug: dto.originInterfaceSlug ?? null,
-            },
-          });
-
-          let passengerData = [];
-          if (
-            adminOverride &&
-            dto.passengers &&
-            Array.isArray(dto.passengers)
-          ) {
-            passengerData = dto.passengers.map((p: any) => ({
+          if (passengerData.length === 0) {
+            passengerData.push({
               bookingId: booking.id,
-              passengerType: p.passengerType || 'ADULT',
-              fullName: p.fullName,
-            }));
-          } else if (dto.passengerNames) {
-            for (const [key, name] of Object.entries(dto.passengerNames)) {
-              let type = 'ADULT';
-              if (key.includes('child')) type = 'CHILD';
-              if (key.includes('infant')) type = 'INFANT';
-              passengerData.push({
-                bookingId: booking.id,
-                passengerType: type,
-                fullName: name as string,
-              });
-            }
-          }
-          if (passengerData.length > 0) {
-            await tx.passenger.createMany({ data: passengerData });
+              passengerType: 'ADULT',
+              fullName: rawFullName,
+            });
           }
 
+          await tx.passenger.createMany({ data: passengerData });
+
+          const invType = dto.invoiceType || InvoiceType.PERSONAL;
           const billingInfo = await tx.billingInfo.create({
             data: {
               bookingId: booking.id,
-              fullName: dto.fullName?.trim() || 'Override',
-              email: dto.email?.toLowerCase().trim() || 'admin@override.com',
-              phone: dto.phone?.trim() || '00000',
-              invoiceType:
-                dto.invoiceType === 'company' ? 'COMPANY' : 'PERSONAL',
-              companyName: dto.companyName?.trim() ?? null,
-              taxId: dto.taxId?.trim() ?? null,
-              address: dto.address?.trim() ?? null,
-              city: dto.city?.trim() ?? null,
-              country: dto.country?.trim() ?? null,
+              fullName: rawFullName,
+              email: rawEmail,
+              phone: rawPhone,
+              invoiceType: invType as InvoiceType,
+              companyName: dto.companyName || null,
+              taxId: dto.taxId || null,
+              address: dto.address || null,
+              city: dto.city || null,
+              country: dto.country || null,
             },
           });
 
-          const invoiceNumber = await this.generateUniqueInvoiceNumber(tx);
+          const invoiceNumber = await generateInvoiceNumber(tx);
+          const subtotalUsd =
+            breakdownResult.subtotalUsd ?? breakdownResult.basePriceUsd ?? 0;
+          const invoiceSnapshot: InvoiceSnapshot = {
+            version: 1,
+            tourId: tour.id,
+            tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
+            tourSlug: tour.slug,
+            arrivalDate: arrivalDateStr,
+            departureDate: departureDateObj
+              ? departureDateObj.toISOString().split('T')[0]
+              : null,
+            adults: adultsCount,
+            children: childrenCount,
+            infants: dto.infants ?? 0,
+            baseSubtotal: subtotalUsd,
+            adultTotal: breakdownResult.adultTotalUsd,
+            childTotal: breakdownResult.childTotalUsd,
+            seasonalAdjustment: breakdownResult.seasonalAdjustmentUsd,
+            discounts: (breakdownResult.discounts || []).map((d) => ({
+              name: d.name,
+              amount: d.amountUsd,
+              code: d.code,
+            })),
+            tax: breakdownResult.taxAmountUsd || '0.00',
+            total: breakdownResult.totalAmountUsd,
+            currency: breakdownResult.currency || 'USD',
+            billingRecipient: {
+              fullName: billingInfo.fullName,
+              email: billingInfo.email,
+              phone: billingInfo.phone,
+              invoiceType: billingInfo.invoiceType,
+              companyName: billingInfo.companyName,
+              taxId: billingInfo.taxId,
+              address: billingInfo.address,
+              city: billingInfo.city,
+              country: billingInfo.country,
+            },
+            passengers: passengerData.map((p) => ({
+              passengerType: p.passengerType,
+              fullName: p.fullName,
+            })),
+          };
+
           await tx.invoice.create({
             data: {
               invoiceNumber,
               bookingId: booking.id,
               issuedAt: new Date(),
+              status: 'SENT',
+              subtotal: new Prisma.Decimal(subtotalUsd),
+              tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
+              total: finalTotalAmountUsd,
+              currency: breakdownResult.currency || 'USD',
+              snapshotJsonb:
+                invoiceSnapshot as unknown as Prisma.InputJsonValue,
             },
           });
+
+          if (promoToRedeem) {
+            await tx.promotionRedemption.create({
+              data: {
+                bookingId: booking.id,
+                promotionId: promoToRedeem.id,
+                userId: userId ?? null,
+                discount: promoToRedeem.discount,
+                status: 'ACTIVE',
+              },
+            });
+          }
+
           const passengers = await tx.passenger.findMany({
             where: { bookingId: booking.id },
           });
 
-          return { booking, billingInfo, invoiceNumber, passengers };
+          return {
+            booking,
+            billingInfo,
+            invoiceNumber,
+            passengers,
+            tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
+            guestToken,
+          };
         });
-        break;
-      } catch (error: any) {
-        if (
-          error.code === 'P2002' &&
-          error.meta?.target?.includes('invoiceNumber')
-        ) {
-          attempt++;
-          continue;
+
+        this.bookingsCounter.inc();
+
+        const responseData = this.buildCreatedResponse(
+          result.booking,
+          result.billingInfo,
+          result.invoiceNumber,
+          result.passengers,
+          result.tourTitle,
+          result.guestToken,
+        );
+
+        if (idempotencyKey) {
+          const cacheKey = this.hashIdempotencyKey(idempotencyKey);
+          const envelope: IdempotencyCacheEnvelope = {
+            version: 1,
+            userId: userId || null,
+            requestHash,
+            bookingId: result.booking.id,
+            referenceCode: result.booking.referenceCode,
+            responsePayload: responseData,
+          };
+          await this.cacheManager.set(cacheKey, envelope, 86400000);
         }
-        throw error;
+
+        const payload: BookingCreatedPayload = {
+          referenceCode: result.booking.referenceCode,
+          invoiceNumber: result.invoiceNumber,
+          customerEmail: result.billingInfo.email,
+          customerName: result.billingInfo.fullName,
+          tourTitle: result.tourTitle,
+          arrivalDate: result.booking.arrivalDate,
+          totalAmountUsd: result.booking.totalAmountUsd.toString(),
+          adults: adultsCount,
+          children: childrenCount,
+          infants: dto.infants ?? 0,
+        };
+        this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
+
+        return responseData;
+      } catch (error) {
+        const errObj = error as { code?: string; meta?: { target?: unknown } };
+        if (errObj?.code === 'P2002') {
+          attempt++;
+          if (
+            idempotencyKey &&
+            this.isP2002IdempotencyTarget(errObj.meta?.target)
+          ) {
+            const winner = await this.prisma.booking.findUnique({
+              where: { idempotencyKey },
+              include: {
+                tour: { select: { titleJsonb: true } },
+                billingInfo: true,
+                invoice: { select: { invoiceNumber: true } },
+                passengers: true,
+              },
+            });
+            if (winner) {
+              if (winner.userId !== (userId || null)) {
+                throw new UnprocessableEntityException(
+                  'Idempotency key belongs to another user',
+                );
+              }
+              if (!winner.requestHash || winner.requestHash !== requestHash) {
+                throw new UnprocessableEntityException(
+                  'Idempotency key reused with mismatched request payload',
+                );
+              }
+              const winnerGuestToken = !userId
+                ? this.generateGuestToken(winner.id, winner.referenceCode)
+                : null;
+              return this.buildCreatedResponse(
+                winner,
+                winner.billingInfo!,
+                winner.invoice?.invoiceNumber ?? null,
+                winner.passengers,
+                extractI18n(
+                  winner.tour?.titleJsonb || { en: 'Tour' },
+                  dto.language || 'en',
+                ),
+                winnerGuestToken,
+              );
+            }
+          }
+          if (attempt >= maxAttempts) {
+            throw new InternalServerErrorException(
+              'Could not generate unique booking reference after multiple attempts.',
+            );
+          }
+        } else {
+          throw error;
+        }
       }
     }
 
-    if (!result)
-      throw new InternalServerErrorException('Booking transaction failed');
+    throw new InternalServerErrorException('Booking creation failed');
+  }
 
-    const tourTitle = tour ? extractI18n(tour.titleJsonb, 'en') : dto.tourTitle;
+  private buildCreatedResponse(
+    booking: {
+      id: string;
+      referenceCode?: string;
+      status?: string;
+      arrivalDate?: Date | null;
+      departureDate?: Date | null;
+      adults?: number;
+      children?: number;
+      infants?: number;
+      totalAmountUsd?: Prisma.Decimal | string;
+    },
+    billingInfo: {
+      fullName: string;
+      email: string;
+      phone: string;
+      invoiceType: string;
+      companyName?: string | null;
+      taxId?: string | null;
+      address?: string | null;
+      city?: string | null;
+      country?: string | null;
+    },
+    invoiceNumber: string | null,
+    passengers: Array<{ id: string; passengerType: string; fullName: string }>,
+    tourTitle: string,
+    guestToken: string | null,
+  ): BookingCreatedResponse {
+    const arrDate = booking.arrivalDate
+      ? booking.arrivalDate instanceof Date
+        ? booking.arrivalDate.toISOString().split('T')[0]
+        : String(booking.arrivalDate).split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
-    const payload = {
-      referenceCode,
-      invoiceNumber: result.invoiceNumber,
+    const depDate = booking.departureDate
+      ? booking.departureDate instanceof Date
+        ? booking.departureDate.toISOString().split('T')[0]
+        : String(booking.departureDate).split('T')[0]
+      : null;
+
+    return {
+      id: booking.id,
+      referenceCode: booking.referenceCode || 'BKG-REPLAY',
+      invoiceNumber: invoiceNumber || '',
+      status: booking.status || 'PENDING',
       tourTitle,
-      totalAmountUsd: totalAmountUsd.toString(),
-      arrivalDate: arrivalDate,
-      customerEmail: dto.email?.toLowerCase().trim(),
-      customerName: dto.fullName?.trim(),
-      adults: dto.adults,
-      children: dto.children ?? 0,
-      infants: dto.infants ?? 0,
-    };
-    this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
-
-    this.prisma.analyticsEvent.create({
-      data: {
-        eventId: `booking:${result.booking.id}:submitted`,
-        eventName: 'booking_submitted',
-        bookingRef: referenceCode,
-        tourSlug: tour?.slug,
-        sessionId: dto.analyticsSessionId || undefined,
-        interfaceSlug: dto.originInterfaceSlug || undefined,
-        locale: dto.language || 'en',
-        properties: {
-          totalAmountUsd: totalAmountUsd.toString(),
-          adults: dto.adults,
-          children: dto.children || 0,
-        },
-      },
-    }).catch((err) => this.logger.warn(`Failed to log server analytics event: ${err.message}`));
-
-    if (result.booking.status === 'CONFIRMED') {
-      this.prisma.analyticsEvent.create({
-        data: {
-          eventId: `booking:${result.booking.id}:confirmed`,
-          eventName: 'booking_confirmed',
-          bookingRef: referenceCode,
-          tourSlug: tour?.slug,
-          sessionId: dto.analyticsSessionId || undefined,
-          interfaceSlug: dto.originInterfaceSlug || undefined,
-          locale: dto.language || 'en',
-          properties: {
-            totalAmountUsd: totalAmountUsd.toString(),
-          },
-        },
-      }).catch((err) => this.logger.warn(`Failed to log server analytics event booking_confirmed: ${err.message}`));
-    }
-
-    this.bookingsCounter.inc();
-
-    const responseData = {
-      id: result.booking.id,
-      referenceCode: result.booking.referenceCode,
-      invoiceNumber: result.invoiceNumber,
-      type: 'booking',
-      status: result.booking.status,
-      tourTitle,
-      arrivalDate: result.booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: result.booking.departureDate
-        ? result.booking.departureDate.toISOString().split('T')[0]
-        : null,
-      adults: result.booking.adults,
-      children: result.booking.children,
-      infants: result.booking.infants,
-      totalAmountUsd: result.booking.totalAmountUsd.toString(),
-      passengers: result.passengers.map((p: any) => ({
+      arrivalDate: arrDate,
+      departureDate: depDate,
+      adults: booking.adults ?? 1,
+      children: booking.children ?? 0,
+      infants: booking.infants ?? 0,
+      totalAmountUsd: (booking.totalAmountUsd || '0').toString(),
+      passengers: (passengers || []).map((p) => ({
         id: p.id,
         passengerType: p.passengerType,
         fullName: p.fullName,
       })),
       billing: {
-        fullName: result.billingInfo.fullName,
-        email: result.billingInfo.email,
-        phone: result.billingInfo.phone,
-        invoiceType: result.billingInfo.invoiceType,
-        companyName: result.billingInfo.companyName,
-        taxId: result.billingInfo.taxId,
-        address: result.billingInfo.address,
-        city: result.billingInfo.city,
-        country: result.billingInfo.country,
+        fullName: billingInfo?.fullName || '',
+        email: billingInfo?.email || '',
+        phone: billingInfo?.phone || '',
+        invoiceType: billingInfo?.invoiceType || 'PERSONAL',
+        companyName: billingInfo?.companyName || null,
+        taxId: billingInfo?.taxId || null,
+        address: billingInfo?.address || null,
+        city: billingInfo?.city || null,
+        country: billingInfo?.country || null,
       },
+      guestToken,
     };
-
-    if (idempotencyKey) {
-      await this.cacheManager.set(
-        `idempotency:${idempotencyKey}`,
-        responseData,
-        86400000,
-      );
-    }
-    return responseData;
   }
 
   async findByReferenceCode(
     referenceCode: string,
-    email?: string,
     userId?: string,
+    guestToken?: string,
   ): Promise<BookingSummaryResponse> {
     this.logger.debug(`Booking queried | ref=${referenceCode}`);
 
@@ -509,22 +812,28 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    // IDOR / Enumeration Mitigation
     let authorized = false;
     if (userId && booking.userId === userId) {
       authorized = true;
-    } else if (
-      email &&
-      booking.billingInfo?.email.toLowerCase() === email.toLowerCase()
-    ) {
-      authorized = true;
+    } else if (guestToken && booking.guestTokenHash) {
+      const computedHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      const hashBufferA = Buffer.from(computedHash, 'utf8');
+      const hashBufferB = Buffer.from(booking.guestTokenHash, 'utf8');
+      if (
+        hashBufferA.length === hashBufferB.length &&
+        crypto.timingSafeEqual(hashBufferA, hashBufferB)
+      ) {
+        authorized = true;
+      }
     }
 
     if (!authorized) {
       this.logger.warn(
         `Unauthorized access attempt for booking | ref=${referenceCode}`,
       );
-      // Return 404 to prevent enumeration
       throw new NotFoundException('Booking not found');
     }
 
@@ -549,67 +858,88 @@ export class BookingsService {
 
   async findUserBookings(
     userId: string,
-    pageVal: number = 1,
-    limitVal: number = 10,
+    page: number = 1,
+    limit: number = 10,
   ): Promise<PaginatedResponse<BookingSummaryResponse>> {
-    this.logger.debug(`User bookings queried | userId=${userId}`);
-    const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
-
-    const [total, records] = await this.prisma.$transaction([
+    const { skip, take } = getPaginationParams(page, limit);
+    const [total, bookings] = await Promise.all([
       this.prisma.booking.count({ where: { userId } }),
       this.prisma.booking.findMany({
         where: { userId },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
         include: {
           tour: { select: { titleJsonb: true, slug: true } },
           invoice: { select: { invoiceNumber: true } },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
       }),
     ]);
 
-    const data = records.map((booking) => ({
-      id: booking.id,
-      referenceCode: booking.referenceCode,
-      invoiceNumber: booking.invoice?.invoiceNumber ?? null,
-      status: booking.status,
-      tourTitle: extractI18n(booking.tour.titleJsonb, 'en'),
-      tourSlug: booking.tour.slug,
-      arrivalDate: booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: booking.departureDate
-        ? booking.departureDate.toISOString().split('T')[0]
+    const items: BookingSummaryResponse[] = bookings.map((b) => ({
+      id: b.id,
+      referenceCode: b.referenceCode,
+      invoiceNumber: b.invoice?.invoiceNumber ?? null,
+      status: b.status,
+      tourTitle: extractI18n(b.tour.titleJsonb, 'en'),
+      tourSlug: b.tour.slug,
+      arrivalDate: b.arrivalDate.toISOString().split('T')[0],
+      departureDate: b.departureDate
+        ? b.departureDate.toISOString().split('T')[0]
         : null,
-      adults: booking.adults,
-      children: booking.children,
-      infants: booking.infants,
-      totalAmountUsd: booking.totalAmountUsd.toString(),
-      createdAt: booking.createdAt.toISOString(),
+      adults: b.adults,
+      children: b.children,
+      infants: b.infants,
+      totalAmountUsd: b.totalAmountUsd.toString(),
+      createdAt: b.createdAt.toISOString(),
     }));
 
-    return paginate(data, total, page, limit);
+    return paginate(items, total, page, limit);
   }
 
   async cancelBooking(
     referenceCode: string,
-    userId: string,
+    userId?: string,
     reason?: string,
+    guestToken?: string,
   ): Promise<{ message: string }> {
+    this.logger.log(`Initiating booking cancellation | ref=${referenceCode}`);
+
     const booking = await this.prisma.booking.findUnique({
       where: { referenceCode },
-      include: { billingInfo: { select: { email: true } } },
+      include: {
+        billingInfo: { select: { email: true } },
+        promotionRedemption: true,
+      },
     });
 
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
 
-    if (booking.userId !== userId) {
-      // Return 404 to avoid enumeration
+    let authorized = false;
+    if (userId && booking.userId === userId) {
+      authorized = true;
+    } else if (guestToken && booking.guestTokenHash) {
+      const computedHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      const hashBufferA = Buffer.from(computedHash, 'utf8');
+      const hashBufferB = Buffer.from(booking.guestTokenHash, 'utf8');
+      if (
+        hashBufferA.length === hashBufferB.length &&
+        crypto.timingSafeEqual(hashBufferA, hashBufferB)
+      ) {
+        authorized = true;
+      }
+    }
+
+    if (!authorized) {
       throw new NotFoundException('Booking not found');
     }
 
-    const nonCancellableStatuses = ['CANCELLED', 'COMPLETED', 'NO_SHOW'];
+    const nonCancellableStatuses = ['CANCELLED', 'COMPLETED', 'REFUNDED'];
     if (nonCancellableStatuses.includes(booking.status)) {
       throw new BadRequestException(
         `Booking cannot be cancelled in status: ${booking.status}`,
@@ -619,39 +949,281 @@ export class BookingsService {
     const seatsToRestore = booking.adults + booking.children;
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.booking.update({
-        where: { id: booking.id },
+      const updateResult = await tx.booking.updateMany({
+        where: {
+          id: booking.id,
+          status: { notIn: ['CANCELLED', 'COMPLETED', 'REFUNDED'] },
+        },
         data: {
-          status: 'CANCELLED' as any,
+          status: 'CANCELLED',
           cancellationReason: reason ?? 'Customer requested cancellation',
         },
       });
 
-      // Restore seats atomically
-      await tx.tour.updateMany({
-        where: { id: booking.tourId },
-        data: { remainingSeats: { increment: seatsToRestore } },
-      });
+      if (updateResult.count === 0) {
+        throw new BadRequestException(
+          `Booking cannot be cancelled in status: ${booking.status}`,
+        );
+      }
+
+      if (booking.availabilityId) {
+        await this.availabilityService.releaseCapacity(
+          tx,
+          booking.availabilityId,
+          seatsToRestore,
+        );
+      }
+
+      if (
+        booking.promotionRedemption &&
+        booking.promotionRedemption.status === 'ACTIVE'
+      ) {
+        const redemptionUpdate = await tx.promotionRedemption.updateMany({
+          where: {
+            id: booking.promotionRedemption.id,
+            status: 'ACTIVE',
+          },
+          data: {
+            status: 'REVERSED',
+            reversedAt: new Date(),
+          },
+        });
+
+        if (redemptionUpdate.count > 0) {
+          await tx.promotion.updateMany({
+            where: {
+              id: booking.promotionRedemption.promotionId,
+              currentUses: { gt: 0 },
+            },
+            data: {
+              currentUses: { decrement: 1 },
+            },
+          });
+        }
+      }
     });
 
-    this.prisma.analyticsEvent.create({
-      data: {
-        eventId: `booking:${booking.id}:cancelled`,
-        eventName: 'booking_cancelled',
-        bookingRef: referenceCode,
-        sessionId: booking.analyticsSessionId || undefined,
-        interfaceSlug: booking.originInterfaceSlug || undefined,
-        properties: {
-          bookingId: booking.id,
-          reason: reason || 'Customer requested cancellation',
-        },
-      },
-    }).catch((err: any) => this.logger.warn(`Failed to log server analytics event booking_cancelled: ${err.message}`));
+    this.logger.log(`Booking successfully cancelled | ref=${referenceCode}`);
+    return { message: 'Booking cancelled successfully' };
+  }
 
+  async transitionBookingStatus(
+    referenceCode: string,
+    targetStatus: string,
+    actor: { id: string; role: string },
+    reason?: string,
+  ) {
     this.logger.log(
-      `Booking cancelled | ref=${referenceCode} by userId=${userId}`,
+      `Transitioning booking status | ref=${referenceCode} targetStatus=${targetStatus} actorRole=${actor.role}`,
     );
 
-    return { message: 'Booking cancelled successfully' };
+    const booking = await this.prisma.booking.findUnique({
+      where: { referenceCode },
+      include: {
+        promotionRedemption: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (actor.role === 'AGENT' && booking.assigneeId !== actor.id) {
+      throw new ForbiddenException('Agents can only update assigned bookings');
+    }
+
+    if (booking.status === targetStatus) {
+      throw new BadRequestException(
+        `Booking is already in status ${targetStatus}`,
+      );
+    }
+
+    const validTransitions: Record<string, string[]> = {
+      PENDING: ['CONFIRMED', 'CANCELLED', 'ARCHIVED'],
+      CONFIRMED: ['PAID', 'CANCELLED', 'ARCHIVED'],
+      PAID: ['COMPLETED', 'REFUNDED', 'ARCHIVED'],
+      COMPLETED: ['ARCHIVED'],
+      CANCELLED: ['CONFIRMED', 'PENDING', 'ARCHIVED'],
+      REFUNDED: ['ARCHIVED'],
+      ARCHIVED: [],
+    };
+
+    const allowed = validTransitions[booking.status] || [];
+    if (!allowed.includes(targetStatus)) {
+      throw new BadRequestException(
+        `Cannot transition booking status from ${booking.status} to ${targetStatus}`,
+      );
+    }
+
+    if (actor.role === 'AGENT') {
+      const restrictedStatuses = ['PAID', 'REFUNDED'];
+      if (
+        restrictedStatuses.includes(targetStatus) ||
+        restrictedStatuses.includes(booking.status)
+      ) {
+        throw new ForbiddenException(
+          'Agents cannot perform financial status transitions',
+        );
+      }
+    }
+
+    const totalPassengers = booking.adults + booking.children;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      if (targetStatus === 'CANCELLED') {
+        const updateResult = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: { notIn: ['CANCELLED', 'COMPLETED', 'REFUNDED'] },
+          },
+          data: {
+            status: 'CANCELLED',
+            cancellationReason: reason ?? 'Status transitioned to CANCELLED',
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new BadRequestException(
+            `Booking cannot be cancelled in status ${booking.status}`,
+          );
+        }
+
+        if (booking.availabilityId) {
+          await this.availabilityService.releaseCapacity(
+            tx,
+            booking.availabilityId,
+            totalPassengers,
+          );
+        }
+
+        if (
+          booking.promotionRedemption &&
+          booking.promotionRedemption.status === 'ACTIVE'
+        ) {
+          const redemptionUpdate = await tx.promotionRedemption.updateMany({
+            where: {
+              id: booking.promotionRedemption.id,
+              status: 'ACTIVE',
+            },
+            data: {
+              status: 'REVERSED',
+              reversedAt: new Date(),
+            },
+          });
+
+          if (redemptionUpdate.count > 0) {
+            await tx.promotion.updateMany({
+              where: {
+                id: booking.promotionRedemption.promotionId,
+                currentUses: { gt: 0 },
+              },
+              data: {
+                currentUses: { decrement: 1 },
+              },
+            });
+          }
+        }
+      } else if (
+        booking.status === 'CANCELLED' &&
+        ['CONFIRMED', 'PENDING'].includes(targetStatus)
+      ) {
+        if (booking.availabilityId) {
+          const avail = await tx.tourAvailability.findUnique({
+            where: { id: booking.availabilityId },
+          });
+
+          if (
+            !avail ||
+            !['AVAILABLE', 'LIMITED'].includes(avail.status) ||
+            avail.remainingSeats < totalPassengers
+          ) {
+            throw new UnprocessableEntityException(
+              'Capacity is no longer available to restore this booking',
+            );
+          }
+
+          await this.availabilityService.reserveCapacity(
+            tx,
+            booking.availabilityId,
+            totalPassengers,
+          );
+        }
+
+        if (
+          booking.promotionRedemption &&
+          booking.promotionRedemption.status === 'REVERSED'
+        ) {
+          const promo = await tx.promotion.findUnique({
+            where: { id: booking.promotionRedemption.promotionId },
+          });
+
+          if (promo && promo.isActive && promo.currentUses < promo.maxUses) {
+            await tx.promotion.update({
+              where: { id: promo.id },
+              data: { currentUses: { increment: 1 } },
+            });
+            await tx.promotionRedemption.update({
+              where: { id: booking.promotionRedemption.id },
+              data: { status: 'ACTIVE', reversedAt: null },
+            });
+          } else {
+            throw new UnprocessableEntityException(
+              'Promotion quota is no longer available to restore this booking discount',
+            );
+          }
+        }
+
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: targetStatus as any,
+            cancellationReason: null,
+          },
+        });
+      } else {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: targetStatus as any,
+            ...(reason && { cancellationReason: reason }),
+          },
+        });
+      }
+
+      await tx.bookingActivityLog.create({
+        data: {
+          bookingId: booking.id,
+          userId: actor.id,
+          action:
+            booking.status === 'CANCELLED'
+              ? 'BOOKING_RESTORED'
+              : 'STATUS_CHANGED',
+          details: {
+            oldStatus: booking.status,
+            newStatus: targetStatus,
+            reason: reason ?? null,
+            actorRole: actor.role,
+          },
+        },
+      });
+
+      const updatedBooking = await tx.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          passengers: true,
+          billingInfo: true,
+          invoice: true,
+          tour: { select: { id: true, slug: true, titleJsonb: true } },
+        },
+      });
+
+      return updatedBooking;
+    });
+
+    if (targetStatus === 'CANCELLED' || targetStatus === 'REFUNDED') {
+      await this.commissionsService.reverseCommissionForBooking(booking.id);
+    }
+
+    return result;
   }
 }

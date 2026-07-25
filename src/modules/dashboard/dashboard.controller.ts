@@ -1,5 +1,10 @@
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -16,7 +21,9 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
-  @ApiOperation({ summary: 'Retrieve executive summary KPIs and comparison metrics.' })
+  @ApiOperation({
+    summary: 'Retrieve executive summary KPIs and comparison metrics.',
+  })
   @ApiOkResponse({ description: 'Executive summary object' })
   async getExecutiveSummary(@Query() query: DashboardQueryDto) {
     return this.dashboardService.getExecutiveSummary(query);
@@ -44,14 +51,18 @@ export class DashboardController {
   }
 
   @Get('interface-performance')
-  @ApiOperation({ summary: 'Retrieve performance metrics for all landing page interfaces.' })
+  @ApiOperation({
+    summary: 'Retrieve performance metrics for all landing page interfaces.',
+  })
   @ApiOkResponse({ description: 'Interface performance array' })
   async getInterfacePerformance(@Query() query: DashboardQueryDto) {
     return this.dashboardService.getInterfacePerformance(query);
   }
 
   @Get('conversion-funnel')
-  @ApiOperation({ summary: 'Retrieve website visitor to booking conversion funnel.' })
+  @ApiOperation({
+    summary: 'Retrieve website visitor to booking conversion funnel.',
+  })
   @ApiOkResponse({ description: 'Funnel stages array' })
   async getConversionFunnel(@Query() query: DashboardQueryDto) {
     return this.dashboardService.getConversionFunnel(query);
@@ -65,7 +76,9 @@ export class DashboardController {
   }
 
   @Get('action-center')
-  @ApiOperation({ summary: 'Retrieve operational alerts requiring admin attention.' })
+  @ApiOperation({
+    summary: 'Retrieve operational alerts requiring admin attention.',
+  })
   @ApiOkResponse({ description: 'Action alerts array' })
   async getActionCenter(@Query() query: DashboardQueryDto) {
     return this.dashboardService.getActionCenter(query);
