@@ -33,13 +33,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
+    if (status >= 500) {
+      message = 'An unexpected server error occurred';
+      error = 'Internal Server Error';
+    }
+
     response.status(status).json({
       success: false,
       statusCode: status,
       message,
       error,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: request.path,
     });
   }
 }

@@ -1,28 +1,33 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BookingStatus } from '@prisma/client';
-import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+} from 'class-validator';
 
 export class BulkUpdateBookingsDto {
   @ApiProperty({ description: 'Array of booking reference codes' })
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ArrayUnique()
   @IsString({ each: true })
+  @Matches(/^(?:BKG|TMB)-[A-Z0-9]{6}$/, { each: true })
   referenceCodes!: string[];
 
-  @ApiPropertyOptional({
-    description: 'New status for the bookings',
-    enum: BookingStatus,
-  })
-  @IsEnum(BookingStatus)
-  @IsOptional()
-  status?: BookingStatus;
-
   @ApiPropertyOptional({ description: 'New assignee ID' })
-  @IsString()
   @IsOptional()
+  @IsUUID('4')
   assigneeId?: string | null;
 
   @ApiPropertyOptional({ description: 'New priority' })
-  @IsString()
   @IsOptional()
+  @IsIn(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
   priority?: string;
 }

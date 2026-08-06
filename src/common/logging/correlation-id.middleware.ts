@@ -11,9 +11,12 @@ export class CorrelationIdMiddleware implements NestMiddleware {
   constructor(private readonly asyncContextService: AsyncContextService) {}
 
   use(req: Request, res: Response, next: NextFunction): void {
+    const supplied = req.headers[CORRELATION_ID_HEADER.toLowerCase()];
     const correlationId =
-      (req.headers[CORRELATION_ID_HEADER.toLowerCase()] as string) ||
-      crypto.randomUUID();
+      typeof supplied === 'string' &&
+      /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(supplied)
+        ? supplied
+        : crypto.randomUUID();
 
     res.setHeader(CORRELATION_ID_HEADER, correlationId);
 

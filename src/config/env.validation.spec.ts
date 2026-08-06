@@ -5,31 +5,35 @@ describe('Environment Validation Schema', () => {
     const validEnv = {
       NODE_ENV: 'production',
       PORT: '3000',
-      FRONTEND_URL: 'http://localhost:3001',
-      CORS_ALLOWED_ORIGINS: 'http://localhost:3001',
-      ADMIN_DASHBOARD_BASE_URL: 'http://localhost:3002',
+      FRONTEND_URL: 'https://example.test',
+      CORS_ALLOWED_ORIGINS: 'https://example.test',
+      ADMIN_DASHBOARD_BASE_URL: 'https://admin.example.test',
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/db',
-      REDIS_URL: 'redis://localhost:6379',
-      JWT_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
+      REDIS_URL: 'rediss://default:redis-password@redis.example.test:6379',
+      JWT_SECRET:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       JWT_REFRESH_SECRET:
-        'super-secret-refresh-key-that-is-at-least-32-chars-long',
+        'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
       GUEST_TOKEN_SECRET:
-        'super-secret-guest-token-key-that-is-at-least-32-chars-long',
+        '89abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+      PII_ENCRYPTION_KEY:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       JWT_EXPIRES_IN: '15m',
       LOG_LEVEL: 'info',
       REQUEST_TIMEOUT_MS: '30000',
       THROTTLE_TTL: '60000',
       THROTTLE_LIMIT: '100',
-      RESEND_API_KEY: 're_123456789',
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_12345678901234567890',
       MAIL_FROM_ADDRESS: 'test@test.com',
       MAIL_FROM_NAME: 'Test',
       MAIL_INTERNAL_ALERT_RECIPIENT: 'alert@test.com',
       CLOUDINARY_CLOUD_NAME: 'test',
       CLOUDINARY_API_KEY: 'test',
-      CLOUDINARY_API_SECRET: 'test',
+      CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
       OPENEXCHANGERATES_APP_ID: 'test',
-      STRIPE_SECRET_KEY: 'sk_test_123',
-      STRIPE_WEBHOOK_SECRET: 'whsec_test_123',
+      STRIPE_SECRET_KEY: 'sk_live_123456789',
+      STRIPE_WEBHOOK_SECRET: 'whsec_123456789',
     };
 
     const res = envValidationSchema.validate(validEnv);
@@ -61,17 +65,27 @@ describe('Environment Validation Schema', () => {
   it('should reject GUEST_TOKEN_SECRET if identical to JWT_SECRET or JWT_REFRESH_SECRET', () => {
     const sameSecretEnv = {
       NODE_ENV: 'production',
-      FRONTEND_URL: 'http://localhost:3001',
-      CORS_ALLOWED_ORIGINS: 'http://localhost:3001',
-      ADMIN_DASHBOARD_BASE_URL: 'http://localhost:3002',
+      FRONTEND_URL: 'https://example.test',
+      CORS_ALLOWED_ORIGINS: 'https://example.test',
+      ADMIN_DASHBOARD_BASE_URL: 'https://admin.example.test',
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/db',
-      JWT_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
+      REDIS_URL: 'rediss://default:redis-password@redis.example.test:6379',
+      JWT_SECRET:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       JWT_REFRESH_SECRET:
-        'super-secret-refresh-key-that-is-at-least-32-chars-long',
-      GUEST_TOKEN_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
+        'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      GUEST_TOKEN_SECRET:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      PII_ENCRYPTION_KEY:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       CLOUDINARY_CLOUD_NAME: 'test',
       CLOUDINARY_API_KEY: 'test',
-      CLOUDINARY_API_SECRET: 'test',
+      CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
+      MAIL_TRANSPORT: 'resend',
+      RESEND_API_KEY: 're_12345678901234567890',
+      MAIL_FROM_ADDRESS: 'test@test.com',
+      STRIPE_SECRET_KEY: 'sk_live_123456789',
+      STRIPE_WEBHOOK_SECRET: 'whsec_123456789',
     };
 
     const { error } = envValidationSchema.validate(sameSecretEnv);

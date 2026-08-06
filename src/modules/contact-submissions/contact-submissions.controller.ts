@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Ip, Headers } from '@nestjs/common';
+import { Controller, Post, Body, Ip } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -41,9 +41,8 @@ export class ContactSubmissionsController {
   async create(
     @Body() createContactDto: CreateContactSubmissionDto,
     @Ip() ip: string,
-    @Headers('x-forwarded-for') xForwardedFor?: string,
   ) {
-    let clientIp = xForwardedFor ? xForwardedFor.split(',')[0].trim() : ip;
+    let clientIp = ip;
     if (clientIp && clientIp.length > 45) {
       clientIp = clientIp.substring(0, 45);
     }

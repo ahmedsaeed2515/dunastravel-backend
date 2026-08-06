@@ -9,7 +9,6 @@ import {
   Body,
   UseGuards,
   ParseUUIDPipe,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,11 +26,13 @@ import { UpdateJourneyRouteDto } from './dto/update-journey-route.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+import { JourneyMapsQueryDto } from './dto/journey-maps-query.dto';
 
 @ApiTags('Admin — Journey Maps')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 @Controller('admin/journey-maps')
 export class AdminJourneyMapsController {
   constructor(private readonly journeyMapsService: JourneyMapsService) {}
@@ -40,14 +41,15 @@ export class AdminJourneyMapsController {
   @ApiOperation({ summary: 'List all journey routes (admin, paginated)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  async list(
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  ) {
-    return this.journeyMapsService.findAllAdmin(page || 1, limit || 20);
+  async list(@Query() query: JourneyMapsQueryDto) {
+    return this.journeyMapsService.findAllAdmin(
+      query.page ?? 1,
+      query.limit ?? 20,
+    );
   }
 
   @Post()
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new journey route' })
   @ApiCreatedResponse({ description: 'Journey route created' })
   async create(@Body() dto: CreateJourneyRouteDto) {
@@ -55,6 +57,7 @@ export class AdminJourneyMapsController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update a journey route' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOkResponse({ description: 'Journey route updated' })
@@ -67,6 +70,7 @@ export class AdminJourneyMapsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a journey route' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiOkResponse({ description: 'Journey route deleted' })

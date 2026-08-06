@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
+import { CommissionsService } from '../commissions/commissions.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -44,11 +45,14 @@ describe('PaymentsService', () => {
               findMany: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
             refundRecord: {
               findUnique: jest.fn(),
+              findUniqueOrThrow: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
             invoice: {
               update: jest.fn(),
@@ -62,6 +66,7 @@ describe('PaymentsService', () => {
             },
             promotion: {
               update: jest.fn(),
+              updateMany: jest.fn(),
             },
             tourAvailability: {
               update: jest.fn(),
@@ -90,6 +95,13 @@ describe('PaymentsService', () => {
             emit: jest.fn(),
           },
         },
+        {
+          provide: CommissionsService,
+          useValue: {
+            createCommissionForBooking: jest.fn().mockResolvedValue(null),
+            reverseCommissionForBooking: jest.fn().mockResolvedValue(null),
+          },
+        },
       ],
     }).compile();
 
@@ -111,6 +123,12 @@ describe('PaymentsService', () => {
         referenceCode: 'REF-123',
         userId: 'usr-123',
         guestTokenHash: null,
+        tour: { currency: 'USD' },
+        invoice: {
+          currency: 'USD',
+          total: new Prisma.Decimal(100),
+        },
+        payments: [],
       };
 
       jest
@@ -145,6 +163,12 @@ describe('PaymentsService', () => {
         referenceCode: 'REF-GUEST',
         userId: null,
         guestTokenHash: tokenHash,
+        tour: { currency: 'USD' },
+        invoice: {
+          currency: 'USD',
+          total: new Prisma.Decimal(150),
+        },
+        payments: [],
       };
 
       jest
@@ -188,6 +212,12 @@ describe('PaymentsService', () => {
         totalAmountUsd: new Prisma.Decimal(100),
         referenceCode: 'REF-RACE',
         userId: 'usr-123',
+        tour: { currency: 'USD' },
+        invoice: {
+          currency: 'USD',
+          total: new Prisma.Decimal(100),
+        },
+        payments: [],
       };
 
       jest
@@ -293,9 +323,15 @@ describe('PaymentsService', () => {
         invoices: [],
       } as never);
 
-      await expect(service.refundPayment('payment-123', 50)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.refundPayment(
+          'payment-123',
+          50,
+          'partial refund test',
+          'refund-partial-1',
+          { id: 'super-admin-1', role: 'SUPER_ADMIN' },
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should issue full refund, record RefundRecord, and update status atomically', async () => {
@@ -309,6 +345,9 @@ describe('PaymentsService', () => {
         bookingId: 'bkg-123',
         booking: {
           id: 'bkg-123',
+          status: 'PAID',
+          totalAmountUsd: new Prisma.Decimal(100),
+          paidAmountUsd: new Prisma.Decimal(100),
           adults: 1,
           children: 0,
           availabilityId: null,
@@ -317,21 +356,33 @@ describe('PaymentsService', () => {
       } as never);
 
       jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
+        { id: 'payment-123', amount: new Prisma.Decimal(100) },
+      ] as never);
       jest
         .spyOn(prisma.refundRecord, 'create')
-        .mockResolvedValue({ id: 'rf-rec-1' } as never);
+        .mockResolvedValue({
+          id: 'rf-rec-1',
+          status: 'PENDING',
+        } as never);
       jest
         .spyOn(gatewayMock, 'refund')
         .mockResolvedValue({ refundId: 'rf-stripe-123' });
 
-      const result = await service.refundPayment('payment-123', 100);
+      const result = await service.refundPayment(
+        'payment-123',
+        100,
+        'approved full refund',
+        'refund-full-1',
+        { id: 'super-admin-1', role: 'SUPER_ADMIN' },
+      );
 
       expect(result.success).toBe(true);
       expect(
         (gatewayMock.refund as jest.Mock).mock.calls.length,
       ).toBeGreaterThan(0);
       expect(
-        (prisma.payment.update as jest.Mock).mock.calls.length,
+        (prisma.payment.updateMany as jest.Mock).mock.calls.length,
       ).toBeGreaterThan(0);
     });
   });

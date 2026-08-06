@@ -1,0 +1,13 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'a_very_secure_long_secret_key_for_testing_jwt_tokens_0123456789_abcdef_9876543210';
+process.env.JWT_REFRESH_SECRET = 'a_very_secure_long_secret_key_for_testing_refresh_tokens_0123456789_abcdef_9876543210';
+process.env.GUEST_TOKEN_SECRET = 'a_very_secure_long_secret_key_for_testing_guest_tokens_0123456789_abcdef_9876543210';
+process.env.JWT_EXPIRES_IN = '15m';
+process.env.FRONTEND_URL = 'http://localhost:3000';
+process.env.ADMIN_DASHBOARD_BASE_URL = 'http://localhost:3001';
+process.env.CORS_ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:3001';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/dunas_test';
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+process.env.CLOUDINARY_CLOUD_NAME = 'test_cloud';
+process.env.CLOUDINARY_API_KEY = '1234567890';
+process.env.CLOUDINARY_API_SECRET = 'abcdef12345678901234567890';

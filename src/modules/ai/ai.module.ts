@@ -4,11 +4,40 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { AiService } from './ai.service';
 import { AiController } from './ai.controller';
 import { PublicAiController } from './public-ai.controller';
+import { PublicChatController } from './public-chat.controller';
+import { AdminAiController } from './admin-ai.controller';
+import { AdminKnowledgeController } from './admin-knowledge.controller';
+import { AiUsageQuotaService } from './ai-usage-quota.service';
+import { AnthropicProvider } from './providers/anthropic.provider';
+import { RagRetrievalService } from './services/rag-retrieval.service';
+import { TourCatalogToolService } from './services/tour-catalog-tool.service';
+import { ChatOrchestratorService } from './services/chat-orchestrator.service';
+import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule],
-  controllers: [AiController, PublicAiController],
-  providers: [AiService],
-  exports: [AiService],
+  controllers: [
+    AiController,
+    PublicAiController,
+    PublicChatController,
+    AdminAiController,
+    AdminKnowledgeController,
+  ],
+  providers: [
+    AiService,
+    AiUsageQuotaService,
+    AnthropicProvider,
+    RagRetrievalService,
+    TourCatalogToolService,
+    ChatOrchestratorService,
+    TourKnowledgeIngestionService,
+  ],
+  exports: [
+    AiService,
+    ChatOrchestratorService,
+    RagRetrievalService,
+    TourCatalogToolService,
+    TourKnowledgeIngestionService,
+  ],
 })
 export class AiModule {}

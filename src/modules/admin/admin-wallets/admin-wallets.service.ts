@@ -187,4 +187,69 @@ export class AdminWalletsService {
       };
     });
   }
+
+  async reconcileLedger(adminUserId: string = 'system-admin') {
+    return this.prisma.$transaction(async (tx) => {
+      const wallets = await tx.wallet.findMany();
+      let totalDiscrepancies = 0;
+      const details: Array<{
+        walletId: string;
+        storedBalance: string;
+        calculatedBalance: string;
+        difference: string;
+      }> = [];
+
+      for (const wallet of wallets) {
+        const transactions = await tx.walletTransaction.findMany({
+          where: {
+            walletId: wallet.id,
+            status: WalletTransactionStatus.COMPLETED,
+          },
+        });
+
+        let calculated = new Prisma.Decimal(0);
+        for (const t of transactions) {
+          if (t.type === WalletTransactionType.CREDIT) {
+            calculated = calculated.add(t.amount);
+          } else if (t.type === WalletTransactionType.DEBIT) {
+            calculated = calculated.sub(t.amount);
+          }
+        }
+
+        const diff = wallet.balance.sub(calculated);
+        if (!diff.isZero()) {
+          totalDiscrepancies++;
+          details.push({
+            walletId: wallet.id,
+            storedBalance: wallet.balance.toString(),
+            calculatedBalance: calculated.toString(),
+            difference: diff.toString(),
+          });
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          action: 'WALLET_LEDGER_RECONCILIATION',
+          entityType: 'System',
+          entityId: 'ledger-reconciliation',
+          metadata: {
+            processedWallets: wallets.length,
+            totalDiscrepancies,
+            discrepancies: details,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        processedWallets: wallets.length,
+        totalDiscrepancies,
+        discrepancies: details,
+        message: `Ledger reconciliation complete. Processed ${wallets.length} wallets with ${totalDiscrepancies} discrepancies found.`,
+      };
+    });
+  }
 }
+

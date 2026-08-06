@@ -22,17 +22,13 @@ export class PaymentCronService {
     const stalePayments = await this.prisma.payment.findMany({
       where: {
         status: 'PENDING',
+        isRefund: false,
         createdAt: {
           lt: thresholdDate,
         },
       },
-      include: {
-        booking: {
-          include: {
-            promotionRedemption: true,
-          },
-        },
-      },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
     });
 
     if (stalePayments.length === 0) {
@@ -47,16 +43,38 @@ export class PaymentCronService {
     let expiredCount = 0;
     for (const paymentData of stalePayments) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.payment.update({
-            where: { id: paymentData.id },
+        if (paymentData.transactionId) {
+          try {
+            await this.paymentGateway.expireSession(
+              paymentData.transactionId,
+            );
+          } catch {
+            this.logger.warn(
+              'Gateway session could not be expired; internal payment state was left unchanged',
+            );
+            continue;
+          }
+        }
+
+        const claimed = await this.prisma.$transaction(async (tx) => {
+          const paymentClaim = await tx.payment.updateMany({
+            where: {
+              id: paymentData.id,
+              status: 'PENDING',
+              isRefund: false,
+              createdAt: { lt: thresholdDate },
+            },
             data: { status: 'EXPIRED' },
           });
+          if (paymentClaim.count !== 1) return false;
 
-          const booking = paymentData.booking;
-          if (booking && booking.status === 'PENDING') {
-            await tx.booking.update({
-              where: { id: booking.id },
+          const booking = await tx.booking.findUnique({
+            where: { id: paymentData.bookingId },
+            include: { promotionRedemption: true },
+          });
+          if (booking) {
+            const bookingClaim = await tx.booking.updateMany({
+              where: { id: booking.id, status: 'PENDING' },
               data: {
                 status: 'CANCELLED',
                 cancellationReason:
@@ -64,54 +82,54 @@ export class PaymentCronService {
               },
             });
 
-            if (booking.availabilityId) {
+            if (bookingClaim.count === 1 && booking.availabilityId) {
               const totalPassengers = booking.adults + booking.children;
-              await tx.tourAvailability.update({
-                where: { id: booking.availabilityId },
-                data: {
-                  remainingSeats: { increment: totalPassengers },
-                  status: 'AVAILABLE',
-                },
-              });
+              await tx.$executeRaw`
+                UPDATE tour_availability
+                SET remaining_seats = LEAST(
+                      total_capacity,
+                      remaining_seats + ${totalPassengers}
+                    ),
+                    status = 'AVAILABLE',
+                    updated_at = NOW()
+                WHERE id = ${booking.availabilityId}
+              `;
             }
 
             if (
+              bookingClaim.count === 1 &&
               booking.promotionRedemption &&
               booking.promotionRedemption.status === 'ACTIVE'
             ) {
-              await tx.promotionRedemption.update({
-                where: { id: booking.promotionRedemption.id },
+              const redemptionClaim =
+                await tx.promotionRedemption.updateMany({
+                where: {
+                  id: booking.promotionRedemption.id,
+                  status: 'ACTIVE',
+                },
                 data: {
                   status: 'REVERSED',
                   reversedAt: new Date(),
                 },
               });
-              await tx.promotion.update({
-                where: { id: booking.promotionRedemption.promotionId },
-                data: { currentUses: { decrement: 1 } },
-              });
+              if (redemptionClaim.count === 1) {
+                await tx.$executeRaw`
+                  UPDATE promotions
+                  SET current_uses = GREATEST(0, current_uses - 1),
+                      updated_at = NOW()
+                  WHERE id = ${booking.promotionRedemption.promotionId}
+                `;
+              }
             }
           }
+          return true;
         });
 
-        if (paymentData.transactionId) {
-          try {
-            await this.paymentGateway.expireSession(paymentData.transactionId);
-          } catch (expErr: unknown) {
-            const msg =
-              expErr instanceof Error
-                ? expErr.message
-                : 'Unknown gateway error';
-            this.logger.warn(
-              `Failed to expire gateway session ${paymentData.transactionId}: ${msg}`,
-            );
-          }
-        }
+        if (!claimed) continue;
 
         expiredCount++;
-      } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(`Failed to expire payment ${paymentData.id}: ${msg}`);
+      } catch {
+        this.logger.error('Failed to expire a stale pending payment');
       }
     }
 

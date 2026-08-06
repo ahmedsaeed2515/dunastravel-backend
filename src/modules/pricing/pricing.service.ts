@@ -148,15 +148,42 @@ export class PricingService {
     const seasonPricing = tour.seasonPricingJsonb as SeasonPricingItem[] | null;
     let seasonalMultiplier = new Prisma.Decimal(1);
     if (seasonPricing && Array.isArray(seasonPricing) && dto.date) {
-      const targetDate = new Date(dto.date);
+      const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
+      const matchingRules: Prisma.Decimal[] = [];
       for (const season of seasonPricing) {
-        if (
-          new Date(season.startDate) <= targetDate &&
-          new Date(season.endDate) >= targetDate
-        ) {
-          seasonalMultiplier = new Prisma.Decimal(season.multiplier || 1);
-          break;
+        const start = new Date(`${season.startDate}T00:00:00.000Z`);
+        const end = new Date(`${season.endDate}T00:00:00.000Z`);
+        let multiplier: Prisma.Decimal;
+        try {
+          multiplier = new Prisma.Decimal(season.multiplier);
+        } catch {
+          throw new UnprocessableEntityException(
+            'Tour seasonal pricing configuration is invalid',
+          );
         }
+        if (
+          Number.isNaN(start.getTime()) ||
+          Number.isNaN(end.getTime()) ||
+          start > end ||
+          !multiplier.isFinite() ||
+          multiplier.lt(0.5) ||
+          multiplier.gt(5)
+        ) {
+          throw new UnprocessableEntityException(
+            'Tour seasonal pricing configuration is invalid',
+          );
+        }
+        if (start <= targetDate && end >= targetDate) {
+          matchingRules.push(multiplier);
+        }
+      }
+      if (matchingRules.length > 1) {
+        throw new UnprocessableEntityException(
+          'Tour seasonal pricing rules overlap',
+        );
+      }
+      if (matchingRules.length === 1) {
+        seasonalMultiplier = matchingRules[0];
       }
     }
 
@@ -193,9 +220,15 @@ export class PricingService {
         promoValid = false;
         promoMessage = messages.limitReached;
       } else {
+        const promoPercent = new Prisma.Decimal(promo.discountPercent);
+        if (promoPercent.lte(0) || promoPercent.gt(90)) {
+          throw new UnprocessableEntityException(
+            'Promotion configuration is invalid',
+          );
+        }
         promoValid = true;
         promoMessage = messages.valid;
-        discountAmount = adjustedSubtotal.mul(promo.discountPercent).div(100);
+        discountAmount = adjustedSubtotal.mul(promoPercent).div(100);
         discounts.push({
           name: `Promo Code: ${promo.code}`,
           amountUsd: discountAmount.toFixed(2),
@@ -208,6 +241,15 @@ export class PricingService {
       new Prisma.Decimal(0),
       adjustedSubtotal.sub(discountAmount),
     );
+    if (
+      !finalTotal.isFinite() ||
+      finalTotal.lte(0) ||
+      finalTotal.gt(99_999_999.99)
+    ) {
+      throw new UnprocessableEntityException(
+        'Calculated price is outside the allowed range',
+      );
+    }
 
     const response: CalculatedPriceResponse = {
       basePriceUsd: basePrice.toFixed(2),

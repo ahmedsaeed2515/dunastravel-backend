@@ -6,6 +6,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AdminTransportationService } from './admin-transportation.service';
 import {
@@ -14,10 +15,17 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { TransportationBookingStatus, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import {
+  AdminTransportationQueryDto,
+  AssignTransportationDriverDto,
+  UpdateTransportationStatusDto,
+} from './dto/admin-transportation.dto';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../../common/types';
 
 @ApiTags('admin-transportation')
 @ApiBearerAuth()
@@ -34,40 +42,42 @@ export class AdminTransportationController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false, type: String })
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('status') status?: string,
-  ) {
+  async findAll(@Query() query: AdminTransportationQueryDto) {
     return this.transportationService.findAll(
-      Number(page),
-      Number(limit),
-      status,
+      query.page,
+      query.limit,
+      query.status,
     );
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single transportation booking' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.transportationService.findOne(id);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update transportation booking status' })
   async updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: TransportationBookingStatus,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTransportationStatusDto,
+    @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.transportationService.updateStatus(id, status);
+    return this.transportationService.updateStatus(id, dto.status, actor);
   }
 
   @Patch(':id/assign-driver')
   @ApiOperation({ summary: 'Assign a driver to a transportation booking' })
   async assignDriver(
-    @Param('id') id: string,
-    @Body('driverName') driverName: string,
-    @Body('vehicleType') vehicleType?: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignTransportationDriverDto,
+    @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.transportationService.assignDriver(id, driverName, vehicleType);
+    return this.transportationService.assignDriver(
+      id,
+      dto.driverName,
+      dto.vehicleType,
+      actor,
+    );
   }
 }

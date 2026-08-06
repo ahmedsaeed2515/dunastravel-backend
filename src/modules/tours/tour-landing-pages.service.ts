@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -14,6 +15,10 @@ import {
   ReorderToursDto,
 } from './dto/attach-tours.dto';
 import { extractI18n, getPaginationParams, paginate } from '../../common/utils';
+import {
+  sanitizeHtmlContent,
+  sanitizePlainText,
+} from '../../common/utils/content-sanitizer.util';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
 
@@ -170,23 +175,56 @@ export class TourLandingPagesService {
       );
     }
 
+    const status = dto.status ?? 'DRAFT';
     const created = await this.prisma.tourLandingPage.create({
       data: {
-        slug: dto.slug,
+        slug: dto.slug.toLowerCase(),
         type: dto.type || 'DESTINATION',
-        titleJsonb: dto.titleJsonb,
-        subtitleJsonb: dto.subtitleJsonb || {},
-        descriptionJsonb: dto.descriptionJsonb || {},
-        briefJsonb: dto.briefJsonb || {},
+        titleJsonb: this.sanitizeLocalized(
+          dto.titleJsonb,
+          'titleJsonb',
+          255,
+          false,
+          true,
+        ),
+        subtitleJsonb: this.sanitizeLocalized(
+          dto.subtitleJsonb,
+          'subtitleJsonb',
+          500,
+        ),
+        descriptionJsonb: this.sanitizeLocalized(
+          dto.descriptionJsonb,
+          'descriptionJsonb',
+          20_000,
+          true,
+        ),
+        briefJsonb: this.sanitizeLocalized(
+          dto.briefJsonb,
+          'briefJsonb',
+          5_000,
+          true,
+        ),
         heroImageUrl: dto.heroImageUrl || null,
         heroVideoUrl: dto.heroVideoUrl || null,
-        seoTitleJsonb: dto.seoTitleJsonb || {},
-        seoDescriptionJsonb: dto.seoDescriptionJsonb || {},
-        seoKeywordsJsonb: dto.seoKeywordsJsonb || {},
-        sectionsJsonb: dto.sectionsJsonb || {},
-        status: dto.status || 'PUBLISHED',
-        isActive: dto.isActive !== undefined ? dto.isActive : true,
-        sortOrder: dto.sortOrder || 0,
+        seoTitleJsonb: this.sanitizeLocalized(
+          dto.seoTitleJsonb,
+          'seoTitleJsonb',
+          255,
+        ),
+        seoDescriptionJsonb: this.sanitizeLocalized(
+          dto.seoDescriptionJsonb,
+          'seoDescriptionJsonb',
+          500,
+        ),
+        seoKeywordsJsonb: this.sanitizeLocalized(
+          dto.seoKeywordsJsonb,
+          'seoKeywordsJsonb',
+          500,
+        ),
+        sectionsJsonb: this.sanitizeSections(dto.sectionsJsonb),
+        status,
+        isActive: status === 'PUBLISHED' && dto.isActive === true,
+        sortOrder: dto.sortOrder ?? 0,
       },
     });
 
@@ -219,26 +257,79 @@ export class TourLandingPagesService {
     await this.prisma.tourLandingPage.update({
       where: { id: existing.id },
       data: {
-        ...(dto.slug && { slug: dto.slug }),
+        ...(dto.slug && { slug: dto.slug.toLowerCase() }),
         ...(dto.type && { type: dto.type }),
-        ...(dto.titleJsonb && { titleJsonb: dto.titleJsonb }),
-        ...(dto.subtitleJsonb && { subtitleJsonb: dto.subtitleJsonb }),
-        ...(dto.descriptionJsonb && { descriptionJsonb: dto.descriptionJsonb }),
-        ...(dto.briefJsonb && { briefJsonb: dto.briefJsonb }),
+        ...(dto.titleJsonb && {
+          titleJsonb: this.sanitizeLocalized(
+            dto.titleJsonb,
+            'titleJsonb',
+            255,
+            false,
+            true,
+          ),
+        }),
+        ...(dto.subtitleJsonb && {
+          subtitleJsonb: this.sanitizeLocalized(
+            dto.subtitleJsonb,
+            'subtitleJsonb',
+            500,
+          ),
+        }),
+        ...(dto.descriptionJsonb && {
+          descriptionJsonb: this.sanitizeLocalized(
+            dto.descriptionJsonb,
+            'descriptionJsonb',
+            20_000,
+            true,
+          ),
+        }),
+        ...(dto.briefJsonb && {
+          briefJsonb: this.sanitizeLocalized(
+            dto.briefJsonb,
+            'briefJsonb',
+            5_000,
+            true,
+          ),
+        }),
         ...(dto.heroImageUrl !== undefined && {
           heroImageUrl: dto.heroImageUrl,
         }),
         ...(dto.heroVideoUrl !== undefined && {
           heroVideoUrl: dto.heroVideoUrl,
         }),
-        ...(dto.seoTitleJsonb && { seoTitleJsonb: dto.seoTitleJsonb }),
-        ...(dto.seoDescriptionJsonb && {
-          seoDescriptionJsonb: dto.seoDescriptionJsonb,
+        ...(dto.seoTitleJsonb && {
+          seoTitleJsonb: this.sanitizeLocalized(
+            dto.seoTitleJsonb,
+            'seoTitleJsonb',
+            255,
+          ),
         }),
-        ...(dto.seoKeywordsJsonb && { seoKeywordsJsonb: dto.seoKeywordsJsonb }),
-        ...(dto.sectionsJsonb && { sectionsJsonb: dto.sectionsJsonb }),
+        ...(dto.seoDescriptionJsonb && {
+          seoDescriptionJsonb: this.sanitizeLocalized(
+            dto.seoDescriptionJsonb,
+            'seoDescriptionJsonb',
+            500,
+          ),
+        }),
+        ...(dto.seoKeywordsJsonb && {
+          seoKeywordsJsonb: this.sanitizeLocalized(
+            dto.seoKeywordsJsonb,
+            'seoKeywordsJsonb',
+            500,
+          ),
+        }),
+        ...(dto.sectionsJsonb && {
+          sectionsJsonb: this.sanitizeSections(dto.sectionsJsonb),
+        }),
         ...(dto.status && { status: dto.status }),
-        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.status
+          ? {
+              isActive:
+                dto.status === 'PUBLISHED' && dto.isActive === true,
+            }
+          : dto.isActive !== undefined && {
+              isActive: existing.status === 'PUBLISHED' && dto.isActive,
+            }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       },
     });
@@ -257,7 +348,7 @@ export class TourLandingPagesService {
       where: { id: existing.id },
       data: {
         status,
-        ...(isActive !== undefined && { isActive }),
+        isActive: status === 'PUBLISHED' && isActive === true,
       },
     });
 
@@ -306,39 +397,54 @@ export class TourLandingPagesService {
     if (!landingPage)
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
-    const highestOrder = await this.prisma.tourLandingPageTour.aggregate({
-      where: { landingPageId: landingPage.id },
-      _max: { sortOrder: true },
+    const tourIds = [...new Set(dto.tourIds)];
+    const tours = await this.prisma.tour.findMany({
+      where: { id: { in: tourIds }, deletedAt: null },
+      select: { id: true },
     });
-
-    let currentOrder = (highestOrder._max.sortOrder || 0) + 1;
-
-    for (const tourId of dto.tourIds) {
-      // Check if tour exists
-      const tour = await this.prisma.tour.findUnique({ where: { id: tourId } });
-      if (!tour) continue;
-
-      await this.prisma.tourLandingPageTour.upsert({
-        where: {
-          landingPageId_tourId: {
-            landingPageId: landingPage.id,
-            tourId,
-          },
-        },
-        create: {
-          landingPageId: landingPage.id,
-          tourId,
-          sortOrder: currentOrder++,
-          isFeatured: dto.isFeatured || false,
-          isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
-          customBadge: dto.customBadge || Prisma.JsonNull,
-        },
-        update: {
-          isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
-          ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
-        },
-      });
+    if (tours.length !== tourIds.length) {
+      throw new BadRequestException('One or more tours are invalid');
     }
+
+    const customBadge = dto.customBadge
+      ? this.sanitizeLocalized(dto.customBadge, 'customBadge', 100)
+      : Prisma.JsonNull;
+    await this.prisma.$transaction(
+      async (tx) => {
+        const highestOrder = await tx.tourLandingPageTour.aggregate({
+          where: { landingPageId: landingPage.id },
+          _max: { sortOrder: true },
+        });
+        let currentOrder = (highestOrder._max.sortOrder || 0) + 1;
+
+        for (const tourId of tourIds) {
+          await tx.tourLandingPageTour.upsert({
+            where: {
+              landingPageId_tourId: {
+                landingPageId: landingPage.id,
+                tourId,
+              },
+            },
+            create: {
+              landingPageId: landingPage.id,
+              tourId,
+              sortOrder: currentOrder++,
+              isFeatured: dto.isFeatured ?? false,
+              isVisible: dto.isVisible ?? true,
+              customBadge,
+            },
+            update: {
+              isVisible: dto.isVisible ?? true,
+              ...(dto.isFeatured !== undefined && {
+                isFeatured: dto.isFeatured,
+              }),
+              ...(dto.customBadge !== undefined && { customBadge }),
+            },
+          });
+        }
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     return this.findOneAdmin(landingPage.id);
   }
@@ -387,7 +493,13 @@ export class TourLandingPagesService {
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
         ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
         ...(dto.isVisible !== undefined && { isVisible: dto.isVisible }),
-        ...(dto.customBadge !== undefined && { customBadge: dto.customBadge }),
+        ...(dto.customBadge !== undefined && {
+          customBadge: this.sanitizeLocalized(
+            dto.customBadge,
+            'customBadge',
+            100,
+          ),
+        }),
       },
     });
 
@@ -510,9 +622,7 @@ export class TourLandingPagesService {
     });
 
     if (!lp) {
-      throw new NotFoundException(
-        `Landing page '${slug}' not found or not published.`,
-      );
+      throw new NotFoundException('Landing page not found');
     }
 
     return {
@@ -550,5 +660,104 @@ export class TourLandingPagesService {
         sortOrder: t.sortOrder,
       })),
     };
+  }
+
+  private sanitizeLocalized(
+    value: Record<string, string> | undefined,
+    fieldName: string,
+    maxLength: number,
+    allowRichText = false,
+    requireEnglish = false,
+  ): Prisma.InputJsonValue {
+    if (!value) return {};
+    const entries = Object.entries(value);
+    if (
+      entries.length === 0 ||
+      entries.length > SUPPORTED_LOCALES.length ||
+      entries.some(
+        ([locale, text]) =>
+          !SUPPORTED_LOCALES.includes(locale) ||
+          typeof text !== 'string' ||
+          text.length > maxLength,
+      )
+    ) {
+      throw new BadRequestException(`Invalid ${fieldName}`);
+    }
+
+    const sanitized = Object.fromEntries(
+      entries.map(([locale, text]) => [
+        locale,
+        (allowRichText
+          ? sanitizeHtmlContent(text)
+          : sanitizePlainText(text)
+        ).slice(0, maxLength),
+      ]),
+    );
+    if (
+      requireEnglish &&
+      (typeof sanitized.en !== 'string' || !sanitized.en.trim())
+    ) {
+      throw new BadRequestException(`${fieldName}.en is required`);
+    }
+    return sanitized;
+  }
+
+  private sanitizeSections(value: unknown): Prisma.InputJsonValue {
+    if (value === undefined || value === null) return {};
+    let serialized: string;
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      throw new BadRequestException('Invalid sectionsJsonb');
+    }
+    if (Buffer.byteLength(serialized, 'utf8') > 100_000) {
+      throw new BadRequestException('sectionsJsonb is too large');
+    }
+    return this.sanitizeSectionValue(value, 0) as Prisma.InputJsonValue;
+  }
+
+  private sanitizeSectionValue(
+    value: unknown,
+    depth: number,
+  ): Prisma.InputJsonValue | null {
+    if (depth > 5) {
+      throw new BadRequestException('sectionsJsonb is too deeply nested');
+    }
+    if (typeof value === 'string') {
+      return sanitizeHtmlContent(value).slice(0, 10_000);
+    }
+    if (
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      value === null
+    ) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      if (value.length > 100) {
+        throw new BadRequestException('sectionsJsonb array is too large');
+      }
+      return value.map((item) =>
+        this.sanitizeSectionValue(item, depth + 1),
+      );
+    }
+    if (typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (
+        entries.length > 100 ||
+        entries.some(([key]) =>
+          ['__proto__', 'prototype', 'constructor'].includes(key),
+        )
+      ) {
+        throw new BadRequestException('Invalid sectionsJsonb object');
+      }
+      return Object.fromEntries(
+        entries.map(([key, item]) => [
+          key,
+          this.sanitizeSectionValue(item, depth + 1),
+        ]),
+      );
+    }
+    throw new BadRequestException('Invalid sectionsJsonb value');
   }
 }

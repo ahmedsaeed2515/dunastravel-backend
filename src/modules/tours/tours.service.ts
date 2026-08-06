@@ -24,6 +24,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class ToursService {
@@ -231,15 +232,32 @@ export class ToursService {
   ): Promise<PaginatedResponse<any>> {
     const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
 
-    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        slug,
+        status: 'PUBLISHED',
+        isActive: true,
+        deletedAt: null,
+      },
+    });
     if (!tour) throw new NotFoundException('Tour not found');
 
     const [total, records] = await this.prisma.$transaction([
       this.prisma.tourReview.count({
-        where: { tourId: tour.id, isPublished: true },
+        where: {
+          tourId: tour.id,
+          isPublished: true,
+          status: 'APPROVED',
+          deletedAt: null,
+        },
       }),
       this.prisma.tourReview.findMany({
-        where: { tourId: tour.id, isPublished: true },
+        where: {
+          tourId: tour.id,
+          isPublished: true,
+          status: 'APPROVED',
+          deletedAt: null,
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -258,7 +276,14 @@ export class ToursService {
   }
 
   async addTourReview(slug: string, userId: string, dto: CreateTourReviewDto) {
-    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        slug,
+        status: 'PUBLISHED',
+        isActive: true,
+        deletedAt: null,
+      },
+    });
     if (!tour) throw new NotFoundException('Tour not found');
 
     const hasCompletedBooking = await this.prisma.booking.findFirst({
@@ -266,7 +291,10 @@ export class ToursService {
         tourId: tour.id,
         userId: userId,
         status: 'COMPLETED',
+        deletedAt: null,
+        reviews: { none: {} },
       },
+      select: { id: true },
     });
 
     if (!hasCompletedBooking) {
@@ -275,12 +303,23 @@ export class ToursService {
       );
     }
 
+    const reviewer = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: { name: true },
+    });
+    if (!reviewer) throw new NotFoundException('User not found');
+
     const review = await this.prisma.tourReview.create({
       data: {
         tourId: tour.id,
+        userId,
+        bookingId: hasCompletedBooking.id,
         rating: dto.rating,
-        reviewerName: dto.reviewerName,
-        comment: dto.comment ?? null,
+        reviewerName: sanitizePlainText(reviewer.name).slice(0, 255),
+        comment: dto.comment
+          ? sanitizePlainText(dto.comment).slice(0, 5000)
+          : null,
+        status: 'PENDING',
         isPublished: false,
       },
     });

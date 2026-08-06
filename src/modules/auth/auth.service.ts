@@ -4,16 +4,17 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
-  Inject,
 } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { CookieOptions } from 'express';
-import { UserService, SafeUser } from '../users/users.service';
+import {
+  UserService,
+  SafeUser,
+  SessionUser,
+} from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -26,19 +27,25 @@ import {
   ResendVerificationDto,
 } from './dto';
 import { SettingsService } from '../settings/settings.service';
+import { LoginSecurityStateService } from '../../common/security/login-security-state.service';
 import { JwtPayload } from '../../common/types';
+import { assertStrongPassword } from '../../common/utils/password-policy.util';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+
+const isSecureEnvironment = (nodeEnv: string) =>
+  nodeEnv === 'production' || nodeEnv === 'staging';
 
 export const getCookieOptions = (nodeEnv: string): CookieOptions => ({
   httpOnly: true,
-  secure: nodeEnv === 'production',
-  sameSite: nodeEnv === 'production' ? 'strict' : 'lax',
+  secure: isSecureEnvironment(nodeEnv),
+  sameSite: isSecureEnvironment(nodeEnv) ? 'strict' : 'lax',
   path: '/',
   maxAge: 15 * 60 * 1000, // 15 minutes for access token
 });
 
 export const getRefreshCookieOptions = (nodeEnv: string): CookieOptions => ({
   httpOnly: true,
-  secure: nodeEnv === 'production',
+  secure: isSecureEnvironment(nodeEnv),
   sameSite: 'strict',
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -47,18 +54,23 @@ export const getRefreshCookieOptions = (nodeEnv: string): CookieOptions => ({
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly dummyPasswordHash = bcrypt.hash(
+    crypto.randomBytes(32).toString('hex'),
+    12,
+  );
 
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly loginSecurityState: LoginSecurityStateService,
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<SafeUser> {
+    assertStrongPassword(dto.password);
     const existingUser = await this.userService.findByEmail(dto.email);
     if (existingUser) {
       throw new ConflictException('Email already in use');
@@ -74,18 +86,16 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
+        name: sanitizePlainText(dto.name).slice(0, 255),
+        email: dto.email.trim().toLowerCase(),
+        phone: dto.phone?.trim(),
         passwordHash,
         verifyToken: verifyTokenHash,
         verifyTokenExp,
       },
     });
 
-    this.logger.log(
-      `User registered: ${user.email}. Verification token generated.`,
-    );
+    this.logger.log(`User registered: userId=${user.id}`);
     await this.notificationsService.sendVerificationEmail(
       user.email,
       user.name,
@@ -116,17 +126,18 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { isVerified: true, verifyToken: null },
+      data: {
+        isVerified: true,
+        verifyToken: null,
+        verifyTokenExp: null,
+      },
     });
 
     return { message: 'Email verified successfully' };
   }
 
-  async login(dto: LoginDto, ip: string): Promise<SafeUser> {
-    const lockoutKey = `login:lockout:${ip}:${dto.email}`;
-    const attemptsKey = `login:attempts:${ip}:${dto.email}`;
-
-    const isLocked = await this.cacheManager.get<boolean>(lockoutKey);
+  async login(dto: LoginDto, ip: string): Promise<SessionUser> {
+    const isLocked = await this.loginSecurityState.isLocked(ip, dto.email);
     if (isLocked) {
       throw new UnauthorizedException(
         'Too many failed login attempts. Please try again later.',
@@ -134,9 +145,17 @@ export class AuthService {
     }
 
     const user = await this.userService.findByEmail(dto.email);
-    if (!user) {
-      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
-      this.logger.warn(`Failed login attempt for email: ${dto.email}`);
+    const passwordHash = user
+      ? user.passwordHash
+      : await this.dummyPasswordHash;
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      passwordHash,
+    );
+
+    if (!user || !isPasswordValid) {
+      await this.loginSecurityState.recordFailure(ip, dto.email);
+      this.logger.warn('Failed login attempt: unknown account');
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -152,42 +171,28 @@ export class AuthService {
     }
 
     if (user.suspendedAt) {
-      this.logger.warn(`Failed login attempt for suspended user: ${dto.email}`);
+      this.logger.warn(`Failed login attempt: suspended userId=${user.id}`);
       throw new UnauthorizedException(
         'Your account has been suspended. Please contact support.',
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      user.passwordHash,
-    );
-    if (!isPasswordValid) {
-      await this.incrementFailedAttempts(attemptsKey, lockoutKey);
-      this.logger.warn(`Failed login attempt for email: ${dto.email}`);
+    if (
+      user.status !== 'ACTIVE' ||
+      !(await this.userService.hasActiveCompanyMembership(user))
+    ) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Clear failed attempts on success
-    await this.cacheManager.del(attemptsKey);
+    await this.loginSecurityState.clearFailures(ip, dto.email);
 
-    this.logger.log(`User logged in: ${user.email}`);
+    this.logger.log(`User logged in: userId=${user.id}`);
 
-    return this.userService.toSafeUser(user);
-  }
-
-  private async incrementFailedAttempts(
-    attemptsKey: string,
-    lockoutKey: string,
-  ) {
-    let attempts = (await this.cacheManager.get<number>(attemptsKey)) || 0;
-    attempts += 1;
-    if (attempts >= 5) {
-      await this.cacheManager.set(lockoutKey, true, 15 * 60 * 1000); // 15 mins
-      await this.cacheManager.del(attemptsKey);
-    } else {
-      await this.cacheManager.set(attemptsKey, attempts, 5 * 60 * 1000); // 5 mins
-    }
+    return {
+      ...this.userService.toSafeUser(user),
+      sessionVersion: user.sessionVersion,
+    };
   }
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
@@ -211,7 +216,7 @@ export class AuthService {
       data: { resetToken: resetTokenHash, resetTokenExp },
     });
 
-    this.logger.log(`Password reset token generated for ${user.email}`);
+    this.logger.log(`Password reset token generated for userId=${user.id}`);
     await this.notificationsService.sendPasswordResetEmail(
       user.email,
       user.name,
@@ -224,6 +229,7 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    assertStrongPassword(dto.newPassword);
     const tokenHash = crypto
       .createHash('sha256')
       .update(dto.token)
@@ -242,67 +248,157 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        resetToken: null,
-        resetTokenExp: null,
-      },
+    const resetSucceeded = await this.prisma.$transaction(async (tx) => {
+      const reset = await tx.user.updateMany({
+        where: {
+          id: user.id,
+          resetToken: tokenHash,
+          resetTokenExp: { gt: new Date() },
+          deletedAt: null,
+        },
+        data: {
+          passwordHash,
+          resetToken: null,
+          resetTokenExp: null,
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
+        },
+      });
+      if (reset.count !== 1) return false;
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          actorRole: user.role,
+          action: 'PASSWORD_RESET_COMPLETED',
+          entityType: 'User',
+          entityId: user.id,
+        },
+      });
+      return true;
     });
+    if (!resetSucceeded) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
 
     this.logger.log(`Password reset successful for user ID: ${user.id}`);
     return { message: 'Password has been reset successfully' };
   }
 
-  generateToken(user: SafeUser): string {
+  generateToken(user: SessionUser): string {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
+      sv: user.sessionVersion,
+      jti: crypto.randomUUID(),
     };
     return this.jwtService.sign(payload, { expiresIn: '15m' });
   }
 
   async generateRefreshToken(userId: string): Promise<string> {
-    const refreshToken = this.jwtService.sign(
-      { sub: userId },
+    const user = await this.userService.findById(userId);
+    if (
+      !user ||
+      user.suspendedAt ||
+      user.status !== 'ACTIVE' ||
+      !(await this.userService.hasActiveCompanyMembership(user))
+    ) {
+      throw new UnauthorizedException('Cannot create a session');
+    }
+
+    const refreshToken = this.createRefreshToken(user);
+
+    await this.userService.updateRefreshToken(
+      userId,
+      this.hashRefreshToken(refreshToken),
+    );
+
+    return refreshToken;
+  }
+
+  private createRefreshToken(user: {
+    id: string;
+    sessionVersion: number;
+  }): string {
+    return this.jwtService.sign(
+      {
+        sub: user.id,
+        sv: user.sessionVersion,
+        jti: crypto.randomUUID(),
+        type: 'refresh',
+      },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
         expiresIn: '7d',
+        algorithm: 'HS256',
+        issuer: this.configService.get<string>('jwt.issuer'),
+        audience: this.configService.get<string>('jwt.audience'),
       },
     );
+  }
 
-    const hashed = await bcrypt.hash(refreshToken, 10);
-    await this.userService.updateRefreshToken(userId, hashed);
-
-    return refreshToken;
+  private hashRefreshToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
   }
 
   async refresh(
     token: string,
   ): Promise<{ user: SafeUser; accessToken: string; refreshToken: string }> {
     try {
-      const payload = this.jwtService.verify<{ sub: string }>(token, {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        sv: number;
+        type: string;
+      }>(token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        algorithms: ['HS256'],
+        issuer: this.configService.get<string>('jwt.issuer'),
+        audience: this.configService.get<string>('jwt.audience'),
       });
 
       const user = await this.userService.findById(payload.sub);
-      if (!user || !user.refreshToken) {
+      if (
+        !user ||
+        !user.refreshToken ||
+        payload.type !== 'refresh' ||
+        payload.sv !== user.sessionVersion ||
+        user.suspendedAt ||
+        user.status !== 'ACTIVE' ||
+        !(await this.userService.hasActiveCompanyMembership(user))
+      ) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const isRefreshTokenValid = await bcrypt.compare(
-        token,
-        user.refreshToken,
-      );
-      if (!isRefreshTokenValid) {
+      const requireEmailVerification = (await this.settingsService.getSetting(
+        'AUTH_REQUIRE_EMAIL_VERIFICATION',
+        true,
+      )) as boolean;
+      if (requireEmailVerification && !user.isVerified) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const newRefreshToken = this.createRefreshToken(user);
+      const rotated = await this.prisma.user.updateMany({
+        where: {
+          id: user.id,
+          refreshToken: this.hashRefreshToken(token),
+          sessionVersion: payload.sv,
+        },
+        data: {
+          refreshToken: this.hashRefreshToken(newRefreshToken),
+        },
+      });
+      if (rotated.count !== 1) {
+        await this.userService.revokeSessions(user.id);
         throw new UnauthorizedException('Invalid refresh token');
       }
 
       const safeUser = this.userService.toSafeUser(user);
-      const accessToken = this.generateToken(safeUser);
-      const newRefreshToken = await this.generateRefreshToken(user.id);
+      const accessToken = this.generateToken({
+        ...safeUser,
+        sessionVersion: user.sessionVersion,
+      });
 
       return { user: safeUser, accessToken, refreshToken: newRefreshToken };
     } catch {
@@ -311,7 +407,7 @@ export class AuthService {
   }
 
   async clearRefreshToken(userId: string): Promise<void> {
-    await this.userService.updateRefreshToken(userId, null);
+    await this.userService.revokeSessions(userId);
   }
 
   async getMe(userId: string): Promise<SafeUser> {
@@ -327,6 +423,7 @@ export class AuthService {
     userId: string,
     dto: ChangePasswordDto,
   ): Promise<{ message: string }> {
+    assertStrongPassword(dto.newPassword);
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
 
@@ -337,10 +434,37 @@ export class AuthService {
     if (!isPasswordValid) throw new BadRequestException('Invalid old password');
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash },
+    const changeSucceeded = await this.prisma.$transaction(async (tx) => {
+      const changed = await tx.user.updateMany({
+        where: {
+          id: userId,
+          passwordHash: user.passwordHash,
+          deletedAt: null,
+        },
+        data: {
+          passwordHash,
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
+        },
+      });
+      if (changed.count !== 1) return false;
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          actorRole: user.role,
+          action: 'PASSWORD_CHANGED',
+          entityType: 'User',
+          entityId: user.id,
+        },
+      });
+      return true;
     });
+    if (!changeSucceeded) {
+      throw new BadRequestException(
+        'Password changed concurrently; please sign in again',
+      );
+    }
 
     return { message: 'Password changed successfully' };
   }
@@ -348,15 +472,19 @@ export class AuthService {
   async resendVerification(
     dto: ResendVerificationDto,
   ): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, deletedAt: null },
     });
     if (!user)
       return {
         message:
           'If that email is registered, a verification link has been sent.',
       };
-    if (user.isVerified) return { message: 'Email is already verified.' };
+    if (user.isVerified)
+      return {
+        message:
+          'If that email is registered, a verification link has been sent.',
+      };
 
     const verifyToken = crypto.randomBytes(32).toString('hex');
     const verifyTokenHash = crypto
@@ -369,7 +497,7 @@ export class AuthService {
       data: { verifyToken: verifyTokenHash, verifyTokenExp },
     });
 
-    this.logger.log(`Resent verification email for: ${user.email}`);
+    this.logger.log(`Resent verification email for userId=${user.id}`);
     await this.notificationsService.sendVerificationEmail(
       user.email,
       user.name,

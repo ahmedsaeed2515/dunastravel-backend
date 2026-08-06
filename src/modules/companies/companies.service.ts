@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -10,13 +11,22 @@ import {
   CompanyQueryFilters,
   BulkUpdateCompaniesDto,
 } from './dto/company.dto';
-import { Prisma, CompanyStatus } from '@prisma/client';
+import { Prisma, CompanyStatus, UserRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { sanitizeCsvField } from '../../common/utils';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class CompaniesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertSuperAdmin(actor: { id: string; role: string }): void {
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Only super administrators can manage companies',
+      );
+    }
+  }
 
   private generateReferenceCode(companyType: string): string {
     const prefix =
@@ -26,33 +36,71 @@ export class CompaniesService {
           ? 'COR'
           : 'AFF';
     const year = new Date().getFullYear();
-    const random = randomBytes(2).toString('hex').toUpperCase();
+    const random = randomBytes(5).toString('hex').toUpperCase();
     return `${prefix}-${year}-${random}`;
   }
 
-  async create(data: CreateCompanyDto) {
+  async create(
+    data: CreateCompanyDto,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    this.assertContractDates(
+      data.contractStartDate
+        ? new Date(data.contractStartDate)
+        : undefined,
+      data.contractEndDate ? new Date(data.contractEndDate) : undefined,
+    );
     const referenceCode = this.generateReferenceCode(
       data.companyType || 'AGENCY',
     );
 
-    return this.prisma.company.create({
-      data: {
-        ...data,
-        referenceCode,
-        commissionRate: data.commissionRate || 0,
-        address: data.address
-          ? (data.address as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-        primaryContact: data.primaryContact
-          ? (data.primaryContact as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-        contractStartDate: data.contractStartDate
-          ? new Date(data.contractStartDate)
-          : null,
-        contractEndDate: data.contractEndDate
-          ? new Date(data.contractEndDate)
-          : null,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const company = await tx.company.create({
+        data: {
+          name: sanitizePlainText(data.name).slice(0, 255),
+          companyType: data.companyType,
+          email: data.email?.trim().toLowerCase(),
+          phone: data.phone,
+          website: data.website,
+          taxId: data.taxId,
+          referenceCode,
+          commissionRate: data.commissionRate ?? 0,
+          paymentTerms: data.paymentTerms,
+          tags: this.sanitizeLabels(data.tags) ?? [],
+          segments: this.sanitizeLabels(data.segments) ?? [],
+          address: data.address
+            ? (this.sanitizeRecord(data.address) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          primaryContact: data.primaryContact
+            ? (this.sanitizeRecord(
+                data.primaryContact,
+              ) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          contractStartDate: data.contractStartDate
+            ? new Date(data.contractStartDate)
+            : null,
+          contractEndDate: data.contractEndDate
+            ? new Date(data.contractEndDate)
+            : null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'COMPANY_CREATED',
+          entityType: 'Company',
+          entityId: company.id,
+          metadata: { companyType: company.companyType },
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return company;
     });
   }
 
@@ -93,7 +141,25 @@ export class CompaniesService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
+        select: {
+          id: true,
+          referenceCode: true,
+          name: true,
+          companyType: true,
+          status: true,
+          email: true,
+          phone: true,
+          website: true,
+          commissionRate: true,
+          currentBalance: true,
+          paymentTerms: true,
+          contractStartDate: true,
+          contractEndDate: true,
+          tags: true,
+          segments: true,
+          tier: true,
+          createdAt: true,
+          updatedAt: true,
           _count: {
             select: { users: true, bookings: true },
           },
@@ -128,8 +194,30 @@ export class CompaniesService {
         },
         bookings: {
           orderBy: { createdAt: 'desc' },
-          include: {
-            payments: true,
+          take: 100,
+          select: {
+            id: true,
+            referenceCode: true,
+            status: true,
+            arrivalDate: true,
+            departureDate: true,
+            adults: true,
+            children: true,
+            infants: true,
+            totalAmountUsd: true,
+            paidAmountUsd: true,
+            createdAt: true,
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                currency: true,
+                method: true,
+                status: true,
+                isRefund: true,
+                createdAt: true,
+              },
+            },
             user: { select: { name: true, email: true } },
           },
         },
@@ -137,71 +225,231 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException(`Company with ID ${id} not found`);
+      throw new NotFoundException('Company not found');
     }
 
     return company;
   }
 
-  async update(id: string, data: UpdateCompanyDto) {
-    await this.findOne(id); // Verify existence
+  async update(
+    id: string,
+    data: UpdateCompanyDto,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.company.findFirst({
+        where: { id, deletedAt: null },
+        select: { contractStartDate: true, contractEndDate: true },
+      });
+      if (!existing) throw new NotFoundException('Company not found');
 
-    return this.prisma.company.update({
-      where: { id },
-      data: {
-        ...data,
-        address:
-          data.address !== undefined
-            ? (data.address as Prisma.InputJsonValue)
+      const contractStartDate = data.contractStartDate
+        ? new Date(data.contractStartDate)
+        : existing.contractStartDate;
+      const contractEndDate = data.contractEndDate
+        ? new Date(data.contractEndDate)
+        : existing.contractEndDate;
+      this.assertContractDates(
+        contractStartDate ?? undefined,
+        contractEndDate ?? undefined,
+      );
+
+      const updated = await tx.company.update({
+        where: { id },
+        data: {
+          ...(data.name !== undefined && {
+            name: sanitizePlainText(data.name).slice(0, 255),
+          }),
+          ...(data.companyType !== undefined && {
+            companyType: data.companyType,
+          }),
+          ...(data.status !== undefined && { status: data.status }),
+          ...(data.email !== undefined && {
+            email: data.email.trim().toLowerCase(),
+          }),
+          ...(data.phone !== undefined && { phone: data.phone }),
+          ...(data.website !== undefined && { website: data.website }),
+          ...(data.taxId !== undefined && { taxId: data.taxId }),
+          ...(data.commissionRate !== undefined && {
+            commissionRate: data.commissionRate,
+          }),
+          ...(data.paymentTerms !== undefined && {
+            paymentTerms: data.paymentTerms,
+          }),
+          ...(data.tags !== undefined && {
+            tags: this.sanitizeLabels(data.tags),
+          }),
+          ...(data.segments !== undefined && {
+            segments: this.sanitizeLabels(data.segments),
+          }),
+          address:
+            data.address !== undefined
+              ? (this.sanitizeRecord(data.address) as Prisma.InputJsonValue)
+              : undefined,
+          primaryContact:
+            data.primaryContact !== undefined
+              ? (this.sanitizeRecord(
+                  data.primaryContact,
+                ) as Prisma.InputJsonValue)
+              : undefined,
+          contractStartDate: data.contractStartDate
+            ? new Date(data.contractStartDate)
             : undefined,
-        primaryContact:
-          data.primaryContact !== undefined
-            ? (data.primaryContact as Prisma.InputJsonValue)
+          contractEndDate: data.contractEndDate
+            ? new Date(data.contractEndDate)
             : undefined,
-        contractStartDate: data.contractStartDate
-          ? new Date(data.contractStartDate)
-          : undefined,
-        contractEndDate: data.contractEndDate
-          ? new Date(data.contractEndDate)
-          : undefined,
-      },
+        },
+      });
+      if (data.status && data.status !== CompanyStatus.ACTIVE) {
+        await tx.user.updateMany({
+          where: { companyId: id, deletedAt: null },
+          data: {
+            refreshToken: null,
+            sessionVersion: { increment: 1 },
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'COMPANY_UPDATED',
+          entityType: 'Company',
+          entityId: id,
+          metadata: { changedFields: Object.keys(data) },
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return updated;
     });
   }
 
-  async softDelete(id: string) {
-    await this.findOne(id);
-    return this.prisma.company.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: CompanyStatus.INACTIVE,
-      },
+  async softDelete(
+    id: string,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    return this.prisma.$transaction(async (tx) => {
+      const exists = await tx.company.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true },
+      });
+      if (!exists) throw new NotFoundException('Company not found');
+      const company = await tx.company.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: CompanyStatus.INACTIVE,
+        },
+      });
+      await tx.user.updateMany({
+        where: { companyId: id, deletedAt: null },
+        data: {
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'COMPANY_DELETED',
+          entityType: 'Company',
+          entityId: id,
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return company;
     });
   }
 
-  async bulkUpdate(data: BulkUpdateCompaniesDto) {
+  async bulkUpdate(
+    data: BulkUpdateCompaniesDto,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
     const { companyIds, status, tags, segments } = data;
 
     if (!companyIds || companyIds.length === 0) {
       throw new BadRequestException('No company IDs provided');
     }
 
-    const updateData: Prisma.CompanyUpdateManyMutationInput = {};
-
-    if (status !== undefined) updateData.status = status;
-    if (tags !== undefined) updateData.tags = { push: tags };
-    if (segments !== undefined) updateData.segments = { push: segments };
-
-    if (Object.keys(updateData).length === 0) {
+    if (status === undefined && tags === undefined && segments === undefined) {
       throw new BadRequestException('No update fields provided');
     }
 
-    const result = await this.prisma.company.updateMany({
-      where: { id: { in: companyIds }, deletedAt: null },
-      data: updateData,
+    const sanitizedTags = this.sanitizeLabels(tags);
+    const sanitizedSegments = this.sanitizeLabels(segments);
+    const count = await this.prisma.$transaction(async (tx) => {
+      const companies = await tx.company.findMany({
+        where: { id: { in: companyIds }, deletedAt: null },
+        select: { id: true, tags: true, segments: true },
+      });
+
+      for (const company of companies) {
+        await tx.company.update({
+          where: { id: company.id },
+          data: {
+            ...(status !== undefined && { status }),
+            ...(sanitizedTags !== undefined && {
+              tags: [
+                ...new Set([...company.tags, ...sanitizedTags]),
+              ].slice(0, 20),
+            }),
+            ...(sanitizedSegments !== undefined && {
+              segments: [
+                ...new Set([...company.segments, ...sanitizedSegments]),
+              ].slice(0, 20),
+            }),
+          },
+        });
+      }
+
+      if (status !== undefined && status !== CompanyStatus.ACTIVE) {
+        await tx.user.updateMany({
+          where: {
+            companyId: { in: companies.map((company) => company.id) },
+            deletedAt: null,
+          },
+          data: {
+            refreshToken: null,
+            sessionVersion: { increment: 1 },
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'COMPANIES_BULK_UPDATED',
+          entityType: 'Company',
+          metadata: {
+            requestedCount: data.companyIds.length,
+            updatedCount: companies.length,
+            changedFields: Object.keys(data).filter(
+              (field) => field !== 'companyIds',
+            ),
+          },
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return companies.length;
     });
 
-    return { count: result.count };
+    return { count };
   }
 
   async getDashboardMetrics() {
@@ -248,7 +496,12 @@ export class CompaniesService {
     };
   }
 
-  async exportCsv(filters: CompanyQueryFilters) {
+  async exportCsv(
+    filters: CompanyQueryFilters,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
     const result = await this.findAll({ ...filters, limit: 10000, page: 1 });
 
     if (!result.data.length) {
@@ -272,23 +525,81 @@ export class CompaniesService {
       'RegisteredAt',
     ];
 
-    const rows = result.data.map((c: any) => [
-      sanitizeCsvField(c.referenceCode),
-      `"${sanitizeCsvField(c.name)}"`,
-      sanitizeCsvField(c.companyType),
-      sanitizeCsvField(c.status),
-      sanitizeCsvField(c.email),
-      sanitizeCsvField(c.phone),
-      sanitizeCsvField(`${c.commissionRate}%`),
-      sanitizeCsvField(c.currentBalance),
-      sanitizeCsvField(c.paymentTerms),
-      `"${sanitizeCsvField(c.tags.join(', '))}"`,
-      `"${sanitizeCsvField(c.segments.join(', '))}"`,
-      sanitizeCsvField(c._count.users),
-      sanitizeCsvField(c._count.bookings),
-      sanitizeCsvField(c.createdAt.toISOString()),
+    const rows = result.data.map((company) => [
+      company.referenceCode,
+      company.name,
+      company.companyType,
+      company.status,
+      company.email,
+      company.phone,
+      `${company.commissionRate}%`,
+      company.currentBalance,
+      company.paymentTerms,
+      company.tags.join(', '),
+      company.segments.join(', '),
+      company._count.users,
+      company._count.bookings,
+      company.createdAt.toISOString(),
     ]);
 
-    return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((value) => {
+            const safe = sanitizeCsvField(value)
+              .replace(/\r?\n/g, ' ')
+              .replace(/"/g, '""');
+            return `"${safe}"`;
+          })
+          .join(','),
+      ),
+    ].join('\n');
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: actor.id,
+        actorRole: actor.role,
+        action: 'COMPANIES_CSV_EXPORTED',
+        entityType: 'Company',
+        metadata: { exportedCount: result.data.length },
+        ipAddress: reqDetails?.ipAddress || null,
+        userAgent: reqDetails?.userAgent || null,
+      },
+    });
+
+    return csv;
+  }
+
+  private assertContractDates(start?: Date, end?: Date): void {
+    if (start && end && end <= start) {
+      throw new BadRequestException(
+        'Contract end date must be after the start date',
+      );
+    }
+  }
+
+  private sanitizeLabels(values?: string[]): string[] | undefined {
+    if (!values) return undefined;
+    return [
+      ...new Set(
+        values
+          .map((value) => sanitizePlainText(value).slice(0, 50))
+          .filter(Boolean),
+      ),
+    ].slice(0, 20);
+  }
+
+  private sanitizeRecord(value: object): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter((entry): entry is [string, string] =>
+          typeof entry[1] === 'string',
+        )
+        .map(([key, item]) => [
+          key,
+          sanitizePlainText(item).slice(0, 255),
+        ]),
+    );
   }
 }

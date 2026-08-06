@@ -106,8 +106,13 @@ export class CreateInquiryDto {
 
   @ApiPropertyOptional({ example: 5000.0 })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({
+    maxDecimalPlaces: 2,
+    allowInfinity: false,
+    allowNaN: false,
+  })
   @Min(0)
+  @Max(10_000_000)
   @Type(() => Number)
   budgetAmount?: number;
 
@@ -118,6 +123,7 @@ export class CreateInquiryDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 3)
+  @IsIn(['USD', 'EUR', 'GBP', 'BRL', 'EGP', 'SAR', 'AED'])
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.toUpperCase() : value,
   )

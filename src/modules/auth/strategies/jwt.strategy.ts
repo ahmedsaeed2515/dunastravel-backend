@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../../users/users.service';
 import { JwtPayload, AuthenticatedUser } from '../../../common/types';
 import { Request } from 'express';
+import { SettingsService } from '../../settings/settings.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,6 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    private readonly settingsService: SettingsService,
   ) {
     const secret = configService.get<string>('jwt.secret');
     if (!secret) {
@@ -26,12 +28,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ]),
       ignoreExpiration: false,
       secretOrKey: secret,
+      algorithms: ['HS256'],
+      issuer: configService.get<string>('jwt.issuer'),
+      audience: configService.get<string>('jwt.audience'),
     });
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     const user = await this.userService.findById(payload.sub);
     if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const requireEmailVerification = (await this.settingsService.getSetting(
+      'AUTH_REQUIRE_EMAIL_VERIFICATION',
+      true,
+    )) as boolean;
+    if (
+      user.suspendedAt ||
+      user.status !== 'ACTIVE' ||
+      (requireEmailVerification && !user.isVerified) ||
+      payload.sv !== user.sessionVersion ||
+      !(await this.userService.hasActiveCompanyMembership(user))
+    ) {
       throw new UnauthorizedException();
     }
 

@@ -14,6 +14,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SettingsService } from '../settings/settings.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { LoginSecurityStateService } from '../../common/security/login-security-state.service';
+import { createHash } from 'node:crypto';
 
 jest.mock('bcrypt');
 
@@ -25,8 +27,13 @@ describe('AuthService', () => {
     user: {
       findFirst: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
       create: jest.Mock;
     };
+    auditLog: {
+      create: jest.Mock;
+    };
+    $transaction: jest.Mock;
   };
 
   const mockUser = {
@@ -36,7 +43,10 @@ describe('AuthService', () => {
     phone: '1234567890',
     role: UserRole.USER,
     passwordHash: 'hashed-password',
-    refreshToken: 'hashed-refresh-token',
+    refreshToken: createHash('sha256')
+      .update('valid-refresh-token')
+      .digest('hex'),
+    sessionVersion: 1,
     isVerified: true,
     verifyToken: null,
     resetToken: null,
@@ -85,6 +95,7 @@ describe('AuthService', () => {
     email: 'test@test.com',
     phone: '1234567890',
     role: UserRole.USER,
+    sessionVersion: 1,
     isVerified: true,
     customerNumber: null,
     status: 'ACTIVE',
@@ -124,12 +135,24 @@ describe('AuthService', () => {
   } as unknown as SafeUser;
 
   beforeEach(async () => {
+    const transactionUser = {
+      findFirst: jest.fn(),
+      update: jest.fn().mockResolvedValue(mockUser),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      create: jest.fn().mockResolvedValue(mockUser),
+    };
+    const transactionAuditLog = {
+      create: jest.fn().mockResolvedValue({}),
+    };
     prisma = {
-      user: {
-        findFirst: jest.fn(),
-        update: jest.fn().mockResolvedValue(mockUser),
-        create: jest.fn().mockResolvedValue(mockUser),
-      },
+      user: transactionUser,
+      auditLog: transactionAuditLog,
+      $transaction: jest.fn(async (callback) =>
+        callback({
+          user: transactionUser,
+          auditLog: transactionAuditLog,
+        }),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -148,9 +171,11 @@ describe('AuthService', () => {
           useValue: {
             findByEmail: jest.fn(),
             findById: jest.fn(),
+            hasActiveCompanyMembership: jest.fn().mockResolvedValue(true),
             create: jest.fn(),
             toSafeUser: jest.fn().mockReturnValue(safeUser),
             updateRefreshToken: jest.fn(),
+            revokeSessions: jest.fn(),
           },
         },
         {
@@ -171,6 +196,14 @@ describe('AuthService', () => {
         {
           provide: PrismaService,
           useValue: prisma,
+        },
+        {
+          provide: LoginSecurityStateService,
+          useValue: {
+            isLocked: jest.fn().mockResolvedValue(false),
+            recordFailure: jest.fn().mockResolvedValue(undefined),
+            clearFailures: jest.fn().mockResolvedValue(undefined),
+          },
         },
         {
           provide: NotificationsService,
@@ -203,7 +236,7 @@ describe('AuthService', () => {
     const registerDto = {
       name: 'Test User',
       email: 'test@test.com',
-      password: 'Password123!',
+      password: 'M0on!River#482',
     };
 
     it('should successfully register a new user', async () => {
@@ -231,7 +264,7 @@ describe('AuthService', () => {
   describe('login', () => {
     const loginDto = {
       email: 'test@test.com',
-      password: 'Password123!',
+      password: 'M0on!River#482',
     };
 
     it('should successfully authenticate user with correct credentials', async () => {
@@ -276,11 +309,13 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('should return new access and refresh tokens for valid refresh token', async () => {
-      jwtService.verify.mockReturnValue({ sub: mockUser.id });
+      jwtService.verify.mockReturnValue({
+        sub: mockUser.id,
+        sv: 1,
+        type: 'refresh',
+      });
       userService.findById.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.sign.mockReturnValue('new-token');
-      (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-refresh');
 
       const result = await authService.refresh('valid-refresh-token');
 
@@ -290,9 +325,12 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for tampered refresh token', async () => {
-      jwtService.verify.mockReturnValue({ sub: mockUser.id });
+      jwtService.verify.mockReturnValue({
+        sub: mockUser.id,
+        sv: 1,
+        type: 'refresh',
+      });
       userService.findById.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(authService.refresh('tampered-token')).rejects.toThrow(
         UnauthorizedException,
@@ -332,7 +370,7 @@ describe('AuthService', () => {
   describe('resetPassword', () => {
     const resetDto = {
       token: 'valid-reset-token',
-      newPassword: 'NewPassword123!',
+      newPassword: 'Cedar!Orbit#739',
     };
 
     it('should successfully reset password with valid token', async () => {
@@ -342,13 +380,27 @@ describe('AuthService', () => {
       const result = await authService.resetPassword(resetDto);
 
       expect(result.message).toBe('Password has been reset successfully');
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: mockUser.id },
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: mockUser.id,
+          resetToken: expect.any(String),
+          resetTokenExp: { gt: expect.any(Date) },
+          deletedAt: null,
+        },
         data: {
           passwordHash: 'new-hashed-password',
           resetToken: null,
           resetTokenExp: null,
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
         },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorId: mockUser.id,
+          action: 'PASSWORD_RESET_COMPLETED',
+          entityId: mockUser.id,
+        }),
       });
     });
 
@@ -364,12 +416,10 @@ describe('AuthService', () => {
   // ─── Logout & GetMe ───────────────────────────────────────────────────────
 
   describe('logout', () => {
-    it('should clear refresh token from DB', async () => {
+    it('should revoke all active sessions', async () => {
       await authService.clearRefreshToken(mockUser.id);
 
-      const calls = (userService.updateRefreshToken as jest.Mock).mock
-        .calls as [string, string | null][];
-      expect(calls).toEqual([[mockUser.id, null]]);
+      expect(userService.revokeSessions).toHaveBeenCalledWith(mockUser.id);
     });
   });
 

@@ -20,6 +20,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
+import { UserRole } from '@prisma/client';
+import {
+  ListCmsBlocksQueryDto,
+  UpsertCmsBlockDto,
+} from './dto/cms.dto';
 
 @ApiTags('admin-cms')
 @ApiBearerAuth()
@@ -35,11 +40,13 @@ export class AdminCmsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
   async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('search') search?: string,
+    @Query() query: ListCmsBlocksQueryDto,
   ) {
-    return this.cmsService.findAllAdmin(Number(page), Number(limit), search);
+    return this.cmsService.findAllAdmin(
+      query.page,
+      query.limit,
+      query.search,
+    );
   }
 
   @Get(':key')
@@ -52,15 +59,19 @@ export class AdminCmsController {
   @ApiOperation({ summary: 'Create or update a CMS block' })
   async upsert(
     @Param('key') key: string,
-    @Body('content') content: any,
-    @CurrentUser() user?: AuthenticatedUser,
+    @Body() dto: UpsertCmsBlockDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.cmsService.upsertAdmin(key, content, user?.id);
+    return this.cmsService.upsertAdmin(key, dto.content, user);
   }
 
   @Delete(':key')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a CMS block' })
-  async delete(@Param('key') key: string) {
-    return this.cmsService.deleteAdmin(key);
+  async delete(
+    @Param('key') key: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.cmsService.deleteAdmin(key, user);
   }
 }

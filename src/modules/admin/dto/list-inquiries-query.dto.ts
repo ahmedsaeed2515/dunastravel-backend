@@ -9,7 +9,7 @@ import {
   IsDateString,
   IsIn,
   IsEmail,
-  IsString,
+  IsUUID,
 } from 'class-validator';
 import { TailorMadeInquiryStatus } from '@prisma/client';
 
@@ -76,6 +76,6 @@ export class ListInquiriesQueryDto {
 
   @ApiPropertyOptional({ description: 'Filter by assignee ID' })
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   assigneeId?: string;
 }

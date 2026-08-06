@@ -2,22 +2,37 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgentDto, UpdateAgentDto, AgentQueryDto } from './dto/agent.dto';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+import { assertStrongPassword } from '../../common/utils/password-policy.util';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class AgentsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private assertSuperAdmin(actor: { id: string; role: string }): void {
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Only super administrators can manage agent accounts',
+      );
+    }
+  }
+
   async findAll(query: AgentQueryDto) {
-    const page = Math.max(1, parseInt(query.page ?? '1', 10));
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit ?? '20', 10)));
+    const page = query.page;
+    const limit = query.limit;
     const skip = (page - 1) * limit;
 
-    const where: any = { role: UserRole.AGENT, deletedAt: null };
+    const where: Prisma.UserWhereInput = {
+      role: UserRole.AGENT,
+      deletedAt: null,
+    };
     if (query.companyId) where.companyId = query.companyId;
 
     const [data, total] = await Promise.all([
@@ -64,68 +79,171 @@ export class AgentsService {
     return agent;
   }
 
-  async create(dto: CreateAgentDto) {
-    const existing = await this.prisma.user.findFirst({
-      where: { email: dto.email },
-    });
-    if (existing) throw new ConflictException('Email already in use');
-
-    const count = await this.prisma.user.count();
-    const customerNumber = `AGT-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+  async create(
+    dto: CreateAgentDto,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    assertStrongPassword(dto.password);
     const passwordHash = await bcrypt.hash(dto.password, 12);
+    const customerNumber = `AGT-${new Date().getFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
 
-    const agent = await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        passwordHash,
-        role: UserRole.AGENT,
-        customerNumber,
-        companyId: dto.companyId ?? null,
-        isVerified: true, // Admin-created agents are pre-verified
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.user.findFirst({
+        where: {
+          email: { equals: dto.email.trim(), mode: 'insensitive' },
+        },
+      });
+      if (existing) throw new ConflictException('Email already in use');
+
+      if (dto.companyId) {
+        const company = await tx.company.findFirst({
+          where: { id: dto.companyId, status: 'ACTIVE', deletedAt: null },
+          select: { id: true },
+        });
+        if (!company) throw new NotFoundException('Company not found');
+      }
+
+      const agent = await tx.user.create({
+        data: {
+          name: sanitizePlainText(dto.name).slice(0, 255),
+          email: dto.email.trim().toLowerCase(),
+          phone: dto.phone,
+          passwordHash,
+          role: UserRole.AGENT,
+          customerNumber,
+          companyId: dto.companyId ?? null,
+          isVerified: true, // Admin-created agents are pre-verified
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'AGENT_CREATED',
+          entityType: 'User',
+          entityId: agent.id,
+          metadata: { companyId: agent.companyId },
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        phone: agent.phone,
+        companyId: agent.companyId,
+        role: agent.role,
+        status: agent.status,
+        customerNumber: agent.customerNumber,
+        isVerified: agent.isVerified,
+        createdAt: agent.createdAt,
+      };
     });
-
-    const { passwordHash: _ph, refreshToken: _rt, ...safeAgent } = agent as any;
-    return safeAgent;
   }
 
-  async update(id: string, dto: UpdateAgentDto) {
-    const agent = await this.prisma.user.findFirst({
-      where: { id, role: UserRole.AGENT, deletedAt: null },
-    });
-    if (!agent) throw new NotFoundException('Agent not found');
+  async update(
+    id: string,
+    dto: UpdateAgentDto,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    return this.prisma.$transaction(async (tx) => {
+      const agent = await tx.user.findFirst({
+        where: { id, role: UserRole.AGENT, deletedAt: null },
+      });
+      if (!agent) throw new NotFoundException('Agent not found');
+      if (dto.companyId) {
+        const company = await tx.company.findFirst({
+          where: { id: dto.companyId, status: 'ACTIVE', deletedAt: null },
+          select: { id: true },
+        });
+        if (!company) throw new NotFoundException('Company not found');
+      }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        phone: dto.phone,
-        companyId: dto.companyId,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        companyId: true,
-        updatedAt: true,
-      },
+      const updated = await tx.user.update({
+        where: { id },
+        data: {
+          name:
+            dto.name !== undefined
+              ? sanitizePlainText(dto.name).slice(0, 255)
+              : undefined,
+          phone: dto.phone,
+          companyId: dto.companyId,
+          ...(dto.companyId !== undefined && dto.companyId !== agent.companyId
+            ? {
+                refreshToken: null,
+                sessionVersion: { increment: 1 },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          companyId: true,
+          updatedAt: true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'AGENT_UPDATED',
+          entityType: 'User',
+          entityId: id,
+          metadata: { changedFields: Object.keys(dto) },
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return updated;
     });
   }
 
-  async remove(id: string) {
-    const agent = await this.prisma.user.findFirst({
-      where: { id, role: UserRole.AGENT, deletedAt: null },
-    });
-    if (!agent) throw new NotFoundException('Agent not found');
+  async remove(
+    id: string,
+    actor: { id: string; role: string },
+    reqDetails?: { ipAddress?: string; userAgent?: string },
+  ) {
+    this.assertSuperAdmin(actor);
+    return this.prisma.$transaction(async (tx) => {
+      const agent = await tx.user.findFirst({
+        where: { id, role: UserRole.AGENT, deletedAt: null },
+      });
+      if (!agent) throw new NotFoundException('Agent not found');
 
-    await this.prisma.user.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+      await tx.user.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: 'INACTIVE',
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
+        },
+      });
 
-    return { message: 'Agent deleted successfully' };
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'AGENT_DELETED',
+          entityType: 'User',
+          entityId: id,
+          ipAddress: reqDetails?.ipAddress || null,
+          userAgent: reqDetails?.userAgent || null,
+        },
+      });
+
+      return { message: 'Agent deleted successfully' };
+    });
   }
 }

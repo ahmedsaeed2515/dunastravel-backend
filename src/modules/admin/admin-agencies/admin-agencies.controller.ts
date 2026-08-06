@@ -6,18 +6,25 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AdminAgenciesService } from './admin-agencies.service';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
-  ApiQuery,
 } from '@nestjs/swagger';
-import { CompanyStatus, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../../common/types';
+import {
+  AdminAgencyQueryDto,
+  UpdateAgencyStatusDto,
+  UpdateAgencyTierDto,
+} from './dto/admin-agency.dto';
 
 @ApiTags('admin-agencies')
 @ApiBearerAuth()
@@ -29,39 +36,40 @@ export class AdminAgenciesController {
 
   @Get()
   @ApiOperation({ summary: 'List all agencies' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, type: String })
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('status') status?: string,
-  ) {
-    return this.service.findAll(Number(page), Number(limit), status);
+  async findAll(@Query() query: AdminAgencyQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single agency' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update agency status' })
   async updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: CompanyStatus,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAgencyStatusDto,
+    @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.service.updateStatus(id, status);
+    return this.service.updateStatus(id, dto.status, actor.id);
   }
 
   @Patch(':id/tier')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update agency tier and commission rate' })
   async updateTier(
-    @Param('id') id: string,
-    @Body('tier') tier: string,
-    @Body('commissionRate') commissionRate: number,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAgencyTierDto,
+    @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.service.updateTier(id, tier, commissionRate);
+    return this.service.updateTier(
+      id,
+      dto.tier,
+      dto.commissionRate,
+      actor.id,
+    );
   }
 }

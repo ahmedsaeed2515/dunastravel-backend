@@ -17,7 +17,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    this.logger.error(`Prisma error ${exception.code}: ${exception.message}`);
+    this.logger.error(`Database operation failed with code ${exception.code}`);
 
     const errorMap: Record<string, { status: number; message: string }> = {
       P2002: {

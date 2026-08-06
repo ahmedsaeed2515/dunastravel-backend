@@ -5,16 +5,24 @@ import {
   IsBoolean,
   IsInt,
   IsObject,
+  IsIn,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateTourLandingPageDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug!: string;
 
-  @IsString()
   @IsOptional()
-  type?: string; // DESTINATION, THEME, COLLECTION
+  @IsIn(['DESTINATION', 'THEME', 'COLLECTION'])
+  type?: 'DESTINATION' | 'THEME' | 'COLLECTION';
 
   @IsObject()
   @IsNotEmpty()
@@ -34,10 +42,14 @@ export class CreateTourLandingPageDto {
 
   @IsString()
   @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   heroImageUrl?: string;
 
   @IsString()
   @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   heroVideoUrl?: string;
 
   @IsObject()
@@ -56,9 +68,9 @@ export class CreateTourLandingPageDto {
   @IsOptional()
   sectionsJsonb?: any;
 
-  @IsString()
   @IsOptional()
-  status?: string; // DRAFT, PUBLISHED, ARCHIVED, INACTIVE
+  @IsIn(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'INACTIVE'])
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'INACTIVE';
 
   @IsBoolean()
   @IsOptional()
@@ -66,5 +78,7 @@ export class CreateTourLandingPageDto {
 
   @IsInt()
   @IsOptional()
+  @Min(0)
+  @Max(100_000)
   sortOrder?: number;
 }

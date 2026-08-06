@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateFaqDto } from './dto/create-faq.dto';
@@ -7,6 +11,7 @@ import { ReorderFaqDto } from './dto/reorder-faq.dto';
 import {
   extractI18nFallback,
   sanitizeHtmlContent,
+  sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
 
@@ -14,16 +19,36 @@ import { getPaginationParams, paginate } from '../../common/utils';
 export class FaqService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private sanitizeJsonb(jsonb: unknown): Prisma.InputJsonValue {
-    if (!jsonb || typeof jsonb !== 'object') {
-      return (jsonb || {}) as Prisma.InputJsonValue;
+  private sanitizeJsonb(
+    jsonb: unknown,
+    richText: boolean,
+  ): Prisma.InputJsonValue {
+    if (!jsonb || typeof jsonb !== 'object' || Array.isArray(jsonb)) {
+      throw new BadRequestException('Invalid localized FAQ content');
     }
     const record = jsonb as Record<string, unknown>;
+    const entries = Object.entries(record);
+    const supportedLocales = ['en', 'ar', 'es', 'pt', 'it'];
+    if (
+      entries.length === 0 ||
+      entries.length > supportedLocales.length ||
+      entries.some(
+        ([key, value]) =>
+          !supportedLocales.includes(key) ||
+          typeof value !== 'string' ||
+          value.length > (richText ? 20_000 : 500),
+      )
+    ) {
+      throw new BadRequestException('Invalid localized FAQ content');
+    }
     const result: Record<string, string> = {};
-    for (const key of Object.keys(record)) {
-      if (typeof record[key] === 'string') {
-        result[key] = sanitizeHtmlContent(record[key] as string);
-      }
+    for (const [key, value] of entries as [string, string][]) {
+      result[key] = richText
+        ? sanitizeHtmlContent(value)
+        : sanitizePlainText(value);
+    }
+    if (!result.en?.trim()) {
+      throw new BadRequestException('English FAQ content is required');
     }
     return result as Prisma.InputJsonValue;
   }
@@ -89,11 +114,13 @@ export class FaqService {
   async createAdmin(dto: CreateFaqDto) {
     return this.prisma.faqItem.create({
       data: {
-        questionJsonb: this.sanitizeJsonb(dto.questionJsonb),
-        answerJsonb: this.sanitizeJsonb(dto.answerJsonb),
-        category: dto.category || null,
-        sortOrder: dto.sortOrder || 0,
-        isPublished: dto.isPublished !== undefined ? dto.isPublished : true,
+        questionJsonb: this.sanitizeJsonb(dto.questionJsonb, false),
+        answerJsonb: this.sanitizeJsonb(dto.answerJsonb, true),
+        category: dto.category
+          ? sanitizePlainText(dto.category).slice(0, 100)
+          : null,
+        sortOrder: dto.sortOrder ?? 0,
+        isPublished: dto.isPublished ?? false,
       },
     });
   }
@@ -105,12 +132,14 @@ export class FaqService {
       where: { id },
       data: {
         ...(dto.questionJsonb && {
-          questionJsonb: this.sanitizeJsonb(dto.questionJsonb),
+          questionJsonb: this.sanitizeJsonb(dto.questionJsonb, false),
         }),
         ...(dto.answerJsonb && {
-          answerJsonb: this.sanitizeJsonb(dto.answerJsonb),
+          answerJsonb: this.sanitizeJsonb(dto.answerJsonb, true),
         }),
-        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.category !== undefined && {
+          category: sanitizePlainText(dto.category).slice(0, 100),
+        }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
         ...(dto.isPublished !== undefined && { isPublished: dto.isPublished }),
       },

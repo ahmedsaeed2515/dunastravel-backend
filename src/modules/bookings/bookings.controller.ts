@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   HttpCode,
+  BadRequestException,
   UseGuards,
   Query,
   Headers,
@@ -23,8 +24,10 @@ import {
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto, CalculatePriceDto } from './dto';
 import { OptionalJwtAuthGuard, JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 import { ParseBookingRefPipe } from '../../common/pipes/parse-booking-ref.pipe';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 
 interface AuthenticatedUser {
   id: string;
@@ -38,6 +41,7 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @Public()
   @HttpCode(201)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(OptionalJwtAuthGuard)
@@ -50,12 +54,17 @@ export class BookingsController {
     @CurrentUser() user: AuthenticatedUser | null,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
     const userId = user?.id ?? undefined;
     return this.bookingsService.createBooking(dto, userId, idempotencyKey);
   }
 
   @Post('calculate')
+  @Public()
   @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @ApiOperation({ summary: 'Calculate booking price' })
   @ApiOkResponse({ description: 'Calculated price' })
   async calculatePrice(@Body() dto: CalculatePriceDto) {
@@ -68,17 +77,17 @@ export class BookingsController {
   @ApiOkResponse({ description: 'List of user bookings' })
   async findUserBookings(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
+    @Query() query: PaginationQueryDto,
   ) {
     return this.bookingsService.findUserBookings(
       user.id,
-      parseInt(page, 10),
-      parseInt(limit, 10),
+      query.page,
+      query.limit,
     );
   }
 
   @Get(':referenceCode')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Get booking summary by reference code' })
@@ -100,6 +109,7 @@ export class BookingsController {
   }
 
   @Post(':referenceCode/cancel')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(200)
   @ApiOperation({
@@ -110,14 +120,14 @@ export class BookingsController {
   async cancelBooking(
     @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @CurrentUser() user: AuthenticatedUser | null,
-    @Body('reason') reason?: string,
+    @Body() dto: CancelBookingDto,
     @Headers('x-guest-token') guestToken?: string,
   ) {
     const userId = user?.id ?? undefined;
     return this.bookingsService.cancelBooking(
       referenceCode,
       userId,
-      reason,
+      dto.reason,
       guestToken,
     );
   }

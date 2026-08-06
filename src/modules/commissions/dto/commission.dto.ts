@@ -1,24 +1,35 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CommissionStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class CreateCommissionDto {
   @ApiProperty()
-  @IsString()
+  @IsUUID()
   companyId!: string;
 
   @ApiProperty()
-  @IsString()
+  @IsUUID()
   bookingId!: string;
 
   @ApiProperty()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(100)
   rate!: number;
 
   @ApiProperty()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(99_999_999.99)
   amount!: number;
 }
 
@@ -31,12 +42,12 @@ export class UpdateCommissionStatusDto {
 export class CommissionQueryFilters {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   companyId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   bookingId?: string;
 
   @ApiPropertyOptional({ enum: CommissionStatus })
@@ -46,9 +57,16 @@ export class CommissionQueryFilters {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }

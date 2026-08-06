@@ -6,7 +6,6 @@ import {
   Query,
   BadRequestException,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +19,12 @@ import { TrackEventDto } from './dto/track-event.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { Throttle } from '@nestjs/throttler';
+import {
+  AnalyticsDateRangeQueryDto,
+  TopToursQueryDto,
+} from './dto/analytics-query.dto';
 
 const BROWSER_ALLOWED_EVENTS = new Set([
   'page_view',
@@ -44,22 +49,24 @@ const SERVER_ONLY_EVENTS = new Set([
 
 @ApiTags('Analytics')
 @Controller('analytics')
+@Public()
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post('events')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @ApiOperation({ summary: 'Track a privacy-aware website visitor event.' })
   @ApiOkResponse({ description: 'Event tracked successfully' })
   async trackEvent(@Body() dto: TrackEventDto) {
     if (SERVER_ONLY_EVENTS.has(dto.eventName)) {
       throw new BadRequestException(
-        `Server-only event '${dto.eventName}' cannot be emitted by public browser client`,
+        'This event cannot be emitted by a browser client',
       );
     }
 
     if (!BROWSER_ALLOWED_EVENTS.has(dto.eventName)) {
       throw new BadRequestException(
-        `Event '${dto.eventName}' is not allowed for public visitor tracking`,
+        'Event is not allowed for public visitor tracking',
       );
     }
 
@@ -87,30 +94,28 @@ export class AdminAnalyticsController {
   @ApiOperation({ summary: 'Get time-series analytics metrics' })
   @ApiQuery({ name: 'startDate', required: false, type: String })
   @ApiQuery({ name: 'endDate', required: false, type: String })
-  async getTimeSeries(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    return this.analyticsService.getTimeSeriesAdmin(startDate, endDate);
+  async getTimeSeries(@Query() query: AnalyticsDateRangeQueryDto) {
+    return this.analyticsService.getTimeSeriesAdmin(
+      query.startDate,
+      query.endDate,
+    );
   }
 
   @Get('top-tours')
   @ApiOperation({ summary: 'Get top viewed tours' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  async getTopTours(
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  ) {
-    return this.analyticsService.getTopToursAdmin(limit || 10);
+  async getTopTours(@Query() query: TopToursQueryDto) {
+    return this.analyticsService.getTopToursAdmin(query.limit ?? 10);
   }
 
   @Get('funnel')
   @ApiOperation({ summary: 'Get conversion funnel metrics' })
   @ApiQuery({ name: 'startDate', required: false, type: String })
   @ApiQuery({ name: 'endDate', required: false, type: String })
-  async getFunnel(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    return this.analyticsService.getFunnelAdmin(startDate, endDate);
+  async getFunnel(@Query() query: AnalyticsDateRangeQueryDto) {
+    return this.analyticsService.getFunnelAdmin(
+      query.startDate,
+      query.endDate,
+    );
   }
 }

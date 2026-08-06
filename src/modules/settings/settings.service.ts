@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SettingsService {
+  private static readonly MUTABLE_KEYS = new Set([
+    'AUTH_REQUIRE_EMAIL_VERIFICATION',
+  ]);
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -29,7 +32,10 @@ export class SettingsService {
     return setting.value;
   }
 
-  async updateSetting(key: string, value: any) {
+  async updateSetting(key: string, value: boolean) {
+    if (!SettingsService.MUTABLE_KEYS.has(key)) {
+      throw new BadRequestException('Unsupported system setting');
+    }
     const setting = await this.prisma.systemSetting.upsert({
       where: { key },
       update: { value },

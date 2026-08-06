@@ -19,6 +19,7 @@ import { InvoicesService } from './invoices.service';
 import { ParseInvoiceNumberPipe } from '../../common/pipes';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { Request } from 'express';
+import { Public } from '../../common/decorators/public.decorator';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -33,6 +34,7 @@ export class InvoicesController {
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':invoiceNumber')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Get invoice details by invoice number' })
   @ApiOkResponse({ description: 'Full invoice for display or printing' })

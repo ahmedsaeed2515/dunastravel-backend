@@ -1,37 +1,40 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
-  IsNotEmpty,
+  IsIn,
   IsNumber,
-  IsOptional,
   IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class AddPaymentDto {
   @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2, allowInfinity: false, allowNaN: false })
+  @Min(0.01)
+  @Max(10_000_000)
   amount!: number;
 
   @ApiProperty({ default: 'USD' })
   @IsString()
-  @IsNotEmpty()
+  @IsIn(['USD'])
   currency!: string;
 
   @ApiProperty({
     description: 'Payment method (e.g. Credit Card, Wire Transfer)',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsIn(['CASH', 'BANK_TRANSFER', 'POS', 'OTHER_MANUAL'])
   method!: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    description: 'Unique external receipt/reference used for safe retries',
+  })
   @IsString()
-  @IsOptional()
-  transactionId?: string;
-
-  @ApiProperty({ default: false, description: 'True if this is a refund' })
-  @IsBoolean()
-  @IsOptional()
-  isRefund?: boolean;
+  @MaxLength(100)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:/-]{5,99}$/)
+  transactionId!: string;
 }

@@ -6,7 +6,9 @@ import * as path from 'path';
 import { seedMediaAssets } from './seeds/media.seed';
 import * as bcrypt from 'bcrypt';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
@@ -86,11 +88,7 @@ function extractSlug(program: RawProgram): string {
 }
 
 function extractPrice(program: RawProgram): number {
-  const raw =
-    program.basePriceUsd ??
-    program.price ??
-    program.basePrice ??
-    999;
+  const raw = program.basePriceUsd ?? program.price ?? program.basePrice ?? 999;
 
   const parsed = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
   return isNaN(parsed) ? 999 : parsed;
@@ -153,8 +151,8 @@ async function seedFromJson(programs: RawProgram[]): Promise<void> {
             program.duration as string | Record<string, string>,
           ),
           overviewJsonb: toMultilingual(
-            (program.overview ??
-              program.description) as string | Record<string, string>,
+            (program.overview ?? program.description) as
+              string | Record<string, string>,
           ),
           isActive: true,
         },
@@ -171,8 +169,7 @@ async function seedFromJson(programs: RawProgram[]): Promise<void> {
               day.dayLabel ??
               (day.day !== undefined ? `Day ${day.day}` : `Day ${i + 1}`),
             descriptionJsonb: toMultilingual(
-              (day.description ??
-                day.title) as string | Record<string, string>,
+              (day.description ?? day.title) as string | Record<string, string>,
             ),
             mealsJsonb: day.meals
               ? toMultilingual(day.meals as string | Record<string, string>)
@@ -266,7 +263,7 @@ async function seedFallbackTours(): Promise<void> {
         es: 'Maravillas de Egipto',
         ar: 'عجائب مصر',
         pt: 'Maravilhas do Egito',
-        it: 'Meraviglie dell\'Egitto',
+        it: "Meraviglie dell'Egitto",
       },
       category: 'egypt',
       basePriceUsd: 950,
@@ -407,7 +404,7 @@ async function seedContactSubmissions(): Promise<void> {
       subject: 'Información sobre tours',
       message: 'Me gustaría recibir información sobre los tours en español.',
       locale: 'es',
-    }
+    },
   ];
 
   for (const sub of submissions) {
@@ -430,45 +427,77 @@ async function seedContactSubmissions(): Promise<void> {
       });
       console.log(`  ✅ Seeded contact submission: ${sub.referenceCode}`);
     } catch (err) {
-      console.error(`  ❌ Failed to seed contact submission: ${sub.referenceCode}`, err);
+      console.error(
+        `  ❌ Failed to seed contact submission: ${sub.referenceCode}`,
+        err,
+      );
     }
   }
 }
 
 async function seedSuperAdmin(): Promise<void> {
   console.log('\n📌 Seeding super admin...');
-  const existing = await prisma.user.findUnique({
-    where: { email: 'admin@dunastravel.com' },
-  });
+  const email = process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.BOOTSTRAP_SUPER_ADMIN_PASSWORD;
 
-  if (existing) {
-    console.log(`  ↩  Already exists: admin@dunastravel.com`);
+  if (!email || !password) {
+    console.log(
+      '  ↩  Super admin bootstrap skipped (one-time credentials are not configured).',
+    );
     return;
   }
 
-  const passwordHash = await bcrypt.hash('Admin@123!', 10);
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_PRODUCTION_ADMIN_BOOTSTRAP !== 'true'
+  ) {
+    throw new Error(
+      'Refusing production bootstrap without ALLOW_PRODUCTION_ADMIN_BOOTSTRAP=true.',
+    );
+  }
+
+  if (
+    password.length < 16 ||
+    /password|admin|dunas|1234|qwerty/i.test(password)
+  ) {
+    throw new Error(
+      'BOOTSTRAP_SUPER_ADMIN_PASSWORD must be at least 16 characters and unpredictable.',
+    );
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existing) {
+    console.log('  ↩  Super admin already exists; seed will not modify it.');
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
   await prisma.user.create({
     data: {
-      email: 'admin@dunastravel.com',
+      email,
       name: 'Super Admin',
       passwordHash,
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
+      isVerified: true,
     },
   });
-  console.log(`  ✅ Seeded super admin: admin@dunastravel.com`);
+  console.log('  ✅ One-time super admin bootstrap completed.');
 }
 
 async function seedCmsBlocks(): Promise<void> {
   console.log('\n📌 Seeding default CMS blocks...');
   const blocks = [
     { key: 'homepage-hero', content: { en: 'Welcome to Dunas Travel' } },
-    { key: 'footer-info', content: { en: '© 2026 Dunas Travel' } }
+    { key: 'footer-info', content: { en: '© 2026 Dunas Travel' } },
   ];
 
   for (const block of blocks) {
     const existing = await prisma.cmsBlock.findUnique({
-      where: { key: block.key }
+      where: { key: block.key },
     });
 
     if (existing) {
@@ -480,7 +509,7 @@ async function seedCmsBlocks(): Promise<void> {
       data: {
         key: block.key,
         content: block.content,
-      }
+      },
     });
     console.log(`  ✅ Seeded CMS block: ${block.key}`);
   }
@@ -497,7 +526,9 @@ async function seedMockBookings(): Promise<void> {
   // Create mock users (customers)
   const customers = [];
   for (let i = 1; i <= 5; i++) {
-    let customer = await prisma.user.findUnique({ where: { email: `customer${i}@example.com` } });
+    let customer = await prisma.user.findUnique({
+      where: { email: `customer${i}@example.com` },
+    });
     if (!customer) {
       customer = await prisma.user.create({
         data: {
@@ -507,7 +538,7 @@ async function seedMockBookings(): Promise<void> {
           role: 'USER',
           status: 'ACTIVE',
           customerNumber: `CUST-100${i}`,
-        }
+        },
       });
     }
     customers.push(customer);
@@ -515,32 +546,36 @@ async function seedMockBookings(): Promise<void> {
 
   // Create wallet for first customer
   let wallet = await prisma.wallet.findUnique({
-    where: { ownerType_ownerId: { ownerType: 'USER', ownerId: customers[0].id } }
+    where: {
+      ownerType_ownerId: { ownerType: 'USER', ownerId: customers[0].id },
+    },
   });
   if (!wallet) {
     wallet = await prisma.wallet.create({
       data: {
         ownerType: 'USER',
         ownerId: customers[0].id,
-        balance: 500.00,
-        currency: 'USD'
-      }
+        balance: 500.0,
+        currency: 'USD',
+      },
     });
     await prisma.walletTransaction.create({
       data: {
         walletId: wallet.id,
-        amount: 500.00,
+        amount: 500.0,
         type: 'CREDIT',
         referenceType: 'MANUAL_ADDITION',
-        status: 'COMPLETED'
-      }
+        status: 'COMPLETED',
+      },
     });
   }
 
   // Create some bookings
   for (let i = 1; i <= 10; i++) {
     const refCode = `BKG-2026-${i.toString().padStart(3, '0')}`;
-    const existing = await prisma.booking.findUnique({ where: { referenceCode: refCode } });
+    const existing = await prisma.booking.findUnique({
+      where: { referenceCode: refCode },
+    });
     if (existing) continue;
 
     const tour = tours[i % tours.length];
@@ -552,7 +587,7 @@ async function seedMockBookings(): Promise<void> {
         userId: customer.id,
         tourId: tour.id,
         status: i % 3 === 0 ? 'CONFIRMED' : 'PENDING',
-        arrivalDate: new Date(new Date().getTime() + (i * 86400000 * 5)),
+        arrivalDate: new Date(new Date().getTime() + i * 86400000 * 5),
         totalAmountUsd: tour.basePriceUsd,
         paidAmountUsd: i % 3 === 0 ? tour.basePriceUsd : 0,
         adults: 2,
@@ -563,16 +598,16 @@ async function seedMockBookings(): Promise<void> {
             fullName: customer.name,
             email: customer.email,
             phone: '+1234567890',
-            invoiceType: 'PERSONAL'
-          }
+            invoiceType: 'PERSONAL',
+          },
         },
         passengers: {
           create: [
             { passengerType: 'ADULT', fullName: customer.name },
-            { passengerType: 'ADULT', fullName: `Partner of ${customer.name}` }
-          ]
-        }
-      }
+            { passengerType: 'ADULT', fullName: `Partner of ${customer.name}` },
+          ],
+        },
+      },
     });
 
     if (Number(booking.paidAmountUsd) > 0) {
@@ -583,14 +618,14 @@ async function seedMockBookings(): Promise<void> {
           currency: 'USD',
           method: 'CREDIT_CARD',
           status: 'CAPTURED',
-          transactionId: `txn_${Date.now()}`
-        }
+          transactionId: `txn_${Date.now()}`,
+        },
       });
       await prisma.invoice.create({
         data: {
           bookingId: booking.id,
-          invoiceNumber: `INV-${refCode}`
-        }
+          invoiceNumber: `INV-${refCode}`,
+        },
       });
     }
 
@@ -605,14 +640,26 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'egypt',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Egypt', es: 'Egipto', ar: 'مصر', pt: 'Egito', it: 'Egitto' },
-      subtitleJsonb: { en: 'Land of the Pharaohs', es: 'Tierra de los Faraones', ar: 'أرض الفراعنة', pt: 'Terra dos Faraós', it: 'Terra dei Faraoni' },
+      titleJsonb: {
+        en: 'Egypt',
+        es: 'Egipto',
+        ar: 'مصر',
+        pt: 'Egito',
+        it: 'Egitto',
+      },
+      subtitleJsonb: {
+        en: 'Land of the Pharaohs',
+        es: 'Tierra de los Faraones',
+        ar: 'أرض الفراعنة',
+        pt: 'Terra dos Faraós',
+        it: 'Terra dei Faraoni',
+      },
       descriptionJsonb: {
         en: 'From the timeless Pyramids of Giza to the golden temples of Luxor and the crystal waters of the Red Sea, Egypt offers a journey through history like no other.',
         es: 'Desde las pirámides hasta el mar Rojo, descubre la cuna de la civilización.',
         ar: 'من أهرامات الجيزة إلى معابد الأقصر وشواطئ البحر الأحمر الساحرة.',
         pt: 'Das pirâmides ao Rio Nilo, viva uma experiência inesquecível.',
-        it: 'Dalle piramidi al Nilo, un viaggio straordinario.'
+        it: 'Dalle piramidi al Nilo, un viaggio straordinario.',
       },
       heroImageUrl: '/imgs/egyothero.png',
       status: 'PUBLISHED',
@@ -622,16 +669,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'turkey',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Turkey', es: 'Turquía', ar: 'تركيا', pt: 'Turquia', it: 'Turchia' },
-      subtitleJsonb: { en: 'Where East Meets West', es: 'Donde Oriente se encuentra con Occidente', ar: 'ملتقى الشرق والغرب', pt: 'Onde o Oriente se Encontra com o Ocidente', it: 'Dove l\'Oriente Incontra l\'Occidente' },
+      titleJsonb: {
+        en: 'Turkey',
+        es: 'Turquía',
+        ar: 'تركيا',
+        pt: 'Turquia',
+        it: 'Turchia',
+      },
+      subtitleJsonb: {
+        en: 'Where East Meets West',
+        es: 'Donde Oriente se encuentra con Occidente',
+        ar: 'ملتقى الشرق والغرب',
+        pt: 'Onde o Oriente se Encontra com o Ocidente',
+        it: "Dove l'Oriente Incontra l'Occidente",
+      },
       descriptionJsonb: {
         en: 'Explore Istanbul, the fairy chimneys of Cappadocia, ancient Ephesus, and travertine pools of Pamukkale.',
         es: 'Descubre Estambul, Capadoccia y los tesoros de Turquía.',
         ar: 'استكشف إسطنبول وكابادوكيا ومناظر تركيا الطبيعية التاريخية.',
         pt: 'Conheça Istambul e os balões da Capadócia.',
-        it: 'Esplora Istanbul e la Cappadocia.'
+        it: 'Esplora Istanbul e la Cappadocia.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 2,
@@ -639,16 +699,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'jordan',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Jordan', es: 'Jordania', ar: 'الأردن', pt: 'Jordânia', it: 'Giordania' },
-      subtitleJsonb: { en: 'Kingdom of Wonder', es: 'Reino de Maravillas', ar: 'مملكة العجائب', pt: 'Reino das Maravilhas', it: 'Regno delle Meraviglie' },
+      titleJsonb: {
+        en: 'Jordan',
+        es: 'Jordania',
+        ar: 'الأردن',
+        pt: 'Jordânia',
+        it: 'Giordania',
+      },
+      subtitleJsonb: {
+        en: 'Kingdom of Wonder',
+        es: 'Reino de Maravillas',
+        ar: 'مملكة العجائب',
+        pt: 'Reino das Maravilhas',
+        it: 'Regno delle Meraviglie',
+      },
       descriptionJsonb: {
         en: 'Walk in the pink-red sandstone canyons of Petra and float on the Dead Sea.',
         es: 'Explora la legendaria ciudad de Petra y el desierto de Wadi Rum.',
         ar: 'زيارة مدينة البتراء الوردية ووادي رم والبحر الميت.',
         pt: 'Descubra Petra e o deserto de Wadi Rum.',
-        it: 'Visita la magica città di Petra.'
+        it: 'Visita la magica città di Petra.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 3,
@@ -656,16 +729,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'morocco',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Morocco', es: 'Marruecos', ar: 'المغرب', pt: 'Marrocos', it: 'Marocco' },
-      subtitleJsonb: { en: 'Land of Colors & Spices', es: 'Tierra de Colores y Especias', ar: 'أرض الألوان والتوابل', pt: 'Terra de Cores e Especiarias', it: 'Terra di Colori e Spezie' },
+      titleJsonb: {
+        en: 'Morocco',
+        es: 'Marruecos',
+        ar: 'المغرب',
+        pt: 'Marrocos',
+        it: 'Marocco',
+      },
+      subtitleJsonb: {
+        en: 'Land of Colors & Spices',
+        es: 'Tierra de Colores y Especias',
+        ar: 'أرض الألوان والتوابل',
+        pt: 'Terra de Cores e Especiarias',
+        it: 'Terra di Colori e Spezie',
+      },
       descriptionJsonb: {
         en: 'Discover Marrakech, Fes, Chefchaouen, and the Sahara desert dunes.',
         es: 'Descubre Marrakech, Fez y las dunas del Sahara.',
         ar: 'رحلات عبر مراكش وفاس والصحراء الكبرى.',
         pt: 'Explore as cidades imperiais de Marrocos.',
-        it: 'Scopri le città imperiali del Marocco.'
+        it: 'Scopri le città imperiali del Marocco.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 4,
@@ -673,16 +759,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'greece',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Greece', es: 'Grecia', ar: 'اليونان', pt: 'Grécia', it: 'Grecia' },
-      subtitleJsonb: { en: 'Cradle of Civilization', es: 'Cuna de la Civilización', ar: 'مهد الحضارة', pt: 'Berço da Civilização', it: 'Culla della Civiltà' },
+      titleJsonb: {
+        en: 'Greece',
+        es: 'Grecia',
+        ar: 'اليونان',
+        pt: 'Grécia',
+        it: 'Grecia',
+      },
+      subtitleJsonb: {
+        en: 'Cradle of Civilization',
+        es: 'Cuna de la Civilización',
+        ar: 'مهد الحضارة',
+        pt: 'Berço da Civilização',
+        it: 'Culla della Civiltà',
+      },
       descriptionJsonb: {
         en: 'Experience Athens Acropolis and breathtaking Aegean islands.',
         es: 'Atenas, Santorini y las islas griegas.',
         ar: 'استكشف أثينا وجزر اليونان الساحرة.',
         pt: 'Visite Atenas e as ilhas gregas.',
-        it: 'Visita Atene e le isole greche.'
+        it: 'Visita Atene e le isole greche.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 5,
@@ -690,16 +789,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'dubai',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Dubai', es: 'Dubái', ar: 'دبي', pt: 'Dubai', it: 'Dubai' },
-      subtitleJsonb: { en: 'City of the Future', es: 'Ciudad del Futuro', ar: 'مدينة المستقبل', pt: 'Cidade do Futuro', it: 'Città del Futuro' },
+      titleJsonb: {
+        en: 'Dubai',
+        es: 'Dubái',
+        ar: 'دبي',
+        pt: 'Dubai',
+        it: 'Dubai',
+      },
+      subtitleJsonb: {
+        en: 'City of the Future',
+        es: 'Ciudad del Futuro',
+        ar: 'مدينة المستقبل',
+        pt: 'Cidade do Futuro',
+        it: 'Città del Futuro',
+      },
       descriptionJsonb: {
         en: 'Ultra-modern architecture, desert safaris, and luxury shopping.',
         es: 'Lujo, arquitectura moderna y safaris en el desierto.',
         ar: 'ناطحات السحاب والسفاري والتسوق الفاخر.',
         pt: 'O luxo e a modernidade de Dubai.',
-        it: 'Lusso e modernità a Dubai.'
+        it: 'Lusso e modernità a Dubai.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 6,
@@ -707,16 +819,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'tunisia',
       type: 'DESTINATION',
-      titleJsonb: { en: 'Tunisia', es: 'Túnez', ar: 'تونس', pt: 'Tunísia', it: 'Tunisia' },
-      subtitleJsonb: { en: 'Oasis & Mediterranean Charm', es: 'Oasis y Encanto Mediterráneo', ar: 'سحر الواحات والمتوسط', pt: 'Oásis e Charme Mediterrâneo', it: 'Oasi e Fascino Mediterraneo' },
+      titleJsonb: {
+        en: 'Tunisia',
+        es: 'Túnez',
+        ar: 'تونس',
+        pt: 'Tunísia',
+        it: 'Tunisia',
+      },
+      subtitleJsonb: {
+        en: 'Oasis & Mediterranean Charm',
+        es: 'Oasis y Encanto Mediterráneo',
+        ar: 'سحر الواحات والمتوسط',
+        pt: 'Oásis e Charme Mediterrâneo',
+        it: 'Oasi e Fascino Mediterraneo',
+      },
       descriptionJsonb: {
         en: 'Carthage ruins, Sidi Bou Said, and Sahara oases.',
         es: 'Cartago, Sidi Bou Said y los oasis de Túnez.',
         ar: 'آثار قرطاج وسيدي بوسعيد وواحات الصحراء.',
         pt: 'Conheça as ruínas de Cartago e Sidi Bou Said.',
-        it: 'Scopri Cartagine e Sidi Bou Said.'
+        it: 'Scopri Cartagine e Sidi Bou Said.',
       },
-      heroImageUrl: 'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
+      heroImageUrl:
+        'https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 7,
@@ -724,16 +849,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'multi-country',
       type: 'THEME',
-      titleJsonb: { en: 'Multi-Country Tours', es: 'Tours Multipaís', ar: 'رحلات متعددة الدول', pt: 'Tours Multi-Países', it: 'Tour Multi-Paese' },
-      subtitleJsonb: { en: 'Grand Middle East Expeditions', es: 'Grandes Expediciones por Medio Oriente', ar: 'رحلات شاملة عبر الشرق الأوسط', pt: 'Grandes Expedições pelo Oriente Médio', it: 'Grandi Spedizioni in Medio Oriente' },
+      titleJsonb: {
+        en: 'Multi-Country Tours',
+        es: 'Tours Multipaís',
+        ar: 'رحلات متعددة الدول',
+        pt: 'Tours Multi-Países',
+        it: 'Tour Multi-Paese',
+      },
+      subtitleJsonb: {
+        en: 'Grand Middle East Expeditions',
+        es: 'Grandes Expediciones por Medio Oriente',
+        ar: 'رحلات شاملة عبر الشرق الأوسط',
+        pt: 'Grandes Expedições pelo Oriente Médio',
+        it: 'Grandi Spedizioni in Medio Oriente',
+      },
       descriptionJsonb: {
         en: 'Combined travel packages covering Egypt, Jordan, Turkey, Dubai, and Morocco.',
         es: 'Paquetes combinados visitando varios países de Medio Oriente.',
         ar: 'رحلات تجمع بين مصر والأردن وتركيا والإمارات والمغرب.',
         pt: 'Pacotes combinando Egito, Jordânia e Turquia.',
-        it: 'Pacchetti combinati in Medio Oriente.'
+        it: 'Pacchetti combinati in Medio Oriente.',
       },
-      heroImageUrl: 'https://res.cloudinary.com/degbrq3ck/image/upload/v1783030113/Gemini_Generated_Image_cb2enncb2enncb2e_wvyejn.jpg',
+      heroImageUrl:
+        'https://res.cloudinary.com/degbrq3ck/image/upload/v1783030113/Gemini_Generated_Image_cb2enncb2enncb2e_wvyejn.jpg',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 8,
@@ -741,16 +879,29 @@ async function seedTourLandingPages(): Promise<void> {
     {
       slug: 'religious',
       type: 'THEME',
-      titleJsonb: { en: 'Religious Tours', es: 'Tours Religiosos', ar: 'رحلات دينية', pt: 'Tours Religiosos', it: 'Tour Religiosi' },
-      subtitleJsonb: { en: 'Sacred Footsteps & Pilgrimages', es: 'Huellas Sagradas y Peregrinaciones', ar: 'مسارات مقدسة ورحلات إيمانية', pt: 'Pegadas Sagradas e Peregrinações', it: 'Impronte Sacre e Pellegrinaggi' },
+      titleJsonb: {
+        en: 'Religious Tours',
+        es: 'Tours Religiosos',
+        ar: 'رحلات دينية',
+        pt: 'Tours Religiosos',
+        it: 'Tour Religiosi',
+      },
+      subtitleJsonb: {
+        en: 'Sacred Footsteps & Pilgrimages',
+        es: 'Huellas Sagradas y Peregrinaciones',
+        ar: 'مسارات مقدسة ورحلات إيمانية',
+        pt: 'Pegadas Sagradas e Peregrinações',
+        it: 'Impronte Sacre e Pellegrinaggi',
+      },
       descriptionJsonb: {
         en: 'Holy land pilgrimages and spiritual journeys across sacred historical sites.',
         es: 'Peregrinaciones a Tierra Santa y sitios sagrados.',
         ar: 'رحلات إيمانية وزيارة المعالم المقدسة.',
         pt: 'Peregrinações pela Terra Santa.',
-        it: 'Pellegrinaggi in Terra Santa.'
+        it: 'Pellegrinaggi in Terra Santa.',
       },
-      heroImageUrl: 'https://www.saintjeromechurch.org/wp-content/uploads/2025/03/14714-what-is-ccd-in-catholic-church-religious-education-programs-explained.png',
+      heroImageUrl:
+        'https://www.saintjeromechurch.org/wp-content/uploads/2025/03/14714-what-is-ccd-in-catholic-church-religious-education-programs-explained.png',
       status: 'PUBLISHED',
       isActive: true,
       sortOrder: 9,
@@ -758,7 +909,9 @@ async function seedTourLandingPages(): Promise<void> {
   ];
 
   for (const page of landingPagesData) {
-    const existing = await prisma.tourLandingPage.findUnique({ where: { slug: page.slug } });
+    const existing = await prisma.tourLandingPage.findUnique({
+      where: { slug: page.slug },
+    });
     let landingPageId: string;
 
     if (existing) {
@@ -802,7 +955,9 @@ async function seedTourLandingPages(): Promise<void> {
     }
 
     if (matchingTours.length > 0) {
-      console.log(`     └ Attached ${matchingTours.length} tours to '${page.slug}'`);
+      console.log(
+        `     └ Attached ${matchingTours.length} tours to '${page.slug}'`,
+      );
     }
   }
 }
@@ -811,6 +966,12 @@ async function seedTourLandingPages(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log('\n🌱 Starting Dunas Travel database seed...\n');
+  const isProduction = process.env.NODE_ENV === 'production';
+  const seedDemoData = process.env.SEED_DEMO_DATA === 'true';
+
+  if (isProduction && seedDemoData) {
+    throw new Error('SEED_DEMO_DATA is forbidden in production.');
+  }
 
   // Attempt to read programs.json from the frontend
   const possiblePaths = [
@@ -855,19 +1016,28 @@ async function main(): Promise<void> {
   if (programs && programs.length > 0) {
     await seedFromJson(programs);
   } else {
+    if (isProduction) {
+      throw new Error(
+        'Production catalog seed aborted because programs.json was not found.',
+      );
+    }
     console.warn('⚠  programs.json not found or empty.');
     console.log('📌 Using fallback sample data instead.\n');
     await seedFallbackTours();
   }
 
   await seedTourLandingPages();
-  await seedContactSubmissions();
+  if (seedDemoData) {
+    await seedContactSubmissions();
+  }
 
   await seedSuperAdmin();
   await seedCmsBlocks();
 
   await seedMediaAssets(prisma);
-  await seedMockBookings();
+  if (seedDemoData) {
+    await seedMockBookings();
+  }
 
   console.log('\n✅ Seed complete!\n');
 }

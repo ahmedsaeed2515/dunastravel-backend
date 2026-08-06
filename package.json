@@ -20,6 +20,7 @@
     "test:e2e": "jest --config test/jest-e2e.json",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
+    "security:encrypt-pii": "ts-node -r tsconfig-paths/register src/scripts/encrypt-existing-pii.ts",
     "db:reset": "npx prisma migrate reset --force && npm run seed",
     "postinstall": "prisma generate"
   },
@@ -54,11 +55,12 @@
     "cloudinary": "^2.10.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
-    "dompurify": "^3.4.11",
+    "dompurify": "3.4.12",
     "helmet": "^8.2.0",
     "ioredis": "^5.11.1",
     "joi": "^18.2.3",
     "jsdom": "^29.1.1",
+    "keyv": "^5.6.0",
     "multer": "^2.2.0",
     "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
@@ -112,6 +114,9 @@
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
+    "setupFiles": [
+      "<rootDir>/test-setup.ts"
+    ],
     "moduleFileExtensions": [
       "js",
       "json",
@@ -120,7 +125,14 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.[cm]?[tj]sx?$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "allowJs": true
+          }
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
@@ -128,8 +140,11 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "transformIgnorePatterns": [
-      "/node_modules/(?!(@exodus|parse5|entities|@asamuzakjp)/)"
-    ]
+      "node_modules/(?!(@exodus|parse5|entities|@asamuzakjp|@csstools)/)"
+    ],
+    "moduleNameMapper": {
+      "^@asamuzakjp/css-color$": "<rootDir>/../node_modules/@asamuzakjp/css-color/dist/esm/index.js"
+    }
   },
   "overrides": {
     "@nestjs/platform-express": {

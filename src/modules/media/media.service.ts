@@ -7,7 +7,9 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { AuthenticatedUser } from '../../common/types';
 
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -29,6 +31,7 @@ import {
   MEDIA_UPLOADED_EVENT,
   MediaUploadedEvent,
 } from './interfaces/media-events.interface';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class MediaService {
@@ -44,19 +47,16 @@ export class MediaService {
   async uploadAsset(
     file: UploadableFile,
     dto: UploadMediaDto,
-    uploadedByUserId: string | null,
+    uploadedByUserId: string,
   ): Promise<IMediaAsset> {
     const allowedMimeTypes = [
       'image/jpeg',
-      'image/jpg',
       'image/png',
       'image/webp',
-      'image/avif',
-      'image/gif',
-      'video/mp4',
-      'application/pdf',
     ];
-    const maxSizeBytes = 20 * 1024 * 1024; // 20MB
+    const maxSizeBytes =
+      this.configService.get<number>('storage.maxFileSizeBytes') ||
+      10 * 1024 * 1024;
 
     if (
       !file ||
@@ -64,13 +64,32 @@ export class MediaService {
       !allowedMimeTypes.includes(file.mimetype.toLowerCase())
     ) {
       throw new BadRequestException(
-        `Unsupported file MIME type '${file?.mimetype}'. Allowed: ${allowedMimeTypes.join(', ')}`,
+        'Unsupported file type',
       );
     }
 
     if (file.size > maxSizeBytes) {
       throw new BadRequestException(
-        `File size ${file.size} bytes exceeds maximum allowed limit of ${maxSizeBytes} bytes (20MB)`,
+        'File exceeds the maximum allowed size',
+      );
+    }
+
+    if (dto.entityType === MediaEntityType.TOUR) {
+      if (!dto.entityId) {
+        throw new BadRequestException(
+          'entityId is required for tour media',
+        );
+      }
+      const tour = await this.prisma.tour.findFirst({
+        where: { id: dto.entityId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!tour) {
+        throw new BadRequestException('Target tour does not exist');
+      }
+    } else if (dto.entityId) {
+      throw new BadRequestException(
+        'entityId is not allowed for general media',
       );
     }
 
@@ -93,8 +112,11 @@ export class MediaService {
     const options: UploadOptions = {
       folder,
       entityType: dto.entityType,
-      entityId: dto.entityId,
-      altText: dto.altText,
+      entityId:
+        dto.entityType === MediaEntityType.TOUR
+          ? (dto.entityId ?? null)
+          : null,
+      altText: sanitizePlainText(dto.altText).slice(0, 255) || null,
       eager,
     };
 
@@ -132,8 +154,38 @@ export class MediaService {
         `Upload failed after max retries { attempts: ${maxAttempts}, error: ${result?.error} }`,
       );
       throw new HttpException(
-        `Failed to upload media: ${result?.error}`,
+        'Media provider is temporarily unavailable',
         HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    const safeFormats = new Set(['jpg', 'jpeg', 'png', 'webp']);
+    let outputIsSafe = false;
+    try {
+      const outputUrl = new URL(result.secureUrl);
+      outputIsSafe =
+        outputUrl.protocol === 'https:' &&
+        safeFormats.has(result.format.toLowerCase()) &&
+        result.bytes > 0 &&
+        result.bytes <= maxSizeBytes &&
+        (!result.width ||
+          !result.height ||
+          (result.width <= 10_000 &&
+            result.height <= 10_000 &&
+            result.width * result.height <= 40_000_000));
+    } catch {
+      outputIsSafe = false;
+    }
+    if (!outputIsSafe) {
+      try {
+        await this.storageProvider.delete(result.publicId);
+      } catch {
+        this.logger.error(
+          'Invalid uploaded media also failed provider cleanup',
+        );
+      }
+      throw new BadRequestException(
+        'Uploaded media failed content validation',
       );
     }
 
@@ -154,9 +206,13 @@ export class MediaService {
               width: result.width,
               height: result.height,
               entityType: dto.entityType,
-              entityId: dto.entityId,
+              entityId:
+                dto.entityType === MediaEntityType.TOUR
+                  ? dto.entityId
+                  : null,
               provenance: MediaProvenance.UPLOADED,
-              altText: dto.altText,
+              altText:
+                sanitizePlainText(dto.altText).slice(0, 255) || null,
               uploadedBy: uploadedByUserId,
             },
           });
@@ -189,6 +245,24 @@ export class MediaService {
             });
             this.logger.debug(`TourImage upserted { tourId: ${dto.entityId} }`);
           }
+
+          await tx.auditLog.create({
+            data: {
+              actorId: uploadedByUserId,
+              action: 'MEDIA_ASSET_UPLOADED',
+              entityType: 'MEDIA_ASSET',
+              entityId: asset.id,
+              metadata: {
+                mediaEntityType: dto.entityType,
+                mediaEntityId:
+                  dto.entityType === MediaEntityType.TOUR
+                    ? dto.entityId
+                    : null,
+                bytes: result.bytes,
+                format: result.format,
+              },
+            },
+          });
 
           return asset as IMediaAsset;
         },
@@ -228,53 +302,82 @@ export class MediaService {
     return mediaAsset;
   }
 
-  async deleteAsset(id: string): Promise<DeleteMediaResponseDto> {
+  async deleteAsset(
+    id: string,
+    actor?: AuthenticatedUser,
+  ): Promise<DeleteMediaResponseDto> {
     this.logger.debug(`Delete initiated { id: ${id} }`);
 
-    const asset = await this.prisma.mediaAsset.findFirst({
-      where: { id, deletedAt: null },
-    });
-
-    if (!asset) {
-      throw new NotFoundException(
-        `Media asset with ID ${id} not found or already deleted`,
-      );
-    }
-
-    const [docCount, attachCount] = await Promise.all([
-      this.prisma.customerDocument.count({ where: { mediaAssetId: id } }),
-      this.prisma.bookingAttachment.count({ where: { mediaAssetId: id } }),
-    ]);
-
-    if (docCount > 0 || attachCount > 0) {
-      throw new BadRequestException(
-        `Media asset '${id}' is currently referenced by customer documents or booking attachments and cannot be removed without unlinking.`,
-      );
-    }
-
     const deletedAt = new Date();
-    await this.prisma.mediaAsset.update({
-      where: { id },
-      data: { deletedAt },
-    });
+    const asset = await this.prisma.$transaction(
+      async (tx) => {
+        const record = await tx.mediaAsset.findFirst({
+          where: { id, deletedAt: null },
+        });
+        if (!record) {
+          throw new NotFoundException('Media asset not found');
+        }
+        if (
+          actor &&
+          actor.role !== 'SUPER_ADMIN' &&
+          record.uploadedBy !== actor.id
+        ) {
+          throw new ForbiddenException(
+            'You can only delete media that you uploaded',
+          );
+        }
 
-    // Also delete associated TourImage if it exists
-    if (asset.entityType === MediaEntityType.TOUR && asset.entityId) {
-      await this.prisma.tourImage.deleteMany({
-        where: {
-          tourId: asset.entityId,
-          imageUrl: asset.secureUrl, // match by URL since there's no FK on MediaAsset id
-        },
-      });
-    }
+        const [docCount, attachCount] = await Promise.all([
+          tx.customerDocument.count({ where: { mediaAssetId: id } }),
+          tx.bookingAttachment.count({ where: { mediaAssetId: id } }),
+        ]);
+        if (docCount > 0 || attachCount > 0) {
+          throw new BadRequestException(
+            'Media asset is referenced and cannot be removed',
+          );
+        }
+
+        const claimed = await tx.mediaAsset.updateMany({
+          where: { id, deletedAt: null },
+          data: { deletedAt },
+        });
+        if (claimed.count !== 1) {
+          throw new NotFoundException('Media asset not found');
+        }
+
+        if (record.entityType === MediaEntityType.TOUR && record.entityId) {
+          await tx.tourImage.deleteMany({
+            where: {
+              tourId: record.entityId,
+              imageUrl: record.secureUrl,
+            },
+          });
+        }
+        if (actor) {
+          await tx.auditLog.create({
+            data: {
+              actorId: actor.id,
+              actorRole: actor.role,
+              action: 'MEDIA_ASSET_DELETED',
+              entityType: 'MEDIA_ASSET',
+              entityId: record.id,
+              metadata: {
+                mediaEntityType: record.entityType,
+                mediaEntityId: record.entityId,
+              },
+            },
+          });
+        }
+        return record;
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     let providerDeleteFailed = false;
     try {
       await this.storageProvider.delete(asset.publicId);
-    } catch (error: any) {
-      this.logger.warn(
-        `Cloud provider delete failed, record soft-deleted { id: ${id}, error: ${error.message} }`,
-      );
+    } catch {
+      this.logger.warn('Cloud provider delete failed for a soft-deleted asset');
       providerDeleteFailed = true;
     }
 
@@ -333,6 +436,19 @@ export class MediaService {
   }
 
   async getAssetsByTourId(tourId: string): Promise<IMediaAsset[]> {
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        id: tourId,
+        status: 'PUBLISHED',
+        isActive: true,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!tour) {
+      throw new NotFoundException('Tour not found');
+    }
+
     const assets = await this.prisma.mediaAsset.findMany({
       where: {
         entityType: MediaEntityType.TOUR,
@@ -361,31 +477,42 @@ export class MediaService {
           deletedAt: null,
           entityId: { not: null },
         },
+        select: { id: true, entityId: true },
+        orderBy: { createdAt: 'asc' },
+        take: 500,
       });
+      const tourIds = [
+        ...new Set(
+          tourAssets
+            .map((asset) => asset.entityId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const activeTours = await this.prisma.tour.findMany({
+        where: { id: { in: tourIds }, deletedAt: null },
+        select: { id: true },
+      });
+      const activeTourIds = new Set(activeTours.map((tour) => tour.id));
 
       let count = 0;
       for (const asset of tourAssets) {
-        if (asset.entityId) {
-          const tour = await this.prisma.tour.findUnique({
-            where: { id: asset.entityId },
-          });
-          if (!tour) {
-            this.logger.warn(
-              `Found orphaned MediaAsset { id: ${asset.id}, entityId: ${asset.entityId} }, soft-deleting...`,
-            );
+        if (asset.entityId && !activeTourIds.has(asset.entityId)) {
+          this.logger.warn(
+            `Found orphaned MediaAsset { id: ${asset.id}, entityId: ${asset.entityId} }, soft-deleting...`,
+          );
+          try {
             await this.deleteAsset(asset.id);
             count++;
+          } catch (error: unknown) {
+            if (!(error instanceof NotFoundException)) throw error;
           }
         }
       }
       this.logger.log(
         `Completed scheduled cleanup. Orphaned assets removed: ${count}`,
       );
-    } catch (error: any) {
-      this.logger.error(
-        `Error during scheduled cleanup of orphaned assets: ${error.message}`,
-        error.stack,
-      );
+    } catch {
+      this.logger.error('Scheduled orphaned media cleanup failed');
     }
   }
 }

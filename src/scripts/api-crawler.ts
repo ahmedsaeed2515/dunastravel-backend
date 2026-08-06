@@ -90,13 +90,21 @@ function generatePayload(schema: any): any {
 }
 
 async function run() {
+  const adminEmail = process.env.API_CRAWLER_ADMIN_EMAIL;
+  const adminPassword = process.env.API_CRAWLER_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      'API_CRAWLER_ADMIN_EMAIL and API_CRAWLER_ADMIN_PASSWORD are required.',
+    );
+  }
+
   console.log('Fetching CSRF token...');
   await sess.get('/auth/csrf');
 
   console.log('Logging in as admin...');
   await sess.post('/auth/login', {
-    email: 'admin@dunastravel.com',
-    password: 'password123',
+    email: adminEmail,
+    password: adminPassword,
   });
 
   const paths = swaggerSpec.paths;

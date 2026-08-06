@@ -10,21 +10,19 @@ import { ResponseTransformInterceptor } from '../../common/interceptors/response
 import { EMAIL_PROVIDER_TOKEN } from './providers/email-provider.interface';
 
 import { ConfigModule } from '@nestjs/config';
+import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('Notifications HTTP Contract Spec', () => {
   let app: INestApplication;
-
   const mockDeliveryLog = {
-    id: 'notif-1',
-    notificationType: 'CUSTOMER_ACKNOWLEDGMENT',
-    originReferenceCode: 'INQ-100',
-    originEntityType: 'INQUIRY',
-    recipientEmail: 'customer@example.com',
+    id: '11111111-1111-4111-8111-111111111111',
+    channel: 'EMAIL',
+    recipient: 'test@example.com',
+    template: 'BOOKING_CONFIRMATION',
     status: 'FAILED',
-    attempts: 3,
-    lastAttemptAt: new Date('2026-01-01'),
-    failureReason: 'Provider timeout',
-    providerResponseId: null,
+    originEntityType: 'INQUIRY',
+    originReferenceCode: 'INQ-100',
+    attempts: 1,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
   };
@@ -46,6 +44,12 @@ describe('Notifications HTTP Contract Spec', () => {
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot(), NotificationsModule],
+      providers: [
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
+      ],
     })
       .overrideProvider(PrismaService)
       .useValue({
@@ -57,6 +61,7 @@ describe('Notifications HTTP Contract Spec', () => {
             ...mockDeliveryLog,
             status: 'SENT',
           }),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
           create: jest.fn().mockResolvedValue(mockDeliveryLog),
         },
         emailTemplate: {
@@ -97,7 +102,7 @@ describe('Notifications HTTP Contract Spec', () => {
       .expect(200);
 
     const items = res.body.data?.items || res.body.data;
-    expect(items[0].id).toBe('notif-1');
+    expect(items[0].id).toBe('11111111-1111-4111-8111-111111111111');
   });
 
   it('GET /api/admin/communications/logs/metrics returns delivery metrics', async () => {
@@ -111,7 +116,7 @@ describe('Notifications HTTP Contract Spec', () => {
 
   it('POST /api/admin/communications/logs/:id/retry triggers manual retry', async () => {
     const res = await request(app.getHttpServer())
-      .post('/admin/communications/logs/notif-1/retry')
+      .post('/admin/communications/logs/11111111-1111-4111-8111-111111111111/retry')
       .expect(201);
 
     const body = res.body.data || res.body;

@@ -6,13 +6,15 @@ import {
   Min,
   Max,
   IsOptional,
+  IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateReviewDto {
   @ApiProperty({
     description: 'ID of the completed booking for eligibility check',
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   bookingId!: string;
 
@@ -22,13 +24,9 @@ export class CreateReviewDto {
   @Max(5)
   rating!: number;
 
-  @ApiPropertyOptional({ description: 'Reviewer display name' })
-  @IsOptional()
-  @IsString()
-  reviewerName?: string;
-
   @ApiPropertyOptional({ description: 'Review comment' })
   @IsOptional()
   @IsString()
+  @MaxLength(5_000)
   comment?: string;
 }

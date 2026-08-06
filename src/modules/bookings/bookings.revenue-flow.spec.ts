@@ -31,6 +31,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
       updateMany: jest.Mock;
       update: jest.Mock;
     };
+    bookingActivityLog: { create: jest.Mock };
     tour: {
       findUnique: jest.Mock;
       findFirst: jest.Mock;
@@ -63,6 +64,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
   let mockPrisma: {
     booking: {
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
       findMany: jest.Mock;
       count: jest.Mock;
     };
@@ -83,6 +85,9 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         update: jest.fn(),
+      },
+      bookingActivityLog: {
+        create: jest.fn().mockResolvedValue({ id: 'activity-1' }),
       },
       tour: {
         findUnique: jest.fn(),
@@ -131,6 +136,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
     mockPrisma = {
       booking: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
       },
@@ -257,7 +263,11 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         phone: '+123',
       };
 
-      const res = await bookingsService.createBooking(dto, 'user-1');
+      const res = await bookingsService.createBooking(
+        dto,
+        'user-1',
+        'last-seats-request-1',
+      );
       expect(res).toBeDefined();
       expect(mockTx.$executeRaw).toHaveBeenCalled();
     });
@@ -436,7 +446,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         adults: 2,
         children: 0,
       };
-      mockPrisma.booking.findUnique.mockResolvedValue(booking);
+      mockPrisma.booking.findFirst.mockResolvedValue(booking);
 
       await expect(
         bookingsService.cancelBooking(
@@ -469,7 +479,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
           status: 'ACTIVE',
         },
       };
-      mockPrisma.booking.findUnique.mockResolvedValue(booking);
+      mockPrisma.booking.findFirst.mockResolvedValue(booking);
       mockTx.booking.updateMany.mockResolvedValue({ count: 1 });
       mockTx.promotionRedemption.updateMany.mockResolvedValue({ count: 1 });
       mockTx.promotion.updateMany.mockResolvedValue({ count: 1 });

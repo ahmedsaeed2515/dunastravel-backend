@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { getPaginationParams, paginate } from '../../common/utils';
@@ -26,17 +26,8 @@ export interface ListAuditQueryDto {
   dateTo?: string;
 }
 
-const REDACTED_KEYS = new Set([
-  'password',
-  'passwordHash',
-  'creditCard',
-  'cardNumber',
-  'cvv',
-  'token',
-  'refreshToken',
-  'resetToken',
-  'secret',
-]);
+const SENSITIVE_KEY_PATTERN =
+  /password|token|secret|credential|card|cvv|passport|sessionurl|authorization|cookie/i;
 
 @Injectable()
 export class AuditService {
@@ -46,17 +37,32 @@ export class AuditService {
 
   private redactMetadata(
     metadata?: Record<string, unknown>,
+    depth = 0,
   ): Record<string, unknown> | null {
-    if (!metadata) return null;
+    if (!metadata || depth > 5) return null;
     const sanitized: Record<string, unknown> = {};
 
-    for (const [key, value] of Object.entries(metadata)) {
-      if (REDACTED_KEYS.has(key)) {
+    for (const [key, value] of Object.entries(metadata).slice(0, 100)) {
+      if (SENSITIVE_KEY_PATTERN.test(key)) {
         sanitized[key] = '[REDACTED]';
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value.slice(0, 100).map((item) => {
+          if (item && typeof item === 'object') {
+            return this.redactMetadata(
+              item as Record<string, unknown>,
+              depth + 1,
+            );
+          }
+          return typeof item === 'string' ? item.slice(0, 1000) : item;
+        });
       } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-        sanitized[key] = this.redactMetadata(value as Record<string, unknown>);
+        sanitized[key] = this.redactMetadata(
+          value as Record<string, unknown>,
+          depth + 1,
+        );
       } else {
-        sanitized[key] = value;
+        sanitized[key] =
+          typeof value === 'string' ? value.slice(0, 1000) : value;
       }
     }
 
@@ -78,11 +84,9 @@ export class AuditService {
           userAgent: opts.userAgent ?? null,
         },
       });
-    } catch (err) {
+    } catch {
       // Audit failure must NEVER crash the main request
-      this.logger.error(`AuditLog write failed: ${(err as Error).message}`, {
-        opts,
-      });
+      this.logger.error('AuditLog write failed');
     }
   }
 
@@ -99,9 +103,22 @@ export class AuditService {
     if (query.entityId) where.entityId = query.entityId;
 
     if (query.dateFrom || query.dateTo) {
+      const from = query.dateFrom ? new Date(query.dateFrom) : undefined;
+      const to = query.dateTo ? new Date(query.dateTo) : undefined;
+      if (
+        from &&
+        to &&
+        (from > to ||
+          to.getTime() - from.getTime() >
+            366 * 24 * 60 * 60 * 1000)
+      ) {
+        throw new BadRequestException(
+          'Audit date range must be no longer than 366 days',
+        );
+      }
       where.createdAt = {};
-      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
-      if (query.dateTo) where.createdAt.lte = new Date(query.dateTo);
+      if (from) where.createdAt.gte = from;
+      if (to) where.createdAt.lte = to;
     }
 
     const [total, items] = await Promise.all([

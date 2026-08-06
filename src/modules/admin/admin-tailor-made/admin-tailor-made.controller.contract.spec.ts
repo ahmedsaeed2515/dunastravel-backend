@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminTailorMadeController } from './admin-tailor-made.controller';
 import { AdminTailorMadeService } from './admin-tailor-made.service';
 import { BadRequestException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 describe('AdminTailorMadeController Contract Tests', () => {
   let controller: AdminTailorMadeController;
@@ -15,6 +16,12 @@ describe('AdminTailorMadeController Contract Tests', () => {
     phone: '+1234567890',
     status: 'APPROVED',
     quotedAmountUsd: '2500.00',
+  };
+  const adminUser = {
+    id: '029b99aa-0409-46dc-888e-3ed5f8f0d20a',
+    email: 'admin@example.com',
+    name: 'Admin',
+    role: UserRole.ADMIN,
   };
 
   beforeEach(async () => {
@@ -57,9 +64,12 @@ describe('AdminTailorMadeController Contract Tests', () => {
   });
 
   it('POST /api/admin/tailor-made-inquiries/:id/convert-to-booking converts approved inquiry to linked booking', async () => {
-    const res = await controller.convertToBooking('inq-100');
+    const res = await controller.convertToBooking('inq-100', adminUser);
     expect(res).toBeDefined();
-    expect(service.convertToBooking).toHaveBeenCalledWith('inq-100');
+    expect(service.convertToBooking).toHaveBeenCalledWith(
+      'inq-100',
+      adminUser,
+    );
   });
 
   it('POST /api/admin/tailor-made-inquiries/:id/convert-to-booking rejects non-approved status', async () => {
@@ -67,8 +77,8 @@ describe('AdminTailorMadeController Contract Tests', () => {
       new BadRequestException('Inquiry must be APPROVED before conversion'),
     );
 
-    await expect(controller.convertToBooking('inq-100')).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      controller.convertToBooking('inq-100', adminUser),
+    ).rejects.toThrow(BadRequestException);
   });
 });

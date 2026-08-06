@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export interface AdminCreatePromotionDto {
   code: string;
@@ -49,9 +50,13 @@ export class AdminPromotionsService {
     }
     const code = dto.code.trim().toUpperCase();
 
-    if (dto.discountPercent <= 0 || dto.discountPercent > 100) {
+    if (
+      !Number.isFinite(dto.discountPercent) ||
+      dto.discountPercent <= 0 ||
+      dto.discountPercent > 90
+    ) {
       throw new BadRequestException(
-        'Discount percentage must be greater than 0 and less than or equal to 100',
+        'Discount percentage must be between 0 and 90',
       );
     }
 
@@ -74,15 +79,28 @@ export class AdminPromotionsService {
       throw new ConflictException('Promotion code already exists');
     }
 
-    const promo = await this.prisma.promotion.create({
-      data: {
-        code,
-        discountPercent: dto.discountPercent,
-        validFrom,
-        validUntil,
-        maxUses: dto.maxUses,
-        isActive: dto.isActive !== undefined ? dto.isActive : true,
-      },
+    const promo = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.promotion.create({
+        data: {
+          code,
+          discountPercent: new Prisma.Decimal(dto.discountPercent),
+          validFrom,
+          validUntil,
+          maxUses: dto.maxUses,
+          isActive: dto.isActive !== undefined ? dto.isActive : true,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          actorRole: 'SUPER_ADMIN',
+          action: 'PROMOTION_CREATED',
+          entityType: 'Promotion',
+          entityId: created.id,
+          metadata: { code: created.code },
+        },
+      });
+      return created;
     });
 
     this.logger.log(`Promotion ${promo.code} created by admin ${adminUserId}`);
@@ -112,10 +130,12 @@ export class AdminPromotionsService {
 
     if (
       dto.discountPercent !== undefined &&
-      (dto.discountPercent <= 0 || dto.discountPercent > 100)
+      (!Number.isFinite(dto.discountPercent) ||
+        dto.discountPercent <= 0 ||
+        dto.discountPercent > 90)
     ) {
       throw new BadRequestException(
-        'Discount percentage must be greater than 0 and less than or equal to 100',
+        'Discount percentage must be between 0 and 90',
       );
     }
 
@@ -126,19 +146,40 @@ export class AdminPromotionsService {
     if (validFrom >= validUntil) {
       throw new BadRequestException('validFrom must be before validUntil');
     }
+    if (
+      dto.maxUses !== undefined &&
+      dto.maxUses < promo.currentUses
+    ) {
+      throw new BadRequestException(
+        'Maximum uses cannot be lower than current redemptions',
+      );
+    }
 
-    const updated = await this.prisma.promotion.update({
-      where: { id },
-      data: {
-        code,
-        ...(dto.discountPercent !== undefined && {
-          discountPercent: dto.discountPercent,
-        }),
-        ...(dto.validFrom && { validFrom }),
-        ...(dto.validUntil && { validUntil }),
-        ...(dto.maxUses !== undefined && { maxUses: dto.maxUses }),
-        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.promotion.update({
+        where: { id },
+        data: {
+          code,
+          ...(dto.discountPercent !== undefined && {
+            discountPercent: new Prisma.Decimal(dto.discountPercent),
+          }),
+          ...(dto.validFrom && { validFrom }),
+          ...(dto.validUntil && { validUntil }),
+          ...(dto.maxUses !== undefined && { maxUses: dto.maxUses }),
+          ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          actorRole: 'SUPER_ADMIN',
+          action: 'PROMOTION_UPDATED',
+          entityType: 'Promotion',
+          entityId: id,
+          metadata: { changedFields: Object.keys(dto) },
+        },
+      });
+      return result;
     });
 
     this.logger.log(
@@ -151,8 +192,25 @@ export class AdminPromotionsService {
     const promo = await this.prisma.promotion.findUnique({ where: { id } });
     if (!promo) throw new NotFoundException('Promotion not found');
 
-    await this.prisma.promotion.delete({ where: { id } });
-    this.logger.log(`Promotion ${promo.code} deleted by admin ${adminUserId}`);
-    return { success: true };
+    await this.prisma.$transaction(async (tx) => {
+      await tx.promotion.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          actorRole: 'SUPER_ADMIN',
+          action: 'PROMOTION_DEACTIVATED',
+          entityType: 'Promotion',
+          entityId: id,
+          metadata: { code: promo.code },
+        },
+      });
+    });
+    this.logger.log(
+      `Promotion ${promo.code} deactivated by super admin ${adminUserId}`,
+    );
+    return { success: true, deactivated: true };
   }
 }

@@ -10,6 +10,7 @@ import {
   IsObject,
   IsIn,
   Matches,
+  IsUUID,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ export class CreateBookingDto {
   @ApiProperty({ description: 'Type of request: booking or inquiry' })
   @IsString()
   @IsNotEmpty()
+  @IsIn(['booking', 'inquiry'])
   type!: 'booking' | 'inquiry';
 
   @ApiProperty({ description: 'Title of the tour to book (from frontend)' })
@@ -26,18 +28,18 @@ export class CreateBookingDto {
   tourTitle?: string;
 
   @ApiProperty({ description: 'ID of the tour' })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   tourId!: string;
 
   @ApiPropertyOptional({ description: 'ID of the availability/departure slot' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   availabilityId?: string;
 
   @ApiPropertyOptional({ description: 'ID of departure slot' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   departureId?: string;
 
   @ApiProperty({
@@ -65,11 +67,13 @@ export class CreateBookingDto {
   @ApiPropertyOptional({ example: '10:30' })
   @IsOptional()
   @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   arrivalTime?: string;
 
   @ApiPropertyOptional({ example: '14:00' })
   @IsOptional()
   @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   departureTime?: string;
 
   @ApiPropertyOptional({ example: 'es' })
@@ -83,6 +87,7 @@ export class CreateBookingDto {
   @ApiPropertyOptional({ example: 'premium' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   activityType?: string;
 
   @ApiPropertyOptional({ example: 'train' })
@@ -155,6 +160,7 @@ export class CreateBookingDto {
   @ApiProperty({ description: 'Email' })
   @IsEmail()
   @IsNotEmpty()
+  @MaxLength(254)
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.toLowerCase().trim() : value,
   )
@@ -164,11 +170,13 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
+  @Matches(/^[\d\s\-+()]+$/)
   phone!: string;
 
   @ApiPropertyOptional({ example: 'company' })
   @IsOptional()
   @IsString()
+  @IsIn(['PERSONAL', 'COMPANY'])
   invoiceType?: string;
 
   @ApiPropertyOptional()
@@ -221,15 +229,21 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)
   promoCode?: string;
 
   @ApiPropertyOptional({ description: 'Visitor analytics session ID' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/)
   analyticsSessionId?: string;
 
   @ApiPropertyOptional({ description: 'Origin landing page interface slug' })
   @IsOptional()
   @IsString()
+  @MaxLength(150)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   originInterfaceSlug?: string;
 }

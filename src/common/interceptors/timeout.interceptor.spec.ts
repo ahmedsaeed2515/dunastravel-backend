@@ -39,7 +39,7 @@ describe('TimeoutInterceptor', () => {
     await expect(
       lastValueFrom(interceptor.intercept(mockExecutionContext, callHandler)),
     ).rejects.toMatchObject({
-      statusCode: 408,
+      status: 408,
       message: 'Request Timeout',
     });
   });

@@ -1,16 +1,16 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
 import {
   HealthCheck,
   HealthCheckService,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Health')
 @Controller('health')
-@SkipThrottle()
+@Public()
 export class HealthController {
   constructor(
     private health: HealthCheckService,
@@ -35,11 +35,10 @@ export class HealthController {
       return await this.health.check([
         () => this.db.pingCheck('database', this.prisma),
       ]);
-    } catch (error) {
+    } catch {
       throw new ServiceUnavailableException({
         status: 'error',
         message: 'Readiness check failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

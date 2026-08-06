@@ -7,8 +7,6 @@ import compression from 'compression';
 import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
-import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 
 let cachedApp: NestExpressApplication;
 
@@ -19,18 +17,34 @@ async function bootstrapServerless(): Promise<express.Express> {
       Sentry.init({
         dsn: process.env.SENTRY_DSN,
         environment: process.env.NODE_ENV || 'production',
+        sendDefaultPii: false,
+        beforeSend(event) {
+          if (event.request) {
+            event.request.headers = undefined;
+            event.request.cookies = undefined;
+            event.request.data = undefined;
+            event.request.query_string = undefined;
+          }
+          if (event.user) {
+            event.user = { id: event.user.id };
+          }
+          return event;
+        },
       });
     }
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       // Use built-in logger to avoid file-write crash in serverless environment
       logger: ['log', 'error', 'warn'],
-      rawBody: true,
+      bodyParser: false,
     });
 
     const configService = app.get(ConfigService);
     app.enableShutdownHooks();
-    app.set('trust proxy', 1);
+    app.set(
+      'trust proxy',
+      configService.get<number>('trustProxyHops') ?? 1,
+    );
 
     app.use(
       helmet({
@@ -66,13 +80,14 @@ async function bootstrapServerless(): Promise<express.Express> {
     );
 
     // Safe CORS — read from env, never crash
-    const rawOrigins =
-      process.env.CORS_ALLOWED_ORIGINS ||
-      'https://www.dunastravel.com,https://admin.dunastravel.com';
+    const rawOrigins = configService.get<string>('corsAllowedOrigins') ?? '';
     const allowedOrigins = rawOrigins
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean);
+    if (allowedOrigins.length === 0) {
+      throw new Error('CORS_ALLOWED_ORIGINS is required');
+    }
 
     app.enableCors({
       origin: allowedOrigins,
@@ -85,6 +100,7 @@ async function bootstrapServerless(): Promise<express.Express> {
         'Accept',
         'Idempotency-Key',
         'X-CSRF-Token',
+        'X-Guest-Token',
       ],
       maxAge: 86400,
     });
@@ -105,17 +121,9 @@ async function bootstrapServerless(): Promise<express.Express> {
       await import('./common/filters/http-exception.filter');
     const { PrismaExceptionFilter } =
       await import('./common/filters/prisma-exception.filter');
-    const { TransformInterceptor } =
-      await import('./common/interceptors/transform.interceptor');
-
     app.useGlobalFilters(
       new HttpExceptionFilter(),
       new PrismaExceptionFilter(),
-    );
-    app.useGlobalInterceptors(
-      new TransformInterceptor(),
-      new TimeoutInterceptor(configService),
-      new RequestLoggingInterceptor(),
     );
 
     await app.init();
@@ -134,12 +142,15 @@ export default async function handler(
     server(req, res);
   } catch (error: unknown) {
     const err = error as Error;
-    console.error('[Vercel] Bootstrap Error:', err?.message, err?.stack);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[Vercel] Service initialization failed');
+    } else {
+      console.error('[Vercel] Bootstrap Error:', err?.message, err?.stack);
+    }
     if (!res.headersSent) {
       res.status(500).json({
         statusCode: 500,
-        message: 'NestJS bootstrap failed',
-        error: err?.message ?? 'Unknown error',
+        message: 'Service initialization failed',
       });
     }
   }

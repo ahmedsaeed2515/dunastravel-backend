@@ -7,6 +7,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../../common/types';
+import { UpdateAdminCurrencyRatesDto } from './admin-currency.dto';
 
 @ApiTags('Admin Currencies')
 @ApiBearerAuth()
@@ -23,16 +24,10 @@ export class AdminCurrenciesController {
   }
 
   @Post('rates')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Ingest or update currency exchange rates' })
   async updateRates(
-    @Body()
-    body: {
-      rates: Array<{
-        code: string;
-        rateToBase: number | string;
-        provider?: string;
-      }>;
-    },
+    @Body() body: UpdateAdminCurrencyRatesDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.updateRates(body.rates, user.id);

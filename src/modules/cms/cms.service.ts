@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { sanitizeHtmlContent } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
+import { AuthenticatedUser } from '../../common/types';
 
 @Injectable()
 export class CmsService {
@@ -19,6 +20,7 @@ export class CmsService {
   ) {}
 
   async getPublicBlock(key: string) {
+    this.assertValidKey(key);
     const cacheKey = `cms:${key}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) {
@@ -26,7 +28,7 @@ export class CmsService {
     }
 
     const block = await this.prisma.cmsBlock.findUnique({ where: { key } });
-    if (!block) throw new NotFoundException(`CMS block '${key}' not found`);
+    if (!block) throw new NotFoundException('CMS block not found');
 
     // Cache for 30 minutes
     await this.cacheManager.set(cacheKey, block, 1800000);
@@ -57,45 +59,51 @@ export class CmsService {
   }
 
   async findOneAdmin(key: string) {
+    this.assertValidKey(key);
     const block = await this.prisma.cmsBlock.findUnique({ where: { key } });
-    if (!block) throw new NotFoundException(`CMS block '${key}' not found`);
+    if (!block) throw new NotFoundException('CMS block not found');
     return block;
   }
 
-  async upsertAdmin(key: string, content: unknown, lastUpdatedBy?: string) {
-    if (!key || typeof key !== 'string' || !key.trim()) {
-      throw new BadRequestException('CMS block key is required');
-    }
-
+  async upsertAdmin(
+    key: string,
+    content: unknown,
+    actor: AuthenticatedUser,
+  ) {
+    this.assertValidKey(key);
     const sanitizedKey = key.trim();
-    let sanitizedContent: unknown = content;
-
-    if (typeof content === 'string') {
-      sanitizedContent = sanitizeHtmlContent(content);
-    } else if (typeof content === 'object' && content !== null) {
-      const record = JSON.parse(JSON.stringify(content)) as Record<
-        string,
-        unknown
-      >;
-      for (const k of Object.keys(record)) {
-        if (typeof record[k] === 'string') {
-          record[k] = sanitizeHtmlContent(record[k] as string);
-        }
-      }
-      sanitizedContent = record;
+    const serialized = JSON.stringify(content);
+    if (!serialized || Buffer.byteLength(serialized, 'utf8') > 100_000) {
+      throw new BadRequestException('CMS content exceeds the size limit');
     }
+    const sanitizedContent = this.sanitizeContent(content, 0);
 
-    const block = await this.prisma.cmsBlock.upsert({
-      where: { key: sanitizedKey },
-      create: {
-        key: sanitizedKey,
-        content: sanitizedContent as Prisma.InputJsonValue,
-        lastUpdatedBy: lastUpdatedBy || null,
-      },
-      update: {
-        content: sanitizedContent as Prisma.InputJsonValue,
-        lastUpdatedBy: lastUpdatedBy || null,
-      },
+    const block = await this.prisma.$transaction(async (tx) => {
+      const saved = await tx.cmsBlock.upsert({
+        where: { key: sanitizedKey },
+        create: {
+          key: sanitizedKey,
+          content: sanitizedContent as Prisma.InputJsonValue,
+          lastUpdatedBy: actor?.id || 'system-admin',
+        },
+        update: {
+          content: sanitizedContent as Prisma.InputJsonValue,
+          lastUpdatedBy: actor?.id || 'system-admin',
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actor?.id || 'system-admin',
+          actorRole: actor?.role || 'ADMIN',
+          action: 'CMS_BLOCK_UPSERTED',
+          entityType: 'CMS_BLOCK',
+          entityId: sanitizedKey,
+          metadata: {
+            contentBytes: Buffer.byteLength(serialized, 'utf8'),
+          },
+        },
+      });
+      return saved;
     });
 
     const cacheKey = `cms:${sanitizedKey}`;
@@ -104,15 +112,79 @@ export class CmsService {
     return block;
   }
 
-  async deleteAdmin(key: string) {
+  async deleteAdmin(key: string, actor: AuthenticatedUser) {
+    this.assertValidKey(key);
     const existing = await this.prisma.cmsBlock.findUnique({ where: { key } });
     if (!existing) {
-      throw new NotFoundException(`CMS block '${key}' not found`);
+      throw new NotFoundException('CMS block not found');
     }
 
-    await this.prisma.cmsBlock.delete({ where: { key } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.cmsBlock.delete({ where: { key } });
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'CMS_BLOCK_DELETED',
+          entityType: 'CMS_BLOCK',
+          entityId: key,
+        },
+      });
+    });
     await this.cacheManager.del(`cms:${key}`);
 
     return { success: true, message: `CMS block '${key}' deleted.` };
+  }
+
+  private assertValidKey(key: string): void {
+    if (
+      typeof key !== 'string' ||
+      !/^[a-z][a-z0-9_.-]{0,99}$/.test(key)
+    ) {
+      throw new BadRequestException('Invalid CMS block key');
+    }
+  }
+
+  private sanitizeContent(value: unknown, depth: number): unknown {
+    if (depth > 5) {
+      throw new BadRequestException('CMS content is nested too deeply');
+    }
+    if (value === null || typeof value === 'boolean') return value;
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value)) {
+        throw new BadRequestException('CMS content contains an invalid number');
+      }
+      return value;
+    }
+    if (typeof value === 'string') {
+      if (value.length > 20_000) {
+        throw new BadRequestException('CMS text exceeds the size limit');
+      }
+      return sanitizeHtmlContent(value);
+    }
+    if (Array.isArray(value)) {
+      if (value.length > 100) {
+        throw new BadRequestException('CMS array exceeds the item limit');
+      }
+      return value.map((item) => this.sanitizeContent(item, depth + 1));
+    }
+    if (typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length > 100) {
+        throw new BadRequestException('CMS object exceeds the key limit');
+      }
+      const result: Record<string, unknown> = Object.create(null);
+      for (const [key, child] of entries) {
+        if (
+          !/^[A-Za-z][A-Za-z0-9_.-]{0,99}$/.test(key) ||
+          ['__proto__', 'prototype', 'constructor'].includes(key)
+        ) {
+          throw new BadRequestException('CMS content contains an invalid key');
+        }
+        result[key] = this.sanitizeContent(child, depth + 1);
+      }
+      return result;
+    }
+    throw new BadRequestException('CMS content contains an unsupported value');
   }
 }

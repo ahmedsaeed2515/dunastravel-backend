@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
-import { DatabaseBackupService } from './database-backup.service';
 
 /**
  * PrismaModule is registered as @Global() so PrismaService
@@ -11,7 +10,7 @@ import { DatabaseBackupService } from './database-backup.service';
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [PrismaService, DatabaseBackupService],
-  exports: [PrismaService, DatabaseBackupService],
+  providers: [PrismaService],
+  exports: [PrismaService],
 })
 export class PrismaModule {}

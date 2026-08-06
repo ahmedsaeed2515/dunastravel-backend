@@ -3,7 +3,6 @@ import {
   Get,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,11 +15,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AuditService } from './audit.service';
+import { ListAuditQueryDto } from './dto/list-audit-query.dto';
+import { UserRole } from '@prisma/client';
 
 @ApiTags('Admin - Audit Log')
 @Controller('admin/audit-log')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@Roles(UserRole.SUPER_ADMIN)
 @ApiBearerAuth()
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
@@ -36,25 +37,7 @@ export class AuditController {
   @ApiQuery({ name: 'dateFrom', required: false, type: String })
   @ApiQuery({ name: 'dateTo', required: false, type: String })
   @ApiOkResponse({ description: 'Paginated audit log entries' })
-  async findAll(
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-    @Query('action') action?: string,
-    @Query('actorId') actorId?: string,
-    @Query('actorRole') actorRole?: string,
-    @Query('entityType') entityType?: string,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
-  ) {
-    return this.auditService.findAllAdmin({
-      page,
-      limit,
-      action,
-      actorId,
-      actorRole,
-      entityType,
-      dateFrom,
-      dateTo,
-    });
+  async findAll(@Query() query: ListAuditQueryDto) {
+    return this.auditService.findAllAdmin(query);
   }
 }

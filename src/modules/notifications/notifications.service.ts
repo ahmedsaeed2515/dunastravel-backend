@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
@@ -33,9 +34,7 @@ export class NotificationsService {
 
     const where: Prisma.NotificationDeliveryLogWhereInput = {};
     if (status) where.status = status;
-    if (notificationType)
-      where.notificationType =
-        notificationType as unknown as Prisma.EnumNotificationTypeFilter;
+    if (notificationType) where.notificationType = notificationType;
     if (recipientEmail)
       where.recipientEmail = { contains: recipientEmail, mode: 'insensitive' };
 
@@ -95,15 +94,47 @@ export class NotificationsService {
     });
     if (!log) throw new NotFoundException('Notification log not found');
 
-    if (log.status === NotificationDeliveryStatus.SENT) {
+    if (
+      log.status !== NotificationDeliveryStatus.FAILED &&
+      log.status !== NotificationDeliveryStatus.EXHAUSTED
+    ) {
       throw new BadRequestException(
-        'Notification was already sent successfully',
+        'Only failed notifications can be retried',
       );
     }
 
-    this.logger.log(
-      `Retrying notification ${id} for ${log.originEntityType} ${log.originReferenceCode}`,
-    );
+    const claim = await this.prisma.notificationDeliveryLog.updateMany({
+      where: {
+        id,
+        status: {
+          in: [
+            NotificationDeliveryStatus.FAILED,
+            NotificationDeliveryStatus.EXHAUSTED,
+          ],
+        },
+        attempts: { lt: 10 },
+        OR: [
+          { lastAttemptAt: null },
+          {
+            lastAttemptAt: {
+              lt: new Date(Date.now() - 5 * 60 * 1000),
+            },
+          },
+        ],
+      },
+      data: {
+        attempts: { increment: 1 },
+        lastAttemptAt: new Date(),
+        failureReason: 'Manual retry requested',
+      },
+    });
+    if (claim.count !== 1) {
+      throw new ConflictException(
+        'Notification retry is cooling down or exhausted',
+      );
+    }
+
+    this.logger.log(`Retrying failed notification log ${id}`);
 
     switch (log.originEntityType) {
       case 'INQUIRY': {
@@ -144,24 +175,13 @@ export class NotificationsService {
                   >[0],
                 );
 
-          await this.prisma.notificationDeliveryLog.update({
-            where: { id: log.id },
-            data: { failureReason: 'Retried manually (new log created)' },
-          });
-
-          this.emailDelivery
-            .deliver(
-              log.notificationType as unknown as NotificationType,
-              inquiry.referenceCode,
-              'INQUIRY',
-              payload,
-            )
-            .catch((e: unknown) =>
-              this.logger.error(
-                `Retry notification failed: ${(e as Error).message}`,
-              ),
-            );
-          return { success: true, message: 'Retry initiated' };
+          await this.emailDelivery.deliver(
+            log.notificationType as unknown as NotificationType,
+            inquiry.referenceCode,
+            'INQUIRY',
+            payload,
+          );
+          return { success: true, message: 'Retry completed' };
         }
         break;
       }
@@ -194,24 +214,13 @@ export class NotificationsService {
                   contactEvent,
                 );
 
-          await this.prisma.notificationDeliveryLog.update({
-            where: { id: log.id },
-            data: { failureReason: 'Retried manually (new log created)' },
-          });
-
-          this.emailDelivery
-            .deliver(
-              log.notificationType as unknown as NotificationType,
-              contact.referenceCode,
-              'CONTACT',
-              payload,
-            )
-            .catch((e: unknown) =>
-              this.logger.error(
-                `Retry notification failed: ${(e as Error).message}`,
-              ),
-            );
-          return { success: true, message: 'Retry initiated' };
+          await this.emailDelivery.deliver(
+            log.notificationType as unknown as NotificationType,
+            contact.referenceCode,
+            'CONTACT',
+            payload,
+          );
+          return { success: true, message: 'Retry completed' };
         }
         break;
       }
@@ -255,11 +264,7 @@ export class NotificationsService {
 
     this.emailDelivery
       .deliver(NotificationType.USER_VERIFICATION, 'AUTH', 'USER', payload)
-      .catch((e: unknown) =>
-        this.logger.error(
-          `Send verification email failed: ${(e as Error).message}`,
-        ),
-      );
+      .catch(() => this.logger.error('Send verification email failed'));
   }
 
   async sendPasswordResetEmail(
@@ -290,10 +295,6 @@ export class NotificationsService {
 
     this.emailDelivery
       .deliver(NotificationType.PASSWORD_RESET, 'AUTH', 'USER', payload)
-      .catch((e: unknown) =>
-        this.logger.error(
-          `Send password reset email failed: ${(e as Error).message}`,
-        ),
-      );
+      .catch(() => this.logger.error('Send password reset email failed'));
   }
 }

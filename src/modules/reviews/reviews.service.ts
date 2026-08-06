@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   ConflictException,
   BadRequestException,
   UnprocessableEntityException,
@@ -14,8 +13,9 @@ import {
   UpdateReviewStatusDto,
   AdminReplyReviewDto,
 } from './dto/update-review-status.dto';
-import { sanitizeHtmlContent } from '../../common/utils/content-sanitizer.util';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
+import { AuthenticatedUser } from '../../common/types';
 
 @Injectable()
 export class ReviewsService {
@@ -43,6 +43,16 @@ export class ReviewsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        // Public reviews must never expose the reviewer account or booking IDs.
+        select: {
+          id: true,
+          tourId: true,
+          rating: true,
+          reviewerName: true,
+          comment: true,
+          adminReply: true,
+          createdAt: true,
+        },
       }),
     ]);
 
@@ -73,18 +83,23 @@ export class ReviewsService {
     // 1. Verify booking existence
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        tourId: true,
+        status: true,
+        deletedAt: true,
+        user: { select: { name: true } },
+      },
     });
 
-    if (!booking) {
-      throw new NotFoundException(`Booking '${dto.bookingId}' not found`);
+    if (!booking || booking.deletedAt) {
+      throw new NotFoundException('Booking not found');
     }
 
     // 2. Ownership check
     if (booking.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only submit a review for your own booking',
-      );
+      throw new NotFoundException('Booking not found');
     }
 
     // 3. Tour match check
@@ -116,25 +131,34 @@ export class ReviewsService {
     }
 
     const sanitizedComment = dto.comment
-      ? sanitizeHtmlContent(dto.comment)
+      ? sanitizePlainText(dto.comment).slice(0, 5_000)
       : null;
     const reviewerName =
-      dto.reviewerName || booking.user?.name || 'Verified Traveler';
+      sanitizePlainText(
+        booking.user?.name || 'Verified Traveler',
+      ).slice(0, 100);
 
-    const newReview = await this.prisma.tourReview.create({
-      data: {
-        tourId,
-        userId,
-        bookingId: dto.bookingId,
-        rating: dto.rating,
-        reviewerName,
-        comment: sanitizedComment,
-        status: 'PENDING',
-        isPublished: false,
-      },
-    });
-
-    return newReview;
+    try {
+      return await this.prisma.tourReview.create({
+        data: {
+          tourId,
+          userId,
+          bookingId: dto.bookingId,
+          rating: dto.rating,
+          reviewerName,
+          comment: sanitizedComment,
+          status: 'PENDING',
+          isPublished: false,
+        },
+      });
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === 'P2002') {
+        throw new ConflictException(
+          'A review has already been submitted for this booking',
+        );
+      }
+      throw error;
+    }
   }
 
   // --- ADMIN API ---
@@ -174,7 +198,7 @@ export class ReviewsService {
   async updateStatusAdmin(
     id: string,
     dto: UpdateReviewStatusDto,
-    actorId?: string,
+    actor: AuthenticatedUser,
   ) {
     const review = await this.prisma.tourReview.findUnique({
       where: { id },
@@ -185,37 +209,38 @@ export class ReviewsService {
     }
 
     const isPublished =
-      dto.isPublished !== undefined
-        ? dto.isPublished
-        : dto.status === 'APPROVED';
-
-    const updated = await this.prisma.tourReview.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        isPublished,
-      },
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TOUR_REVIEW_STATUS_UPDATED',
-        entityType: 'TOUR_REVIEW',
-        entityId: id,
-        metadata: {
-          oldStatus: review.status,
-          newStatus: dto.status,
+      dto.status === 'APPROVED' && dto.isPublished !== false;
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tourReview.update({
+        where: { id },
+        data: {
+          status: dto.status,
           isPublished,
         },
-      },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'TOUR_REVIEW_STATUS_UPDATED',
+          entityType: 'TOUR_REVIEW',
+          entityId: id,
+          metadata: {
+            oldStatus: review.status,
+            newStatus: dto.status,
+            isPublished,
+          },
+        },
+      });
+      return updated;
     });
-
-    return updated;
   }
 
-  async replyAdmin(id: string, dto: AdminReplyReviewDto, actorId?: string) {
+  async replyAdmin(
+    id: string,
+    dto: AdminReplyReviewDto,
+    actor: AuthenticatedUser,
+  ) {
     const review = await this.prisma.tourReview.findUnique({
       where: { id },
     });
@@ -224,27 +249,29 @@ export class ReviewsService {
       throw new NotFoundException(`Review '${id}' not found`);
     }
 
-    const sanitizedReply = sanitizeHtmlContent(dto.adminReply);
-
-    const updated = await this.prisma.tourReview.update({
-      where: { id },
-      data: { adminReply: sanitizedReply },
+    const sanitizedReply = sanitizePlainText(dto.adminReply).slice(0, 2_000);
+    if (!sanitizedReply) {
+      throw new BadRequestException('Reply cannot be empty');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tourReview.update({
+        where: { id },
+        data: { adminReply: sanitizedReply },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'TOUR_REVIEW_REPLIED',
+          entityType: 'TOUR_REVIEW',
+          entityId: id,
+        },
+      });
+      return updated;
     });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TOUR_REVIEW_REPLIED',
-        entityType: 'TOUR_REVIEW',
-        entityId: id,
-      },
-    });
-
-    return updated;
   }
 
-  async softDeleteAdmin(id: string, actorId?: string) {
+  async softDeleteAdmin(id: string, actor: AuthenticatedUser) {
     const review = await this.prisma.tourReview.findUnique({
       where: { id },
     });
@@ -253,23 +280,24 @@ export class ReviewsService {
       throw new NotFoundException(`Review '${id}' not found`);
     }
 
-    await this.prisma.tourReview.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        isPublished: false,
-        status: 'REJECTED',
-      },
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TOUR_REVIEW_DELETED',
-        entityType: 'TOUR_REVIEW',
-        entityId: id,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tourReview.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          isPublished: false,
+          status: 'REJECTED',
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'TOUR_REVIEW_DELETED',
+          entityType: 'TOUR_REVIEW',
+          entityId: id,
+        },
+      });
     });
 
     return { success: true, message: `Review '${id}' deleted.` };

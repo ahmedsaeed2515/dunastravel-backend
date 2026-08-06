@@ -77,6 +77,9 @@ describe('BookingsService', () => {
       update: jest.Mock;
       updateMany: jest.Mock;
     };
+    bookingActivityLog: {
+      create: jest.Mock;
+    };
     tourAvailability: {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
@@ -118,6 +121,9 @@ describe('BookingsService', () => {
         create: jest.fn().mockResolvedValue(mockBookingResult),
         update: jest.fn().mockResolvedValue(mockBookingResult),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      bookingActivityLog: {
+        create: jest.fn().mockResolvedValue({ id: 'activity-1' }),
       },
       tourAvailability: {
         findFirst: jest.fn().mockResolvedValue({
@@ -198,6 +204,7 @@ describe('BookingsService', () => {
             },
             booking: {
               findUnique: jest.fn().mockResolvedValue(null),
+              findFirst: jest.fn().mockResolvedValue(null),
               findMany: jest.fn().mockResolvedValue([]),
               count: jest.fn().mockResolvedValue(1),
             },
@@ -291,14 +298,14 @@ describe('BookingsService', () => {
 
   describe('createBooking', () => {
     it('should return valid booking structure', async () => {
-      const result = await service.createBooking(baseDto, 'user-1');
+      const result = await service.createBooking(baseDto, 'user-1', 'test-idem-1');
       expect(result.referenceCode).toBe('BKG-ABC123');
       expect(result.status).toBe('PENDING');
     });
 
     it('should handle concurrent booking requests without duplicate invoice numbers', async () => {
-      const promises = Array.from({ length: 5 }, () =>
-        service.createBooking(baseDto, 'user-1'),
+      const promises = Array.from({ length: 5 }, (_, idx) =>
+        service.createBooking(baseDto, 'user-1', `test-idem-concurrent-${idx}`),
       );
       const results = await Promise.all(promises);
       const invoiceNumbers = results.map((r) => r.invoiceNumber);
@@ -309,7 +316,7 @@ describe('BookingsService', () => {
     });
 
     it('should always recalculate total server-side (ignores client)', async () => {
-      await service.createBooking(baseDto, undefined);
+      await service.createBooking(baseDto, undefined, 'test-idem-total');
       const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
         data: { totalAmountUsd: Prisma.Decimal };
       }>;
@@ -318,7 +325,7 @@ describe('BookingsService', () => {
     });
 
     it('should support guest checkout (userId=null)', async () => {
-      await service.createBooking(baseDto, undefined);
+      await service.createBooking(baseDto, undefined, 'test-idem-guest');
       const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
         data: { userId: string | null };
       }>;
@@ -328,7 +335,7 @@ describe('BookingsService', () => {
 
     it('should throw UnprocessableEntityException when tour missing', async () => {
       mockTx.tour.findUnique.mockResolvedValue(null);
-      await expect(service.createBooking(baseDto, 'user-1')).rejects.toThrow(
+      await expect(service.createBooking(baseDto, 'user-1', 'test-idem-missing')).rejects.toThrow(
         UnprocessableEntityException,
       );
     });
@@ -340,7 +347,7 @@ describe('BookingsService', () => {
         companyName: 'Acme Corp',
         taxId: 'TAX-123',
       };
-      const result = await service.createBooking(dto, 'user-1');
+      const result = await service.createBooking(dto, 'user-1', 'test-idem-company');
       expect(result.status).toBe('PENDING');
     });
 
@@ -350,7 +357,7 @@ describe('BookingsService', () => {
         meta: { target: ['idempotency_key'] },
       });
       jest.spyOn(prisma, '$transaction').mockRejectedValue(p2002);
-      await expect(service.createBooking(baseDto, 'user-1')).rejects.toThrow(
+      await expect(service.createBooking(baseDto, 'user-1', 'test-idem-p2002')).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -384,7 +391,7 @@ describe('BookingsService', () => {
     };
 
     beforeEach(() => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue(mockBooking);
     });
 
     it('should allow owner access by userId', async () => {
@@ -414,7 +421,7 @@ describe('BookingsService', () => {
     });
 
     it('should throw NotFoundException when booking does not exist', async () => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue(null);
       await expect(
         service.findByReferenceCode('BKG-ZZZZZZ', undefined, guestTokenHash),
       ).rejects.toThrow(NotFoundException);
@@ -443,7 +450,7 @@ describe('BookingsService', () => {
     };
 
     it('should successfully cancel booking for the owner', async () => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue(mockBooking);
 
       const result = await service.cancelBooking(
         'BKG-ABC123',
@@ -455,7 +462,7 @@ describe('BookingsService', () => {
     });
 
     it('should successfully cancel booking with guestToken', async () => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue(mockBooking);
 
       const result = await service.cancelBooking(
         'BKG-ABC123',
@@ -468,7 +475,7 @@ describe('BookingsService', () => {
     });
 
     it('should reject cancellation by non-owner without guestToken (IDOR)', async () => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue(mockBooking);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue(mockBooking);
 
       await expect(
         service.cancelBooking('BKG-ABC123', 'other-user'),
@@ -476,7 +483,7 @@ describe('BookingsService', () => {
     });
 
     it('should throw BadRequestException if booking is already cancelled', async () => {
-      (prisma.booking.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValue({
         ...mockBooking,
         status: 'CANCELLED',
       });

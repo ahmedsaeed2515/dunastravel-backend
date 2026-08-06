@@ -1,12 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsUUID } from 'class-validator';
 
 export class AssignBookingDto {
   @ApiPropertyOptional({
     description:
       'Admin User ID to assign the booking to. Pass null to unassign.',
   })
-  @IsString()
   @IsOptional()
+  @IsUUID('4')
   assigneeId?: string | null;
 }

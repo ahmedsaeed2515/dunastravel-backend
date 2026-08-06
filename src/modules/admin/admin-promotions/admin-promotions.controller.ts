@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -36,11 +37,12 @@ export class AdminPromotionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific promotion' })
-  async getPromotion(@Param('id') id: string) {
+  async getPromotion(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminPromotionsService.getPromotion(id);
   }
 
   @Post()
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new promotion' })
   async createPromotion(
     @Body() dto: CreatePromotionDto,
@@ -50,9 +52,10 @@ export class AdminPromotionsController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing promotion' })
   async updatePromotion(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePromotionDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -60,9 +63,10 @@ export class AdminPromotionsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a promotion' })
   async deletePromotion(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminPromotionsService.deletePromotion(id, user.id);

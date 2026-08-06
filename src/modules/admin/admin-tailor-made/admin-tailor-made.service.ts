@@ -2,36 +2,127 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Inject,
-  forwardRef,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { TailorMadeInquiryStatus, Prisma } from '@prisma/client';
+import {
+  TailorMadeInquiryStatus,
+  Prisma,
+  UserRole,
+} from '@prisma/client';
 import { paginate, getPaginationParams } from '../../../common/utils';
 import {
   generateReferenceCode,
   generateInvoiceNumber,
 } from '../../../common/utils/identifiers.util';
-import { BookingsService } from '../../bookings/bookings.service';
 import { InvoiceSnapshot } from '../../invoices/types';
+import { AuthenticatedUser } from '../../../common/types';
+import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class AdminTailorMadeService {
-  constructor(
-    private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => BookingsService))
-    private readonly bookingsService: BookingsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  private readonly inquirySelect = {
+    id: true,
+    referenceCode: true,
+    fullName: true,
+    email: true,
+    phone: true,
+    preferredLanguage: true,
+    destinations: true,
+    startDate: true,
+    endDate: true,
+    adults: true,
+    children: true,
+    budgetAmount: true,
+    budgetCurrency: true,
+    notes: true,
+    assigneeId: true,
+    followUpAt: true,
+    internalNote: true,
+    quotedAmountUsd: true,
+    bookingId: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
+    assignee: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+      },
+    },
+    booking: {
+      select: {
+        id: true,
+        referenceCode: true,
+        status: true,
+        totalAmountUsd: true,
+        paidAmountUsd: true,
+        createdAt: true,
+      },
+    },
+  } satisfies Prisma.TailorMadeInquirySelect;
+
+  private readonly bookingResultSelect = {
+    id: true,
+    referenceCode: true,
+    status: true,
+    bookingType: true,
+    arrivalDate: true,
+    departureDate: true,
+    adults: true,
+    children: true,
+    infants: true,
+    totalAmountUsd: true,
+    paidAmountUsd: true,
+    createdAt: true,
+    passengers: {
+      select: {
+        id: true,
+        passengerType: true,
+        fullName: true,
+      },
+    },
+    billingInfo: {
+      select: {
+        fullName: true,
+        email: true,
+        phone: true,
+        invoiceType: true,
+      },
+    },
+    invoice: {
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        subtotal: true,
+        tax: true,
+        total: true,
+        currency: true,
+        issuedAt: true,
+      },
+    },
+  } satisfies Prisma.BookingSelect;
 
   async findAll(
-    pageVal: number = 1,
-    limitVal: number = 10,
-    status?: string,
+    query: {
+      page?: number;
+      limit?: number;
+      status?: TailorMadeInquiryStatus;
+    },
     assigneeId?: string,
   ) {
-    const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
+    const { skip, take, page, limit } = getPaginationParams(
+      query.page,
+      query.limit,
+    );
     const where: Prisma.TailorMadeInquiryWhereInput = {};
-    if (status) where.status = status as TailorMadeInquiryStatus;
+    if (query.status) where.status = query.status;
     if (assigneeId) where.assigneeId = assigneeId;
 
     const [total, records] = await this.prisma.$transaction([
@@ -41,17 +132,17 @@ export class AdminTailorMadeService {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
-        include: { assignee: true, booking: true },
+        select: this.inquirySelect,
       }),
     ]);
 
     return paginate(records, total, page, limit);
   }
 
-  async findOne(id: string) {
+  private async getInquiry(id: string) {
     const record = await this.prisma.tailorMadeInquiry.findUnique({
       where: { id },
-      include: { assignee: true, booking: true },
+      select: this.inquirySelect,
     });
     if (!record) {
       throw new NotFoundException(
@@ -61,13 +152,32 @@ export class AdminTailorMadeService {
     return record;
   }
 
+  async findOne(id: string, actor: AuthenticatedUser) {
+    const record = await this.getInquiry(id);
+    this.assertActorCanAccess(record.assigneeId, actor);
+    return record;
+  }
+
+  private assertActorCanAccess(
+    assigneeId: string | null,
+    actor: AuthenticatedUser,
+  ): void {
+    if (actor.role === UserRole.AGENT && assigneeId !== actor.id) {
+      throw new ForbiddenException(
+        'You can only access inquiries assigned to you',
+      );
+    }
+  }
+
   async updateStatus(
     id: string,
     status: TailorMadeInquiryStatus,
     notes?: string,
-    actorId?: string,
+    actor?: AuthenticatedUser,
   ) {
-    const inquiry = await this.findOne(id);
+    if (!actor) throw new ForbiddenException('Authenticated actor required');
+    const inquiry = await this.getInquiry(id);
+    this.assertActorCanAccess(inquiry.assigneeId, actor);
 
     if (inquiry.status === status) return inquiry;
 
@@ -87,99 +197,176 @@ export class AdminTailorMadeService {
       );
     }
 
-    const updated = await this.prisma.tailorMadeInquiry.update({
-      where: { id },
-      data: {
-        status,
-        ...(notes ? { internalNote: notes } : {}),
+    const safeNotes = notes
+      ? sanitizePlainText(notes).slice(0, 5_000)
+      : undefined;
+    return this.prisma.$transaction(
+      async (tx) => {
+        const claimed = await tx.tailorMadeInquiry.updateMany({
+          where: {
+            id,
+            status: inquiry.status,
+            ...(actor.role === UserRole.AGENT && {
+              assigneeId: actor.id,
+            }),
+          },
+          data: {
+            status,
+            ...(safeNotes !== undefined && { internalNote: safeNotes }),
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(
+            'Inquiry changed; reload before updating it',
+          );
+        }
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TAILOR_MADE_INQUIRY_STATUS_UPDATED',
+            entityType: 'TAILOR_MADE_INQUIRY',
+            entityId: id,
+            metadata: {
+              oldStatus: inquiry.status,
+              newStatus: status,
+              notesUpdated: safeNotes !== undefined,
+            },
+          },
+        });
+        return tx.tailorMadeInquiry.findUniqueOrThrow({
+          where: { id },
+          select: this.inquirySelect,
+        });
       },
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TAILOR_MADE_INQUIRY_STATUS_UPDATED',
-        entityType: 'TAILOR_MADE_INQUIRY',
-        entityId: id,
-        metadata: {
-          oldStatus: inquiry.status,
-          newStatus: status,
-          notes,
-        },
-      },
-    });
-
-    return updated;
+      { isolationLevel: 'Serializable' },
+    );
   }
 
-  async assignInquiry(id: string, assigneeId: string, actorId?: string) {
-    const inquiry = await this.findOne(id);
-    const updated = await this.prisma.tailorMadeInquiry.update({
-      where: { id },
-      data: { assigneeId },
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TAILOR_MADE_INQUIRY_ASSIGNED',
-        entityType: 'TAILOR_MADE_INQUIRY',
-        entityId: id,
-        metadata: {
-          oldAssigneeId: inquiry.assigneeId,
-          newAssigneeId: assigneeId,
+  async assignInquiry(
+    id: string,
+    assigneeId: string,
+    actor: AuthenticatedUser,
+  ) {
+    const [inquiry, assignee] = await Promise.all([
+      this.getInquiry(id),
+      this.prisma.user.findFirst({
+        where: {
+          id: assigneeId,
+          role: UserRole.AGENT,
+          status: 'ACTIVE',
+          deletedAt: null,
         },
-      },
-    });
+        select: { id: true },
+      }),
+    ]);
+    if (!assignee) {
+      throw new BadRequestException('Assignee must be an active agent');
+    }
 
-    return updated;
+    return this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.tailorMadeInquiry.update({
+          where: { id },
+          data: { assigneeId },
+          select: this.inquirySelect,
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TAILOR_MADE_INQUIRY_ASSIGNED',
+            entityType: 'TAILOR_MADE_INQUIRY',
+            entityId: id,
+            metadata: {
+              oldAssigneeId: inquiry.assigneeId,
+              newAssigneeId: assigneeId,
+            },
+          },
+        });
+        return updated;
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   async createQuote(
     id: string,
     amount: number,
     notes?: string,
-    actorId?: string,
+    actor?: AuthenticatedUser,
   ) {
-    const inquiry = await this.findOne(id);
-    const updated = await this.prisma.tailorMadeInquiry.update({
-      where: { id },
-      data: {
-        quotedAmountUsd: new Prisma.Decimal(amount),
-        internalNote: notes,
-        status: TailorMadeInquiryStatus.QUOTED,
-      },
-    });
+    if (!actor) throw new ForbiddenException('Authenticated actor required');
+    const inquiry = await this.getInquiry(id);
+    this.assertActorCanAccess(inquiry.assigneeId, actor);
+    if (
+      inquiry.status !== TailorMadeInquiryStatus.IN_PROGRESS &&
+      inquiry.status !== TailorMadeInquiryStatus.QUOTED
+    ) {
+      throw new BadRequestException(
+        'Only in-progress or already quoted inquiries can be quoted',
+      );
+    }
+    const quotedAmount = new Prisma.Decimal(amount);
+    const safeNotes =
+      notes !== undefined
+        ? sanitizePlainText(notes).slice(0, 5_000)
+        : undefined;
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: actorId || null,
-        actorRole: 'ADMIN',
-        action: 'TAILOR_MADE_INQUIRY_QUOTED',
-        entityType: 'TAILOR_MADE_INQUIRY',
-        entityId: id,
-        metadata: {
-          quotedAmountUsd: amount,
-          notes,
-        },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const claimed = await tx.tailorMadeInquiry.updateMany({
+          where: {
+            id,
+            status: inquiry.status,
+            ...(actor.role === UserRole.AGENT && {
+              assigneeId: actor.id,
+            }),
+          },
+          data: {
+            quotedAmountUsd: quotedAmount,
+            ...(safeNotes !== undefined && { internalNote: safeNotes }),
+            status: TailorMadeInquiryStatus.QUOTED,
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(
+            'Inquiry changed; reload before quoting it',
+          );
+        }
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TAILOR_MADE_INQUIRY_QUOTED',
+            entityType: 'TAILOR_MADE_INQUIRY',
+            entityId: id,
+            metadata: {
+              oldQuotedAmountUsd: inquiry.quotedAmountUsd?.toString() ?? null,
+              newQuotedAmountUsd: quotedAmount.toString(),
+              notesUpdated: safeNotes !== undefined,
+            },
+          },
+        });
+        return tx.tailorMadeInquiry.findUniqueOrThrow({
+          where: { id },
+          select: this.inquirySelect,
+        });
       },
-    });
-
-    return updated;
+      { isolationLevel: 'Serializable' },
+    );
   }
 
-  async convertToBooking(id: string) {
-    const inquiry = await this.findOne(id);
+  async convertToBooking(id: string, actor: AuthenticatedUser) {
+    const inquiry = await this.getInquiry(id);
 
     if (
       inquiry.status === TailorMadeInquiryStatus.CONVERTED_TO_BOOKING ||
       inquiry.bookingId
     ) {
       const existingBooking = await this.prisma.booking.findUnique({
-        where: { id: inquiry.bookingId || undefined },
-        include: { invoice: true, passengers: true, billingInfo: true },
+        where: { id: inquiry.bookingId as string },
+        select: this.bookingResultSelect,
       });
       return {
         inquiry,
@@ -212,12 +399,12 @@ export class AdminTailorMadeService {
       if (updatedInquiryCount.count === 0) {
         const recheck = await tx.tailorMadeInquiry.findUnique({
           where: { id },
-          include: { booking: true },
+          select: this.inquirySelect,
         });
         if (recheck?.bookingId) {
           const existingBooking = await tx.booking.findUnique({
             where: { id: recheck.bookingId },
-            include: { invoice: true, passengers: true, billingInfo: true },
+            select: this.bookingResultSelect,
           });
           return {
             inquiry: recheck,
@@ -318,6 +505,7 @@ export class AdminTailorMadeService {
             },
           },
         },
+        select: this.bookingResultSelect,
       });
 
       const invoiceNumber = await generateInvoiceNumber(tx);
@@ -368,6 +556,16 @@ export class AdminTailorMadeService {
           currency: 'USD',
           snapshotJsonb: snapshotJsonb as unknown as Prisma.InputJsonValue,
         },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          subtotal: true,
+          tax: true,
+          total: true,
+          currency: true,
+          issuedAt: true,
+        },
       });
 
       await tx.tailorMadeInquiry.update({
@@ -377,7 +575,21 @@ export class AdminTailorMadeService {
 
       const updatedInquiry = await tx.tailorMadeInquiry.findUnique({
         where: { id },
-        include: { booking: true },
+        select: this.inquirySelect,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'TAILOR_MADE_INQUIRY_CONVERTED',
+          entityType: 'TAILOR_MADE_INQUIRY',
+          entityId: id,
+          metadata: {
+            bookingId: newBooking.id,
+            invoiceId: newInvoice.id,
+          },
+        },
       });
 
       return {
@@ -385,6 +597,6 @@ export class AdminTailorMadeService {
         booking: newBooking,
         invoice: newInvoice,
       };
-    });
+    }, { isolationLevel: 'Serializable' });
   }
 }

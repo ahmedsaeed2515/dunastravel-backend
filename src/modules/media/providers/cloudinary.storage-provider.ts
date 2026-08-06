@@ -55,7 +55,6 @@ export class CloudinaryStorageProvider implements StorageProvider {
         eager: options.eager,
         eager_async: false,
         tags: tags,
-        context: options.altText ? `alt=${options.altText}` : undefined,
       };
 
       const callback = (error: any, result: any) => {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
@@ -13,6 +13,7 @@ import { BookingCreatedListener } from './listeners/booking-created.listener';
 import { PaymentEventsListener } from './listeners/payment.listener';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
+import { CommissionsModule } from '../commissions/commissions.module';
 
 const EmailProviderFactory = {
   provide: EMAIL_PROVIDER_TOKEN,
@@ -27,7 +28,12 @@ const EmailProviderFactory = {
 };
 
 @Module({
-  imports: [ConfigModule, PrismaModule, CacheModule.register()],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    CommissionsModule,
+    CacheModule.register(),
+  ],
   controllers: [NotificationsController],
   providers: [
     EmailProviderFactory,

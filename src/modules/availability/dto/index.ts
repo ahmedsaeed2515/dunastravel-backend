@@ -1,12 +1,18 @@
 import {
-  IsString,
-  IsNumber,
+  IsInt,
   IsOptional,
   IsArray,
+  IsEnum,
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  Max,
   Min,
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { TourAvailabilityStatus } from '@prisma/client';
 
 export class CreateAvailabilityDto {
   @ApiProperty({
@@ -21,14 +27,16 @@ export class CreateAvailabilityDto {
     example: 30,
   })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
+  @Max(10_000)
   totalCapacity?: number;
 
   @ApiPropertyOptional({ description: 'Slot status', example: 'AVAILABLE' })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(TourAvailabilityStatus)
+  status?: TourAvailabilityStatus;
 }
 
 export class CreateBatchAvailabilityDto {
@@ -45,8 +53,10 @@ export class CreateBatchAvailabilityDto {
 
   @ApiPropertyOptional({ description: 'Total capacity per slot', example: 30 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
+  @Max(10_000)
   totalCapacity?: number;
 
   @ApiPropertyOptional({
@@ -55,25 +65,34 @@ export class CreateBatchAvailabilityDto {
   })
   @IsOptional()
   @IsArray()
-  @IsNumber({}, { each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(7)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
   daysOfWeek?: number[];
 }
 
 export class UpdateAvailabilityDto {
   @ApiPropertyOptional({ description: 'Total capacity', example: 40 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
+  @Max(10_000)
   totalCapacity?: number;
 
   @ApiPropertyOptional({ description: 'Remaining seats', example: 25 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(0)
+  @Max(10_000)
   remainingSeats?: number;
 
   @ApiPropertyOptional({ description: 'Status override', example: 'AVAILABLE' })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(TourAvailabilityStatus)
+  status?: TourAvailabilityStatus;
 }

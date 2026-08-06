@@ -3,6 +3,7 @@ export default () => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
   frontendUrl: process.env.FRONTEND_URL,
+  trustProxyHops: parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10),
   database: {
     url: process.env.DATABASE_URL,
   },
@@ -11,7 +12,9 @@ export default () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    issuer: process.env.JWT_ISSUER ?? 'dunas-travel-api',
+    audience: process.env.JWT_AUDIENCE ?? 'dunas-travel-clients',
   },
   auth: {
     guestTokenSecret: process.env.GUEST_TOKEN_SECRET,

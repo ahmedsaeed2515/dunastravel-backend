@@ -6,6 +6,7 @@ import {
   WalletOwnerType,
   WalletTransactionType,
   WalletTransactionStatus,
+  Prisma,
 } from '@prisma/client';
 
 describe('WalletsService', () => {
@@ -25,18 +26,27 @@ describe('WalletsService', () => {
             wallet: {
               upsert: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
               findUnique: jest.fn(),
+              findUniqueOrThrow: jest
+                .fn()
+                .mockResolvedValue({ balance: 60 }),
               findFirst: jest.fn(),
               count: jest.fn(),
               aggregate: jest.fn(),
             },
             walletTransaction: {
               create: jest.fn(),
+              findFirst: jest.fn().mockResolvedValue(null),
               findMany: jest.fn(),
               count: jest.fn(),
             },
             company: {
+              findFirst: jest.fn().mockResolvedValue({ id: 'comp-1' }),
               update: jest.fn(),
+            },
+            user: {
+              findFirst: jest.fn().mockResolvedValue({ id: 'user-1' }),
             },
           },
         },
@@ -56,6 +66,9 @@ describe('WalletsService', () => {
       jest
         .spyOn(prisma.wallet, 'upsert')
         .mockResolvedValue({ id: 'wallet-1', balance: 50 } as any);
+      jest
+        .spyOn(prisma.wallet, 'updateMany')
+        .mockResolvedValue({ count: 0 });
 
       await expect(
         service.addTransaction({
@@ -82,9 +95,9 @@ describe('WalletsService', () => {
         type: WalletTransactionType.CREDIT,
       } as any);
 
-      expect(prisma.wallet.update).toHaveBeenCalledWith({
-        where: { id: 'wallet-1' },
-        data: { balance: { increment: 50 } },
+      expect(prisma.wallet.updateMany).toHaveBeenCalledWith({
+        where: { id: 'wallet-1', status: 'ACTIVE' },
+        data: { balance: { increment: new Prisma.Decimal(50) } },
       });
       // Should not update company balance for user
       expect(prisma.company.update).not.toHaveBeenCalled();
@@ -105,14 +118,18 @@ describe('WalletsService', () => {
         type: WalletTransactionType.DEBIT,
       } as any);
 
-      expect(prisma.wallet.update).toHaveBeenCalledWith({
-        where: { id: 'wallet-2' },
-        data: { balance: { increment: -40 } },
+      expect(prisma.wallet.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'wallet-2',
+          status: 'ACTIVE',
+          balance: { gte: new Prisma.Decimal(40) },
+        },
+        data: { balance: { decrement: new Prisma.Decimal(40) } },
       });
       // Should update company balance
       expect(prisma.company.update).toHaveBeenCalledWith({
         where: { id: 'comp-1' },
-        data: { currentBalance: { increment: -40 } },
+        data: { currentBalance: 60 },
       });
     });
 
@@ -132,7 +149,7 @@ describe('WalletsService', () => {
         status: WalletTransactionStatus.PENDING,
       } as any);
 
-      expect(prisma.wallet.update).not.toHaveBeenCalled();
+      expect(prisma.wallet.updateMany).not.toHaveBeenCalled();
     });
   });
 

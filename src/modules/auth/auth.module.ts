@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 import { SettingsModule } from '../settings/settings.module';
+import { LoginSecurityStateService } from '../../common/security/login-security-state.service';
 
 @Module({
   imports: [
@@ -23,13 +24,18 @@ import { SettingsModule } from '../settings/settings.module';
         const expiresIn = configService.get<string | number>('jwt.expiresIn');
         return {
           secret: configService.get<string>('jwt.secret'),
-          signOptions: { expiresIn: (expiresIn ?? '1d') as unknown as number },
+          signOptions: {
+            expiresIn: (expiresIn ?? '15m') as unknown as number,
+            algorithm: 'HS256' as const,
+            issuer: configService.get<string>('jwt.issuer'),
+            audience: configService.get<string>('jwt.audience'),
+          },
         };
       },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, LoginSecurityStateService],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

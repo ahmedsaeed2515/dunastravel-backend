@@ -9,6 +9,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,11 +24,13 @@ import { ReorderFaqDto } from './dto/reorder-faq.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { AdminFaqQueryDto } from './dto/faq-query.dto';
+import { UserRole } from '@prisma/client';
 
 @ApiTags('admin-faq')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 @Controller('admin/faq')
 export class AdminFaqController {
   constructor(private readonly faqService: FaqService) {}
@@ -37,41 +40,48 @@ export class AdminFaqController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'category', required: false, type: String })
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('category') category?: string,
-  ) {
-    return this.faqService.findAllAdmin(Number(page), Number(limit), category);
+  async findAll(@Query() query: AdminFaqQueryDto) {
+    return this.faqService.findAllAdmin(
+      query.page,
+      query.limit,
+      query.category,
+    );
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get FAQ item by ID for admin' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.faqService.findOneAdmin(id);
   }
 
   @Post()
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new FAQ item' })
   async create(@Body() dto: CreateFaqDto) {
     return this.faqService.createAdmin(dto);
   }
 
   @Put(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing FAQ item' })
-  async update(@Param('id') id: string, @Body() dto: UpdateFaqDto) {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateFaqDto,
+  ) {
     return this.faqService.updateAdmin(id, dto);
   }
 
   @Patch('reorder')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Reorder FAQ items' })
   async reorder(@Body() dto: ReorderFaqDto) {
     return this.faqService.reorderAdmin(dto);
   }
 
   @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a FAQ item' })
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.faqService.softDeleteAdmin(id);
   }
 }

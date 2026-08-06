@@ -1,4 +1,11 @@
-import { IsOptional, IsEnum, IsString, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsDateString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { TailorMadeInquiryStatus } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -15,7 +22,7 @@ export class UpdateInquiryDto {
     description: 'ID of the agent assigned to this inquiry',
   })
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   assigneeId?: string;
 
   @ApiPropertyOptional({ description: 'Date to follow up' })
@@ -26,5 +33,6 @@ export class UpdateInquiryDto {
   @ApiPropertyOptional({ description: 'Internal note by the agent' })
   @IsOptional()
   @IsString()
+  @MaxLength(5_000)
   internalNote?: string;
 }

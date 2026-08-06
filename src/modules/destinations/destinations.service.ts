@@ -1,19 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { TourLandingPagesService } from '../tours/tour-landing-pages.service';
-
-export interface PublicDestinationsQueryDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-  type?: string;
-  locale?: string;
-}
+import { PublicTourLandingPagesQueryDto } from '../tours/dto/list-tour-landing-pages.dto';
 
 @Injectable()
 export class DestinationsService {
   constructor(private readonly landingPagesService: TourLandingPagesService) {}
 
-  async findAllPublic(query: PublicDestinationsQueryDto) {
+  async findAllPublic(query: PublicTourLandingPagesQueryDto) {
     return this.landingPagesService.findAllPublic({
       ...query,
       type: 'DESTINATION',

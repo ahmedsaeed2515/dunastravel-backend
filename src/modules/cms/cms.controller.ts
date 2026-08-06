@@ -1,9 +1,11 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CmsService } from './cms.service';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('CMS')
 @Controller('cms')
+@Public()
 export class CmsController {
   constructor(private readonly cmsService: CmsService) {}
 

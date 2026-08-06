@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateBookingStatusDto {
   @ApiProperty({ enum: BookingStatus })
@@ -14,5 +20,6 @@ export class UpdateBookingStatusDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(2_000)
   reason?: string;
 }

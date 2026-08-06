@@ -4,7 +4,7 @@ import {
   Max,
   IsString,
   IsOptional,
-  IsNotEmpty,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -15,13 +15,9 @@ export class CreateTourReviewDto {
   @Max(5)
   rating!: number;
 
-  @ApiProperty({ description: 'Name of the reviewer', example: 'John Doe' })
-  @IsString()
-  @IsNotEmpty()
-  reviewerName!: string;
-
   @ApiPropertyOptional({ description: 'Review comment' })
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   comment?: string;
 }

@@ -1,74 +1,194 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsBoolean,
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
-  IsNumber,
+  IsBoolean,
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
   Min,
-  IsObject,
+  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
+const CUSTOMER_STATUSES = ['ACTIVE', 'INACTIVE', 'BLOCKED'] as const;
+const CRM_SORT_FIELDS = [
+  'createdAt',
+  'updatedAt',
+  'name',
+  'email',
+  'customerNumber',
+  'status',
+  'isVip',
+] as const;
+const SORT_ORDERS = ['asc', 'desc'] as const;
+const GENDERS = ['MALE', 'FEMALE', 'OTHER', 'UNSPECIFIED'] as const;
+const CUSTOMER_SOURCES = [
+  'WEB',
+  'ADMIN',
+  'REFERRAL',
+  'PHONE',
+  'EMAIL',
+  'PARTNER',
+] as const;
+const NOTE_TYPES = [
+  'INTERNAL',
+  'SALES',
+  'OPERATIONS',
+  'SUPPORT',
+  'SECURITY',
+] as const;
+const DOCUMENT_TYPES = [
+  'PASSPORT',
+  'VISA',
+  'INSURANCE',
+  'TICKET',
+  'IDENTITY',
+  'OTHER',
+] as const;
+
+class AddressDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  postalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  country?: string;
+}
+
+class EmergencyContactDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  relationship?: string;
+
+  @IsString()
+  @Matches(/^\+?[0-9 ()-]{7,30}$/)
+  phone!: string;
+}
+
+class RelatedPersonDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  relationship?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  age?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+?[0-9 ()-]{7,30}$/)
+  phone?: string;
+}
 
 export class ListCustomersQueryDto {
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
-  page?: number;
+  page?: number = 1;
 
   @ApiPropertyOptional({ example: 20 })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
-  limit?: number;
+  @Max(100)
+  limit?: number = 20;
 
   @ApiPropertyOptional({
-    description: 'Search by name, email, phone, or passport',
+    description: 'Search by name, email, phone, or customer number',
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by VIP status', example: 'true' })
+  @ApiPropertyOptional({ description: 'Filter by VIP status', example: true })
   @IsOptional()
-  @IsString()
-  isVip?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by account status (e.g. ACTIVE, INACTIVE, BLOCKED)',
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
   })
+  @IsBoolean()
+  isVip?: boolean;
+
+  @ApiPropertyOptional({ enum: CUSTOMER_STATUSES })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(CUSTOMER_STATUSES)
+  status?: (typeof CUSTOMER_STATUSES)[number];
 
   @ApiPropertyOptional({ description: 'Filter by specific tag' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   tag?: string;
 
   @ApiPropertyOptional({ description: 'Filter by customer segment' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   segment?: string;
 
-  @ApiPropertyOptional({ example: 'createdAt' })
+  @ApiPropertyOptional({ enum: CRM_SORT_FIELDS, example: 'createdAt' })
   @IsOptional()
-  @IsString()
-  sortBy?: string;
+  @IsIn(CRM_SORT_FIELDS)
+  sortBy?: (typeof CRM_SORT_FIELDS)[number] = 'createdAt';
 
-  @ApiPropertyOptional({ example: 'desc' })
+  @ApiPropertyOptional({ enum: SORT_ORDERS, example: 'desc' })
   @IsOptional()
-  @IsString()
-  sortOrder?: string;
+  @IsIn(SORT_ORDERS)
+  sortOrder?: (typeof SORT_ORDERS)[number] = 'desc';
 }
 
 export class UpdateCustomerCrmDto {
   @ApiPropertyOptional({ example: 'CUST-2026-0001' })
   @IsOptional()
   @IsString()
+  @Matches(/^CUST-[A-Z0-9-]{4,40}$/)
   customerNumber?: string;
 
   @ApiPropertyOptional({ example: true })
@@ -79,142 +199,137 @@ export class UpdateCustomerCrmDto {
   @ApiPropertyOptional({ example: ['HighValue', 'Repeat'] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(50, { each: true })
   tags?: string[];
 
   @ApiPropertyOptional({ example: ['VIP', 'Corporate'] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(50, { each: true })
   segments?: string[];
 
-  @ApiPropertyOptional({ example: 'ACTIVE' })
+  @ApiPropertyOptional({ enum: CUSTOMER_STATUSES })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(CUSTOMER_STATUSES)
+  status?: (typeof CUSTOMER_STATUSES)[number];
 
   @ApiPropertyOptional({ example: 'P12345678' })
   @IsOptional()
   @IsString()
+  @Matches(/^[A-Za-z0-9 -]{3,30}$/)
   passportNumber?: string;
 
   @ApiPropertyOptional({ example: 'Egyptian' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   nationality?: string;
 
-  @ApiPropertyOptional({ example: 'Male' })
+  @ApiPropertyOptional({ enum: GENDERS })
   @IsOptional()
-  @IsString()
-  gender?: string;
+  @IsIn(GENDERS)
+  gender?: (typeof GENDERS)[number];
 
   @ApiPropertyOptional({ example: '1985-05-15' })
   @IsOptional()
-  @IsString()
+  @IsDateString({ strict: true })
   dateOfBirth?: string;
 
-  @ApiPropertyOptional({
-    example: {
-      name: 'Sarah Connor',
-      relationship: 'Spouse',
-      phone: '+123456789',
-    },
-  })
+  @ApiPropertyOptional({ type: EmergencyContactDto })
   @IsOptional()
-  @IsObject()
-  emergencyContact?: Record<string, any>;
+  @ValidateNested()
+  @Type(() => EmergencyContactDto)
+  emergencyContact?: EmergencyContactDto;
 
-  @ApiPropertyOptional({
-    example: { street: '123 Nile Ave', city: 'Cairo', country: 'Egypt' },
-  })
+  @ApiPropertyOptional({ type: AddressDto })
   @IsOptional()
-  @IsObject()
-  address?: Record<string, any>;
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto;
 
   @ApiPropertyOptional({ example: 'en' })
   @IsOptional()
   @IsString()
+  @Matches(/^[a-z]{2}(?:-[A-Z]{2})?$/)
   preferredLanguage?: string;
 
   @ApiPropertyOptional({ example: 'USD' })
   @IsOptional()
   @IsString()
+  @Matches(/^[A-Z]{3}$/)
   preferredCurrency?: string;
 
   @ApiPropertyOptional({ example: 'Sharm El Sheikh' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   preferredDestination?: string;
 
   @ApiPropertyOptional({ example: 'Luxury Private' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   preferredTravelType?: string;
 
-  @ApiPropertyOptional({
-    example: [{ name: 'John Jr', relationship: 'Son', age: 10 }],
-  })
+  @ApiPropertyOptional({ type: [RelatedPersonDto] })
   @IsOptional()
   @IsArray()
-  familyMembers?: any[];
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => RelatedPersonDto)
+  familyMembers?: RelatedPersonDto[];
 
-  @ApiPropertyOptional({ example: [{ name: 'Alice', relationship: 'Friend' }] })
+  @ApiPropertyOptional({ type: [RelatedPersonDto] })
   @IsOptional()
   @IsArray()
-  travelCompanions?: any[];
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => RelatedPersonDto)
+  travelCompanions?: RelatedPersonDto[];
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   marketingConsent?: boolean;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({ enum: CUSTOMER_SOURCES })
   @IsOptional()
-  @IsBoolean()
-  phoneVerified?: boolean;
-
-  @ApiPropertyOptional({ example: 'WEB' })
-  @IsOptional()
-  @IsString()
-  customerSource?: string;
+  @IsIn(CUSTOMER_SOURCES)
+  customerSource?: (typeof CUSTOMER_SOURCES)[number];
 
   @ApiPropertyOptional({ example: 'VIP Referral' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   referralSource?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  futureCompanyId?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  futureWalletId?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  futureCommissionPlan?: string;
 }
 
 export class BulkUpdateCustomersDto {
-  @ApiPropertyOptional({ example: ['uuid-1', 'uuid-2'] })
+  @ApiProperty({ type: [String], format: 'uuid' })
   @IsArray()
-  @IsString({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @IsUUID('4', { each: true })
   userIds!: string[];
 
   @ApiPropertyOptional({ example: ['VIP', 'Summer2026'] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(50, { each: true })
   tags?: string[];
 
   @ApiPropertyOptional({ example: ['Corporate'] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(50, { each: true })
   segments?: string[];
 
   @ApiPropertyOptional({ example: true })
@@ -222,21 +337,23 @@ export class BulkUpdateCustomersDto {
   @IsBoolean()
   isVip?: boolean;
 
-  @ApiPropertyOptional({ example: 'INACTIVE' })
+  @ApiPropertyOptional({ enum: CUSTOMER_STATUSES })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(CUSTOMER_STATUSES)
+  status?: (typeof CUSTOMER_STATUSES)[number];
 }
 
 export class AddCustomerNoteDto {
-  @ApiPropertyOptional({ example: 'Customer prefers suites with Nile view.' })
+  @ApiProperty({ example: 'Customer prefers suites with Nile view.' })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(5000)
   content!: string;
 
-  @ApiPropertyOptional({ example: 'SALES' })
+  @ApiPropertyOptional({ enum: NOTE_TYPES, example: 'SALES' })
   @IsOptional()
-  @IsString()
-  noteType?: string;
+  @IsIn(NOTE_TYPES)
+  noteType?: (typeof NOTE_TYPES)[number];
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
@@ -245,16 +362,18 @@ export class AddCustomerNoteDto {
 }
 
 export class AddCustomerDocumentDto {
-  @ApiPropertyOptional({ example: 'media-uuid-1' })
-  @IsString()
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID('4')
   mediaAssetId!: string;
 
-  @ApiPropertyOptional({ example: 'PASSPORT' })
+  @ApiPropertyOptional({ enum: DOCUMENT_TYPES, example: 'PASSPORT' })
   @IsOptional()
-  @IsString()
-  documentType?: string;
+  @IsIn(DOCUMENT_TYPES)
+  documentType?: (typeof DOCUMENT_TYPES)[number];
 
-  @ApiPropertyOptional({ example: 'Passport Scan 2026' })
+  @ApiProperty({ example: 'Passport Scan 2026' })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
   title!: string;
 }

@@ -7,11 +7,43 @@ import { paginate, getPaginationParams } from '../../../common/utils';
 export class AdminAgenciesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(pageVal: number = 1, limitVal: number = 10, status?: string) {
-    const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
+  private readonly agencySelect = {
+    id: true,
+    referenceCode: true,
+    name: true,
+    companyType: true,
+    status: true,
+    email: true,
+    phone: true,
+    website: true,
+    taxId: true,
+    address: true,
+    primaryContact: true,
+    commissionRate: true,
+    currentBalance: true,
+    paymentTerms: true,
+    contractStartDate: true,
+    contractEndDate: true,
+    tags: true,
+    segments: true,
+    tier: true,
+    createdAt: true,
+    updatedAt: true,
+  } satisfies Prisma.CompanySelect;
+
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    status?: CompanyStatus;
+  }) {
+    const { skip, take, page, limit } = getPaginationParams(
+      query.page,
+      query.limit,
+    );
     const where: Prisma.CompanyWhereInput = {
       companyType: CompanyType.AGENCY,
-      ...(status ? { status: status as CompanyStatus } : {}),
+      deletedAt: null,
+      ...(query.status ? { status: query.status } : {}),
     };
 
     const [total, records] = await this.prisma.$transaction([
@@ -21,6 +53,7 @@ export class AdminAgenciesService {
         skip,
         take,
         orderBy: { createdAt: 'desc' },
+        select: this.agencySelect,
       }),
     ]);
 
@@ -29,25 +62,92 @@ export class AdminAgenciesService {
 
   async findOne(id: string) {
     const agency = await this.prisma.company.findFirst({
-      where: { id, companyType: CompanyType.AGENCY },
+      where: { id, companyType: CompanyType.AGENCY, deletedAt: null },
+      select: this.agencySelect,
     });
     if (!agency) throw new NotFoundException('Agency not found');
     return agency;
   }
 
-  async updateStatus(id: string, status: CompanyStatus) {
-    await this.findOne(id);
-    return this.prisma.company.update({
-      where: { id },
-      data: { status },
-    });
+  async updateStatus(id: string, status: CompanyStatus, actorId: string) {
+    const existing = await this.findOne(id);
+    if (existing.status === status) return existing;
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const claimed = await tx.company.updateMany({
+          where: {
+            id,
+            companyType: CompanyType.AGENCY,
+            deletedAt: null,
+            status: existing.status,
+          },
+          data: { status },
+        });
+        if (claimed.count !== 1) {
+          throw new NotFoundException('Agency changed; reload and try again');
+        }
+        if (status !== CompanyStatus.ACTIVE) {
+          await tx.user.updateMany({
+            where: { companyId: id, deletedAt: null },
+            data: {
+              refreshToken: null,
+              sessionVersion: { increment: 1 },
+            },
+          });
+        }
+        await tx.auditLog.create({
+          data: {
+            actorId,
+            actorRole: 'SUPER_ADMIN',
+            action: 'AGENCY_STATUS_UPDATED',
+            entityType: 'COMPANY',
+            entityId: id,
+            metadata: { oldStatus: existing.status, newStatus: status },
+          },
+        });
+        return tx.company.findUniqueOrThrow({
+          where: { id },
+          select: this.agencySelect,
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
-  async updateTier(id: string, tier: string, commissionRate: number) {
-    await this.findOne(id);
-    return this.prisma.company.update({
-      where: { id },
-      data: { tier, commissionRate: new Prisma.Decimal(commissionRate) },
-    });
+  async updateTier(
+    id: string,
+    tier: string,
+    commissionRate: number,
+    actorId: string,
+  ) {
+    const existing = await this.findOne(id);
+    const decimalRate = new Prisma.Decimal(commissionRate);
+    return this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.company.update({
+          where: { id },
+          data: { tier, commissionRate: decimalRate },
+          select: this.agencySelect,
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId,
+            actorRole: 'SUPER_ADMIN',
+            action: 'AGENCY_COMMERCIAL_TERMS_UPDATED',
+            entityType: 'COMPANY',
+            entityId: id,
+            metadata: {
+              oldTier: existing.tier,
+              newTier: tier,
+              oldCommissionRate: existing.commissionRate.toString(),
+              newCommissionRate: decimalRate.toString(),
+            },
+          },
+        });
+        return updated;
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 }

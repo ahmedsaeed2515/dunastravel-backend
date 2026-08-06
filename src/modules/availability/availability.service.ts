@@ -5,6 +5,7 @@ import {
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -219,4 +220,36 @@ export class AvailabilityService {
     await this.prisma.tourAvailability.delete({ where: { id } });
     return { success: true };
   }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async releaseExpiredHolds(holdDurationMinutes: number = 15): Promise<number> {
+    const cutoffDate = new Date(Date.now() - holdDurationMinutes * 60 * 1000);
+    return this.prisma.$transaction(async (tx) => {
+      const expiredBookings = await tx.booking.findMany({
+        where: {
+          status: 'PENDING',
+          createdAt: { lt: cutoffDate },
+          availabilityId: { not: null },
+        },
+      });
+
+      let releasedCount = 0;
+      for (const booking of expiredBookings) {
+        if (booking.availabilityId) {
+          const totalPax = (booking.adults || 1) + (booking.children || 0);
+          const updateResult = await tx.booking.updateMany({
+            where: { id: booking.id, status: 'PENDING' },
+            data: { status: 'CANCELLED' },
+          });
+
+          if (updateResult.count > 0) {
+            await this.releaseCapacity(tx, booking.availabilityId, totalPax);
+            releasedCount++;
+          }
+        }
+      }
+      return releasedCount;
+    });
+  }
 }
+

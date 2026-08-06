@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  ParseUUIDPipe,
   Query,
   UseGuards,
   Req,
@@ -28,11 +29,12 @@ export class AdminFinanceController {
   }
 
   @Get('payments/:id')
-  async getPaymentDetail(@Param('id') id: string) {
+  async getPaymentDetail(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminFinanceService.getPaymentDetail(id);
   }
 
   @Post('refunds')
+  @Roles(UserRole.SUPER_ADMIN)
   async processRefund(
     @Body() dto: AdminRefundDto,
     @Req() req: Request & { user: { id: string; role: string } },

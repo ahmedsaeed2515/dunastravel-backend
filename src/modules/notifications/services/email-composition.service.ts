@@ -10,6 +10,10 @@ import { renderInquiryCustomerAcknowledgment } from '../templates/inquiry-custom
 import { renderInquiryInternalAlert } from '../templates/inquiry-internal-alert.template';
 import { renderContactCustomerAcknowledgment } from '../templates/contact-customer-acknowledgment.template';
 import { renderContactInternalAlert } from '../templates/contact-internal-alert.template';
+import {
+  sanitizeEmailHtml,
+  sanitizePlainText,
+} from '../../../common/utils/content-sanitizer.util';
 
 @Injectable()
 export class EmailCompositionService {
@@ -47,22 +51,45 @@ export class EmailCompositionService {
       }
     }
 
+    const safeVariables = Object.fromEntries(
+      Object.entries(variables).map(([key, value]) => [
+        key,
+        sanitizePlainText(String(value))
+          .replace(/[\r\n]+/g, ' ')
+          .slice(0, 10_000),
+      ]),
+    );
+
     if (template) {
       let html = template.bodyHtml;
       let subject = template.subject;
 
-      for (const [key, value] of Object.entries(variables)) {
+      for (const [key, value] of Object.entries(safeVariables)) {
         const regex = new RegExp(`{{${key}}}`, 'g');
-        const strVal = String(value);
-        html = html.replace(regex, strVal);
-        subject = subject.replace(regex, strVal);
+        html = html.replace(regex, this.escapeHtml(value));
+        subject = subject.replace(regex, value);
       }
 
-      return { subject, html, text: html.replace(/<[^>]*>?/gm, '') };
+      const safeHtml = sanitizeEmailHtml(html);
+      return {
+        subject: sanitizePlainText(subject)
+          .replace(/[\r\n]+/g, ' ')
+          .slice(0, 255),
+        html: safeHtml,
+        text: sanitizePlainText(safeHtml).slice(0, 50_000),
+      };
     }
 
     // Fallback to hardcoded template
-    return fallbackRender(variables);
+    const fallback = fallbackRender(safeVariables);
+    const safeHtml = sanitizeEmailHtml(fallback.html);
+    return {
+      subject: sanitizePlainText(fallback.subject)
+        .replace(/[\r\n]+/g, ' ')
+        .slice(0, 255),
+      html: safeHtml,
+      text: sanitizePlainText(fallback.text || safeHtml).slice(0, 50_000),
+    };
   }
 
   async composeInquiryCustomerAcknowledgment(
@@ -194,5 +221,19 @@ export class EmailCompositionService {
       this.logger.error('Invalid contact payload: Missing required fields');
       throw new Error('Incomplete contact payload');
     }
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(
+      /[&<>"']/g,
+      (character) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        })[character]!,
+    );
   }
 }

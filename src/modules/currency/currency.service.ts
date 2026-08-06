@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -223,4 +224,33 @@ export class CurrencyService {
     );
     return { success: true, updatedCount: results.length, rates: results };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleDailyRateSync(): Promise<void> {
+    this.logger.log('Executing automated daily currency exchange rate synchronization...');
+    try {
+      await this.cacheManager.del(this.CACHE_KEY);
+      const ratesData = await this.getRates();
+
+      const staleCurrencies = ratesData.details
+        .filter((d) => d.isStale)
+        .map((d) => d.code);
+
+      if (staleCurrencies.length > 0) {
+        this.logger.warn(
+          `Automated daily rate sync complete with stale exchange rates detected for: ${staleCurrencies.join(', ')}`,
+        );
+      } else {
+        this.logger.log(
+          `Automated daily currency exchange rate synchronization completed successfully for ${ratesData.details.length} currencies.`,
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to complete automated daily currency exchange rate sync: ${error?.message || error}`,
+        error?.stack,
+      );
+    }
+  }
 }
+

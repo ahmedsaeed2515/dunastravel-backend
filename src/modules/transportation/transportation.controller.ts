@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Headers,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,8 +16,9 @@ import {
 import { TransportationService } from './transportation.service';
 import { CreateTransportationBookingDto } from './dto/create-transportation-booking.dto';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Transportation')
 @Controller('transportation')
@@ -18,21 +26,28 @@ export class TransportationController {
   constructor(private readonly transportationService: TransportationService) {}
 
   @Get(['services', 'search'])
+  @Public()
   @ApiOperation({ summary: 'Get available transportation services' })
   @ApiOkResponse({ description: 'List of active services' })
   async getServices() {
     return this.transportationService.findAllServices();
   }
 
-  @Post(['bookings', 'book'])
-  @UseGuards(OptionalJwtAuthGuard)
+  @Post('bookings')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @ApiOperation({ summary: 'Submit a new transportation booking request' })
   @ApiCreatedResponse({ description: 'Booking request created successfully' })
   async createBooking(
-    @CurrentUser() user: any,
+    @CurrentUser() user: { id: string },
     @Body() dto: CreateTransportationBookingDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.transportationService.createBooking(user?.id || null, dto);
+    return this.transportationService.createBooking(
+      user.id,
+      dto,
+      idempotencyKey,
+    );
   }
 
   @Get('bookings/my')
@@ -42,7 +57,7 @@ export class TransportationController {
     summary: 'Get transportation bookings for the authenticated user',
   })
   @ApiOkResponse({ description: 'List of user transportation bookings' })
-  async getMyBookings(@CurrentUser() user: any) {
+  async getMyBookings(@CurrentUser() user: { id: string }) {
     return this.transportationService.findUserBookings(user.id);
   }
 }

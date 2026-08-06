@@ -28,9 +28,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as os from 'os';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -44,6 +42,9 @@ import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { MediaEntityType } from '@prisma/client';
 
 import { AuthenticatedUser } from '../../common/types';
+import { Public } from '../../common/decorators/public.decorator';
+import { PublicMediaAssetResponseDto } from './dto/public-media-asset-response.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Admin — Media')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -53,30 +54,25 @@ export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Post('upload')
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: os.tmpdir(),
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(
-            null,
-            file.fieldname + '-' + uniqueSuffix + extname(file.originalname),
-          );
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
-        fileSize: 10485760, // Checked dynamically in pipe if we wanted, but multer does hard limit here
+        fileSize: 10 * 1024 * 1024,
+        fieldSize: 10 * 1024,
+        fields: 3,
+        files: 1,
+        parts: 4,
       },
       fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) {
           return cb(
             new BadRequestException(
-              `Invalid file type. Allowed: ${allowed.join(', ')}`,
+              'Invalid file type',
             ),
             false,
           );
@@ -106,12 +102,12 @@ export class MediaAdminController {
   async upload(
     @UploadedFile(FileValidationPipe) file: Express.Multer.File,
     @Body() dto: UploadMediaDto,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<MediaAssetResponseDto> {
     const asset = await this.mediaService.uploadAsset(
       file,
       dto,
-      user?.id ?? null,
+      user.id,
     );
     return MediaAssetResponseDto.fromPrisma(asset);
   }
@@ -125,8 +121,11 @@ export class MediaAdminController {
   @ApiNotFoundResponse()
   @ApiUnauthorizedResponse()
   @ApiForbiddenResponse()
-  async deleteAsset(@Param('id') id: string): Promise<DeleteMediaResponseDto> {
-    return this.mediaService.deleteAsset(id);
+  async deleteAsset(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<DeleteMediaResponseDto> {
+    return this.mediaService.deleteAsset(id, user);
   }
 
   @Get()
@@ -171,18 +170,21 @@ export class MediaAdminController {
 
 @ApiTags('Media')
 @Controller('media')
+@Public()
 export class MediaPublicController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Get('tours/:tourId')
   @ApiOperation({ summary: 'Get all active media assets for a tour' })
   @ApiParam({ name: 'tourId', type: 'string', format: 'uuid' })
-  @ApiOkResponse({ type: [MediaAssetResponseDto] })
+  @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
   @ApiBadRequestResponse()
   async getAssetsByTourId(
     @Param('tourId', ParseUUIDPipe) tourId: string,
-  ): Promise<MediaAssetResponseDto[]> {
+  ): Promise<PublicMediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByTourId(tourId);
-    return assets.map((asset) => MediaAssetResponseDto.fromPrisma(asset));
+    return assets.map((asset) =>
+      PublicMediaAssetResponseDto.fromPrisma(asset),
+    );
   }
 }

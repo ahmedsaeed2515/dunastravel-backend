@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsDateString,
+  IsIn,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class DashboardQueryDto {
   @ApiPropertyOptional({
@@ -21,11 +28,12 @@ export class DashboardQueryDto {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['UTC', 'Africa/Cairo'])
   timezone?: string;
 
   @ApiPropertyOptional({ description: 'Language code' })
   @IsOptional()
-  @IsString()
+  @IsIn(['en', 'ar', 'es', 'pt', 'it'])
   locale?: string;
 
   @ApiPropertyOptional({
@@ -33,22 +41,26 @@ export class DashboardQueryDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   interfaceSlug?: string;
 
   @ApiPropertyOptional({ description: 'Filter by Tour Slug' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   tourSlug?: string;
 
   @ApiPropertyOptional({ description: 'Filter by Currency (e.g. USD)' })
   @IsOptional()
-  @IsString()
+  @IsIn(['USD'])
   currency?: string;
 
   @ApiPropertyOptional({
     description: 'Period interval for trends (daily, weekly, monthly)',
   })
   @IsOptional()
-  @IsString()
+  @IsIn(['daily', 'weekly', 'monthly'])
   period?: 'daily' | 'weekly' | 'monthly';
 }

@@ -12,6 +12,8 @@ import {
   BadRequestException,
   Req,
   NotFoundException,
+  ForbiddenException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -44,6 +46,7 @@ import {
 } from './dto/customer-crm.dto';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
+import { assertStrongPassword } from '../../common/utils/password-policy.util';
 
 @ApiTags('Admin Users & CRM')
 @ApiBearerAuth()
@@ -66,6 +69,7 @@ export class UsersController {
   }
 
   @Get('crm/export/csv')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Export customers to CSV.' })
   @ApiOkResponse({ description: 'CSV data string' })
   async exportCustomersCsv(
@@ -111,7 +115,7 @@ export class UsersController {
       'Rich customer profile including bookings, payments, notes, documents, and timeline.',
   })
   async getCustomerCrmDetail(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.userService.getCustomerCrmDetail(id, user.id);
@@ -123,7 +127,7 @@ export class UsersController {
   @ApiBody({ type: UpdateCustomerCrmDto })
   @ApiOkResponse({ description: 'Updated customer CRM profile' })
   async updateCustomerCrm(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() dto: UpdateCustomerCrmDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -138,7 +142,7 @@ export class UsersController {
   @ApiBody({ type: AddCustomerNoteDto })
   @ApiOkResponse({ description: 'Customer note added successfully' })
   async addCustomerNote(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() dto: AddCustomerNoteDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -146,6 +150,7 @@ export class UsersController {
   }
 
   @Post('crm/:id/documents')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary:
       'Attach a document (passport scan, visa, insurance, tickets) to a customer.',
@@ -154,7 +159,7 @@ export class UsersController {
   @ApiBody({ type: AddCustomerDocumentDto })
   @ApiOkResponse({ description: 'Customer document attached successfully' })
   async addCustomerDocument(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() dto: AddCustomerDocumentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -191,7 +196,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Get details for a single user.' })
   @ApiOkResponse({ description: 'User record' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  async getUser(@Param('id') id: string) {
+  async getUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     const user = await this.userService.findById(id);
     if (!user) throw new NotFoundException('User not found');
     return this.userService.toSafeUser(user);
@@ -201,10 +208,23 @@ export class UsersController {
   @UseGuards(SuperAdminEscalationGuard)
   @ApiOperation({ summary: 'Create a new user.' })
   @ApiCreatedResponse({ description: 'The created user' })
-  async createUser(@Body() dto: CreateUserDto) {
+  async createUser(
+    @Body() dto: CreateUserDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      this.isPrivilegedRole(dto.role)
+    ) {
+      throw new ForbiddenException(
+        'Only a SUPER_ADMIN can create privileged accounts',
+      );
+    }
+
     if (dto.confirmPassword && dto.password !== dto.confirmPassword) {
       throw new BadRequestException('Passwords do not match');
     }
+    assertStrongPassword(dto.password);
 
     const existing = await this.userService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
@@ -228,13 +248,25 @@ export class UsersController {
   @ApiOperation({ summary: 'Update an existing user.' })
   @ApiOkResponse({ description: 'The updated user' })
   async updateUser(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() dto: UpdateUserDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
   ) {
+    const target = await this.assertCanManageTarget(
+      user,
+      id,
+      dto.role,
+      Boolean(dto.password),
+      false,
+    );
+    if (target.id === user.id && dto.role && dto.role !== target.role) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+
     let passwordHash = undefined;
     if (dto.password) {
+      assertStrongPassword(dto.password);
       passwordHash = await bcrypt.hash(dto.password, 12);
     }
 
@@ -247,13 +279,23 @@ export class UsersController {
     });
 
     if (dto.role) {
-      void this.auditService.log({
+      await this.auditService.log({
         actorId: user.id,
         actorRole: user.role,
         action: 'USER_ROLE_CHANGED',
         entityType: 'User',
         entityId: id,
         metadata: { newRole: dto.role },
+        ipAddress: req.ip || 'unknown',
+      });
+    }
+    if (dto.password) {
+      await this.auditService.log({
+        actorId: user.id,
+        actorRole: user.role,
+        action: 'USER_PASSWORD_RESET_BY_ADMIN',
+        entityType: 'User',
+        entityId: id,
         ipAddress: req.ip || 'unknown',
       });
     }
@@ -265,12 +307,13 @@ export class UsersController {
   @ApiOperation({ summary: 'Soft delete a user.' })
   @ApiOkResponse({ description: 'User deleted' })
   async deleteUser(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
   ) {
+    await this.assertCanManageTarget(user, id, undefined, false, true);
     await this.userService.softDelete(id);
-    void this.auditService.log({
+    await this.auditService.log({
       actorId: user.id,
       actorRole: user.role,
       action: 'USER_DELETED',
@@ -279,5 +322,56 @@ export class UsersController {
       ipAddress: req.ip || 'unknown',
     });
     return { success: true };
+  }
+
+  private isPrivilegedRole(role?: UserRole): boolean {
+    return role !== undefined && role !== UserRole.USER;
+  }
+
+  private async assertCanManageTarget(
+    actor: AuthenticatedUser,
+    targetId: string,
+    requestedRole?: UserRole,
+    changesPassword = false,
+    deletesTarget = false,
+  ) {
+    const target = await this.userService.findById(targetId);
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      (this.isPrivilegedRole(target.role) ||
+        this.isPrivilegedRole(requestedRole))
+    ) {
+      throw new ForbiddenException(
+        'Only a SUPER_ADMIN can manage privileged accounts',
+      );
+    }
+
+    if (actor.id === target.id && (changesPassword || deletesTarget)) {
+      throw new ForbiddenException(
+        changesPassword
+          ? 'Use the authenticated change-password flow for your own account'
+          : 'You cannot delete your own account',
+      );
+    }
+
+    const removesSuperAdmin =
+      target.role === UserRole.SUPER_ADMIN &&
+      (deletesTarget ||
+        (requestedRole !== undefined &&
+          requestedRole !== UserRole.SUPER_ADMIN));
+    if (
+      removesSuperAdmin &&
+      (await this.userService.countActiveSuperAdmins()) <= 1
+    ) {
+      throw new ForbiddenException(
+        'The last active SUPER_ADMIN cannot be removed or demoted',
+      );
+    }
+
+    return target;
   }
 }

@@ -3,6 +3,7 @@ import {
   Logger,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -16,6 +17,7 @@ import {
 import * as crypto from 'crypto';
 import { sanitizeString } from '../../common/utils/sanitize.util';
 import { paginate, getPaginationParams } from '../../common/utils';
+import { AuthenticatedUser } from '../../common/types';
 
 @Injectable()
 export class ContactSubmissionsService {
@@ -45,7 +47,7 @@ export class ContactSubmissionsService {
       });
 
       this.logger.log(
-        `Contact submission created: Ref=${referenceCode}, Email=${this.maskEmail(submission.email)}, Subject="${submission.subject}"`,
+        `Contact submission created: ref=${referenceCode}`,
       );
 
       const payload = new ContactCreatedEvent({
@@ -110,10 +112,10 @@ export class ContactSubmissionsService {
   }
 
   async findById(id: string) {
-    const numId = parseInt(id, 10);
-    const where: Prisma.ContactSubmissionWhereUniqueInput = isNaN(numId)
-      ? { referenceCode: id }
-      : { id: numId };
+    const isNumericId = /^[1-9]\d{0,9}$/.test(id);
+    const where: Prisma.ContactSubmissionWhereUniqueInput = isNumericId
+      ? { id: Number(id) }
+      : { referenceCode: id };
 
     const submission = await this.prisma.contactSubmission.findUnique({
       where,
@@ -129,29 +131,55 @@ export class ContactSubmissionsService {
   async updateStatus(
     id: string,
     status: ContactSubmissionStatus,
-    adminUserId: string,
+    actor: AuthenticatedUser,
   ) {
     const submission = await this.findById(id);
-    const updated = await this.prisma.contactSubmission.update({
-      where: { id: submission.id },
-      data: { status },
-    });
+    if (submission.status === status) return submission;
+    const allowedTransitions: Record<ContactSubmissionStatus, ContactSubmissionStatus[]> =
+      {
+        NEW: [
+          ContactSubmissionStatus.READ,
+          ContactSubmissionStatus.ARCHIVED,
+        ],
+        READ: [ContactSubmissionStatus.ARCHIVED],
+        ARCHIVED: [],
+      };
+    if (!allowedTransitions[submission.status].includes(status)) {
+      throw new BadRequestException(
+        'Contact submission status cannot change',
+      );
+    }
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: adminUserId,
-        actorRole: 'ADMIN',
-        action: 'CONTACT_SUBMISSION_STATUS_UPDATED',
-        entityType: 'CONTACT_SUBMISSION',
-        entityId: id,
-        metadata: {
-          oldStatus: submission.status,
-          newStatus: status,
-        },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const claimed = await tx.contactSubmission.updateMany({
+          where: { id: submission.id, status: submission.status },
+          data: { status },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(
+            'Contact submission changed; reload and try again',
+          );
+        }
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'CONTACT_SUBMISSION_STATUS_UPDATED',
+            entityType: 'CONTACT_SUBMISSION',
+            entityId: submission.referenceCode,
+            metadata: {
+              oldStatus: submission.status,
+              newStatus: status,
+            },
+          },
+        });
+        return tx.contactSubmission.findUniqueOrThrow({
+          where: { id: submission.id },
+        });
       },
-    });
-
-    return updated;
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   private async generateUniqueReferenceCode(): Promise<string> {
@@ -181,13 +209,5 @@ export class ContactSubmissionsService {
     throw new InternalServerErrorException(
       'Failed to generate unique reference code after maximum attempts.',
     );
-  }
-
-  private maskEmail(email: string): string {
-    const parts = email.split('@');
-    if (parts.length !== 2) return email;
-    const [local, domain] = parts;
-    const visibleLocal = local.substring(0, 3);
-    return `${visibleLocal}***@${domain}`;
   }
 }

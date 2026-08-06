@@ -5,12 +5,19 @@ export class Money {
     private readonly _amount: number,
     private readonly _currency: string,
   ) {
-    if (!Number.isInteger(_amount)) {
+    if (
+      !Number.isSafeInteger(_amount) ||
+      _amount < 0 ||
+      _amount > 9_999_999_999
+    ) {
       throw new BadRequestException(
-        'Money amount must be an integer (in cents/smallest currency unit)',
+        'Invalid money amount',
       );
     }
     this._currency = _currency.toUpperCase();
+    if (!/^[A-Z]{3}$/.test(this._currency)) {
+      throw new BadRequestException('Invalid ISO currency code');
+    }
   }
 
   get amount(): number {
@@ -32,8 +39,10 @@ export class Money {
    * Creates a Money instance from a decimal value (e.g., dollars)
    */
   static fromDecimal(amount: number | string, currency: string = 'USD'): Money {
-    const decimalAmount =
-      typeof amount === 'string' ? parseFloat(amount) : amount;
+    const decimalAmount = Number(amount);
+    if (!Number.isFinite(decimalAmount) || decimalAmount < 0) {
+      throw new BadRequestException('Invalid money amount');
+    }
     return new Money(Math.round(decimalAmount * 100), currency);
   }
 

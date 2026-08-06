@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
+import { AdminReviewQueryDto } from './dto/review-query.dto';
 
 @ApiTags('admin-reviews')
 @ApiBearerAuth()
@@ -41,16 +43,13 @@ export class AdminReviewsController {
   @ApiQuery({ name: 'tourId', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
   async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('tourId') tourId?: string,
-    @Query('status') status?: string,
+    @Query() query: AdminReviewQueryDto,
   ) {
     return this.reviewsService.findAllAdmin(
-      Number(page),
-      Number(limit),
-      tourId,
-      status,
+      query.page,
+      query.limit,
+      query.tourId,
+      query.status,
     );
   }
 
@@ -59,29 +58,29 @@ export class AdminReviewsController {
     summary: 'Update review moderation status (APPROVED, REJECTED, PENDING)',
   })
   async updateStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateReviewStatusDto,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.reviewsService.updateStatusAdmin(id, dto, user?.id);
+    return this.reviewsService.updateStatusAdmin(id, dto, user);
   }
 
   @Post(':id/reply')
   @ApiOperation({ summary: 'Add official admin reply to a review' })
   async reply(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdminReplyReviewDto,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.reviewsService.replyAdmin(id, dto, user?.id);
+    return this.reviewsService.replyAdmin(id, dto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a review' })
   async delete(
-    @Param('id') id: string,
-    @CurrentUser() user?: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.reviewsService.softDeleteAdmin(id, user?.id);
+    return this.reviewsService.softDeleteAdmin(id, user);
   }
 }

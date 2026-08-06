@@ -14,11 +14,18 @@ export class AdminReportsService {
     // We'll approximate this by pulling all active bookings and grouping in memory,
     // or just return aggregate counts for now.
 
+    const active = { deletedAt: null };
     const [total, pending, completed, cancelled] = await Promise.all([
-      this.prisma.booking.count(),
-      this.prisma.booking.count({ where: { status: 'PENDING' } }),
-      this.prisma.booking.count({ where: { status: 'COMPLETED' } }),
-      this.prisma.booking.count({ where: { status: 'CANCELLED' } }),
+      this.prisma.booking.count({ where: active }),
+      this.prisma.booking.count({
+        where: { ...active, status: 'PENDING' },
+      }),
+      this.prisma.booking.count({
+        where: { ...active, status: 'COMPLETED' },
+      }),
+      this.prisma.booking.count({
+        where: { ...active, status: 'CANCELLED' },
+      }),
     ]);
 
     return {
@@ -33,19 +40,32 @@ export class AdminReportsService {
   async getRevenueTrend(period: string) {
     this.logger.log(`Fetching revenue trend for period: ${period}`);
 
-    const completedBookings = await this.prisma.booking.findMany({
-      where: { status: 'COMPLETED' },
-      select: { totalAmountUsd: true, createdAt: true },
-    });
-
-    const totalRevenue = completedBookings.reduce(
-      (sum, b) => sum + Number(b.totalAmountUsd),
-      0,
-    );
+    const [captured, refunded] = await Promise.all([
+      this.prisma.payment.aggregate({
+        where: {
+          status: 'CAPTURED',
+          isRefund: false,
+          booking: { deletedAt: null },
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.refundRecord.aggregate({
+        where: {
+          status: 'COMPLETED',
+          payment: { booking: { deletedAt: null } },
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+    const grossRevenue = captured._sum.amount?.toNumber() ?? 0;
+    const refunds = refunded._sum.amount?.toNumber() ?? 0;
+    const totalRevenue = Math.max(0, grossRevenue - refunds);
 
     return {
       period,
       totalRevenue,
+      grossRevenue,
+      refunds,
       currency: 'USD',
     };
   }

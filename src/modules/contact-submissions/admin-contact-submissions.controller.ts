@@ -27,6 +27,7 @@ import { UserRole } from '@prisma/client';
 import { ContactSubmissionsService } from './contact-submissions.service';
 import { ListContactSubmissionsQueryDto } from '../admin/dto/list-contact-submissions-query.dto';
 import { UpdateContactSubmissionStatusDto } from '../admin/dto/update-contact-submission-status.dto';
+import { ParseContactIdentifierPipe } from '../../common/pipes';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -54,7 +55,9 @@ export class AdminContactSubmissionsController {
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'Contact submission detail' })
   @ApiNotFoundResponse({ description: 'Contact submission not found' })
-  async getContactSubmissionById(@Param('id') id: string) {
+  async getContactSubmissionById(
+    @Param('id', ParseContactIdentifierPipe) id: string,
+  ) {
     return this.contactSubmissionsService.findById(id);
   }
 
@@ -64,10 +67,10 @@ export class AdminContactSubmissionsController {
   @ApiBody({ type: UpdateContactSubmissionStatusDto })
   @ApiOkResponse({ description: 'Status updated successfully' })
   async updateContactSubmissionStatus(
-    @Param('id') id: string,
+    @Param('id', ParseContactIdentifierPipe) id: string,
     @Body() dto: UpdateContactSubmissionStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.contactSubmissionsService.updateStatus(id, dto.status, user.id);
+    return this.contactSubmissionsService.updateStatus(id, dto.status, user);
   }
 }

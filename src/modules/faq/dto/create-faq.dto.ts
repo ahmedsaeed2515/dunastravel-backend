@@ -6,6 +6,9 @@ import {
   IsString,
   IsInt,
   IsBoolean,
+  Max,
+  MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateFaqDto {
@@ -22,11 +25,14 @@ export class CreateFaqDto {
   @ApiPropertyOptional({ description: 'Category name' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   category?: string;
 
   @ApiPropertyOptional({ description: 'Sort order index' })
   @IsOptional()
   @IsInt()
+  @Min(0)
+  @Max(100_000)
   sortOrder?: number;
 
   @ApiPropertyOptional({ description: 'Whether the item is published' })

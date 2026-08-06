@@ -3,19 +3,31 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required.');
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Comprehensive fake-data seeding is forbidden in production.',
+    );
+  }
   console.log('🌱 Starting comprehensive database population with Faker...');
 
-  const passwordHash = await bcrypt.hash('Password123!', 10);
+  const passwordHash = await bcrypt.hash(
+    crypto.randomBytes(32).toString('base64url'),
+    12,
+  );
 
   // 1. Companies & Agents
   console.log('Generating Companies & Agents...');
@@ -25,16 +37,27 @@ async function main() {
       data: {
         referenceCode: `COMP-${faker.string.alphanumeric(6).toUpperCase()}`,
         name: faker.company.name(),
-        companyType: faker.helpers.arrayElement(['AGENCY', 'CORPORATE', 'AFFILIATE']),
+        companyType: faker.helpers.arrayElement([
+          'AGENCY',
+          'CORPORATE',
+          'AFFILIATE',
+        ]),
         status: faker.helpers.arrayElement(['ACTIVE', 'INACTIVE']),
         email: faker.internet.email(),
         phone: faker.phone.number(),
         website: faker.internet.url(),
         taxId: faker.finance.routingNumber(),
-        commissionRate: faker.number.float({ min: 5, max: 20, fractionDigits: 2 }),
-        address: { city: faker.location.city(), country: faker.location.country() },
-        tags: [faker.commerce.department(), faker.commerce.department()]
-      }
+        commissionRate: faker.number.float({
+          min: 5,
+          max: 20,
+          fractionDigits: 2,
+        }),
+        address: {
+          city: faker.location.city(),
+          country: faker.location.country(),
+        },
+        tags: [faker.commerce.department(), faker.commerce.department()],
+      },
     });
     companies.push(comp);
 
@@ -49,7 +72,7 @@ async function main() {
           status: 'ACTIVE',
           companyId: comp.id,
           phone: faker.phone.number(),
-        }
+        },
       });
     }
   }
@@ -64,14 +87,21 @@ async function main() {
         email: faker.internet.email(),
         passwordHash,
         role: 'USER',
-        status: faker.helpers.arrayElement(['ACTIVE', 'ACTIVE', 'ACTIVE', 'SUSPENDED']),
+        status: faker.helpers.arrayElement([
+          'ACTIVE',
+          'ACTIVE',
+          'ACTIVE',
+          'SUSPENDED',
+        ]),
         customerNumber: `CUST-${faker.string.alphanumeric(8).toUpperCase()}`,
         phone: faker.phone.number(),
         isVip: faker.datatype.boolean(0.2), // 20% VIP
         tags: [faker.word.adjective(), faker.word.adjective()],
-        segments: [faker.helpers.arrayElement(['Luxury', 'Budget', 'Adventure'])],
+        segments: [
+          faker.helpers.arrayElement(['Luxury', 'Budget', 'Adventure']),
+        ],
         nationality: faker.location.country(),
-      }
+      },
     });
     customers.push(cust);
 
@@ -81,8 +111,8 @@ async function main() {
         ownerType: 'USER',
         ownerId: cust.id,
         balance: faker.number.float({ min: 0, max: 5000, fractionDigits: 2 }),
-        currency: 'USD'
-      }
+        currency: 'USD',
+      },
     });
     if (Number(wallet.balance) > 0) {
       await prisma.walletTransaction.create({
@@ -91,8 +121,8 @@ async function main() {
           amount: wallet.balance,
           type: 'CREDIT',
           referenceType: 'MANUAL_ADDITION',
-          status: 'COMPLETED'
-        }
+          status: 'COMPLETED',
+        },
       });
     }
 
@@ -103,14 +133,14 @@ async function main() {
         userId: cust.id, // self-authored or logic doesn't strictly matter for mock
         content: faker.lorem.paragraph(),
         noteType: faker.helpers.arrayElement(['INTERNAL', 'PUBLIC']),
-      }
+      },
     });
     await prisma.customerActivityLog.create({
       data: {
         customerId: cust.id,
         action: 'PROFILE_UPDATED',
-        details: { fields: ['phone', 'address'] }
-      }
+        details: { fields: ['phone', 'address'] },
+      },
     });
   }
 
@@ -133,16 +163,19 @@ async function main() {
         reviewerName: faker.person.fullName(),
         comment: faker.lorem.sentences(2),
         isPublished: published,
-        adminReply: published && faker.datatype.boolean() ? faker.lorem.sentence() : null
-      }
+        adminReply:
+          published && faker.datatype.boolean() ? faker.lorem.sentence() : null,
+      },
     });
-    
-    await prisma.tourFavorite.create({
-      data: {
-        tourId: tour.id,
-        userId: faker.helpers.arrayElement(customers).id
-      }
-    }).catch(() => {}); // Ignore unique constraint errors
+
+    await prisma.tourFavorite
+      .create({
+        data: {
+          tourId: tour.id,
+          userId: faker.helpers.arrayElement(customers).id,
+        },
+      })
+      .catch(() => {}); // Ignore unique constraint errors
   }
 
   // 4. Inquiries & Contacts & Notifications
@@ -157,11 +190,19 @@ async function main() {
         preferredLanguage: 'en',
         adults: faker.number.int({ min: 1, max: 4 }),
         destinations: [faker.location.country()],
-        status: faker.helpers.arrayElement(['NEWLY_RECEIVED', 'IN_PROGRESS', 'CLOSED']),
+        status: faker.helpers.arrayElement([
+          'NEWLY_RECEIVED',
+          'IN_PROGRESS',
+          'CLOSED',
+        ]),
         notes: faker.lorem.paragraph(),
-        budgetAmount: faker.number.float({ min: 1000, max: 10000, fractionDigits: 2 }),
-        budgetCurrency: 'USD'
-      }
+        budgetAmount: faker.number.float({
+          min: 1000,
+          max: 10000,
+          fractionDigits: 2,
+        }),
+        budgetCurrency: 'USD',
+      },
     });
   }
 
@@ -175,19 +216,22 @@ async function main() {
         subject: faker.lorem.sentence(),
         message: faker.lorem.paragraph(),
         status: faker.helpers.arrayElement(['NEW', 'READ', 'ARCHIVED']),
-      }
+      },
     });
   }
 
   for (let i = 0; i < 50; i++) {
     await prisma.notificationDeliveryLog.create({
       data: {
-        notificationType: faker.helpers.arrayElement(['CUSTOMER_ACKNOWLEDGMENT', 'INTERNAL_SALES_ALERT']),
+        notificationType: faker.helpers.arrayElement([
+          'CUSTOMER_ACKNOWLEDGMENT',
+          'INTERNAL_SALES_ALERT',
+        ]),
         originReferenceCode: faker.string.alphanumeric(8),
         originEntityType: 'BOOKING',
         recipientEmail: faker.internet.email(),
         status: faker.helpers.arrayElement(['PENDING', 'SENT', 'FAILED']),
-      }
+      },
     });
   }
 
@@ -201,8 +245,8 @@ async function main() {
         validFrom: faker.date.recent(),
         validUntil: faker.date.future(),
         maxUses: 100,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
   }
 
@@ -211,8 +255,8 @@ async function main() {
       name: 'Welcome Email ' + Date.now(),
       subject: 'Welcome to Dunas Travel',
       bodyHtml: '<h1>Welcome {{name}}</h1><p>Thanks for joining!</p>',
-      variables: ['name']
-    }
+      variables: ['name'],
+    },
   });
 
   // 6. Bookings
@@ -220,10 +264,17 @@ async function main() {
   for (let i = 0; i < 50; i++) {
     const cust = faker.helpers.arrayElement(customers);
     const tour = faker.helpers.arrayElement(tours);
-    const comp = faker.datatype.boolean(0.2) ? faker.helpers.arrayElement(companies) : null;
+    const comp = faker.datatype.boolean(0.2)
+      ? faker.helpers.arrayElement(companies)
+      : null;
     const refCode = `BKG-COMP-${faker.string.alphanumeric(6).toUpperCase()}`;
-    const status = faker.helpers.arrayElement(['PENDING', 'CONFIRMED', 'PAID', 'CANCELLED']);
-    
+    const status = faker.helpers.arrayElement([
+      'PENDING',
+      'CONFIRMED',
+      'PAID',
+      'CANCELLED',
+    ]);
+
     const adults = faker.number.int({ min: 1, max: 4 });
     const amount = Number(tour.basePriceUsd) * adults;
 
@@ -246,17 +297,17 @@ async function main() {
             fullName: cust.name,
             email: cust.email,
             phone: cust.phone || '+0000',
-            invoiceType: comp ? 'COMPANY' : 'PERSONAL'
-          }
+            invoiceType: comp ? 'COMPANY' : 'PERSONAL',
+          },
         },
         passengers: {
           create: Array.from({ length: adults }).map(() => ({
             passengerType: 'ADULT',
             fullName: faker.person.fullName(),
-            passportNumber: faker.string.alphanumeric(8).toUpperCase()
-          }))
-        }
-      }
+            passportNumber: faker.string.alphanumeric(8).toUpperCase(),
+          })),
+        },
+      },
     });
 
     if (Number(booking.paidAmountUsd) > 0) {
@@ -267,14 +318,14 @@ async function main() {
           currency: 'USD',
           method: 'CREDIT_CARD',
           status: 'CAPTURED',
-          transactionId: `txn_${faker.string.alphanumeric(10)}`
-        }
+          transactionId: `txn_${faker.string.alphanumeric(10)}`,
+        },
       });
       await prisma.invoice.create({
         data: {
           bookingId: booking.id,
-          invoiceNumber: `INV-${refCode}`
-        }
+          invoiceNumber: `INV-${refCode}`,
+        },
       });
     }
 
@@ -285,8 +336,8 @@ async function main() {
           companyId: comp.id,
           rate: comp.commissionRate,
           amount: amount * (Number(comp.commissionRate) / 100),
-          status: faker.helpers.arrayElement(['PENDING', 'APPROVED', 'PAID'])
-        }
+          status: faker.helpers.arrayElement(['PENDING', 'APPROVED', 'PAID']),
+        },
       });
     }
 
@@ -294,8 +345,8 @@ async function main() {
       data: {
         bookingId: booking.id,
         userId: cust.id,
-        content: faker.lorem.paragraph()
-      }
+        content: faker.lorem.paragraph(),
+      },
     });
   }
 

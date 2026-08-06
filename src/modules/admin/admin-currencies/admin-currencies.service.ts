@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { CurrencyService } from '../../currency/currency.service';
+import { AuditService } from '../../audit/audit.service';
 
 @Injectable()
 export class AdminCurrenciesService {
-  constructor(private readonly currencyService: CurrencyService) {}
+  constructor(
+    private readonly currencyService: CurrencyService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async findAll() {
     return this.currencyService.getRates();
@@ -17,6 +21,24 @@ export class AdminCurrenciesService {
     }>,
     adminUserId: string,
   ) {
-    return this.currencyService.updateRatesAdmin(rates, adminUserId);
+    const result = await this.currencyService.updateRatesAdmin(
+      rates.map((rate) => ({
+        code: rate.code,
+        rateToBase: rate.rateToBase,
+        provider: 'ADMIN_MANUAL',
+      })),
+      adminUserId,
+    );
+    await this.auditService.log({
+      actorId: adminUserId,
+      actorRole: 'SUPER_ADMIN',
+      action: 'CURRENCY_RATES_UPDATED',
+      entityType: 'CURRENCY_RATE',
+      metadata: {
+        currencies: rates.map((rate) => rate.code),
+        count: rates.length,
+      },
+    });
+    return result;
   }
 }

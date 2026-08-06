@@ -4,7 +4,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsService } from '../bookings/bookings.service';
 import { NotFoundException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { BookingStatus } from '@prisma/client';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -129,7 +128,7 @@ describe('AdminService', () => {
     it('should update multiple bookings and log activity', async () => {
       const dto = {
         referenceCodes: ['BKG-1', 'BKG-2'],
-        status: BookingStatus.CONFIRMED,
+        priority: 'HIGH',
       };
 
       prisma.booking.updateMany.mockResolvedValue({ count: 2 });
@@ -142,8 +141,11 @@ describe('AdminService', () => {
 
       expect(result.count).toBe(2);
       expect(prisma.booking.updateMany).toHaveBeenCalledWith({
-        where: { referenceCode: { in: dto.referenceCodes } },
-        data: { status: BookingStatus.CONFIRMED },
+        where: {
+          referenceCode: { in: dto.referenceCodes },
+          deletedAt: null,
+        },
+        data: { priority: 'HIGH' },
       });
       expect(prisma.bookingActivityLog.createMany).toHaveBeenCalledWith({
         data: [
@@ -151,13 +153,13 @@ describe('AdminService', () => {
             bookingId: 'uuid-1',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: BookingStatus.CONFIRMED },
+            details: { changedFields: ['priority'] },
           },
           {
             bookingId: 'uuid-2',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: BookingStatus.CONFIRMED },
+            details: { changedFields: ['priority'] },
           },
         ],
       });
@@ -166,7 +168,7 @@ describe('AdminService', () => {
     it('should handle partial failure gracefully if updateMany succeeds but some records not found', async () => {
       const dto = {
         referenceCodes: ['BKG-1', 'BKG-MISSING'],
-        status: BookingStatus.CANCELLED,
+        priority: 'URGENT',
       };
 
       prisma.booking.updateMany.mockResolvedValue({ count: 1 });
@@ -181,7 +183,7 @@ describe('AdminService', () => {
             bookingId: 'uuid-1',
             userId: 'admin-uuid',
             action: 'BULK_UPDATE',
-            details: { status: BookingStatus.CANCELLED },
+            details: { changedFields: ['priority'] },
           },
         ],
       });

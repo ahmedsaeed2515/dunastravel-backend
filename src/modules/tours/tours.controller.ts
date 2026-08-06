@@ -24,8 +24,11 @@ import {
   CreateTourReviewDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, Public } from '../../common/decorators';
 import { AuthenticatedUser } from '../../common/types';
+import { ParseUuidOrSlugPipe } from '../../common/pipes';
+import { TourReviewsQueryDto } from './dto/tour-reviews-query.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Tours')
 @Controller('tours')
@@ -33,6 +36,7 @@ export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List all active tours' })
   @ApiOkResponse({ description: 'Paginated list of tours' })
   @ApiQuery({
@@ -48,6 +52,7 @@ export class ToursController {
   }
 
   @Get(':slug')
+  @Public()
   @ApiOperation({ summary: 'Get full tour details by slug' })
   @ApiOkResponse({ description: 'Full tour detail with itinerary and images' })
   @ApiNotFoundResponse({ description: 'Tour not found' })
@@ -58,7 +63,7 @@ export class ToursController {
     enum: ['en', 'es', 'pt', 'it', 'ar'],
   })
   async findBySlug(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Query() query: GetTourDetailQueryDto,
   ) {
     const trimmedSlug = slug?.trim();
@@ -69,32 +74,34 @@ export class ToursController {
   }
 
   @Get(':slug/reviews')
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Get published reviews for a tour' })
   @ApiOkResponse({ description: 'Paginated list of reviews' })
   @ApiParam({ name: 'slug', type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getTourReviews(
-    @Param('slug') slug: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Query() query: TourReviewsQueryDto,
   ) {
     const trimmedSlug = slug?.trim();
     if (!trimmedSlug) throw new BadRequestException('Invalid tour slug');
     return this.toursService.getTourReviews(
       trimmedSlug,
-      parseInt(page, 10),
-      parseInt(limit, 10),
+      query.page,
+      query.limit,
     );
   }
 
   @Post(':slug/reviews')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 24 * 60 * 60_000 } })
   @ApiOperation({ summary: 'Submit a review for a completed tour' })
   @ApiCreatedResponse({ description: 'Review submitted successfully' })
   @ApiParam({ name: 'slug', type: String })
   async addTourReview(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateTourReviewDto,
   ) {

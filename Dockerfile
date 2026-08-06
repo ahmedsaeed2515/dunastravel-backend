@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -19,13 +19,13 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Copy package files and install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy prisma schema and generated client from builder
 COPY --from=builder /app/prisma ./prisma
@@ -35,12 +35,18 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
+RUN chown -R node:node /app
+USER node
+
 # Expose port
 EXPOSE 5000
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=5000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q -O - "http://127.0.0.1:${PORT}/api/health/liveness" || exit 1
 
 # Start the application
 CMD ["node", "dist/main"]

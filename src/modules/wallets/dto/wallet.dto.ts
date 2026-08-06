@@ -4,9 +4,13 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
+  MaxLength,
+  Matches,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { OmitType } from '@nestjs/swagger';
 import {
   WalletOwnerType,
   WalletTransactionType,
@@ -19,12 +23,13 @@ export class CreateWalletTransactionDto {
   ownerType!: WalletOwnerType;
 
   @ApiProperty()
-  @IsString()
+  @IsUUID()
   ownerId!: string;
 
   @ApiProperty()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(99_999_999.99)
   amount!: number;
 
   @ApiProperty({ enum: WalletTransactionType })
@@ -33,16 +38,20 @@ export class CreateWalletTransactionDto {
 
   @ApiProperty()
   @IsString()
+  @MaxLength(50)
+  @Matches(/^[A-Z][A-Z0-9_]*$/)
   referenceType!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  referenceId?: string;
+  @MaxLength(100)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/)
+  referenceId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   description?: string;
 
   @ApiPropertyOptional({ enum: WalletTransactionStatus })
@@ -50,6 +59,11 @@ export class CreateWalletTransactionDto {
   @IsEnum(WalletTransactionStatus)
   status?: WalletTransactionStatus;
 }
+
+export class ManualWalletTransactionDto extends OmitType(
+  CreateWalletTransactionDto,
+  ['referenceType', 'status'] as const,
+) {}
 
 export class WalletQueryFilters {
   @ApiPropertyOptional()
@@ -59,7 +73,7 @@ export class WalletQueryFilters {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   ownerId?: string;
 
   @ApiPropertyOptional()
@@ -77,5 +91,7 @@ export class WalletTransactionQueryFilters {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  @Matches(/^[A-Z][A-Z0-9_]*$/)
   referenceType?: string;
 }

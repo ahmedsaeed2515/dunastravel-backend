@@ -58,17 +58,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiCreatedResponse()
   @ApiConflictResponse()
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const user = await this.authService.register(dto);
-    const token = this.authService.generateToken(user);
-    const refreshToken = await this.authService.generateRefreshToken(user.id);
-    const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
-    res.cookie('access_token', token, getCookieOptions(nodeEnv));
-    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions(nodeEnv));
-    return user;
+  async register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
   @Public()
@@ -82,12 +73,18 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.login(dto, req.ip || 'unknown');
-    const token = this.authService.generateToken(user);
-    const refreshToken = await this.authService.generateRefreshToken(user.id);
+    const sessionUser = await this.authService.login(
+      dto,
+      req.ip || 'unknown',
+    );
+    const token = this.authService.generateToken(sessionUser);
+    const refreshToken = await this.authService.generateRefreshToken(
+      sessionUser.id,
+    );
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
     res.cookie('access_token', token, getCookieOptions(nodeEnv));
     res.cookie('refresh_token', refreshToken, getRefreshCookieOptions(nodeEnv));
+    const { sessionVersion: _sessionVersion, ...user } = sessionUser;
     return user;
   }
 
@@ -165,7 +162,7 @@ export class AuthController {
 
     res.cookie('csrf_token', token, {
       httpOnly: false, // Must be readable by frontend JavaScript
-      secure: nodeEnv === 'production',
+      secure: nodeEnv === 'production' || nodeEnv === 'staging',
       sameSite: 'strict',
       path: '/',
     });

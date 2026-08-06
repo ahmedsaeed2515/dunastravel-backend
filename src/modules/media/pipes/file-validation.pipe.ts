@@ -11,14 +11,9 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
     ) || ['image/jpeg', 'image/png', 'image/webp'];
   }
 
-  async transform(file: Express.Multer.File) {
+  transform(file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('File is missing.');
-    }
-
-    if (!file.buffer && file.path) {
-      const fs = require('fs');
-      file.buffer = fs.readFileSync(file.path);
     }
 
     if (!file.buffer || file.buffer.length === 0) {
@@ -27,7 +22,7 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        `Invalid file type. Allowed types: ${this.allowedMimeTypes.join(', ')}`,
+        'Invalid file type',
       );
     }
 

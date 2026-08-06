@@ -3,8 +3,10 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
-import { User, UserRole, Prisma } from '@prisma/client';
+import { User, UserRole, Prisma, MediaEntityType } from '@prisma/client';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ListCustomersQueryDto,
@@ -14,6 +16,14 @@ import {
   AddCustomerDocumentDto,
 } from './dto/customer-crm.dto';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+import { sanitizeCsvField } from '../../common/utils/sanitize.util';
+import {
+  decryptSensitiveJson,
+  decryptSensitiveField,
+  encryptSensitiveJson,
+  encryptSensitiveField,
+} from '../../common/security/field-encryption.util';
 
 export type SafeUser = Omit<
   User,
@@ -23,7 +33,24 @@ export type SafeUser = Omit<
   | 'resetToken'
   | 'resetTokenExp'
   | 'verifyToken'
+  | 'verifyTokenExp'
 >;
+
+export type SessionUser = SafeUser;
+
+export interface UserListItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: UserRole;
+  isVerified: boolean;
+  status: string;
+  companyId: string | null;
+  suspendedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface CreateUserData {
   name: string;
@@ -50,7 +77,10 @@ export class UserService {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+      where: {
+        email: { equals: email.trim(), mode: 'insensitive' },
+        deletedAt: null,
+      },
     });
   }
 
@@ -60,6 +90,25 @@ export class UserService {
     });
   }
 
+  async hasActiveCompanyMembership(user: User): Promise<boolean> {
+    if (
+      user.role !== UserRole.AGENT &&
+      user.role !== UserRole.COMPANY
+    ) {
+      return true;
+    }
+    if (!user.companyId) return false;
+    const company = await this.prisma.company.findFirst({
+      where: {
+        id: user.companyId,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    return Boolean(company);
+  }
+
   async create(data: CreateUserData): Promise<User> {
     const existing = await this.findByEmail(data.email);
     if (existing) {
@@ -67,14 +116,15 @@ export class UserService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const count = await tx.user.count();
-      const customerNumber = `CUST-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+      const customerNumber = this.generateCustomerNumber();
 
       const user = await tx.user.create({
         data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
+          name: sanitizePlainText(data.name).slice(0, 255),
+          email: data.email.trim().toLowerCase(),
+          phone: data.phone
+            ? sanitizePlainText(data.phone).slice(0, 50)
+            : undefined,
           passwordHash: data.passwordHash,
           role: data.role || UserRole.USER,
           isVerified: data.isVerified ?? true,
@@ -106,11 +156,21 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name
+          ? sanitizePlainText(data.name).slice(0, 255)
+          : undefined,
+        email: data.email?.trim().toLowerCase(),
+        phone: data.phone
+          ? sanitizePlainText(data.phone).slice(0, 50)
+          : undefined,
         passwordHash: data.passwordHash,
         role: data.role,
+        ...(data.passwordHash || data.role
+          ? {
+              refreshToken: null,
+              sessionVersion: { increment: 1 },
+            }
+          : {}),
       },
     });
   }
@@ -141,7 +201,7 @@ export class UserService {
     limit: number;
     search?: string;
     role?: UserRole;
-  }): Promise<{ users: SafeUser[]; total: number }> {
+  }): Promise<{ users: UserListItem[]; total: number }> {
     const { page, limit, search, role } = options;
     const skip = (page - 1) * limit;
 
@@ -162,12 +222,24 @@ export class UserService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          isVerified: true,
+          status: true,
+          companyId: true,
+          suspendedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
       this.prisma.user.count({ where }),
     ]);
 
-    const safeUsers = users.map((user) => this.toSafeUser(user));
-    return { users: safeUsers, total };
+    return { users, total };
   }
 
   async updateRefreshToken(
@@ -180,6 +252,27 @@ export class UserService {
     });
   }
 
+  async revokeSessions(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        refreshToken: null,
+        sessionVersion: { increment: 1 },
+      },
+    });
+  }
+
+  async countActiveSuperAdmins(): Promise<number> {
+    return this.prisma.user.count({
+      where: {
+        role: UserRole.SUPER_ADMIN,
+        deletedAt: null,
+        suspendedAt: null,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
   async softDelete(id: string): Promise<void> {
     const user = await this.findById(id);
     if (!user) {
@@ -187,7 +280,12 @@ export class UserService {
     }
     await this.prisma.user.update({
       where: { id },
-      data: { deletedAt: new Date(), status: 'INACTIVE' },
+      data: {
+        deletedAt: new Date(),
+        status: 'INACTIVE',
+        refreshToken: null,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     await this.prisma.customerActivityLog.create({
@@ -212,18 +310,18 @@ export class UserService {
       tags: user.tags,
       segments: user.segments,
       status: user.status,
-      passportNumber: user.passportNumber,
+      passportNumber: decryptSensitiveField(user.passportNumber) ?? null,
       nationality: user.nationality,
       gender: user.gender,
       dateOfBirth: user.dateOfBirth,
-      emergencyContact: user.emergencyContact,
-      address: user.address,
+      emergencyContact: decryptSensitiveJson(user.emergencyContact),
+      address: decryptSensitiveJson(user.address),
       preferredLanguage: user.preferredLanguage,
       preferredCurrency: user.preferredCurrency,
       preferredDestination: user.preferredDestination,
       preferredTravelType: user.preferredTravelType,
-      familyMembers: user.familyMembers,
-      travelCompanions: user.travelCompanions,
+      familyMembers: decryptSensitiveJson(user.familyMembers),
+      travelCompanions: decryptSensitiveJson(user.travelCompanions),
       marketingConsent: user.marketingConsent,
       phoneVerified: user.phoneVerified,
       customerSource: user.customerSource,
@@ -233,9 +331,9 @@ export class UserService {
       futureCommissionPlan: user.futureCommissionPlan,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      verifyTokenExp: user.verifyTokenExp,
       suspendedAt: user.suspendedAt,
       suspendReason: user.suspendReason,
+      sessionVersion: user.sessionVersion,
     };
   }
 
@@ -388,7 +486,7 @@ export class UserService {
     const where: Prisma.UserWhereInput = { deletedAt: null, role: 'USER' };
 
     if (status) where.status = status;
-    if (isVip !== undefined) where.isVip = isVip === 'true';
+    if (isVip !== undefined) where.isVip = isVip;
     if (tag) where.tags = { has: tag };
     if (segment) where.segments = { has: segment };
 
@@ -397,7 +495,6 @@ export class UserService {
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
-        { passportNumber: { contains: search, mode: 'insensitive' } },
         { customerNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -486,16 +583,49 @@ export class UserService {
     );
 
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, role: UserRole.USER },
       include: {
         bookings: {
           where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
           include: {
             tour: { select: { slug: true, titleJsonb: true } },
-            payments: true,
-            invoice: true,
-            passengers: true,
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                currency: true,
+                method: true,
+                status: true,
+                isRefund: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+            invoice: {
+              select: {
+                id: true,
+                invoiceNumber: true,
+                issuedAt: true,
+                status: true,
+                subtotal: true,
+                tax: true,
+                total: true,
+                currency: true,
+                dueDate: true,
+              },
+            },
+            passengers: {
+              select: {
+                id: true,
+                passengerType: true,
+                fullName: true,
+                dateOfBirth: true,
+                nationality: true,
+                passportExpiry: true,
+                passportNumber: true,
+              },
+            },
           },
         },
         customerNotes: {
@@ -512,12 +642,12 @@ export class UserService {
       },
     });
 
-    if (!user) throw new NotFoundException(`Customer with ID ${id} not found`);
+    if (!user) throw new NotFoundException('Customer not found');
 
     // Auto-generate customerNumber if missing
     let customerNumber = user.customerNumber;
     if (!customerNumber) {
-      customerNumber = `CUST-2026-${user.id.substring(0, 6).toUpperCase()}`;
+      customerNumber = this.generateCustomerNumber();
       await this.prisma.user.update({
         where: { id: user.id },
         data: { customerNumber },
@@ -569,14 +699,36 @@ export class UserService {
       averageSpend,
       favoriteTour,
       bookings: user.bookings.map((b) => ({
-        ...b,
+        id: b.id,
+        referenceCode: b.referenceCode,
+        status: b.status,
+        bookingType: b.bookingType,
+        adults: b.adults,
+        children: b.children,
+        infants: b.infants,
+        arrivalDate: b.arrivalDate,
+        departureDate: b.departureDate,
         totalAmountUsd: b.totalAmountUsd.toString(),
+        currency: 'USD',
+        createdAt: b.createdAt,
         tourNameEn:
           (b.tour.titleJsonb as Record<string, string> | null)?.['en'] ||
           b.tour.slug,
         payments: b.payments.map((p) => ({
           ...p,
           amount: p.amount.toString(),
+        })),
+        invoice: b.invoice
+          ? {
+              ...b.invoice,
+              subtotal: b.invoice.subtotal.toString(),
+              tax: b.invoice.tax.toString(),
+              total: b.invoice.total.toString(),
+            }
+          : null,
+        passengers: b.passengers.map((passenger) => ({
+          ...passenger,
+          passportNumber: decryptSensitiveField(passenger.passportNumber),
         })),
       })),
       notes: user.customerNotes.map((n) => ({
@@ -591,7 +743,7 @@ export class UserService {
       timeline: user.customerActivityLogs.map((l) => ({
         id: l.id,
         action: l.action,
-        details: l.details,
+        details: this.redactActivityDetails(l.details),
         createdAt: l.createdAt,
         authorName: l.user?.name || 'System',
       })),
@@ -604,63 +756,107 @@ export class UserService {
     adminUserId: string,
   ) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, role: UserRole.USER },
     });
     if (!user) throw new NotFoundException('Customer not found');
 
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: {
-        ...(dto.customerNumber && { customerNumber: dto.customerNumber }),
-        ...(dto.isVip !== undefined && { isVip: dto.isVip }),
-        ...(dto.tags && { tags: dto.tags }),
-        ...(dto.segments && { segments: dto.segments }),
-        ...(dto.status && { status: dto.status }),
-        ...(dto.passportNumber !== undefined && {
-          passportNumber: dto.passportNumber,
-        }),
-        ...(dto.nationality !== undefined && { nationality: dto.nationality }),
-        ...(dto.gender !== undefined && { gender: dto.gender }),
-        ...(dto.dateOfBirth && { dateOfBirth: new Date(dto.dateOfBirth) }),
-        ...(dto.emergencyContact && { emergencyContact: dto.emergencyContact }),
-        ...(dto.address && { address: dto.address }),
-        ...(dto.preferredLanguage && {
-          preferredLanguage: dto.preferredLanguage,
-        }),
-        ...(dto.preferredCurrency && {
-          preferredCurrency: dto.preferredCurrency,
-        }),
-        ...(dto.preferredDestination && {
-          preferredDestination: dto.preferredDestination,
-        }),
-        ...(dto.preferredTravelType && {
-          preferredTravelType: dto.preferredTravelType,
-        }),
-        ...(dto.familyMembers && { familyMembers: dto.familyMembers }),
-        ...(dto.travelCompanions && { travelCompanions: dto.travelCompanions }),
-        ...(dto.marketingConsent !== undefined && {
-          marketingConsent: dto.marketingConsent,
-        }),
-        ...(dto.phoneVerified !== undefined && {
-          phoneVerified: dto.phoneVerified,
-        }),
-        ...(dto.customerSource && { customerSource: dto.customerSource }),
-        ...(dto.referralSource && { referralSource: dto.referralSource }),
-        ...(dto.futureCompanyId && { futureCompanyId: dto.futureCompanyId }),
-        ...(dto.futureWalletId && { futureWalletId: dto.futureWalletId }),
-        ...(dto.futureCommissionPlan && {
-          futureCommissionPlan: dto.futureCommissionPlan,
-        }),
-      },
-    });
+    if (
+      dto.dateOfBirth &&
+      new Date(`${dto.dateOfBirth}T00:00:00.000Z`) > new Date()
+    ) {
+      throw new BadRequestException('Date of birth cannot be in the future');
+    }
 
-    await this.prisma.customerActivityLog.create({
-      data: {
-        customerId: id,
-        userId: adminUserId,
-        action: 'PROFILE_UPDATED',
-        details: dto as unknown as Prisma.InputJsonValue,
-      },
+    const tags = this.sanitizeStringArray(dto.tags);
+    const segments = this.sanitizeStringArray(dto.segments);
+    const changedFields = Object.keys(dto);
+    const deactivatesCustomer =
+      dto.status !== undefined && dto.status !== 'ACTIVE';
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({
+        where: { id },
+        data: {
+          ...(dto.customerNumber && {
+            customerNumber: dto.customerNumber.toUpperCase(),
+          }),
+          ...(dto.isVip !== undefined && { isVip: dto.isVip }),
+          ...(tags && { tags }),
+          ...(segments && { segments }),
+          ...(dto.status && { status: dto.status }),
+          ...(dto.passportNumber !== undefined && {
+            passportNumber: encryptSensitiveField(
+              dto.passportNumber.toUpperCase(),
+            ),
+          }),
+          ...(dto.nationality !== undefined && {
+            nationality: sanitizePlainText(dto.nationality).slice(0, 100),
+          }),
+          ...(dto.gender !== undefined && { gender: dto.gender }),
+          ...(dto.dateOfBirth && { dateOfBirth: new Date(dto.dateOfBirth) }),
+          ...(dto.emergencyContact && {
+            emergencyContact: encryptSensitiveJson(
+              this.sanitizeEmergencyContact(dto.emergencyContact),
+            ) as Prisma.InputJsonValue,
+          }),
+          ...(dto.address && {
+            address: encryptSensitiveJson(
+              this.sanitizeAddress(dto.address),
+            ) as Prisma.InputJsonValue,
+          }),
+          ...(dto.preferredLanguage && {
+            preferredLanguage: dto.preferredLanguage,
+          }),
+          ...(dto.preferredCurrency && {
+            preferredCurrency: dto.preferredCurrency,
+          }),
+          ...(dto.preferredDestination && {
+            preferredDestination: sanitizePlainText(
+              dto.preferredDestination,
+            ).slice(0, 100),
+          }),
+          ...(dto.preferredTravelType && {
+            preferredTravelType: sanitizePlainText(
+              dto.preferredTravelType,
+            ).slice(0, 100),
+          }),
+          ...(dto.familyMembers && {
+            familyMembers: encryptSensitiveJson(
+              dto.familyMembers.map((person) =>
+                this.sanitizeRelatedPerson(person),
+              ),
+            ) as Prisma.InputJsonValue,
+          }),
+          ...(dto.travelCompanions && {
+            travelCompanions: encryptSensitiveJson(
+              dto.travelCompanions.map((person) =>
+                this.sanitizeRelatedPerson(person),
+              ),
+            ) as Prisma.InputJsonValue,
+          }),
+          ...(dto.marketingConsent !== undefined && {
+            marketingConsent: dto.marketingConsent,
+          }),
+          ...(dto.customerSource && { customerSource: dto.customerSource }),
+          ...(dto.referralSource && {
+            referralSource: sanitizePlainText(dto.referralSource).slice(0, 100),
+          }),
+          ...(deactivatesCustomer && {
+            refreshToken: null,
+            sessionVersion: { increment: 1 },
+          }),
+        },
+      });
+
+      await tx.customerActivityLog.create({
+        data: {
+          customerId: id,
+          userId: adminUserId,
+          action: 'PROFILE_UPDATED',
+          details: { changedFields },
+        },
+      });
+      return result;
     });
 
     return this.toSafeUser(updated);
@@ -668,21 +864,35 @@ export class UserService {
 
   async bulkUpdateCustomers(dto: BulkUpdateCustomersDto, adminUserId: string) {
     const data: Prisma.UserUpdateInput = {};
-    if (dto.tags) data.tags = dto.tags;
-    if (dto.segments) data.segments = dto.segments;
+    const tags = this.sanitizeStringArray(dto.tags);
+    const segments = this.sanitizeStringArray(dto.segments);
+    if (tags) data.tags = tags;
+    if (segments) data.segments = segments;
     if (dto.isVip !== undefined) data.isVip = dto.isVip;
     if (dto.status) data.status = dto.status;
+    if (dto.status && dto.status !== 'ACTIVE') {
+      data.refreshToken = null;
+      data.sessionVersion = { increment: 1 };
+    }
 
     if (Object.keys(data).length === 0) return { count: 0 };
 
     const count = await this.prisma.$transaction(async (tx) => {
       const result = await tx.user.updateMany({
-        where: { id: { in: dto.userIds }, deletedAt: null },
+        where: {
+          id: { in: dto.userIds },
+          deletedAt: null,
+          role: UserRole.USER,
+        },
         data,
       });
 
       const users = await tx.user.findMany({
-        where: { id: { in: dto.userIds } },
+        where: {
+          id: { in: dto.userIds },
+          deletedAt: null,
+          role: UserRole.USER,
+        },
         select: { id: true },
       });
 
@@ -692,7 +902,11 @@ export class UserService {
             customerId: u.id,
             userId: adminUserId,
             action: 'BULK_UPDATE',
-            details: data as unknown as Prisma.InputJsonValue,
+            details: {
+              changedFields: Object.keys(dto).filter(
+                (key) => key !== 'userIds',
+              ),
+            },
           })),
         });
       }
@@ -709,15 +923,20 @@ export class UserService {
     adminUserId: string,
   ) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, role: UserRole.USER },
     });
     if (!user) throw new NotFoundException('Customer not found');
+
+    const content = sanitizePlainText(dto.content).slice(0, 5000);
+    if (!content) {
+      throw new BadRequestException('Note content cannot be empty');
+    }
 
     const note = await this.prisma.customerNote.create({
       data: {
         customerId: id,
         userId: adminUserId,
-        content: dto.content,
+        content,
         noteType: dto.noteType || 'INTERNAL',
         isPinned: dto.isPinned || false,
       },
@@ -749,32 +968,70 @@ export class UserService {
     adminUserId: string,
   ) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, role: UserRole.USER },
     });
     if (!user) throw new NotFoundException('Customer not found');
 
-    const doc = await this.prisma.customerDocument.create({
-      data: {
-        customerId: id,
-        mediaAssetId: dto.mediaAssetId,
-        documentType: dto.documentType || 'OTHER',
-        title: dto.title,
-        uploadedBy: adminUserId,
-      },
-    });
+    const title = sanitizePlainText(dto.title).slice(0, 255);
+    if (!title) {
+      throw new BadRequestException('Document title cannot be empty');
+    }
 
-    await this.prisma.customerActivityLog.create({
-      data: {
-        customerId: id,
-        userId: adminUserId,
-        action: 'DOCUMENT_UPLOADED',
-        details: {
-          documentId: doc.id,
-          documentType: doc.documentType,
-          title: doc.title,
-        },
+    const doc = await this.prisma.$transaction(
+      async (tx) => {
+        const asset = await tx.mediaAsset.findFirst({
+          where: {
+            id: dto.mediaAssetId,
+            deletedAt: null,
+            entityType: MediaEntityType.GENERAL,
+            uploadedBy: adminUserId,
+          },
+          select: { id: true },
+        });
+        if (!asset) {
+          throw new BadRequestException('Invalid customer document asset');
+        }
+
+        const [existingDocument, existingBookingAttachment] =
+          await Promise.all([
+            tx.customerDocument.findFirst({
+              where: { mediaAssetId: dto.mediaAssetId },
+              select: { id: true },
+            }),
+            tx.bookingAttachment.findFirst({
+              where: { mediaAssetId: dto.mediaAssetId },
+              select: { id: true },
+            }),
+          ]);
+        if (existingDocument || existingBookingAttachment) {
+          throw new ConflictException('Document asset is already attached');
+        }
+
+        const created = await tx.customerDocument.create({
+          data: {
+            customerId: id,
+            mediaAssetId: dto.mediaAssetId,
+            documentType: dto.documentType || 'OTHER',
+            title,
+            uploadedBy: adminUserId,
+          },
+        });
+
+        await tx.customerActivityLog.create({
+          data: {
+            customerId: id,
+            userId: adminUserId,
+            action: 'DOCUMENT_UPLOADED',
+            details: {
+              documentId: created.id,
+              documentType: created.documentType,
+            },
+          },
+        });
+        return created;
       },
-    });
+      { isolationLevel: 'Serializable' },
+    );
 
     return doc;
   }
@@ -797,7 +1054,7 @@ export class UserService {
     const where: Prisma.UserWhereInput = { deletedAt: null, role: 'USER' };
 
     if (status) where.status = status;
-    if (isVip !== undefined) where.isVip = isVip === 'true';
+    if (isVip !== undefined) where.isVip = isVip;
     if (tag) where.tags = { has: tag };
     if (segment) where.segments = { has: segment };
 
@@ -806,7 +1063,6 @@ export class UserService {
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
-        { passportNumber: { contains: search, mode: 'insensitive' } },
         { customerNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -892,7 +1148,96 @@ export class UserService {
 
     return [
       headers.join(','),
-      ...rows.map((r) => r.map((c) => `"${c}"`).join(',')),
+      ...rows.map((row) =>
+        row
+          .map((cell) => {
+            const safeCell = sanitizeCsvField(cell)
+              .replace(/\r?\n/g, ' ')
+              .replace(/"/g, '""');
+            return `"${safeCell}"`;
+          })
+          .join(','),
+      ),
     ].join('\n');
+  }
+
+  private generateCustomerNumber(): string {
+    return `CUST-${new Date().getUTCFullYear()}-${crypto
+      .randomBytes(5)
+      .toString('hex')
+      .toUpperCase()}`;
+  }
+
+  private sanitizeStringArray(values?: string[]): string[] | undefined {
+    if (!values) return undefined;
+    return [
+      ...new Set(
+        values
+          .map((value) => sanitizePlainText(value).slice(0, 50))
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  private sanitizeAddress(
+    address: UpdateCustomerCrmDto['address'],
+  ): Record<string, string> {
+    if (!address) return {};
+    return Object.fromEntries(
+      Object.entries(address)
+        .filter((entry): entry is [string, string] =>
+          typeof entry[1] === 'string',
+        )
+        .map(([key, value]) => [key, sanitizePlainText(value)]),
+    );
+  }
+
+  private sanitizeEmergencyContact(
+    contact: NonNullable<UpdateCustomerCrmDto['emergencyContact']>,
+  ): Record<string, string> {
+    return {
+      name: sanitizePlainText(contact.name).slice(0, 255),
+      ...(contact.relationship && {
+        relationship: sanitizePlainText(contact.relationship).slice(0, 100),
+      }),
+      phone: contact.phone,
+    };
+  }
+
+  private sanitizeRelatedPerson(
+    person: NonNullable<UpdateCustomerCrmDto['familyMembers']>[number],
+  ): Record<string, string | number> {
+    return {
+      name: sanitizePlainText(person.name).slice(0, 255),
+      ...(person.relationship && {
+        relationship: sanitizePlainText(person.relationship).slice(0, 100),
+      }),
+      ...(person.age !== undefined && { age: person.age }),
+      ...(person.phone && { phone: person.phone }),
+    };
+  }
+
+  private redactActivityDetails(value: unknown, depth = 0): unknown {
+    if (depth > 5 || value === null || value === undefined) return null;
+    if (Array.isArray(value)) {
+      return value.slice(0, 100).map((item) =>
+        this.redactActivityDetails(item, depth + 1),
+      );
+    }
+    if (typeof value !== 'object') {
+      return typeof value === 'string' ? value.slice(0, 1000) : value;
+    }
+
+    const sensitiveKey = /passport|password|token|secret|credential/i;
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .slice(0, 100)
+        .map(([key, item]) => [
+          key,
+          sensitiveKey.test(key)
+            ? '[REDACTED]'
+            : this.redactActivityDetails(item, depth + 1),
+        ]),
+    );
   }
 }

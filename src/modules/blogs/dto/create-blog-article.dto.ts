@@ -6,12 +6,18 @@ import {
   IsBoolean,
   IsArray,
   IsObject,
+  IsIn,
+  IsISO8601,
+  IsUrl,
+  MaxLength,
+  ArrayMaxSize,
 } from 'class-validator';
 
 export class CreateBlogArticleDto {
   @ApiProperty({ description: 'Slug for the article' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(150)
   slug!: string;
 
   @ApiProperty({ description: 'Localized title JSONB (en, ar, es, pt, it)' })
@@ -40,21 +46,28 @@ export class CreateBlogArticleDto {
   @ApiPropertyOptional({ description: 'Cover image URL' })
   @IsOptional()
   @IsString()
+  @MaxLength(2_048)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   coverImage?: string;
 
   @ApiPropertyOptional({ description: 'Author name' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   author?: string;
 
   @ApiPropertyOptional({ description: 'Article category' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   category?: string;
 
   @ApiPropertyOptional({ description: 'Tags array' })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(50, { each: true })
   tags?: string[];
 
   @ApiPropertyOptional({
@@ -62,6 +75,7 @@ export class CreateBlogArticleDto {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
   status?: string;
 
   @ApiPropertyOptional({ description: 'Whether the article is published' })
@@ -72,5 +86,6 @@ export class CreateBlogArticleDto {
   @ApiPropertyOptional({ description: 'Scheduled publish timestamp' })
   @IsOptional()
   @IsString()
+  @IsISO8601({ strict: true })
   publishedAt?: string;
 }

@@ -13,18 +13,23 @@ import { ResponseTransformInterceptor } from '../../common/interceptors/response
 describe('Reviews HTTP Contract Spec', () => {
   let app: INestApplication;
 
+  const mockTourId = '11111111-1111-4111-8111-111111111111';
+  const mockReviewId = '22222222-2222-4222-8222-222222222222';
+  const mockBookingId = '33333333-3333-4333-8333-333333333333';
+  const mockUserId = '44444444-4444-4444-8444-444444444444';
+
   const mockBooking = {
-    id: 'bkg-100',
-    userId: 'usr-1',
-    tourId: 'tour-55',
+    id: mockBookingId,
+    userId: mockUserId,
+    tourId: mockTourId,
     status: 'COMPLETED',
   };
 
   const mockReview = {
-    id: 'rev-1',
-    tourId: 'tour-55',
-    userId: 'usr-1',
-    bookingId: 'bkg-100',
+    id: mockReviewId,
+    tourId: mockTourId,
+    userId: mockUserId,
+    bookingId: mockBookingId,
     rating: 5,
     reviewerName: 'Customer John',
     comment: 'Exceptional luxury experience!',
@@ -37,52 +42,59 @@ describe('Reviews HTTP Contract Spec', () => {
   };
 
   beforeAll(async () => {
+    const mockPrisma = {
+      tourReview: {
+        findMany: jest.fn().mockResolvedValue([mockReview]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue(mockReview),
+        count: jest.fn().mockResolvedValue(1),
+        aggregate: jest.fn().mockResolvedValue({
+          _avg: { rating: 5.0 },
+          _count: { rating: 1 },
+        }),
+        create: jest.fn().mockResolvedValue(mockReview),
+        update: jest.fn().mockResolvedValue({
+          ...mockReview,
+          status: 'APPROVED',
+          isPublished: true,
+        }),
+      },
+      booking: {
+        findUnique: jest.fn().mockResolvedValue(mockBooking),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'log-1' }),
+      },
+    };
+
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [ReviewsModule],
       providers: [PrismaService],
     })
       .overrideProvider(PrismaService)
       .useValue({
-        tourReview: {
-          findMany: jest.fn().mockResolvedValue([mockReview]),
-          findFirst: jest.fn().mockResolvedValue(null),
-          findUnique: jest.fn().mockResolvedValue(mockReview),
-          count: jest.fn().mockResolvedValue(1),
-          aggregate: jest.fn().mockResolvedValue({
-            _avg: { rating: 5.0 },
-            _count: { rating: 1 },
-          }),
-          create: jest.fn().mockResolvedValue(mockReview),
-          update: jest.fn().mockResolvedValue({
-            ...mockReview,
-            status: 'APPROVED',
-            isPublished: true,
-          }),
-        },
-        booking: {
-          findUnique: jest.fn().mockResolvedValue(mockBooking),
-        },
-        auditLog: {
-          create: jest.fn().mockResolvedValue({ id: 'log-1' }),
-        },
+        ...mockPrisma,
+        $transaction: jest.fn(async (cb: any) =>
+          typeof cb === 'function' ? cb(mockPrisma) : Promise.all(cb),
+        ),
       })
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
           const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();
-          req.user = { id: 'usr-1', role: 'USER', email: 'john@example.com' };
+          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com' };
           return true;
         },
       })
       .overrideGuard(RolesGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: () => true,
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
-    app.useGlobalInterceptors(
-      new ResponseTransformInterceptor(app.get(Reflector)),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalInterceptors(new ResponseTransformInterceptor(new Reflector()));
     await app.init();
   });
 
@@ -92,7 +104,7 @@ describe('Reviews HTTP Contract Spec', () => {
 
   it('GET /api/tours/:tourId/reviews returns public published reviews & rating summary', async () => {
     const res = await request(app.getHttpServer())
-      .get('/tours/tour-55/reviews')
+      .get(`/tours/${mockTourId}/reviews`)
       .expect(200);
 
     const body = res.body.data || res.body;
@@ -103,16 +115,16 @@ describe('Reviews HTTP Contract Spec', () => {
 
   it('POST /api/tours/:tourId/reviews allows verified customer with completed booking to submit review', async () => {
     const res = await request(app.getHttpServer())
-      .post('/tours/tour-55/reviews')
+      .post(`/tours/${mockTourId}/reviews`)
       .send({
-        bookingId: 'bkg-100',
+        bookingId: mockBookingId,
         rating: 5,
         comment: 'Great tour experience!',
       })
       .expect(201);
 
     const review = res.body.data || res.body;
-    expect(review.id).toBe('rev-1');
+    expect(review.id).toBe(mockReviewId);
   });
 
   it('GET /api/admin/reviews returns admin moderation list', async () => {
@@ -122,12 +134,12 @@ describe('Reviews HTTP Contract Spec', () => {
 
     const items = res.body.data?.items || res.body.data;
     expect(items).toBeDefined();
-    expect(items[0].id).toBe('rev-1');
+    expect(items[0].id).toBe(mockReviewId);
   });
 
   it('PATCH /api/admin/reviews/:id/status updates review status to APPROVED', async () => {
     const res = await request(app.getHttpServer())
-      .patch('/admin/reviews/rev-1/status')
+      .patch(`/admin/reviews/${mockReviewId}/status`)
       .send({ status: 'APPROVED' })
       .expect(200);
 

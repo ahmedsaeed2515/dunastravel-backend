@@ -5,54 +5,83 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import * as crypto from 'crypto';
+import { SKIP_CSRF_KEY } from '../decorators/skip-csrf.decorator';
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly configService: ConfigService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    const skipCsrf = this.reflector.getAllAndOverride<boolean>(SKIP_CSRF_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (isPublic) {
+    if (skipCsrf) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest<Request>();
 
-    // Exempt Stripe webhook endpoints
-    if (request.url.includes('/payments/webhook')) {
-      return true;
-    }
-
-    // Only check state-changing methods
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
       return true;
     }
 
-    // Exempt requests authenticated explicitly via Bearer token (non-browser-ambient auth)
-    const authHeader = request.headers['authorization'];
-    if (
-      authHeader &&
-      typeof authHeader === 'string' &&
-      authHeader.toLowerCase().startsWith('bearer ')
-    ) {
+    const cookies = (request.cookies ?? {}) as Record<string, string>;
+    const usesAmbientCookieAuth = Boolean(
+      cookies.access_token || cookies.refresh_token,
+    );
+
+    // Anonymous public forms do not carry ambient authority. They are protected
+    // by validation, throttling and anti-automation controls instead of CSRF.
+    if (!usesAmbientCookieAuth) {
       return true;
     }
 
-    const csrfCookie = (request.cookies as Record<string, string>)?.[
-      'csrf_token'
-    ];
+    const origin = request.headers.origin;
+    if (origin && !this.isAllowedOrigin(origin)) {
+      throw new ForbiddenException('Request origin is not allowed');
+    }
+
+    const csrfCookie = cookies.csrf_token;
     const csrfHeader = request.headers['x-csrf-token'];
 
-    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    if (
+      !csrfCookie ||
+      typeof csrfHeader !== 'string' ||
+      csrfCookie.length > 128 ||
+      csrfHeader.length > 128
+    ) {
+      throw new ForbiddenException('Invalid CSRF token');
+    }
+
+    const cookieBuffer = Buffer.from(csrfCookie, 'utf8');
+    const headerBuffer = Buffer.from(csrfHeader, 'utf8');
+    if (
+      cookieBuffer.length !== headerBuffer.length ||
+      !crypto.timingSafeEqual(cookieBuffer, headerBuffer)
+    ) {
       throw new ForbiddenException('Invalid CSRF token');
     }
 
     return true;
+  }
+
+  private isAllowedOrigin(origin: string): boolean {
+    const configured =
+      this.configService.get<string>('corsAllowedOrigins') ??
+      this.configService.get<string>('CORS_ALLOWED_ORIGINS') ??
+      '';
+    const allowedOrigins = configured
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return allowedOrigins.includes(origin);
   }
 }

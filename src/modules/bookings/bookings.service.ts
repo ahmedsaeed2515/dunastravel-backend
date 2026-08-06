@@ -24,7 +24,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateBookingDto, CalculatePriceDto } from './dto';
 import { BookingCreatedResponse, BookingSummaryResponse } from './types';
 import { InvoiceSnapshot } from '../invoices/types';
-import { Prisma, InvoiceType } from '@prisma/client';
+import { Prisma, InvoiceType, BookingStatus } from '@prisma/client';
 import * as crypto from 'crypto';
 import {
   generateReferenceCode,
@@ -37,6 +37,8 @@ import {
 import { BOOKING_EVENTS, BookingCreatedPayload } from '../../common/events';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
+import { decryptSensitiveField } from '../../common/security/field-encryption.util';
+import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 export interface IdempotencyCacheEnvelope {
   version: number;
@@ -177,9 +179,36 @@ export class BookingsService {
   ): Promise<BookingCreatedResponse> {
     this.logger.log(`Initiating booking creation | tourId=${dto.tourId}`);
 
+    if (!idempotencyKey) {
+      throw new BadRequestException('Idempotency key is required');
+    }
+
+    if (dto.passengerNames) {
+      const entries = Object.entries(dto.passengerNames);
+      if (
+        entries.length > 120 ||
+        entries.some(
+          ([key, value]) =>
+            !/^(adult|child|infant)_\d{1,3}$/i.test(key) ||
+            typeof value !== 'string' ||
+            value.trim().length < 1 ||
+            value.trim().length > 255,
+        )
+      ) {
+        throw new BadRequestException('Invalid passenger roster');
+      }
+    }
+
+    if (
+      idempotencyKey.length > 100 ||
+      !/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(idempotencyKey)
+    ) {
+      throw new BadRequestException('Invalid idempotency key');
+    }
+
     const requestHash = this.computeRequestHash(dto, userId);
 
-    if (idempotencyKey) {
+    {
       const cacheKey = this.hashIdempotencyKey(idempotencyKey);
       const cachedEnvelope =
         await this.cacheManager.get<IdempotencyCacheEnvelope>(cacheKey);
@@ -412,6 +441,8 @@ export class BookingsService {
                 id: promo.id,
                 currentUses: { lt: promo.maxUses },
                 isActive: true,
+                validFrom: { lte: new Date() },
+                validUntil: { gte: new Date() },
               },
               data: {
                 currentUses: { increment: 1 },
@@ -633,7 +664,7 @@ export class BookingsService {
           result.guestToken,
         );
 
-        if (idempotencyKey) {
+        {
           const cacheKey = this.hashIdempotencyKey(idempotencyKey);
           const envelope: IdempotencyCacheEnvelope = {
             version: 1,
@@ -798,8 +829,8 @@ export class BookingsService {
   ): Promise<BookingSummaryResponse> {
     this.logger.debug(`Booking queried | ref=${referenceCode}`);
 
-    const booking = await this.prisma.booking.findUnique({
-      where: { referenceCode },
+    const booking = await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
       include: {
         tour: { select: { titleJsonb: true, slug: true } },
         invoice: { select: { invoiceNumber: true } },
@@ -863,9 +894,9 @@ export class BookingsService {
   ): Promise<PaginatedResponse<BookingSummaryResponse>> {
     const { skip, take } = getPaginationParams(page, limit);
     const [total, bookings] = await Promise.all([
-      this.prisma.booking.count({ where: { userId } }),
+      this.prisma.booking.count({ where: { userId, deletedAt: null } }),
       this.prisma.booking.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null },
         skip,
         take,
         orderBy: { createdAt: 'desc' },
@@ -905,8 +936,11 @@ export class BookingsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Initiating booking cancellation | ref=${referenceCode}`);
 
-    const booking = await this.prisma.booking.findUnique({
-      where: { referenceCode },
+    const safeReason = reason
+      ? sanitizePlainText(reason).slice(0, 2_000)
+      : undefined;
+    const booking = await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
       include: {
         billingInfo: { select: { email: true } },
         promotionRedemption: true,
@@ -939,7 +973,14 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    const nonCancellableStatuses = ['CANCELLED', 'COMPLETED', 'REFUNDED'];
+    const nonCancellableStatuses: BookingStatus[] = [
+      'CANCELLED',
+      'COMPLETED',
+      'PAID',
+      'PARTIALLY_PAID',
+      'REFUNDED',
+      'ARCHIVED',
+    ];
     if (nonCancellableStatuses.includes(booking.status)) {
       throw new BadRequestException(
         `Booking cannot be cancelled in status: ${booking.status}`,
@@ -952,11 +993,12 @@ export class BookingsService {
       const updateResult = await tx.booking.updateMany({
         where: {
           id: booking.id,
-          status: { notIn: ['CANCELLED', 'COMPLETED', 'REFUNDED'] },
+          status: { notIn: nonCancellableStatuses },
         },
         data: {
           status: 'CANCELLED',
-          cancellationReason: reason ?? 'Customer requested cancellation',
+          cancellationReason:
+            safeReason ?? 'Customer requested cancellation',
         },
       });
 
@@ -1001,7 +1043,19 @@ export class BookingsService {
           });
         }
       }
-    });
+
+      await tx.bookingActivityLog.create({
+        data: {
+          bookingId: booking.id,
+          userId: userId || null,
+          action: 'BOOKING_CANCELLED_BY_CUSTOMER',
+          details: {
+            actorType: userId ? 'AUTHENTICATED_USER' : 'GUEST_TOKEN',
+            reasonProvided: Boolean(safeReason),
+          },
+        },
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     this.logger.log(`Booking successfully cancelled | ref=${referenceCode}`);
     return { message: 'Booking cancelled successfully' };
@@ -1017,8 +1071,11 @@ export class BookingsService {
       `Transitioning booking status | ref=${referenceCode} targetStatus=${targetStatus} actorRole=${actor.role}`,
     );
 
-    const booking = await this.prisma.booking.findUnique({
-      where: { referenceCode },
+    const safeReason = reason
+      ? sanitizePlainText(reason).slice(0, 2_000)
+      : undefined;
+    const booking = await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
       include: {
         promotionRedemption: true,
       },
@@ -1038,10 +1095,18 @@ export class BookingsService {
       );
     }
 
+    const financialStatuses = ['PAID', 'PARTIALLY_PAID', 'REFUNDED'];
+    if (financialStatuses.includes(targetStatus)) {
+      throw new ForbiddenException(
+        'Financial booking status is controlled by the payment ledger',
+      );
+    }
+
     const validTransitions: Record<string, string[]> = {
-      PENDING: ['CONFIRMED', 'CANCELLED', 'ARCHIVED'],
-      CONFIRMED: ['PAID', 'CANCELLED', 'ARCHIVED'],
-      PAID: ['COMPLETED', 'REFUNDED', 'ARCHIVED'],
+      PENDING: ['CONFIRMED', 'CANCELLED'],
+      CONFIRMED: ['CANCELLED'],
+      PARTIALLY_PAID: [],
+      PAID: ['COMPLETED'],
       COMPLETED: ['ARCHIVED'],
       CANCELLED: ['CONFIRMED', 'PENDING', 'ARCHIVED'],
       REFUNDED: ['ARCHIVED'],
@@ -1068,17 +1133,26 @@ export class BookingsService {
     }
 
     const totalPassengers = booking.adults + booking.children;
+    if (
+      targetStatus === 'CANCELLED' &&
+      !booking.paidAmountUsd.equals(0)
+    ) {
+      throw new ForbiddenException(
+        'A booking with captured funds must use the refund workflow',
+      );
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
       if (targetStatus === 'CANCELLED') {
         const updateResult = await tx.booking.updateMany({
           where: {
             id: booking.id,
-            status: { notIn: ['CANCELLED', 'COMPLETED', 'REFUNDED'] },
+            status: booking.status,
           },
           data: {
             status: 'CANCELLED',
-            cancellationReason: reason ?? 'Status transitioned to CANCELLED',
+            cancellationReason:
+              safeReason ?? 'Status transitioned to CANCELLED',
           },
         });
 
@@ -1173,21 +1247,31 @@ export class BookingsService {
           }
         }
 
-        await tx.booking.update({
-          where: { id: booking.id },
+        const restored = await tx.booking.updateMany({
+          where: { id: booking.id, status: booking.status },
           data: {
             status: targetStatus as any,
             cancellationReason: null,
           },
         });
+        if (restored.count !== 1) {
+          throw new BadRequestException(
+            'Booking changed; reload before restoring it',
+          );
+        }
       } else {
-        await tx.booking.update({
-          where: { id: booking.id },
+        const updated = await tx.booking.updateMany({
+          where: { id: booking.id, status: booking.status },
           data: {
             status: targetStatus as any,
-            ...(reason && { cancellationReason: reason }),
+            ...(safeReason && { cancellationReason: safeReason }),
           },
         });
+        if (updated.count !== 1) {
+          throw new BadRequestException(
+            'Booking changed; reload before updating it',
+          );
+        }
       }
 
       await tx.bookingActivityLog.create({
@@ -1201,29 +1285,102 @@ export class BookingsService {
           details: {
             oldStatus: booking.status,
             newStatus: targetStatus,
-            reason: reason ?? null,
+            reason: safeReason ?? null,
             actorRole: actor.role,
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'BOOKING_STATUS_CHANGED',
+          entityType: 'BOOKING',
+          entityId: booking.id,
+          metadata: {
+            oldStatus: booking.status,
+            newStatus: targetStatus,
           },
         },
       });
 
       const updatedBooking = await tx.booking.findUnique({
         where: { id: booking.id },
-        include: {
-          passengers: true,
-          billingInfo: true,
-          invoice: true,
+        select: {
+          id: true,
+          referenceCode: true,
+          userId: true,
+          tourId: true,
+          status: true,
+          arrivalDate: true,
+          departureDate: true,
+          adults: true,
+          children: true,
+          infants: true,
+          totalAmountUsd: true,
+          paidAmountUsd: true,
+          cancellationReason: true,
+          priority: true,
+          assigneeId: true,
+          createdAt: true,
+          updatedAt: true,
+          passengers: {
+            select: {
+              id: true,
+              passengerType: true,
+              fullName: true,
+              dateOfBirth: true,
+              nationality: true,
+              passportExpiry: true,
+              passportNumber: true,
+            },
+          },
+          billingInfo: {
+            select: {
+              fullName: true,
+              email: true,
+              phone: true,
+              invoiceType: true,
+              companyName: true,
+              taxId: true,
+              address: true,
+              city: true,
+              country: true,
+            },
+          },
+          invoice: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              status: true,
+              subtotal: true,
+              tax: true,
+              total: true,
+              currency: true,
+            },
+          },
           tour: { select: { id: true, slug: true, titleJsonb: true } },
         },
       });
 
       return updatedBooking;
-    });
+    }, { isolationLevel: 'Serializable' });
 
     if (targetStatus === 'CANCELLED' || targetStatus === 'REFUNDED') {
       await this.commissionsService.reverseCommissionForBooking(booking.id);
     }
 
-    return result;
+    return result
+      ? {
+          ...result,
+          passengers: result.passengers.map((passenger) => ({
+            ...passenger,
+            passportNumber: decryptSensitiveField(
+              passenger.passportNumber,
+            ),
+          })),
+        }
+      : result;
   }
 }

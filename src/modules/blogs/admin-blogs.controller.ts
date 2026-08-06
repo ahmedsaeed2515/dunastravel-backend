@@ -19,6 +19,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
+import { ParseUuidOrSlugPipe } from '../../common/pipes';
 
 @ApiTags('admin-blogs')
 @ApiBearerAuth()
@@ -36,7 +37,9 @@ export class AdminBlogsController {
 
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Get blog article detail for admin' })
-  async findOne(@Param('idOrSlug') idOrSlug: string) {
+  async findOne(
+    @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
+  ) {
     return this.blogsService.findOneAdmin(idOrSlug);
   }
 
@@ -46,25 +49,25 @@ export class AdminBlogsController {
     @Body() dto: CreateBlogArticleDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.blogsService.createAdmin(dto, user?.id);
+    return this.blogsService.createAdmin(dto, user?.id || 'system-admin');
   }
 
   @Put(':idOrSlug')
   @ApiOperation({ summary: 'Update a blog article' })
   async update(
-    @Param('idOrSlug') idOrSlug: string,
+    @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @Body() dto: UpdateBlogArticleDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.blogsService.updateAdmin(idOrSlug, dto, user?.id);
+    return this.blogsService.updateAdmin(idOrSlug, dto, user?.id || 'system-admin');
   }
 
   @Delete(':idOrSlug')
   @ApiOperation({ summary: 'Delete a blog article' })
   async delete(
-    @Param('idOrSlug') idOrSlug: string,
-    @CurrentUser() user?: AuthenticatedUser,
+    @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.blogsService.softDeleteAdmin(idOrSlug, user?.id);
+    return this.blogsService.softDeleteAdmin(idOrSlug, user.id);
   }
 }

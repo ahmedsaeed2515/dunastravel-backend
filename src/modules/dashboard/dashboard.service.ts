@@ -1,11 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 
 @Injectable()
 export class DashboardService {
-  private readonly logger = new Logger(DashboardService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   private parseDates(query: DashboardQueryDto) {
@@ -16,20 +15,45 @@ export class DashboardService {
       : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default last 30 days
 
     const diffMs = to.getTime() - from.getTime();
+    if (
+      !Number.isFinite(from.getTime()) ||
+      !Number.isFinite(to.getTime()) ||
+      diffMs < 0 ||
+      diffMs > 366 * 24 * 60 * 60 * 1000 ||
+      to.getTime() > now.getTime() + 24 * 60 * 60 * 1000
+    ) {
+      throw new BadRequestException(
+        'Dashboard date range must be valid and no longer than 366 days',
+      );
+    }
     const prevTo = new Date(from.getTime());
     const prevFrom = new Date(from.getTime() - diffMs);
 
     return { from, to, prevFrom, prevTo };
   }
 
+  private getTrendBucket(query: DashboardQueryDto): Prisma.Sql {
+    const timezone = query.timezone || 'UTC';
+    switch (query.period) {
+      case 'weekly':
+        return Prisma.sql`DATE_TRUNC('week', b."created_at" AT TIME ZONE ${timezone})`;
+      case 'monthly':
+        return Prisma.sql`DATE_TRUNC('month', b."created_at" AT TIME ZONE ${timezone})`;
+      default:
+        return Prisma.sql`DATE_TRUNC('day', b."created_at" AT TIME ZONE ${timezone})`;
+    }
+  }
+
   async getExecutiveSummary(query: DashboardQueryDto) {
     const { from, to, prevFrom, prevTo } = this.parseDates(query);
 
     const [
-      currentBookings,
-      prevBookings,
+      currentBookingGroups,
+      previousBookingGroups,
       paymentsCurrent,
       paymentsPrev,
+      refundsCurrent,
+      refundsPrev,
       activeToursCount,
       allToursCapacity,
       openInquiriesCount,
@@ -39,52 +63,73 @@ export class DashboardService {
       bookingStartedEventsCount,
     ] = await Promise.all([
       // Bookings in current period
-      this.prisma.booking.findMany({
+      this.prisma.booking.groupBy({
+        by: ['status'],
         where: {
           createdAt: { gte: from, lte: to },
           deletedAt: null,
           ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
         },
-        select: {
-          id: true,
-          status: true,
+        _count: { _all: true },
+        _sum: {
           totalAmountUsd: true,
           paidAmountUsd: true,
-          adults: true,
-          children: true,
         },
       }),
       // Bookings in previous period
-      this.prisma.booking.findMany({
+      this.prisma.booking.groupBy({
+        by: ['status'],
         where: {
           createdAt: { gte: prevFrom, lte: prevTo },
           deletedAt: null,
           ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
         },
-        select: {
-          id: true,
-          status: true,
-          totalAmountUsd: true,
-          paidAmountUsd: true,
-        },
+        _count: { _all: true },
+        _sum: { totalAmountUsd: true },
       }),
       // Payments in current period (only CAPTURED or non-refunded paid)
-      this.prisma.payment.findMany({
+      this.prisma.payment.aggregate({
         where: {
           createdAt: { gte: from, lte: to },
           status: 'CAPTURED',
           isRefund: false,
+          ...(query.tourSlug && {
+            booking: { tour: { slug: query.tourSlug } },
+          }),
         },
-        select: { amount: true },
+        _sum: { amount: true },
       }),
       // Payments in previous period
-      this.prisma.payment.findMany({
+      this.prisma.payment.aggregate({
         where: {
           createdAt: { gte: prevFrom, lte: prevTo },
           status: 'CAPTURED',
           isRefund: false,
+          ...(query.tourSlug && {
+            booking: { tour: { slug: query.tourSlug } },
+          }),
         },
-        select: { amount: true },
+        _sum: { amount: true },
+      }),
+      this.prisma.refundRecord.aggregate({
+        where: {
+          createdAt: { gte: from, lte: to },
+          status: 'COMPLETED',
+          ...(query.tourSlug && {
+            payment: { booking: { tour: { slug: query.tourSlug } } },
+          }),
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.refundRecord.aggregate({
+        where: {
+          createdAt: { gte: prevFrom, lte: prevTo },
+          status: 'COMPLETED',
+          ...(query.tourSlug && {
+            payment: { booking: { tour: { slug: query.tourSlug } } },
+          }),
+        },
+        _sum: { amount: true },
       }),
       // Active Tours
       this.prisma.tour.count({
@@ -92,6 +137,10 @@ export class DashboardService {
       }),
       // Capacity & Occupancy
       this.prisma.tourAvailability.aggregate({
+        where: {
+          date: { gte: from, lte: to },
+          ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+        },
         _sum: { totalCapacity: true, remainingSeats: true },
       }),
       // Open Inquiries
@@ -121,36 +170,51 @@ export class DashboardService {
     ]);
 
     // Financial Computations
-    const grossRevenue = currentBookings
-      .filter((b) =>
-        ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(b.status),
-      )
-      .reduce((sum, b) => sum + Number(b.totalAmountUsd || 0), 0);
-
-    const prevGrossRevenue = prevBookings
-      .filter((b) =>
-        ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(b.status),
-      )
-      .reduce((sum, b) => sum + Number(b.totalAmountUsd || 0), 0);
-
-    const collectedPayments = paymentsCurrent.reduce(
-      (sum, p) => sum + Number(p.amount || 0),
-      0,
-    );
-    const prevCollectedPayments = paymentsPrev.reduce(
-      (sum, p) => sum + Number(p.amount || 0),
-      0,
-    );
-
-    const outstandingBalance = currentBookings
-      .filter((b) =>
-        ['CONFIRMED', 'PENDING', 'PARTIALLY_PAID'].includes(b.status),
-      )
+    const revenueStatuses = new Set([
+      'CONFIRMED',
+      'PAID',
+      'COMPLETED',
+      'PARTIALLY_PAID',
+    ]);
+    const grossRevenue = currentBookingGroups
+      .filter((group) => revenueStatuses.has(group.status))
       .reduce(
-        (sum, b) =>
-          sum + (Number(b.totalAmountUsd || 0) - Number(b.paidAmountUsd || 0)),
+        (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
         0,
       );
+
+    const prevGrossRevenue = previousBookingGroups
+      .filter((group) => revenueStatuses.has(group.status))
+      .reduce(
+        (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
+        0,
+      );
+
+    const collectedPayments =
+      Number(paymentsCurrent._sum.amount || 0) -
+      Number(refundsCurrent._sum.amount || 0);
+    const prevCollectedPayments =
+      Number(paymentsPrev._sum.amount || 0) -
+      Number(refundsPrev._sum.amount || 0);
+
+    const outstandingStatuses = new Set([
+      'CONFIRMED',
+      'PENDING',
+      'PARTIALLY_PAID',
+    ]);
+    const outstandingBalance = currentBookingGroups
+      .filter((group) => outstandingStatuses.has(group.status))
+      .reduce(
+        (sum, group) =>
+          sum +
+          Math.max(
+            0,
+            Number(group._sum.totalAmountUsd || 0) -
+              Number(group._sum.paidAmountUsd || 0),
+          ),
+        0,
+      )
+      .toFixed(2);
 
     // Booking Status Counts
     const statusCounts: Record<string, number> = {
@@ -162,12 +226,18 @@ export class DashboardService {
       CANCELLED: 0,
       REFUNDED: 0,
     };
-    currentBookings.forEach((b) => {
-      statusCounts[b.status] = (statusCounts[b.status] || 0) + 1;
+    currentBookingGroups.forEach((group) => {
+      statusCounts[group.status] = group._count._all;
     });
 
-    const totalBookingsCount = currentBookings.length;
-    const prevBookingsCount = prevBookings.length;
+    const totalBookingsCount = currentBookingGroups.reduce(
+      (sum, group) => sum + group._count._all,
+      0,
+    );
+    const prevBookingsCount = previousBookingGroups.reduce(
+      (sum, group) => sum + group._count._all,
+      0,
+    );
 
     // Conversion rate: Completed or Confirmed bookings vs Visitor Sessions or Booking Started
     const totalConversions =
@@ -210,7 +280,7 @@ export class DashboardService {
           collectedPayments,
           prevCollectedPayments,
         ),
-        outstandingBalance,
+        outstandingBalance: Number(outstandingBalance),
         currency: query.currency || 'USD',
       },
       bookings: {
@@ -247,117 +317,137 @@ export class DashboardService {
 
   async getRevenueTrend(query: DashboardQueryDto) {
     const { from, to } = this.parseDates(query);
+    const bucket = this.getTrendBucket(query);
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        period: Date;
+        grossRevenue: Prisma.Decimal;
+        collected: Prisma.Decimal;
+        bookingsCount: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT
+        ${bucket} AS "period",
+        COALESCE(SUM(b."total_amount_usd"), 0) AS "grossRevenue",
+        COALESCE(SUM(b."paid_amount_usd"), 0) AS "collected",
+        COUNT(*) AS "bookingsCount"
+      FROM "bookings" b
+      INNER JOIN "tours" t ON t.id = b."tour_id"
+      WHERE b."created_at" >= ${from}
+        AND b."created_at" <= ${to}
+        AND b."deleted_at" IS NULL
+        AND b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
+        AND (${query.tourSlug ?? null}::text IS NULL OR t.slug = ${query.tourSlug ?? null})
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
 
-    const bookings = await this.prisma.booking.findMany({
-      where: {
-        createdAt: { gte: from, lte: to },
-        status: { in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'] },
-        deletedAt: null,
-      },
-      select: { createdAt: true, totalAmountUsd: true, paidAmountUsd: true },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const trendMap: Record<
-      string,
-      {
-        period: string;
-        grossRevenue: number;
-        collected: number;
-        bookingsCount: number;
-      }
-    > = {};
-
-    bookings.forEach((b) => {
-      const dateKey = b.createdAt.toISOString().split('T')[0];
-      if (!trendMap[dateKey]) {
-        trendMap[dateKey] = {
-          period: dateKey,
-          grossRevenue: 0,
-          collected: 0,
-          bookingsCount: 0,
-        };
-      }
-      trendMap[dateKey].grossRevenue += Number(b.totalAmountUsd || 0);
-      trendMap[dateKey].collected += Number(b.paidAmountUsd || 0);
-      trendMap[dateKey].bookingsCount += 1;
-    });
-
-    return Object.values(trendMap);
+    return rows.map((row) => ({
+      period: row.period.toISOString(),
+      grossRevenue: Number(row.grossRevenue),
+      collected: Number(row.collected),
+      bookingsCount: Number(row.bookingsCount),
+    }));
   }
 
   async getBookingsTrend(query: DashboardQueryDto) {
     const { from, to } = this.parseDates(query);
+    const bucket = this.getTrendBucket(query);
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        period: Date;
+        total: bigint;
+        confirmed: bigint;
+        pending: bigint;
+        cancelled: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT
+        ${bucket} AS "period",
+        COUNT(*) AS "total",
+        COUNT(*) FILTER (
+          WHERE b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
+        ) AS "confirmed",
+        COUNT(*) FILTER (WHERE b.status::text = 'PENDING') AS "pending",
+        COUNT(*) FILTER (WHERE b.status::text = 'CANCELLED') AS "cancelled"
+      FROM "bookings" b
+      INNER JOIN "tours" t ON t.id = b."tour_id"
+      WHERE b."created_at" >= ${from}
+        AND b."created_at" <= ${to}
+        AND b."deleted_at" IS NULL
+        AND (${query.tourSlug ?? null}::text IS NULL OR t.slug = ${query.tourSlug ?? null})
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
 
-    const bookings = await this.prisma.booking.findMany({
-      where: {
-        createdAt: { gte: from, lte: to },
-        deletedAt: null,
-      },
-      select: { createdAt: true, status: true },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const trendMap: Record<
-      string,
-      {
-        period: string;
-        total: number;
-        confirmed: number;
-        pending: number;
-        cancelled: number;
-      }
-    > = {};
-
-    bookings.forEach((b) => {
-      const dateKey = b.createdAt.toISOString().split('T')[0];
-      if (!trendMap[dateKey]) {
-        trendMap[dateKey] = {
-          period: dateKey,
-          total: 0,
-          confirmed: 0,
-          pending: 0,
-          cancelled: 0,
-        };
-      }
-      trendMap[dateKey].total += 1;
-      if (['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status))
-        trendMap[dateKey].confirmed += 1;
-      if (b.status === 'PENDING') trendMap[dateKey].pending += 1;
-      if (b.status === 'CANCELLED') trendMap[dateKey].cancelled += 1;
-    });
-
-    return Object.values(trendMap);
+    return rows.map((row) => ({
+      period: row.period.toISOString(),
+      total: Number(row.total),
+      confirmed: Number(row.confirmed),
+      pending: Number(row.pending),
+      cancelled: Number(row.cancelled),
+    }));
   }
 
   async getTourPerformance(query: DashboardQueryDto) {
     const { from, to } = this.parseDates(query);
 
-    const tours = await this.prisma.tour.findMany({
-      where: { deletedAt: null },
-      include: {
-        _count: { select: { bookings: true, reviews: true } },
-        images: {
-          where: { isHero: true },
-          take: 1,
-          select: { imageUrl: true },
-        },
-        bookings: {
-          where: { createdAt: { gte: from, lte: to }, deletedAt: null },
-          select: {
-            totalAmountUsd: true,
-            status: true,
-            adults: true,
-            children: true,
+    const [tours, bookingGroups, capacityGroups, tourEvents] =
+      await Promise.all([
+        this.prisma.tour.findMany({
+          where: {
+            deletedAt: null,
+            ...(query.tourSlug && { slug: query.tourSlug }),
           },
-        },
-      },
-    });
-
-    const tourEvents = await this.prisma.analyticsEvent.findMany({
-      where: { createdAt: { gte: from, lte: to }, tourSlug: { not: null } },
-      select: { tourSlug: true, eventName: true },
-    });
+          select: {
+            id: true,
+            slug: true,
+            titleJsonb: true,
+            category: true,
+            country: true,
+            city: true,
+            basePriceUsd: true,
+            status: true,
+            images: {
+              where: { isHero: true },
+              take: 1,
+              select: { imageUrl: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 500,
+        }),
+        this.prisma.booking.groupBy({
+          by: ['tourId', 'status'],
+          where: {
+            createdAt: { gte: from, lte: to },
+            deletedAt: null,
+            ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+          },
+          _count: { _all: true },
+          _sum: { totalAmountUsd: true },
+        }),
+        this.prisma.tourAvailability.groupBy({
+          by: ['tourId'],
+          where: {
+            date: { gte: from, lte: to },
+            ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+          },
+          _sum: { totalCapacity: true, remainingSeats: true },
+        }),
+        this.prisma.analyticsEvent.groupBy({
+          by: ['tourSlug', 'eventName'],
+          where: {
+            createdAt: { gte: from, lte: to },
+            tourSlug: { not: null },
+            eventName: {
+              in: ['tour_view', 'page_view', 'booking_started'],
+            },
+            ...(query.tourSlug && { tourSlug: query.tourSlug }),
+          },
+          _count: { _all: true },
+        }),
+      ]);
 
     const eventCountsBySlug: Record<
       string,
@@ -368,27 +458,47 @@ export class DashboardService {
       if (!eventCountsBySlug[ev.tourSlug])
         eventCountsBySlug[ev.tourSlug] = { views: 0, bookingStarts: 0 };
       if (ev.eventName === 'tour_view' || ev.eventName === 'page_view')
-        eventCountsBySlug[ev.tourSlug].views += 1;
+        eventCountsBySlug[ev.tourSlug].views += ev._count._all;
       if (ev.eventName === 'booking_started')
-        eventCountsBySlug[ev.tourSlug].bookingStarts += 1;
+        eventCountsBySlug[ev.tourSlug].bookingStarts += ev._count._all;
     });
 
     const performanceList = tours.map((t) => {
-      const confirmedBookings = t.bookings.filter((b) =>
-        ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(b.status),
+      const tourBookingGroups = bookingGroups.filter(
+        (group) => group.tourId === t.id,
       );
-      const totalRevenue = confirmedBookings.reduce(
-        (sum, b) => sum + Number(b.totalAmountUsd || 0),
+      const confirmedGroups = tourBookingGroups.filter((group) =>
+        ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(
+          group.status,
+        ),
+      );
+      const totalBookings = tourBookingGroups.reduce(
+        (sum, group) => sum + group._count._all,
         0,
       );
-      const occupiedSeats = 15;
-      const occupancyRate = 50;
+      const confirmedBookings = confirmedGroups.reduce(
+        (sum, group) => sum + group._count._all,
+        0,
+      );
+      const totalRevenue = confirmedGroups.reduce(
+        (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
+        0,
+      );
+      const capacity = capacityGroups.find((group) => group.tourId === t.id);
+      const totalCapacity = capacity?._sum.totalCapacity || 0;
+      const remainingSeats = capacity?._sum.remainingSeats || 0;
+      const occupiedSeats = Math.max(0, totalCapacity - remainingSeats);
+      const occupancyRate =
+        totalCapacity > 0
+          ? Number(((occupiedSeats / totalCapacity) * 100).toFixed(1))
+          : 0;
 
       const views = eventCountsBySlug[t.slug]?.views || 0;
       const bookingStarts = eventCountsBySlug[t.slug]?.bookingStarts || 0;
-      const conversions = confirmedBookings.length;
       const conversionRate =
-        views > 0 ? Number(((conversions / views) * 100).toFixed(1)) : 0;
+        views > 0
+          ? Number(((confirmedBookings / views) * 100).toFixed(1))
+          : 0;
 
       return {
         id: t.id,
@@ -400,10 +510,11 @@ export class DashboardService {
         basePriceUsd: Number(t.basePriceUsd),
         status: t.status,
         heroImage: t.images[0]?.imageUrl || null,
-        totalBookings: t.bookings.length,
-        confirmedBookings: confirmedBookings.length,
+        totalBookings,
+        confirmedBookings,
         totalRevenue,
-
+        totalCapacity,
+        remainingSeats,
         occupiedSeats,
         occupancyRate,
         views,
@@ -442,7 +553,10 @@ export class DashboardService {
     const { from, to } = this.parseDates(query);
 
     const landingPages = await this.prisma.tourLandingPage.findMany({
-      where: { deletedAt: null },
+      where: {
+        deletedAt: null,
+        ...(query.interfaceSlug && { slug: query.interfaceSlug }),
+      },
       include: {
         tours: {
           select: {
@@ -459,14 +573,25 @@ export class DashboardService {
         },
       },
       orderBy: { sortOrder: 'asc' },
+      take: 500,
     });
 
-    const analyticsEvents = await this.prisma.analyticsEvent.findMany({
+    const analyticsEvents = await this.prisma.analyticsEvent.groupBy({
+      by: ['interfaceSlug', 'eventName'],
       where: {
         createdAt: { gte: from, lte: to },
         interfaceSlug: { not: null },
+        eventName: {
+          in: [
+            'interface_view',
+            'page_view',
+            'tour_card_click',
+            'booking_started',
+          ],
+        },
+        ...(query.interfaceSlug && { interfaceSlug: query.interfaceSlug }),
       },
-      select: { interfaceSlug: true, eventName: true },
+      _count: { _all: true },
     });
 
     const countsByInterface: Record<
@@ -483,11 +608,11 @@ export class DashboardService {
         };
       }
       if (ev.eventName === 'interface_view' || ev.eventName === 'page_view')
-        countsByInterface[ev.interfaceSlug].views += 1;
+        countsByInterface[ev.interfaceSlug].views += ev._count._all;
       if (ev.eventName === 'tour_card_click')
-        countsByInterface[ev.interfaceSlug].clicks += 1;
+        countsByInterface[ev.interfaceSlug].clicks += ev._count._all;
       if (ev.eventName === 'booking_started')
-        countsByInterface[ev.interfaceSlug].bookingStarts += 1;
+        countsByInterface[ev.interfaceSlug].bookingStarts += ev._count._all;
     });
 
     const performance = landingPages.map((lp) => {
@@ -496,7 +621,6 @@ export class DashboardService {
         clicks: 0,
         bookingStarts: 0,
       };
-      const tourSlugs = lp.tours.map((t) => t.tour.slug);
 
       return {
         id: lp.id,
@@ -560,45 +684,49 @@ export class DashboardService {
       }),
     ]);
 
-    const baseCount = Math.max(visitors, tourViews, bookingStarts, 1);
+    const baseCount = Math.max(
+      visitors,
+      interfaceViews,
+      tourViews,
+      bookingStarts,
+    );
+    const percentOfVisitors = (value: number) =>
+      baseCount > 0 ? Number(((value / baseCount) * 100).toFixed(1)) : 0;
 
     const stages = [
       {
         stage: 'Website Visitors',
-        count: Math.max(visitors, tourViews, 10),
-        percent: 100,
+        count: baseCount,
+        percent: baseCount > 0 ? 100 : 0,
+      },
+      {
+        stage: 'Landing Interface Views',
+        count: Math.max(interfaceViews, tourViews),
+        percent: percentOfVisitors(Math.max(interfaceViews, tourViews)),
       },
       {
         stage: 'Tour Page Views',
         count: Math.max(tourViews, bookingStarts),
-        percent: Number(
-          ((Math.max(tourViews, bookingStarts) / baseCount) * 100).toFixed(1),
-        ),
+        percent: percentOfVisitors(Math.max(tourViews, bookingStarts)),
       },
       {
         stage: 'Booking Initiated',
         count: Math.max(bookingStarts, bookingSubmissions),
-        percent: Number(
-          (
-            (Math.max(bookingStarts, bookingSubmissions) / baseCount) *
-            100
-          ).toFixed(1),
+        percent: percentOfVisitors(
+          Math.max(bookingStarts, bookingSubmissions),
         ),
       },
       {
         stage: 'Booking Submitted',
         count: Math.max(bookingSubmissions, confirmedBookings),
-        percent: Number(
-          (
-            (Math.max(bookingSubmissions, confirmedBookings) / baseCount) *
-            100
-          ).toFixed(1),
+        percent: percentOfVisitors(
+          Math.max(bookingSubmissions, confirmedBookings),
         ),
       },
       {
         stage: 'Payment Confirmed',
         count: confirmedBookings,
-        percent: Number(((confirmedBookings / baseCount) * 100).toFixed(1)),
+        percent: percentOfVisitors(confirmedBookings),
       },
     ];
 
@@ -612,15 +740,21 @@ export class DashboardService {
   async getTrafficAnalytics(query: DashboardQueryDto) {
     const { from, to } = this.parseDates(query);
 
-    const events = await this.prisma.analyticsEvent.findMany({
-      where: { createdAt: { gte: from, lte: to } },
-      select: {
-        deviceCategory: true,
-        locale: true,
-        referrer: true,
-        eventName: true,
-      },
-    });
+    const [deviceGroups, localeGroups, totalEvents] = await Promise.all([
+      this.prisma.analyticsEvent.groupBy({
+        by: ['deviceCategory'],
+        where: { createdAt: { gte: from, lte: to } },
+        _count: { _all: true },
+      }),
+      this.prisma.analyticsEvent.groupBy({
+        by: ['locale'],
+        where: { createdAt: { gte: from, lte: to } },
+        _count: { _all: true },
+      }),
+      this.prisma.analyticsEvent.count({
+        where: { createdAt: { gte: from, lte: to } },
+      }),
+    ]);
 
     const devices: Record<string, number> = {
       desktop: 0,
@@ -629,27 +763,28 @@ export class DashboardService {
     };
     const locales: Record<string, number> = {};
 
-    events.forEach((ev) => {
-      const dev = (ev.deviceCategory || 'desktop').toLowerCase();
-      devices[dev] = (devices[dev] || 0) + 1;
-
-      const loc = (ev.locale || 'en').toLowerCase();
-      locales[loc] = (locales[loc] || 0) + 1;
+    deviceGroups.forEach((group) => {
+      const device = (group.deviceCategory || 'unknown').toLowerCase();
+      devices[device] = (devices[device] || 0) + group._count._all;
+    });
+    localeGroups.forEach((group) => {
+      const locale = (group.locale || 'unknown').toLowerCase();
+      locales[locale] = (locales[locale] || 0) + group._count._all;
     });
 
     return {
-      totalEvents: events.length,
+      totalEvents,
       devices,
       locales,
     };
   }
 
-  async getActionCenter(query: DashboardQueryDto) {
+  async getActionCenter(_query: DashboardQueryDto) {
     const [
       pendingReviewBookings,
       unpaidBookingsCount,
       unansweredInquiriesCount,
-      highOccupancyToursCount,
+      lowCapacityDeparturesCount,
       failedDeliveryLogs,
     ] = await Promise.all([
       this.prisma.booking.count({
@@ -665,7 +800,18 @@ export class DashboardService {
       this.prisma.tailorMadeInquiry.count({
         where: { status: 'NEWLY_RECEIVED' },
       }),
-      this.prisma.tour.count({ where: { isActive: true, deletedAt: null } }),
+      this.prisma.tourAvailability.count({
+        where: {
+          date: { gte: new Date() },
+          remainingSeats: { gte: 0, lte: 5 },
+          status: 'AVAILABLE',
+          tour: {
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+          },
+        },
+      }),
       this.prisma.notificationDeliveryLog.count({
         where: { status: 'FAILED' },
       }),
@@ -706,13 +852,13 @@ export class DashboardService {
       });
     }
 
-    if (highOccupancyToursCount > 0) {
+    if (lowCapacityDeparturesCount > 0) {
       alerts.push({
         id: 'alert-capacity-warning',
         severity: 'warning',
-        title: 'Tours Almost Fully Booked',
-        reason: `${highOccupancyToursCount} tour(s) have 5 or fewer remaining seats available.`,
-        count: highOccupancyToursCount,
+        title: 'Departures Almost Fully Booked',
+        reason: `${lowCapacityDeparturesCount} upcoming departure(s) have 5 or fewer remaining seats.`,
+        count: lowCapacityDeparturesCount,
         actionLink: '/admin/tours',
       });
     }

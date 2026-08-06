@@ -41,6 +41,18 @@ describe('CMS HTTP Contract Spec', () => {
           upsert: jest.fn().mockResolvedValue(mockBlock),
           delete: jest.fn().mockResolvedValue(mockBlock),
         },
+        $transaction: jest.fn(async (cb: any) =>
+          typeof cb === 'function'
+            ? cb({
+                cmsBlock: {
+                  upsert: jest.fn().mockResolvedValue(mockBlock),
+                },
+                auditLog: {
+                  create: jest.fn().mockResolvedValue({ id: 'log-1' }),
+                },
+              })
+            : Promise.all(cb),
+        ),
       })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })

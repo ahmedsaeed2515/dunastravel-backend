@@ -10,7 +10,8 @@ import configuration from './config/configuration';
 import { AsyncContextService } from './common/logging/async-context.service';
 import { JsonLoggerService } from './common/logging/json-logger.service';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
-import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 import { CorrelationIdMiddleware } from './common/logging/correlation-id.middleware';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -35,14 +36,10 @@ import { AgentsModule } from './modules/agents/agents.module';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { CsrfGuard } from './common/guards/csrf.guard';
-import { AdminReviewsModule } from './modules/admin/admin-reviews/admin-reviews.module';
-import { AdminPromotionsModule } from './modules/admin/admin-promotions/admin-promotions.module';
-import { AdminCmsModule } from './modules/admin/admin-cms/admin-cms.module';
-import { AdminReportsModule } from './modules/admin/admin-reports/admin-reports.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AdminTemplatesModule } from './modules/admin/admin-templates/admin-templates.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { UsersModule } from './modules/users/users.module';
-import { ToolsModule } from './modules/tools/tools.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -57,6 +54,9 @@ import { BlogsModule } from './modules/blogs/blogs.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
+import { RedisThrottlerStorage } from './common/security/redis-throttler-storage.service';
+import { RedisKeyvStore } from './common/cache/redis-keyv.store';
+import Keyv from 'keyv';
 
 @Module({
   imports: [
@@ -75,12 +75,23 @@ import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: parseInt(config.get<string>('THROTTLE_TTL', '60000'), 10),
-          limit: parseInt(config.get<string>('THROTTLE_LIMIT', '100'), 10),
-        },
-      ],
+      useFactory: (config: ConfigService) => ({
+        storage: new RedisThrottlerStorage(
+          config.getOrThrow<string>('REDIS_URL'),
+        ),
+        throttlers: [
+          {
+            ttl: parseInt(
+              config.get<string>('THROTTLE_TTL', '60000'),
+              10,
+            ),
+            limit: parseInt(
+              config.get<string>('THROTTLE_LIMIT', '100'),
+              10,
+            ),
+          },
+        ],
+      }),
     }),
 
     // Structured Logging — console only
@@ -95,14 +106,23 @@ import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
       ],
     }),
 
-    // Redis / Memory Caching
+    // Shared Redis cache. Security-sensitive idempotency must never depend on
+    // per-instance memory in a horizontally scaled deployment.
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: async (config: ConfigService) => ({
-        host: config.get<string>('REDIS_HOST', 'localhost'),
-        port: config.get<number>('REDIS_PORT', 6379),
-        ttl: 300,
-      }),
+      useFactory: async (config: ConfigService) => {
+        const store = new RedisKeyvStore(
+          config.getOrThrow<string>('REDIS_URL'),
+        );
+        return {
+          stores: new Keyv({
+            store,
+            namespace: 'dunas-cache',
+            throwOnErrors: true,
+          }),
+          ttl: 300_000,
+        };
+      },
       inject: [ConfigService],
     }),
 
@@ -144,13 +164,8 @@ import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
     PaymentsModule,
     WishlistModule,
     PromotionsModule,
-    AdminReviewsModule,
-    AdminPromotionsModule,
-    AdminCmsModule,
-    AdminReportsModule,
     AdminTemplatesModule,
     CmsModule,
-    ToolsModule,
     SettingsModule,
     AnalyticsModule,
     DashboardModule,
@@ -173,11 +188,19 @@ import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: ResponseTransformInterceptor,
+      useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggingInterceptor,
     },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     {
       provide: APP_GUARD,

@@ -30,7 +30,15 @@ export class AdminFinanceQueryDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['PENDING', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED', 'EXPIRED'])
+  @IsIn([
+    'PENDING',
+    'AUTHORIZED',
+    'CAPTURED',
+    'REFUND_PENDING',
+    'FAILED',
+    'REFUNDED',
+    'EXPIRED',
+  ])
   status?: PaymentStatus;
 
   @IsOptional()

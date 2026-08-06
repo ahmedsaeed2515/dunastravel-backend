@@ -29,6 +29,26 @@ export class InquiriesService {
   async create(dto: CreateInquiryDto): Promise<InquiryResponse> {
     this.logger.log('Processing new tailor-made inquiry submission');
 
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const startDate = dto.startDate ? new Date(dto.startDate) : null;
+    const endDate = dto.endDate ? new Date(dto.endDate) : null;
+    if (startDate && startDate < today) {
+      throw new UnprocessableEntityException(
+        'Travel start date cannot be in the past',
+      );
+    }
+    if (
+      startDate &&
+      endDate &&
+      endDate.getTime() - startDate.getTime() >
+        365 * 24 * 60 * 60 * 1_000
+    ) {
+      throw new UnprocessableEntityException(
+        'Travel duration exceeds the allowed maximum',
+      );
+    }
+
     let referenceCode = generateReferenceCode('INQ');
     let collision = true;
     let attempts = 0;
@@ -60,8 +80,8 @@ export class InquiriesService {
         phone: sanitizeString(dto.phone),
         preferredLanguage: dto.preferredLanguage,
         destinations: dto.destinations.map((d) => sanitizeString(d)),
-        startDate: dto.startDate ? new Date(dto.startDate) : null,
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        startDate,
+        endDate,
         adults: dto.adults,
         children: dto.children,
         budgetAmount:

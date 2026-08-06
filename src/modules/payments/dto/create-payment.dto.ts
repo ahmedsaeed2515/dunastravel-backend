@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsUUID, IsOptional } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  IsOptional,
+} from 'class-validator';
 
 export class CreatePaymentDto {
   @IsNotEmpty()
@@ -8,5 +14,6 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['STRIPE'])
   provider?: string = 'STRIPE';
 }

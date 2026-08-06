@@ -9,6 +9,9 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
+  ParseUUIDPipe,
+  Headers,
+  BadRequestException,
 } from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import {
@@ -41,10 +44,8 @@ import { UpsertPassengersDto } from './dto/upsert-passengers.dto';
 import { AssignBookingDto } from './dto/assign-booking.dto';
 import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListInquiriesQueryDto } from './dto/list-inquiries-query.dto';
-import { ListContactSubmissionsQueryDto } from './dto/list-contact-submissions-query.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
 import { UpdateInquiryDto } from './dto/update-inquiry.dto';
-import { UpdateContactSubmissionStatusDto } from './dto/update-contact-submission-status.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
@@ -56,7 +57,11 @@ import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
 import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { BookingsService } from '../bookings/bookings.service';
-import { ContactSubmissionsService } from '../contact-submissions/contact-submissions.service';
+import {
+  ParseBookingRefPipe,
+  ParseInquiryRefPipe,
+  ParseUuidOrSlugPipe,
+} from '../../common/pipes';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -69,7 +74,6 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly bookingsService: BookingsService,
-    private readonly contactSubmissionsService: ContactSubmissionsService,
   ) {}
 
   @Get('bookings')
@@ -87,6 +91,7 @@ export class AdminController {
   }
 
   @Get('bookings/export/csv')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Export bookings to CSV.' })
   @ApiOkResponse({ description: 'CSV data string' })
   async exportBookingsCsv(
@@ -102,7 +107,7 @@ export class AdminController {
   @ApiOkResponse({ description: 'Full booking record' })
   @ApiNotFoundResponse({ description: 'Booking not found' })
   async getBookingByReferenceCode(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const isAgent = user.role === UserRole.AGENT;
@@ -120,7 +125,13 @@ export class AdminController {
   async createManualBooking(
     @Body() dto: AdminCreateBookingDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
+    if (!idempotencyKey) {
+      throw new BadRequestException(
+        'Idempotency-Key header is required for manual bookings',
+      );
+    }
     const passengerNamesMap: Record<string, string> = {};
     if (dto.passengers && dto.passengers.length > 0) {
       dto.passengers.forEach((p, idx) => {
@@ -163,10 +174,24 @@ export class AdminController {
       promoCode: dto.promoCode,
       notes: dto.notes,
     };
-    return this.bookingsService.createBooking(
+    if (dto.userId) {
+      await this.adminService.assertActiveBookingCustomer(
+        dto.userId,
+        dto.email,
+      );
+    }
+    const result = await this.bookingsService.createBooking(
       bookingDto,
-      dto.userId || user.id,
+      dto.userId,
+      idempotencyKey,
     );
+    await this.adminService.recordManualBookingCreation(
+      result.id,
+      user.id,
+      user.role,
+      dto.userId,
+    );
+    return result;
   }
 
   @Post('bookings/:referenceCode/restore')
@@ -174,7 +199,7 @@ export class AdminController {
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiOkResponse({ description: 'Restored booking record' })
   async restoreBooking(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.restoreBooking(referenceCode, user.id);
@@ -187,7 +212,7 @@ export class AdminController {
   @ApiOkResponse({ description: 'User suspended' })
   @Roles(UserRole.SUPER_ADMIN)
   async suspendUser(
-    @Param('id') userId: string,
+    @Param('id', ParseUUIDPipe) userId: string,
     @Body() dto: SuspendUserDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -200,7 +225,7 @@ export class AdminController {
   @ApiOkResponse({ description: 'User activated' })
   @Roles(UserRole.SUPER_ADMIN)
   async activateUser(
-    @Param('id') userId: string,
+    @Param('id', ParseUUIDPipe) userId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.activateUser(userId, user.id);
@@ -223,7 +248,7 @@ export class AdminController {
   @ApiBody({ type: UpdateBookingDto })
   @ApiOkResponse({ description: 'Updated booking record' })
   async updateBooking(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: UpdateBookingDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -237,7 +262,7 @@ export class AdminController {
   @ApiOkResponse({ description: 'Updated booking status' })
   @Roles(UserRole.ADMIN, UserRole.AGENT)
   async updateBookingStatus(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: UpdateBookingStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -256,7 +281,7 @@ export class AdminController {
   @ApiBody({ type: UpsertPassengersDto })
   @ApiOkResponse({ description: 'Passengers updated successfully' })
   async upsertPassengers(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: UpsertPassengersDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -269,7 +294,7 @@ export class AdminController {
   @ApiBody({ type: AssignBookingDto })
   @ApiOkResponse({ description: 'Booking assigned successfully' })
   async assignBooking(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: AssignBookingDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -277,12 +302,13 @@ export class AdminController {
   }
 
   @Post('bookings/:referenceCode/payments')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Add a payment to a booking.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiBody({ type: AddPaymentDto })
   @ApiOkResponse({ description: 'Payment added successfully' })
   async addPayment(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: AddPaymentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -295,7 +321,7 @@ export class AdminController {
   @ApiBody({ type: AddBookingNoteDto })
   @ApiOkResponse({ description: 'Note added successfully' })
   async addBookingNote(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: AddBookingNoteDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -308,7 +334,7 @@ export class AdminController {
   @ApiBody({ type: AddBookingAttachmentDto })
   @ApiOkResponse({ description: 'Attachment linked successfully' })
   async addBookingAttachment(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @Body() dto: AddBookingAttachmentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -320,7 +346,7 @@ export class AdminController {
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiOkResponse({ description: 'Booking deleted successfully' })
   async softDeleteBooking(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.softDeleteBooking(referenceCode, user.id);
@@ -351,7 +377,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Inquiry not found' })
   @Roles(UserRole.ADMIN, UserRole.AGENT)
   async getInquiryByReferenceCode(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const isAgent = user.role === UserRole.AGENT;
@@ -371,7 +397,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Inquiry not found' })
   @Roles(UserRole.ADMIN, UserRole.AGENT)
   async updateInquiry(
-    @Param('referenceCode') referenceCode: string,
+    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
     @Body() dto: UpdateInquiryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -381,45 +407,6 @@ export class AdminController {
       dto,
       user.id,
       isAgent,
-    );
-  }
-
-  @Get('contact-submissions')
-  @ApiOperation({
-    summary: 'List all contact submissions with pagination and filtering.',
-  })
-  @ApiOkResponse({ description: 'Paginated list of contact submissions' })
-  async listContactSubmissions(@Query() query: ListContactSubmissionsQueryDto) {
-    return this.contactSubmissionsService.findAll(query);
-  }
-
-  @Get('contact-submissions/:referenceCode')
-  @ApiOperation({ summary: 'Get full detail for a single contact submission.' })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiOkResponse({ description: 'Full contact submission record' })
-  @ApiNotFoundResponse({ description: 'Contact submission not found' })
-  async getContactSubmissionByReferenceCode(
-    @Param('referenceCode') referenceCode: string,
-  ) {
-    return this.contactSubmissionsService.findById(referenceCode);
-  }
-
-  @Patch('contact-submissions/:referenceCode/status')
-  @ApiOperation({ summary: 'Update the status of a contact submission.' })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiBody({ type: UpdateContactSubmissionStatusDto })
-  @ApiOkResponse({ description: 'Updated contact submission record' })
-  @ApiBadRequestResponse({ description: 'Invalid status transition' })
-  @ApiNotFoundResponse({ description: 'Contact submission not found' })
-  async updateContactSubmissionStatus(
-    @Param('referenceCode') referenceCode: string,
-    @Body() dto: UpdateContactSubmissionStatusDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.contactSubmissionsService.updateStatus(
-      referenceCode,
-      dto.status,
-      user.id,
     );
   }
 
@@ -483,7 +470,7 @@ export class AdminController {
   @ApiOkResponse({ description: 'Full tour record' })
   @ApiNotFoundResponse({ description: 'Tour not found' })
   async getTourBySlug(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.getTourBySlug(slug, user.id);
@@ -519,7 +506,7 @@ export class AdminController {
   @ApiBody({ type: UpdateTourDto })
   @ApiOkResponse({ description: 'Updated tour record' })
   async updateTour(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Body() dto: UpdateTourDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -531,7 +518,7 @@ export class AdminController {
   @ApiParam({ name: 'slug', type: 'string' })
   @ApiOkResponse({ description: 'Tour soft deleted successfully' })
   async softDeleteTour(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.softDeleteTour(slug, user.id);
@@ -543,7 +530,7 @@ export class AdminController {
   @ApiBody({ type: AddTourImageDto })
   @ApiOkResponse({ description: 'Image added successfully' })
   async addTourImage(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Body() dto: AddTourImageDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -556,8 +543,8 @@ export class AdminController {
   @ApiParam({ name: 'imageId', type: 'string' })
   @ApiOkResponse({ description: 'Image removed successfully' })
   async removeTourImage(
-    @Param('slug') slug: string,
-    @Param('imageId') imageId: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Param('imageId', ParseUUIDPipe) imageId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.removeTourImage(slug, imageId, user.id);
@@ -570,8 +557,8 @@ export class AdminController {
   @ApiBody({ type: ReorderTourImageDto })
   @ApiOkResponse({ description: 'Image reordered successfully' })
   async reorderTourImage(
-    @Param('slug') slug: string,
-    @Param('imageId') imageId: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Param('imageId', ParseUUIDPipe) imageId: string,
     @Body() dto: ReorderTourImageDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -589,7 +576,7 @@ export class AdminController {
   @ApiBody({ type: AddTourItineraryDto })
   @ApiOkResponse({ description: 'Itinerary added successfully' })
   async addTourItinerary(
-    @Param('slug') slug: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Body() dto: AddTourItineraryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -603,8 +590,8 @@ export class AdminController {
   @ApiBody({ type: UpdateTourItineraryDto })
   @ApiOkResponse({ description: 'Itinerary updated successfully' })
   async updateTourItinerary(
-    @Param('slug') slug: string,
-    @Param('dayId') dayId: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Param('dayId', ParseUUIDPipe) dayId: string,
     @Body() dto: UpdateTourItineraryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -617,8 +604,8 @@ export class AdminController {
   @ApiParam({ name: 'dayId', type: 'string' })
   @ApiOkResponse({ description: 'Itinerary removed successfully' })
   async removeTourItinerary(
-    @Param('slug') slug: string,
-    @Param('dayId') dayId: string,
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Param('dayId', ParseUUIDPipe) dayId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.removeTourItinerary(slug, dayId, user.id);

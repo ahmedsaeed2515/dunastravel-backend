@@ -2,15 +2,23 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PAYMENT_EVENTS } from '../../../common/events/payment-events';
+import { CommissionsService } from '../../commissions/commissions.service';
+
+interface PaymentEventPayload {
+  bookingId: string;
+}
 
 @Injectable()
 export class PaymentEventsListener {
   private readonly logger = new Logger(PaymentEventsListener.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly commissionsService: CommissionsService,
+  ) {}
 
   @OnEvent(PAYMENT_EVENTS.SUCCEEDED, { async: true })
-  async handlePaymentSucceeded(payload: any) {
+  async handlePaymentSucceeded(payload: PaymentEventPayload) {
     this.logger.log(
       `Handling payment succeeded event for booking ${payload.bookingId}`,
     );
@@ -19,11 +27,26 @@ export class PaymentEventsListener {
       where: { id: payload.bookingId },
     });
 
-    if (booking && booking.status !== 'PAID') {
-      await this.prisma.booking.update({
-        where: { id: payload.bookingId },
-        data: { status: 'PAID' },
-      });
+    if (booking?.status === 'PAID') {
+      try {
+        await this.commissionsService.createCommissionForBooking(
+          payload.bookingId,
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown commission error';
+        this.logger.error(
+          `Commission creation failed for paid booking ${payload.bookingId}: ${message}`,
+        );
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'COMMISSION_CREATION_REQUIRES_RECONCILIATION',
+            entityType: 'Booking',
+            entityId: payload.bookingId,
+            metadata: { error: 'Commission creation failed' },
+          },
+        });
+      }
     }
 
     // Trigger existing Resend email confirmation flow
@@ -35,7 +58,7 @@ export class PaymentEventsListener {
   }
 
   @OnEvent(PAYMENT_EVENTS.FAILED, { async: true })
-  async handlePaymentFailed(payload: any) {
+  async handlePaymentFailed(payload: PaymentEventPayload) {
     this.logger.log(
       `Handling payment failed event for booking ${payload.bookingId}`,
     );
@@ -56,20 +79,12 @@ export class PaymentEventsListener {
   }
 
   @OnEvent(PAYMENT_EVENTS.REFUNDED, { async: true })
-  async handlePaymentRefunded(payload: any) {
+  async handlePaymentRefunded(payload: PaymentEventPayload) {
     this.logger.log(
       `Handling payment refunded event for booking ${payload.bookingId}`,
     );
 
-    const booking = await this.prisma.booking.findUnique({
-      where: { id: payload.bookingId },
-    });
-
-    if (booking && booking.status !== 'REFUNDED') {
-      await this.prisma.booking.update({
-        where: { id: payload.bookingId },
-        data: { status: 'REFUNDED' },
-      });
-    }
+    // Financial state is committed by PaymentsService. Listeners must not
+    // overwrite authoritative booking/payment state.
   }
 }

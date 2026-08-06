@@ -1,17 +1,23 @@
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
-  IsString,
-  IsNotEmpty,
-  IsOptional,
   IsBoolean,
   IsInt,
   IsObject,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 
 export class AttachToursDto {
   @IsArray()
-  @IsString({ each: true })
-  @IsNotEmpty()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @IsUUID('4', { each: true })
   tourIds!: string[];
 
   @IsBoolean()
@@ -28,7 +34,10 @@ export class AttachToursDto {
 }
 
 export class UpdateTourRelationDto {
+  @Type(() => Number)
   @IsInt()
+  @Min(0)
+  @Max(100_000)
   @IsOptional()
   sortOrder?: number;
 
@@ -45,7 +54,22 @@ export class UpdateTourRelationDto {
   customBadge?: Record<string, string>;
 }
 
+class ReorderTourItemDto {
+  @IsUUID('4')
+  tourId!: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
+  sortOrder!: number;
+}
+
 export class ReorderToursDto {
   @IsArray()
-  items!: { tourId: string; sortOrder: number }[];
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => ReorderTourItemDto)
+  items!: ReorderTourItemDto[];
 }

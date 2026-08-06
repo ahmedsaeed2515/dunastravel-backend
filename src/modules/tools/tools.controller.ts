@@ -12,7 +12,7 @@ export class ToolsController {
 
   @Public()
   @Post('hieroglyphics')
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // Max 5 requests per minute per IP
+  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @ApiOperation({ summary: 'Translate name to Hieroglyphics via AI' })
   async translateHieroglyphics(@Body() dto: TranslateHieroglyphicsDto) {
     return this.toolsService.translateHieroglyphics(dto);

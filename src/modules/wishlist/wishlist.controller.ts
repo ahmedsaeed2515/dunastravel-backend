@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   HttpCode,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WishlistService } from './wishlist.service';
@@ -21,14 +22,17 @@ export class WishlistController {
 
   @Get('auth/favorites')
   @ApiOperation({ summary: 'Get user favorites' })
-  async getFavorites(@CurrentUser() user: any) {
+  async getFavorites(@CurrentUser() user: { id: string }) {
     return this.wishlistService.getFavorites(user.id);
   }
 
   @Post('tours/:tourId/favorite')
   @HttpCode(201)
   @ApiOperation({ summary: 'Add a tour to favorites' })
-  async addFavorite(@CurrentUser() user: any, @Param('tourId') tourId: string) {
+  async addFavorite(
+    @CurrentUser() user: { id: string },
+    @Param('tourId', ParseUUIDPipe) tourId: string,
+  ) {
     return this.wishlistService.addFavorite(user.id, tourId);
   }
 
@@ -36,8 +40,8 @@ export class WishlistController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Remove a tour from favorites' })
   async removeFavorite(
-    @CurrentUser() user: any,
-    @Param('tourId') tourId: string,
+    @CurrentUser() user: { id: string },
+    @Param('tourId', ParseUUIDPipe) tourId: string,
   ) {
     return this.wishlistService.removeFavorite(user.id, tourId);
   }

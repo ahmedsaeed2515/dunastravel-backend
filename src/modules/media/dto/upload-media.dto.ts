@@ -24,10 +24,9 @@ export class UploadMediaDto {
     type: 'string',
     format: 'uuid',
   })
-  @IsOptional()
-  @IsUUID()
   @ValidateIf((o) => o.entityType === MediaEntityType.TOUR)
   @IsNotEmpty()
+  @IsUUID()
   entityId!: string | null;
 
   @ApiPropertyOptional({

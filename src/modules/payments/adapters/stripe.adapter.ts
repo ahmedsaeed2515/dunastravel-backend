@@ -114,7 +114,7 @@ export class StripeAdapter implements IPaymentGatewayPort {
       const msg =
         err instanceof Error ? err.message : 'Unknown signature error';
       this.logger.error(`Webhook signature verification failed: ${msg}`);
-      throw new BadRequestException(`Webhook Error: ${msg}`);
+      throw new BadRequestException('Invalid webhook signature');
     }
 
     if (event.type === 'checkout.session.completed') {
@@ -173,7 +173,7 @@ export class StripeAdapter implements IPaymentGatewayPort {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown refund error';
       this.logger.error(`Stripe refund failed: ${msg}`);
-      throw new BadRequestException(`Refund failed: ${msg}`);
+      throw new BadRequestException('The payment provider rejected the refund');
     }
   }
 

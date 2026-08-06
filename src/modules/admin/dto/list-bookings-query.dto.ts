@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsOptional,
   IsInt,
@@ -9,6 +9,8 @@ import {
   IsDateString,
   IsIn,
   IsString,
+  IsUUID,
+  MaxLength,
 } from 'class-validator';
 import { BookingStatus } from '@prisma/client';
 
@@ -38,7 +40,7 @@ export class ListBookingsQueryDto {
 
   @ApiPropertyOptional({ description: 'Filter by tour ID', example: 'uuid' })
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   tourId?: string;
 
   @ApiPropertyOptional({
@@ -61,7 +63,11 @@ export class ListBookingsQueryDto {
     description: 'Search term for customer name, email, or reference code',
   })
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
+  @MaxLength(100)
   search?: string;
 
   @ApiPropertyOptional({
@@ -69,15 +75,15 @@ export class ListBookingsQueryDto {
       'Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)',
   })
   @IsOptional()
-  @IsString()
-  paymentStatus?: string;
+  @IsEnum(BookingStatus)
+  paymentStatus?: BookingStatus;
 
   @ApiPropertyOptional({
     description: 'Sort field',
-    enum: ['createdAt', 'totalAmount', 'referenceCode'],
+    enum: ['createdAt', 'totalAmountUsd', 'referenceCode'],
   })
   @IsOptional()
-  @IsIn(['createdAt', 'totalAmount', 'referenceCode'])
+  @IsIn(['createdAt', 'totalAmountUsd', 'referenceCode'])
   sortBy?: string = 'createdAt';
 
   @ApiPropertyOptional({ description: 'Sort order', enum: ['asc', 'desc'] })
@@ -87,6 +93,6 @@ export class ListBookingsQueryDto {
 
   @ApiPropertyOptional({ description: 'Filter by assignee ID' })
   @IsOptional()
-  @IsString()
+  @IsUUID('4')
   assigneeId?: string;
 }

@@ -13,7 +13,14 @@ export class WishlistService {
   constructor(private readonly prisma: PrismaService) {}
 
   async addFavorite(userId: string, tourId: string) {
-    const tour = await this.prisma.tour.findUnique({ where: { id: tourId } });
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        id: tourId,
+        status: 'PUBLISHED',
+        isActive: true,
+        deletedAt: null,
+      },
+    });
     if (!tour) throw new NotFoundException('Tour not found');
 
     const existing = await this.prisma.tourFavorite.findUnique({
@@ -49,7 +56,14 @@ export class WishlistService {
 
   async getFavorites(userId: string) {
     const favorites = await this.prisma.tourFavorite.findMany({
-      where: { userId },
+      where: {
+        userId,
+        tour: {
+          status: 'PUBLISHED',
+          isActive: true,
+          deletedAt: null,
+        },
+      },
       include: {
         tour: {
           select: {

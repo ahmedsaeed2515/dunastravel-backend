@@ -9,13 +9,15 @@ import {
 } from '@nestjs/swagger';
 import { InquiriesService } from './inquiries.service';
 import { CreateInquiryDto } from './dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Inquiries (Public)')
 @Controller()
+@Public()
 export class PublicInquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 
-  @Post(['inquiries', 'inquiries/tailor-made', 'tailor-tour'])
+  @Post('inquiries')
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @ApiOperation({ summary: 'Submit a new tailor-made tour inquiry' })

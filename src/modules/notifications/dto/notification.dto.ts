@@ -1,6 +1,18 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsEmail,
+  IsInt,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationDeliveryStatus } from '@prisma/client';
+import {
+  NotificationDeliveryStatus,
+  NotificationType,
+} from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class NotificationDeliveryLogQueryFilters {
   @ApiPropertyOptional()
@@ -10,19 +22,27 @@ export class NotificationDeliveryLogQueryFilters {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  notificationType?: string;
+  @IsEnum(NotificationType)
+  notificationType?: NotificationType;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsEmail()
+  @MaxLength(254)
   recipientEmail?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  page?: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
 
   @ApiPropertyOptional()
   @IsOptional()
-  limit?: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
 }

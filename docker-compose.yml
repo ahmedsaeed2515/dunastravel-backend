@@ -1,18 +1,17 @@
-version: '3.8'
-
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET}
-      - PORT=3000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      PORT: 3000
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,13 +19,22 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-dunastravel_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-dunastravel_db}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -36,11 +44,22 @@ services:
       - app-network
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
   redis:
     image: redis:7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,6 +67,11 @@ services:
       - app-network
     volumes:
       - redisdata:/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 networks:
   app-network:

@@ -1,6 +1,6 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class UpdateSettingDto {
-  @IsNotEmpty()
-  value: any;
+  @IsBoolean()
+  value!: boolean;
 }

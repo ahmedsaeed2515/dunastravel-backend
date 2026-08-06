@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   HttpCode,
+  ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +24,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AgentsService } from './agents.service';
 import { CreateAgentDto, UpdateAgentDto, AgentQueryDto } from './dto/agent.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../common/types';
+import { Request } from 'express';
 
 @ApiTags('Admin - Agents')
 @Controller('admin/agents')
@@ -40,27 +45,52 @@ export class AgentsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single agent by ID' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.agentsService.findOne(id);
   }
 
   @Post()
+  @Roles('SUPER_ADMIN')
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a new agent account' })
   @ApiCreatedResponse({ description: 'Agent created' })
-  create(@Body() dto: CreateAgentDto) {
-    return this.agentsService.create(dto);
+  async create(
+    @Body() dto: CreateAgentDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    return this.agentsService.create(dto, actor, {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
   }
 
   @Patch(':id')
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Update agent profile or linked company' })
-  update(@Param('id') id: string, @Body() dto: UpdateAgentDto) {
-    return this.agentsService.update(id, dto);
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAgentDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    return this.agentsService.update(id, dto, actor, {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
   }
 
   @Delete(':id')
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Soft delete an agent account' })
-  remove(@Param('id') id: string) {
-    return this.agentsService.remove(id);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    return this.agentsService.remove(id, actor, {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
   }
 }

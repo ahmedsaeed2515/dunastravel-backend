@@ -13,6 +13,9 @@ import {
 } from './dto/commission.dto';
 import {
   CommissionStatus,
+  BookingStatus,
+  CompanyStatus,
+  Prisma,
   WalletOwnerType,
   WalletTransactionType,
   WalletTransactionStatus,
@@ -43,29 +46,62 @@ export class CommissionsService {
     const [booking, company] = await Promise.all([
       this.prisma.booking.findUnique({
         where: { id: data.bookingId },
-        select: { totalAmountUsd: true },
+        select: {
+          totalAmountUsd: true,
+          companyId: true,
+          status: true,
+          deletedAt: true,
+        },
       }),
       this.prisma.company.findUnique({
         where: { id: data.companyId },
-        select: { commissionRate: true },
+        select: {
+          commissionRate: true,
+          status: true,
+          deletedAt: true,
+        },
       }),
     ]);
 
     if (!booking) throw new BadRequestException('Booking not found');
     if (!company) throw new BadRequestException('Company not found');
+    if (
+      booking.deletedAt ||
+      booking.companyId !== data.companyId ||
+      !([BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]).includes(
+        booking.status,
+      )
+    ) {
+      throw new BadRequestException(
+        'The booking is not eligible for this company commission',
+      );
+    }
+    if (
+      company.deletedAt ||
+      company.status !== CompanyStatus.ACTIVE ||
+      company.commissionRate.lte(0)
+    ) {
+      throw new BadRequestException(
+        'The company is not eligible to receive commissions',
+      );
+    }
 
     const expectedAmount = booking.totalAmountUsd
       .mul(company.commissionRate)
-      .div(100);
-    const tolerance = 0.01; // 1 cent tolerance for rounding
-    const diff = Math.abs(Number(data.amount) - Number(expectedAmount));
+      .div(100)
+      .toDecimalPlaces(2);
+    const submittedAmount = new Prisma.Decimal(data.amount);
+    const submittedRate = new Prisma.Decimal(data.rate);
 
-    if (diff > tolerance) {
+    if (
+      !submittedAmount.equals(expectedAmount) ||
+      !submittedRate.equals(company.commissionRate)
+    ) {
       this.logger.warn(
-        `Commission amount mismatch: submitted=${data.amount} expected=${expectedAmount} bookingId=${data.bookingId}`,
+        `Rejected commission terms that did not match server-derived terms for bookingId=${data.bookingId}`,
       );
       throw new BadRequestException(
-        `Commission amount ${data.amount} does not match expected ${expectedAmount} (${company.commissionRate}% of ${booking.totalAmountUsd}). Please verify the amount.`,
+        'Commission terms do not match the server-calculated value',
       );
     }
 
@@ -73,8 +109,8 @@ export class CommissionsService {
       data: {
         companyId: data.companyId,
         bookingId: data.bookingId,
-        rate: data.rate,
-        amount: data.amount,
+        rate: company.commissionRate,
+        amount: expectedAmount,
         status: CommissionStatus.PENDING,
       },
     });
@@ -86,26 +122,62 @@ export class CommissionsService {
     });
     if (!commission) throw new NotFoundException('Commission not found');
 
-    if (commission.status === data.status) return commission;
+    if (commission.status === data.status) {
+      if (
+        data.status === CommissionStatus.APPROVED ||
+        data.status === CommissionStatus.PAID
+      ) {
+        await this.processCommissionApproval(id);
+      } else if (data.status === CommissionStatus.CANCELLED) {
+        await this.processCommissionReversal(id);
+      }
+      return commission;
+    }
 
     const oldStatus = commission.status;
+    const allowedTransitions: Record<CommissionStatus, CommissionStatus[]> = {
+      [CommissionStatus.PENDING]: [
+        CommissionStatus.APPROVED,
+        CommissionStatus.CANCELLED,
+      ],
+      [CommissionStatus.APPROVED]: [
+        CommissionStatus.PAID,
+        CommissionStatus.CANCELLED,
+      ],
+      [CommissionStatus.PAID]: [CommissionStatus.CANCELLED],
+      [CommissionStatus.CANCELLED]: [],
+    };
+
+    if (!allowedTransitions[oldStatus].includes(data.status)) {
+      throw new BadRequestException(
+        `Commission cannot transition from ${oldStatus} to ${data.status}`,
+      );
+    }
+
     const updated = await this.prisma.commission.update({
       where: { id },
       data: { status: data.status },
     });
 
-    if (
-      (data.status === CommissionStatus.APPROVED ||
-        data.status === CommissionStatus.PAID) &&
-      oldStatus === CommissionStatus.PENDING
-    ) {
-      await this.processCommissionApproval(id);
-    } else if (
-      data.status === CommissionStatus.CANCELLED &&
-      (oldStatus === CommissionStatus.APPROVED ||
-        oldStatus === CommissionStatus.PAID)
-    ) {
-      await this.processCommissionReversal(id);
+    try {
+      if (
+        data.status === CommissionStatus.APPROVED ||
+        data.status === CommissionStatus.PAID
+      ) {
+        await this.processCommissionApproval(id);
+      } else if (
+        data.status === CommissionStatus.CANCELLED &&
+        (oldStatus === CommissionStatus.APPROVED ||
+          oldStatus === CommissionStatus.PAID)
+      ) {
+        await this.processCommissionReversal(id);
+      }
+    } catch (error) {
+      await this.prisma.commission.updateMany({
+        where: { id, status: data.status },
+        data: { status: oldStatus },
+      });
+      throw error;
     }
 
     return updated;
@@ -182,6 +254,16 @@ export class CommissionsService {
     if (!booking || !booking.companyId || !booking.company) {
       return null;
     }
+    if (
+      !([BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]).includes(
+        booking.status,
+      ) ||
+      booking.deletedAt ||
+      booking.company.deletedAt ||
+      booking.company.status !== CompanyStatus.ACTIVE
+    ) {
+      return null;
+    }
 
     const existing = await this.prisma.commission.findUnique({
       where: { bookingId },
@@ -191,7 +273,7 @@ export class CommissionsService {
     const rate = booking.company.commissionRate;
     if (Number(rate) <= 0) return null;
 
-    const amount = booking.totalAmountUsd.mul(rate).div(100);
+    const amount = booking.totalAmountUsd.mul(rate).div(100).toDecimalPlaces(2);
 
     return this.prisma.commission.create({
       data: {

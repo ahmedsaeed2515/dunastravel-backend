@@ -7,9 +7,11 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { JourneyMapsService } from './journey-maps.service';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Journey Maps')
 @Controller('journey-maps')
+@Public()
 export class JourneyMapsController {
   constructor(private readonly journeyMapsService: JourneyMapsService) {}
 

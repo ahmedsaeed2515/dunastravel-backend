@@ -1,4 +1,9 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class TranslateHieroglyphicsDto {
@@ -6,5 +11,6 @@ export class TranslateHieroglyphicsDto {
   @IsString()
   @MinLength(2)
   @MaxLength(30)
+  @Matches(/^[\p{L}\p{M} .'-]+$/u)
   text!: string;
 }

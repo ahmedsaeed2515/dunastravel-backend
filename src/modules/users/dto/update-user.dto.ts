@@ -38,11 +38,12 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({
     example: 'NewSecurePass!23',
-    description: 'New password (min 8 chars)',
-    minLength: 8,
+    description: 'New password (min 12 chars)',
+    minLength: 12,
   })
   @IsString()
-  @MinLength(8)
+  @MinLength(12)
+  @MaxLength(128)
   @IsOptional()
   password?: string;
 

@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   Req,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -17,6 +18,10 @@ import { UserRole } from '@prisma/client';
 import { AdminTemplatesService } from './admin-templates.service';
 import { CreateEmailTemplateDto } from '../dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from '../dto/update-email-template.dto';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../../common/types';
+import { AuditService } from '../../audit/audit.service';
+import { Request } from 'express';
 
 @ApiTags('Admin Templates')
 @ApiBearerAuth()
@@ -24,7 +29,10 @@ import { UpdateEmailTemplateDto } from '../dto/update-email-template.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminTemplatesController {
-  constructor(private readonly adminTemplatesService: AdminTemplatesService) {}
+  constructor(
+    private readonly adminTemplatesService: AdminTemplatesService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List all email templates' })
@@ -34,29 +42,82 @@ export class AdminTemplatesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific email template' })
-  async getTemplate(@Param('id') id: string) {
+  async getTemplate(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminTemplatesService.getTemplate(id);
   }
 
   @Post()
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new email template' })
-  async createTemplate(@Body() dto: CreateEmailTemplateDto, @Req() req: any) {
-    return this.adminTemplatesService.createTemplate(dto, req.user.id);
+  async createTemplate(
+    @Body() dto: CreateEmailTemplateDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const template = await this.adminTemplatesService.createTemplate(
+      dto,
+      actor.id,
+    );
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'EMAIL_TEMPLATE_CREATED',
+      entityType: 'EmailTemplate',
+      entityId: template.id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    return template;
   }
 
   @Patch(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing email template' })
   async updateTemplate(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateEmailTemplateDto,
-    @Req() req: any,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
   ) {
-    return this.adminTemplatesService.updateTemplate(id, dto, req.user.id);
+    const template = await this.adminTemplatesService.updateTemplate(
+      id,
+      dto,
+      actor.id,
+    );
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'EMAIL_TEMPLATE_UPDATED',
+      entityType: 'EmailTemplate',
+      entityId: id,
+      metadata: { changedFields: Object.keys(dto) },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    return template;
   }
 
   @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete an email template' })
-  async deleteTemplate(@Param('id') id: string, @Req() req: any) {
-    return this.adminTemplatesService.deleteTemplate(id, req.user.id);
+  async deleteTemplate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const result = await this.adminTemplatesService.deleteTemplate(
+      id,
+      actor.id,
+    );
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'EMAIL_TEMPLATE_DELETED',
+      entityType: 'EmailTemplate',
+      entityId: id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    return result;
   }
 }

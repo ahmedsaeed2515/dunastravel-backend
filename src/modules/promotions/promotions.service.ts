@@ -23,27 +23,21 @@ export class PromotionsService {
       where: { code },
     });
 
-    if (!promo || !promo.isActive) {
-      throw new BadRequestException('Invalid or inactive promotion code');
-    }
-
     const now = new Date();
-    if (promo.validFrom && now < promo.validFrom) {
-      throw new BadRequestException('Promotion code is not yet valid');
-    }
-    if (promo.validUntil && now > promo.validUntil) {
-      throw new BadRequestException('Promotion code has expired');
-    }
-    if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
-      throw new BadRequestException(
-        'Promotion code has reached its usage limit',
-      );
+    if (
+      !promo ||
+      !promo.isActive ||
+      now < promo.validFrom ||
+      now > promo.validUntil ||
+      promo.currentUses >= promo.maxUses
+    ) {
+      throw new BadRequestException('Invalid promotion code');
     }
 
     return {
       id: promo.id,
       code: promo.code,
-      discountPercent: promo.discountPercent,
+      discountPercent: promo.discountPercent.toFixed(2),
       validFrom: promo.validFrom,
       validUntil: promo.validUntil,
     };
@@ -59,6 +53,8 @@ export class PromotionsService {
           updated_at = NOW()
       WHERE id = ${promotionId}
         AND is_active = true
+        AND valid_from <= NOW()
+        AND valid_until >= NOW()
         AND current_uses < max_uses
     `;
 

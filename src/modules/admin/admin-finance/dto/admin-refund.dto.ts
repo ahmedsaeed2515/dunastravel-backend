@@ -4,23 +4,29 @@ import {
   IsOptional,
   IsNumber,
   Min,
+  IsUUID,
+  MaxLength,
+  MinLength,
+  Matches,
 } from 'class-validator';
 
 export class AdminRefundDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   paymentId!: string;
 
   @IsOptional()
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0.01)
   amount?: number;
 
-  @IsOptional()
   @IsString()
-  reason?: string;
+  @MinLength(3)
+  @MaxLength(500)
+  reason!: string;
 
-  @IsOptional()
   @IsString()
-  idempotencyKey?: string;
+  @MaxLength(100)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/)
+  idempotencyKey!: string;
 }

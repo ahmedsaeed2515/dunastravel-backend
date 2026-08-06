@@ -9,8 +9,6 @@ import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { JsonLoggerService } from './common/logging/json-logger.service';
-import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
-import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 import * as Sentry from '@sentry/nestjs';
 
 async function bootstrap(): Promise<void> {
@@ -18,13 +16,26 @@ async function bootstrap(): Promise<void> {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       environment: process.env.NODE_ENV || 'development',
+      sendDefaultPii: false,
+      beforeSend(event) {
+        if (event.request) {
+          event.request.headers = undefined;
+          event.request.cookies = undefined;
+          event.request.data = undefined;
+          event.request.query_string = undefined;
+        }
+        if (event.user) {
+          event.user = { id: event.user.id };
+        }
+        return event;
+      },
     });
   }
 
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['log', 'error', 'warn', 'debug'],
-    rawBody: true,
+    bodyParser: false,
   });
 
   const configService = app.get(ConfigService);
@@ -40,7 +51,10 @@ async function bootstrap(): Promise<void> {
 
   // ─── Trust Proxy ──────────────────────────────────────────────────────────
   // Required before any middleware that reads req.ip (e.g. ThrottlerGuard)
-  app.set('trust proxy', 1);
+  app.set(
+    'trust proxy',
+    configService.get<number>('trustProxyHops') ?? 0,
+  );
 
   // ─── Security Middleware ───────────────────────────────────────────────────
   app.use(
@@ -59,24 +73,38 @@ async function bootstrap(): Promise<void> {
   app.use(cookieParser());
 
   // ─── Compression & Limits ──────────────────────────────────────────────────
-  app.use(compression({ threshold: 1024 }));
+  app.use(
+    compression({
+      threshold: 1024,
+      filter: (req, res) => {
+        if (
+          req.headers.authorization ||
+          req.headers.cookie ||
+          req.headers['x-guest-token'] ||
+          res.getHeader('Set-Cookie')
+        ) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+    }),
+  );
 
   // Body size limits (1mb json, 1MB urlencoded)
   app.use(
     express.json({
       limit: '1mb',
       verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
-        req.rawBody = buf;
+        if (req.originalUrl.includes('/payments/webhook/')) {
+          req.rawBody = Buffer.from(buf);
+        }
       },
     }),
   );
   app.use(
     express.urlencoded({
-      extended: true,
+      extended: false,
       limit: '1mb',
-      verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
-        req.rawBody = buf;
-      },
     }),
   );
 
@@ -130,18 +158,10 @@ async function bootstrap(): Promise<void> {
     await import('./common/filters/http-exception.filter');
   const { PrismaExceptionFilter } =
     await import('./common/filters/prisma-exception.filter');
-  const { TransformInterceptor } =
-    await import('./common/interceptors/transform.interceptor');
   app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
 
-  app.useGlobalInterceptors(
-    new TransformInterceptor(),
-    new TimeoutInterceptor(configService),
-    new RequestLoggingInterceptor(),
-  );
-
   // ─── Swagger (Dev + Staging only) ─────────────────────────────────────────
-  if (nodeEnv !== 'production') {
+  if (nodeEnv === 'development') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Dunas Travel API')
       .setDescription(
@@ -188,7 +208,13 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch((err: unknown) => {
   const logger = new Logger('Bootstrap');
-  console.error('FATAL STARTUP ERROR:', err);
-  logger.error('Failed to start application', err);
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('Failed to start application');
+  } else {
+    logger.error(
+      'Failed to start application',
+      err instanceof Error ? err.stack : String(err),
+    );
+  }
   process.exit(1);
 });

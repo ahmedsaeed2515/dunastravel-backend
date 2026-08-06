@@ -3,7 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  Logger,
+  RequestTimeoutException,
 } from '@nestjs/common';
 import { Observable, throwError, TimeoutError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
@@ -23,11 +23,7 @@ export class TimeoutInterceptor implements NestInterceptor {
       timeout(this.timeoutMs),
       catchError((err) => {
         if (err instanceof TimeoutError) {
-          return throwError(() => ({
-            statusCode: 408,
-            message: 'Request Timeout',
-            error: 'Request Timeout',
-          }));
+          return throwError(() => new RequestTimeoutException());
         }
         return throwError(() => err);
       }),

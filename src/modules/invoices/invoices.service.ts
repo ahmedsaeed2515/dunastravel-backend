@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   UnprocessableEntityException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceResponse, InvoiceSnapshot } from './types';
@@ -63,9 +62,7 @@ export class InvoicesService {
       this.logger.warn(
         `Unauthorized access attempt to invoice | number=${invoiceNumber}`,
       );
-      throw new UnauthorizedException(
-        'You do not have permission to view this invoice',
-      );
+      throw new NotFoundException('Invoice not found');
     }
 
     if (!invoice.snapshotJsonb) {

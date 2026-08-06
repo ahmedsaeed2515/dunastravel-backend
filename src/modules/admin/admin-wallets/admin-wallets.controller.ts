@@ -73,4 +73,12 @@ export class AdminWalletsController {
       user?.id || 'system-admin',
     );
   }
+
+  @Post('reconcile-ledger')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Reconcile wallet ledger entries against current balance' })
+  async reconcileLedger(@CurrentUser() user?: AdminUser) {
+    return this.service.reconcileLedger(user?.id || 'system-admin');
+  }
 }
+

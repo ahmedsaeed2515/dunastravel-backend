@@ -7,6 +7,9 @@ import {
   IsDateString,
   IsOptional,
   IsBoolean,
+  MaxLength,
+  Matches,
+  IsInt,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -14,12 +17,14 @@ export class CreatePromotionDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)
   code!: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(1)
-  @Max(100)
+  @Max(90)
   discountPercent!: number;
 
   @ApiProperty()
@@ -31,8 +36,9 @@ export class CreatePromotionDto {
   validUntil!: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsInt()
   @Min(1)
+  @Max(1_000_000)
   maxUses!: number;
 
   @ApiPropertyOptional()
@@ -45,13 +51,15 @@ export class UpdatePromotionDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)
   code?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(1)
-  @Max(100)
+  @Max(90)
   discountPercent?: number;
 
   @ApiPropertyOptional()
@@ -66,8 +74,9 @@ export class UpdatePromotionDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
+  @Max(1_000_000)
   maxUses?: number;
 
   @ApiPropertyOptional()

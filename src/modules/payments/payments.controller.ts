@@ -10,6 +10,7 @@ import {
   Param,
   Get,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Request as ExpressRequest } from 'express';
@@ -17,15 +18,18 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { UserRole } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
+import { RefundPaymentDto } from './dto/refund-payment.dto';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('initiate')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async initiatePayment(
@@ -54,15 +58,14 @@ export class PaymentsController {
 
   @Post('webhook/:provider')
   @Public()
+  @SkipCsrf()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Param('provider') provider: string,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
     if (!provider || provider.toUpperCase() !== 'STRIPE') {
-      throw new BadRequestException(
-        `Unsupported payment provider: ${provider}`,
-      );
+      throw new BadRequestException('Unsupported payment provider');
     }
 
     if (!req.rawBody) {
@@ -76,11 +79,10 @@ export class PaymentsController {
 
   @Post(':id/refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async refundPayment(
-    @Param('id') id: string,
-    @Body()
-    dto: { amount?: number; reason?: string; idempotencyKey?: string },
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RefundPaymentDto,
     @Req() req: ExpressRequest & { user: { id: string; role: string } },
   ) {
     return this.paymentsService.refundPayment(
@@ -95,7 +97,7 @@ export class PaymentsController {
   @Get(':id/status')
   @UseGuards(JwtAuthGuard)
   async getPaymentStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Req() req: ExpressRequest & { user: { id: string } },
   ) {
     return this.paymentsService.getPaymentStatus(id, req.user.id);
