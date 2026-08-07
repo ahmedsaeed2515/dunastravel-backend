@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgentDto, UpdateAgentDto, AgentQueryDto } from './dto/agent.dto';
 import { Prisma, UserRole } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { assertStrongPassword } from '../../common/utils/password-policy.util';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';

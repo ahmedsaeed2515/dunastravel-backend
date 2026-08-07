@@ -44,7 +44,7 @@ import {
   AddCustomerNoteDto,
   AddCustomerDocumentDto,
 } from './dto/customer-crm.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
 import { assertStrongPassword } from '../../common/utils/password-policy.util';
 
