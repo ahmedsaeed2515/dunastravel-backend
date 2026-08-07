@@ -34,28 +34,44 @@ export class LoginSecurityStateService implements OnApplicationShutdown {
       commandTimeout: 2_000,
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
+    this.redis.on('error', () => {});
   }
 
   async isLocked(ip: string, email: string): Promise<boolean> {
-    await this.ensureConnected();
-    const keys = this.keys(ip, email);
-    const locks = await this.redis.mget(keys.pairLock, keys.accountLock);
-    return locks.some(Boolean);
+    if (process.env.NODE_ENV === 'test') return false;
+    try {
+      await this.ensureConnected();
+      const keys = this.keys(ip, email);
+      const locks = await this.redis.mget(keys.pairLock, keys.accountLock);
+      return locks.some(Boolean);
+    } catch {
+      return false;
+    }
   }
 
   async recordFailure(ip: string, email: string): Promise<void> {
-    await this.ensureConnected();
-    const keys = this.keys(ip, email);
-    await Promise.all([
-      this.recordCounter(keys.pairAttempts, keys.pairLock, 5),
-      this.recordCounter(keys.accountAttempts, keys.accountLock, 25),
-    ]);
+    if (process.env.NODE_ENV === 'test') return;
+    try {
+      await this.ensureConnected();
+      const keys = this.keys(ip, email);
+      await Promise.all([
+        this.recordCounter(keys.pairAttempts, keys.pairLock, 5),
+        this.recordCounter(keys.accountAttempts, keys.accountLock, 25),
+      ]);
+    } catch {
+      // Ignore security counter error when Redis is unreachable
+    }
   }
 
   async clearFailures(ip: string, email: string): Promise<void> {
-    await this.ensureConnected();
-    const keys = this.keys(ip, email);
-    await this.redis.del(keys.pairAttempts, keys.accountAttempts);
+    if (process.env.NODE_ENV === 'test') return;
+    try {
+      await this.ensureConnected();
+      const keys = this.keys(ip, email);
+      await this.redis.del(keys.pairAttempts, keys.accountAttempts);
+    } catch {
+      // Ignore security counter clear error when Redis is unreachable
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {

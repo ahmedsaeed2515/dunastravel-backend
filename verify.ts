@@ -3,7 +3,7 @@ import { AppModule } from './src/app.module';
 import { PrismaService } from './src/prisma/prisma.service';
 import axios from 'axios';
 import * as bcrypt from 'bcrypt';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -36,8 +36,11 @@ async function runChecks() {
         email: adminEmail,
         passwordHash: await bcrypt.hash('password123', 10),
         role: 'ADMIN',
+        isVerified: true,
       }
     });
+  } else if (!admin.isVerified) {
+    await prisma.user.update({ where: { id: admin.id }, data: { isVerified: true } });
   }
 
   // Create normal user
@@ -50,8 +53,11 @@ async function runChecks() {
         email: userEmail,
         passwordHash: await bcrypt.hash('password123', 10),
         role: 'USER',
+        isVerified: true,
       }
     });
+  } else if (!normalUser.isVerified) {
+    await prisma.user.update({ where: { id: normalUser.id }, data: { isVerified: true } });
   }
 
   const client = axios.create({

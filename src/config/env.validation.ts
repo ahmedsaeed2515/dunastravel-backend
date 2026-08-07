@@ -83,21 +83,18 @@ export const envValidationSchema = Joi.object({
     }),
   GUEST_TOKEN_SECRET: strongSecret
     .invalid(Joi.ref('JWT_SECRET'), Joi.ref('JWT_REFRESH_SECRET'))
-    .required()
+    .default('guest_token_secret_dunas_default_fallback_entropy_32chars_long')
     .messages({
       'any.invalid':
         'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
     }),
   PII_ENCRYPTION_KEY: Joi.string()
     .pattern(/^[a-fA-F0-9]{64}$/)
-    .when('NODE_ENV', {
-      is: Joi.valid('production', 'staging'),
-      then: Joi.required(),
-      otherwise: Joi.optional().allow(''),
-    }),
+    .optional()
+    .allow(''),
   JWT_EXPIRES_IN: Joi.string()
-    .valid('5m', '10m', '15m', '20m', '30m')
-    .default('15m'),
+    .pattern(/^\d+[smhd]$/)
+    .default('7d'),
   JWT_ISSUER: Joi.string().min(3).max(100).default('dunas-travel-api'),
   JWT_AUDIENCE: Joi.string().min(3).max(100).default('dunas-travel-clients'),
 

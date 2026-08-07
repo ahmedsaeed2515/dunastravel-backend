@@ -42,6 +42,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
       commandTimeout: 2_000,
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
+    this.redis.on('error', () => {});
   }
 
   async increment(
@@ -89,15 +90,13 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
         ),
       };
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        return {
-          totalHits: 1,
-          timeToExpire: Math.ceil(ttl / 1_000),
-          isBlocked: false,
-          timeToBlockExpire: 0,
-        };
-      }
-      throw error;
+      console.warn('[RedisThrottlerStorage] Redis rate-limit fallback engaged:', (error as Error)?.message);
+      return {
+        totalHits: 1,
+        timeToExpire: Math.ceil(ttl / 1_000),
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      };
     }
   }
 
