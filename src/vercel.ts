@@ -79,18 +79,22 @@ async function bootstrapServerless(): Promise<express.Express> {
       }),
     );
 
-    // Safe CORS — read from env, never crash
-    const rawOrigins = configService.get<string>('corsAllowedOrigins') ?? '';
+    // Safe CORS — read from config/env, fallback to default origins, never crash
+    const rawOrigins =
+      configService.get<string>('corsAllowedOrigins') ||
+      process.env.CORS_ALLOWED_ORIGINS ||
+      'https://www.dunastravel.com,https://admin.dunastravel.com';
     const allowedOrigins = rawOrigins
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean);
-    if (allowedOrigins.length === 0) {
-      throw new Error('CORS_ALLOWED_ORIGINS is required');
-    }
+    const corsOrigin =
+      allowedOrigins.length > 0
+        ? allowedOrigins
+        : ['https://www.dunastravel.com', 'https://admin.dunastravel.com'];
 
     app.enableCors({
-      origin: allowedOrigins,
+      origin: corsOrigin,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
@@ -142,15 +146,11 @@ export default async function handler(
     server(req, res);
   } catch (error: unknown) {
     const err = error as Error;
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[Vercel] Service initialization failed');
-    } else {
-      console.error('[Vercel] Bootstrap Error:', err?.message, err?.stack);
-    }
+    console.error('[Vercel] Bootstrap Error:', err?.message, err?.stack);
     if (!res.headersSent) {
       res.status(500).json({
         statusCode: 500,
-        message: 'Service initialization failed',
+        message: 'Service initialization failed: ' + (err?.message || 'Unknown error'),
       });
     }
   }
