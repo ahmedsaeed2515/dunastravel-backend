@@ -129,7 +129,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
   describe('POST /api/bookings/calculate', () => {
     it('returns exact P1-007 serialized contract (200 OK)', async () => {
       const payload = {
-        tourId: 'tour-001',
+        tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         date: '2026-09-01',
         adults: 2,
         children: 0,
@@ -147,7 +147,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       expect(body.data).toEqual(mockCalculatedPriceResponse);
       expect(bookingsServiceMock.calculatePrice).toHaveBeenCalledWith(
         expect.objectContaining({
-          tourId: 'tour-001',
+          tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           date: '2026-09-01',
           adults: 2,
         }),
@@ -159,7 +159,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
     it('creates booking with valid DTO (201 Created)', async () => {
       const payload = {
         type: 'booking',
-        tourId: 'tour-001',
+        tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         arrivalDate: '2026-09-01',
         adults: 2,
         fullName: 'Jane Doe',
@@ -172,8 +172,12 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
         app.getHttpServer() as Parameters<typeof request>[0],
       )
         .post('/api/bookings')
-        .send(payload)
-        .expect(201);
+        .set('Idempotency-Key', 'idem-key-12345')
+        .send(payload);
+      if (res.status !== 201) {
+        console.error('BOOKING CREATE ERROR BODY:', JSON.stringify(res.body));
+      }
+      expect(res.status).toBe(201);
 
       const body = res.body as ApiResponse<typeof mockBookingResponse>;
       expect(body.success).toBe(true);
@@ -181,11 +185,11 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       expect(bookingsServiceMock.createBooking).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'booking',
-          tourId: 'tour-001',
-          fullName: 'Jane Doe',
+          tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          arrivalDate: '2026-09-01',
         }),
         undefined,
-        undefined,
+        'idem-key-12345',
       );
     });
 

@@ -20,6 +20,10 @@ export class SettingsService {
       return cached;
     }
 
+    if (!this.prisma?.systemSetting) {
+      return defaultValue;
+    }
+
     const setting = await this.prisma.systemSetting.findUnique({
       where: { key },
     });

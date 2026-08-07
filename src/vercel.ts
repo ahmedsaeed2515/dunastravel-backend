@@ -141,6 +141,11 @@ export default async function handler(
   req: express.Request,
   res: express.Response,
 ): Promise<void> {
+  if (req.url === '/favicon.ico') {
+    res.status(204).end();
+    return;
+  }
+
   try {
     const server = await bootstrapServerless();
     server(req, res);

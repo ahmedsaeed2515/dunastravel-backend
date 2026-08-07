@@ -47,6 +47,7 @@ describe('Journey Maps HTTP Contract Spec', () => {
         },
         tour: {
           findUnique: jest.fn().mockResolvedValue(mockTour),
+          findFirst: jest.fn().mockResolvedValue(mockTour),
         },
       })
       .overrideGuard(JwtAuthGuard)
@@ -95,7 +96,7 @@ describe('Journey Maps HTTP Contract Spec', () => {
           { lat: 30.0444, lng: 31.2357, label: 'Cairo' },
           { lat: 25.6872, lng: 32.6396, label: 'Luxor' },
         ],
-        tourId: '00000000-0000-0000-0000-000000000001',
+        tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
       })
       .expect(201);
 

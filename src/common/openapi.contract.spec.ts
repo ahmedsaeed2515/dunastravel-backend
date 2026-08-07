@@ -1,5 +1,6 @@
 process.env.GUEST_TOKEN_SECRET =
-  process.env.GUEST_TOKEN_SECRET || 'test-secret-guest-token-key-1234567890';
+  process.env.GUEST_TOKEN_SECRET ||
+  'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
   process.env.JWT_SECRET || 'test-jwt-secret-key-1234567890-super-long-secret';
 

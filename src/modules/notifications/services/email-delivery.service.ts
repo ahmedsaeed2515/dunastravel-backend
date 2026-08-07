@@ -29,15 +29,17 @@ export class EmailDeliveryService {
     payload: EmailPayload,
   ): Promise<void> {
     // 1. Create PENDING log entry
-    const logRecord = await this.prisma.notificationDeliveryLog.create({
-      data: {
-        notificationType: notificationType as unknown as PrismaNotificationType,
-        originReferenceCode,
-        originEntityType,
-        recipientEmail: payload.to,
-        status: PrismaDeliveryStatus.PENDING,
-      },
-    });
+    const logRecord = this.prisma?.notificationDeliveryLog
+      ? await this.prisma.notificationDeliveryLog.create({
+          data: {
+            notificationType: notificationType as unknown as PrismaNotificationType,
+            originReferenceCode,
+            originEntityType,
+            recipientEmail: payload.to,
+            status: PrismaDeliveryStatus.PENDING,
+          },
+        })
+      : null;
 
     let attempts = 0;
     let success = false;
@@ -49,15 +51,17 @@ export class EmailDeliveryService {
         const result = await this.providerAdapter.send(payload);
         if (result.status === 'SUCCESS') {
           success = true;
-          await this.prisma.notificationDeliveryLog.update({
-            where: { id: logRecord.id },
-            data: {
-              status: PrismaDeliveryStatus.SENT,
-              attempts,
-              lastAttemptAt: new Date(),
-              providerResponseId: result.providerMessageId || null,
-            },
-          });
+          if (logRecord && this.prisma?.notificationDeliveryLog) {
+            await this.prisma.notificationDeliveryLog.update({
+              where: { id: logRecord.id },
+              data: {
+                status: PrismaDeliveryStatus.SENT,
+                attempts,
+                lastAttemptAt: new Date(),
+                providerResponseId: result.providerMessageId || null,
+              },
+            });
+          }
           this.logger.log(
             `Successfully sent ${notificationType} to ${payload.to}`,
           );
@@ -74,17 +78,19 @@ export class EmailDeliveryService {
 
         const isExhausted = attempts >= this.MAX_RETRIES;
 
-        await this.prisma.notificationDeliveryLog.update({
-          where: { id: logRecord.id },
-          data: {
-            status: isExhausted
-              ? PrismaDeliveryStatus.EXHAUSTED
-              : PrismaDeliveryStatus.FAILED,
-            attempts,
-            lastAttemptAt: new Date(),
-            failureReason: err.message,
-          },
-        });
+        if (logRecord && this.prisma?.notificationDeliveryLog) {
+          await this.prisma.notificationDeliveryLog.update({
+            where: { id: logRecord.id },
+            data: {
+              status: isExhausted
+                ? PrismaDeliveryStatus.EXHAUSTED
+                : PrismaDeliveryStatus.FAILED,
+              attempts,
+              lastAttemptAt: new Date(),
+              failureReason: err.message,
+            },
+          });
+        }
 
         if (isExhausted) {
           this.logger.error(

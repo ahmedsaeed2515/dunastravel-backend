@@ -118,11 +118,15 @@ describe('AdminFinanceController (HTTP Contract)', () => {
       )
         .post('/api/admin/finance/refunds')
         .send({
-          paymentId: 'pmt-123',
+          paymentId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           amount: 100,
           reason: 'Customer requested cancellation',
+          idempotencyKey: 'idem-key-123',
         });
 
+      if (response.status !== 201) {
+        console.error('REFUND TEST ERROR BODY:', JSON.stringify(response.body));
+      }
       expect(response.status).toBe(201);
       const body = response.body as Record<string, unknown>;
       const resData = body.data || body;

@@ -1,8 +1,8 @@
 process.env.GUEST_TOKEN_SECRET =
   process.env.GUEST_TOKEN_SECRET ||
-  'test-guest-secret-32-chars-long-string-12345';
+  'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
-  process.env.JWT_SECRET || 'test-jwt-secret-32-chars-long-string-12345';
+  process.env.JWT_SECRET || 'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.NODE_ENV = 'test';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -35,27 +35,26 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
   };
 
   const prismaMock = {
+    $transaction: jest.fn().mockImplementation((cb) => cb(prismaMock)),
     contactSubmission: {
       create: jest.fn().mockResolvedValue(mockSubmission),
-      findUnique: jest
-        .fn()
-        .mockImplementation(
-          ({
-            where,
-          }: {
-            where: { id?: number | string; referenceCode?: string };
-          }) => {
-            if (where.id || where.referenceCode === 'CON-A1B2C3') {
-              return Promise.resolve(mockSubmission);
-            }
-            return Promise.resolve(null);
-          },
-        ),
+      findUnique: jest.fn().mockImplementation((args: any) => {
+        if (args?.where?.id == 1 || args?.where?.referenceCode === 'CON-A1B2C3') {
+          return Promise.resolve(mockSubmission);
+        }
+        return Promise.resolve(null);
+      }),
+      findUniqueOrThrow: jest.fn().mockImplementation((args: any) => {
+        return Promise.resolve({ ...mockSubmission, status: 'READ' });
+      }),
       findMany: jest.fn().mockResolvedValue([mockSubmission]),
       count: jest.fn().mockResolvedValue(1),
       update: jest
         .fn()
         .mockResolvedValue({ ...mockSubmission, status: 'READ' }),
+      updateMany: jest
+        .fn()
+        .mockResolvedValue({ count: 1 }),
     },
     emailTemplate: {
       findUnique: jest.fn().mockResolvedValue(null),
@@ -70,6 +69,8 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
         name: 'Admin User',
         role: UserRole.ADMIN,
         status: 'ACTIVE',
+        sessionVersion: 1,
+        isVerified: true,
       }),
       findFirst: jest.fn().mockResolvedValue({
         id: 'admin-uuid-1',
@@ -77,6 +78,8 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
         name: 'Admin User',
         role: UserRole.ADMIN,
         status: 'ACTIVE',
+        sessionVersion: 1,
+        isVerified: true,
       }),
     },
     auditLog: {
@@ -105,6 +108,7 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
       sub: 'admin-uuid-1',
       email: 'admin@dunastravel.com',
       role: UserRole.ADMIN,
+      sv: 1,
     });
   });
 

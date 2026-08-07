@@ -1,8 +1,8 @@
 process.env.GUEST_TOKEN_SECRET =
   process.env.GUEST_TOKEN_SECRET ||
-  'test-guest-secret-32-chars-long-string-12345';
+  'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
-  process.env.JWT_SECRET || 'test-jwt-secret-32-chars-long-string-12345';
+  process.env.JWT_SECRET || 'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.NODE_ENV = 'test';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -88,15 +88,19 @@ describe('Promotions & Currency Engine (HTTP Contracts)', () => {
         id: 'admin-uuid-1',
         email: 'admin@dunastravel.com',
         name: 'Admin User',
-        role: UserRole.ADMIN,
+        role: UserRole.SUPER_ADMIN,
         status: 'ACTIVE',
+        sessionVersion: 1,
+        isVerified: true,
       }),
       findFirst: jest.fn().mockResolvedValue({
         id: 'admin-uuid-1',
         email: 'admin@dunastravel.com',
         name: 'Admin User',
-        role: UserRole.ADMIN,
+        role: UserRole.SUPER_ADMIN,
         status: 'ACTIVE',
+        sessionVersion: 1,
+        isVerified: true,
       }),
     },
   };
@@ -120,7 +124,8 @@ describe('Promotions & Currency Engine (HTTP Contracts)', () => {
     adminToken = jwtService.sign({
       sub: 'admin-uuid-1',
       email: 'admin@dunastravel.com',
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
+      sv: 1,
     });
   });
 
@@ -139,7 +144,7 @@ describe('Promotions & Currency Engine (HTTP Contracts)', () => {
         (res.body as { data?: PromoResponseBody }).data ??
         (res.body as PromoResponseBody);
       expect(body.code).toBe('SUMMER2026');
-      expect(body.discountPercent).toBe(15);
+      expect(Number(body.discountPercent)).toBe(15);
     });
 
     it('should reject invalid promotion code', async () => {

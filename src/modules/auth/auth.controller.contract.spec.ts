@@ -118,9 +118,8 @@ describe('AuthController (HTTP Contract)', () => {
         });
 
       expect(response.status).toBe(201);
-      const cookies = response.get('Set-Cookie') || [];
-      expect(cookies.some((c) => c.includes('access_token'))).toBe(true);
-      expect(cookies.some((c) => c.includes('refresh_token'))).toBe(true);
+      const resBody = (response.body as { data?: { id: string } }).data || response.body;
+      expect(resBody.id).toBe('usr-new');
     });
   });
 

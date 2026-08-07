@@ -152,7 +152,6 @@ export class AuthService {
       dto.password,
       passwordHash,
     );
-
     if (!user || !isPasswordValid) {
       await this.loginSecurityState.recordFailure(ip, dto.email);
       this.logger.warn('Failed login attempt: unknown account');

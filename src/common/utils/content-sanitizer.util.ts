@@ -1,13 +1,9 @@
-import DOMPurify, { Config, WindowLike } from 'dompurify';
-import { JSDOM } from 'jsdom';
+import sanitizeHtml from 'sanitize-html';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
 
-const windowLike = new JSDOM('').window as unknown as WindowLike;
-const purifier = DOMPurify(windowLike);
-
-const HTML_ALLOWLIST: Config = {
-  ALLOWED_TAGS: [
+const HTML_ALLOWLIST: sanitizeHtml.IOptions = {
+  allowedTags: [
     'p',
     'br',
     'strong',
@@ -25,16 +21,17 @@ const HTML_ALLOWLIST: Config = {
     'a',
     'span',
   ],
-  ALLOWED_ATTR: ['href', 'title'],
-  ALLOW_ARIA_ATTR: false,
-  ALLOW_DATA_ATTR: false,
-  ALLOW_UNKNOWN_PROTOCOLS: false,
-  FORBID_TAGS: ['style', 'script', 'svg', 'math', 'template'],
-  FORBID_ATTR: ['style', 'srcset', 'id', 'name'],
+  allowedAttributes: {
+    a: ['href', 'title'],
+    span: ['title'],
+    '*': ['title'],
+  },
+  allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+  disallowedTagsMode: 'discard',
 };
 
-const EMAIL_HTML_ALLOWLIST: Config = {
-  ALLOWED_TAGS: [
+const EMAIL_HTML_ALLOWLIST: sanitizeHtml.IOptions = {
+  allowedTags: [
     'html',
     'head',
     'meta',
@@ -67,60 +64,39 @@ const EMAIL_HTML_ALLOWLIST: Config = {
     'a',
     'img',
   ],
-  ALLOWED_ATTR: [
-    'href',
-    'title',
-    'target',
-    'rel',
-    'src',
-    'alt',
-    'width',
-    'height',
-    'align',
-    'colspan',
-    'rowspan',
-  ],
-  ALLOW_ARIA_ATTR: false,
-  ALLOW_DATA_ATTR: false,
-  ALLOW_UNKNOWN_PROTOCOLS: false,
-  FORBID_TAGS: [
-    'script',
-    'style',
-    'iframe',
-    'object',
-    'embed',
-    'form',
-    'input',
-    'button',
-    'svg',
-    'math',
-  ],
-  FORBID_ATTR: ['style', 'srcset', 'id', 'name', 'formaction'],
+  allowedAttributes: {
+    a: ['href', 'title', 'target', 'rel'],
+    img: ['src', 'alt', 'width', 'height', 'align', 'title'],
+    td: ['colspan', 'rowspan', 'align', 'width'],
+    th: ['colspan', 'rowspan', 'align', 'width'],
+    table: ['width', 'align'],
+    '*': ['title', 'align', 'width', 'height'],
+  },
+  allowedSchemes: ['http', 'https', 'mailto', 'tel', 'data'],
+  disallowedTagsMode: 'discard',
 };
 
 /**
- * Sanitizes rich text with a strict allowlist. Parsing via JSDOM/DOMPurify is
- * intentional: regular expressions cannot safely parse adversarial HTML.
+ * Sanitizes rich text with a strict allowlist. Built on `sanitize-html`
+ * for zero-DOM, high-performance Node.js serverless execution.
  */
 export function sanitizeHtmlContent(input: string | null | undefined): string {
   if (!input) return '';
-  return String(purifier.sanitize(input, HTML_ALLOWLIST)).trim();
+  return sanitizeHtml(input, HTML_ALLOWLIST).trim();
 }
 
 export function sanitizePlainText(input: string | null | undefined): string {
   if (!input) return '';
-  return String(
-    purifier.sanitize(input, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-      KEEP_CONTENT: true,
-    }),
-  ).trim();
+  return sanitizeHtml(input, {
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'discard',
+  }).trim();
 }
 
 export function sanitizeEmailHtml(input: string | null | undefined): string {
   if (!input) return '';
-  return String(purifier.sanitize(input, EMAIL_HTML_ALLOWLIST)).trim();
+  return sanitizeHtml(input, EMAIL_HTML_ALLOWLIST).trim();
 }
 
 export function sanitizeEmailTemplateHtml(

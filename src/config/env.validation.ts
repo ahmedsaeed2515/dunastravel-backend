@@ -32,29 +32,57 @@ export const envValidationSchema = Joi.object({
   TRUST_PROXY_HOPS: Joi.number().integer().min(0).max(3).default(0),
 
   // DB
-  DATABASE_URL: Joi.string()
-    .uri()
-    .default('postgresql://neondb_owner:npg_7ySL8IBrJYwN@ep-cool-sea-atufhdxz-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require'),
+  DATABASE_URL: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().uri().required(),
+    otherwise: Joi.string()
+      .uri()
+      .default('postgresql://neondb_owner:npg_7ySL8IBrJYwN@ep-cool-sea-atufhdxz-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require'),
+  }),
   REDIS_URL: Joi.string()
     .uri({ scheme: ['redis', 'rediss'] })
     .default('redis://default:gQAAAAAAAcqkAAIgcDI5ODA2MDY3MzliN2E0Y2MwOWE5OWZhZjYzYWU3N2IwNA@star-raccoon-117412.upstash.io:6379'),
 
   // Auth
-  JWT_SECRET: strongSecret.default('r6kbq8LwyHF1cMNEAGgVUzBTCiKIQRl9vfhYX2ad7PjSJon5Z4Wpmu0x3tseOD'),
-  JWT_REFRESH_SECRET: strongSecret
-    .invalid(Joi.ref('JWT_SECRET'))
-    .default('txhE6ViYpeRo7cqKPXn4d5M938LTbQuWgHNlBICfFAaJvzSmD1yk2ZOGsrU0wj')
-    .messages({
-      'any.invalid':
-        'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
-    }),
-  GUEST_TOKEN_SECRET: strongSecret
-    .invalid(Joi.ref('JWT_SECRET'), Joi.ref('JWT_REFRESH_SECRET'))
-    .default('guest_token_secret_dunas_default_fallback_entropy_32chars_long')
-    .messages({
-      'any.invalid':
-        'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
-    }),
+  JWT_SECRET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: strongSecret.required(),
+    otherwise: strongSecret.default('r6kbq8LwyHF1cMNEAGgVUzBTCiKIQRl9vfhYX2ad7PjSJon5Z4Wpmu0x3tseOD'),
+  }),
+  JWT_REFRESH_SECRET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: strongSecret
+      .invalid(Joi.ref('JWT_SECRET'))
+      .required()
+      .messages({
+        'any.invalid':
+          'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
+      }),
+    otherwise: strongSecret
+      .invalid(Joi.ref('JWT_SECRET'))
+      .default('txhE6ViYpeRo7cqKPXn4d5M938LTbQuWgHNlBICfFAaJvzSmD1yk2ZOGsrU0wj')
+      .messages({
+        'any.invalid':
+          'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
+      }),
+  }),
+  GUEST_TOKEN_SECRET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: strongSecret
+      .invalid(Joi.ref('JWT_SECRET'), Joi.ref('JWT_REFRESH_SECRET'))
+      .required()
+      .messages({
+        'any.invalid':
+          'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
+      }),
+    otherwise: strongSecret
+      .invalid(Joi.ref('JWT_SECRET'), Joi.ref('JWT_REFRESH_SECRET'))
+      .default('guest_token_secret_dunas_default_fallback_entropy_32chars_long')
+      .messages({
+        'any.invalid':
+          'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
+      }),
+  }),
   PII_ENCRYPTION_KEY: Joi.string()
     .pattern(/^[a-fA-F0-9]{64}$/)
     .optional()

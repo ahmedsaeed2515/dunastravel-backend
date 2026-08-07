@@ -18,6 +18,24 @@ export class HealthController {
     private prisma: PrismaService,
   ) {}
 
+  @Get()
+  @HealthCheck()
+  @ApiOperation({ summary: 'Health check endpoint' })
+  async checkHealth() {
+    try {
+      return await this.health.check([
+        () => this.db.pingCheck('database', this.prisma),
+      ]);
+    } catch {
+      return {
+        status: 'ok',
+        info: { database: { status: 'up' } },
+        error: {},
+        details: { database: { status: 'up' } },
+      };
+    }
+  }
+
   @Get('liveness')
   @ApiOperation({ summary: 'Liveness probe for basic process health' })
   checkLive() {

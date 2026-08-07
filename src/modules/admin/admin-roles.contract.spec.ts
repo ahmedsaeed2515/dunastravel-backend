@@ -117,7 +117,7 @@ describe('AdminController (Roles & Permissions Contract)', () => {
       const response = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
-        .post('/api/admin/users/usr-target/suspend')
+        .post('/api/admin/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/suspend')
         .send({ reason: 'Policy violation' });
 
       expect(response.status).toBe(403);
@@ -129,7 +129,7 @@ describe('AdminController (Roles & Permissions Contract)', () => {
       const response = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
-        .post('/api/admin/users/usr-target/suspend')
+        .post('/api/admin/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/suspend')
         .send({ reason: 'Policy violation' });
 
       expect(response.status).toBe(201);

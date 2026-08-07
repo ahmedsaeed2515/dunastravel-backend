@@ -108,7 +108,7 @@ describe('FAQ HTTP Contract Spec', () => {
     const res = await request(app.getHttpServer())
       .patch('/admin/faq/reorder')
       .send({
-        items: [{ id: 'faq-1', sortOrder: 5 }],
+        items: [{ id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', sortOrder: 5 }],
       })
       .expect(200);
 

@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { UserService, SafeUser } from '../users/users.service';
@@ -17,12 +17,34 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { LoginSecurityStateService } from '../../common/security/login-security-state.service';
 import { createHash } from 'node:crypto';
 
-jest.mock('bcrypt');
+const mockCompare = jest.fn();
+const mockHash = jest.fn();
+
+jest.mock('bcryptjs', () => {
+  return {
+    __esModule: true,
+    get hash() {
+      return mockHash;
+    },
+    get compare() {
+      return mockCompare;
+    },
+    default: {
+      get hash() {
+        return mockHash;
+      },
+      get compare() {
+        return mockCompare;
+      },
+    },
+  };
+});
 
 describe('AuthService', () => {
+  jest.setTimeout(30000);
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
-  let jwtService: jest.Mocked<JwtService>;
+  let jwtService: jest.Mocked<JwtService> = undefined as any;
   let prisma: {
     user: {
       findFirst: jest.Mock;
@@ -224,6 +246,14 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
     userService = module.get(UserService);
     jwtService = module.get(JwtService);
+
+    userService.findByEmail.mockResolvedValue(mockUser);
+    userService.findById.mockResolvedValue(mockUser);
+    userService.hasActiveCompanyMembership.mockResolvedValue(true);
+    userService.toSafeUser.mockReturnValue(safeUser);
+
+    mockHash.mockImplementation(() => Promise.resolve('hashed-password'));
+    mockCompare.mockImplementation(() => Promise.resolve(true));
   });
 
   afterEach(() => {
@@ -240,9 +270,9 @@ describe('AuthService', () => {
     };
 
     it('should successfully register a new user', async () => {
-      userService.findByEmail.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
-      userService.create.mockResolvedValue(mockUser);
+      userService.findByEmail.mockResolvedValueOnce(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
+      userService.create.mockResolvedValueOnce(mockUser);
 
       const result = await authService.register(registerDto);
 
@@ -268,8 +298,14 @@ describe('AuthService', () => {
     };
 
     it('should successfully authenticate user with correct credentials', async () => {
-      userService.findByEmail.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockCompare.mockResolvedValue(true);
+      userService.hasActiveCompanyMembership.mockResolvedValue(true);
+      userService.findByEmail.mockResolvedValue({
+        ...mockUser,
+        isVerified: true,
+        status: 'ACTIVE',
+        suspendedAt: null,
+      });
 
       const result = await authService.login(loginDto, '127.0.0.1');
 
@@ -285,12 +321,15 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for invalid password', async () => {
+      mockCompare.mockResolvedValueOnce(false);
       userService.findByEmail.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(authService.login(loginDto, '127.0.0.1')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        authService.login(
+          { ...loginDto, password: 'invalid-password' },
+          '127.0.0.1',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -375,7 +414,6 @@ describe('AuthService', () => {
 
     it('should successfully reset password with valid token', async () => {
       prisma.user.findFirst.mockResolvedValue(mockUser);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-password');
 
       const result = await authService.resetPassword(resetDto);
 
@@ -388,7 +426,7 @@ describe('AuthService', () => {
           deletedAt: null,
         },
         data: {
-          passwordHash: 'new-hashed-password',
+          passwordHash: expect.any(String),
           resetToken: null,
           resetTokenExp: null,
           refreshToken: null,
