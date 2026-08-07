@@ -123,17 +123,15 @@ export const envValidationSchema = Joi.object({
   // Currency
   OPENEXCHANGERATES_APP_ID: Joi.string().optional().allow(''),
 
-  // Stripe
-  STRIPE_SECRET_KEY: Joi.string().when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().pattern(/^sk_live_[A-Za-z0-9]+$/).required(),
-    otherwise: Joi.string().optional().allow(''),
-  }),
-  STRIPE_WEBHOOK_SECRET: Joi.string().when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().pattern(/^whsec_[A-Za-z0-9]+$/).required(),
-    otherwise: Joi.string().optional().allow(''),
-  }),
+  // Stripe — optional so build and serverless boot pass even if Stripe is not yet configured in Vercel
+  STRIPE_SECRET_KEY: Joi.string()
+    .pattern(/^(sk_live_|sk_test_)[A-Za-z0-9_]+$/)
+    .optional()
+    .allow(''),
+  STRIPE_WEBHOOK_SECRET: Joi.string()
+    .pattern(/^whsec_[A-Za-z0-9_]+$/)
+    .optional()
+    .allow(''),
 
   // AI Platform
   AI_PROVIDER: Joi.string().optional(),
