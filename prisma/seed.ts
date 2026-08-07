@@ -4,7 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { seedMediaAssets } from './seeds/media.seed';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 const connectionString =
   process.env.DATABASE_URL ||

@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './src/app.module';
 import { PrismaService } from './src/prisma/prisma.service';
 import axios from 'axios';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
