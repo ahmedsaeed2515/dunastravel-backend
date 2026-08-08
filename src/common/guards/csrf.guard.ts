@@ -73,15 +73,26 @@ export class CsrfGuard implements CanActivate {
   }
 
   private isAllowedOrigin(origin: string): boolean {
+    const defaultOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'https://www.dunastravel.com',
+      'https://admin.dunastravel.com',
+      'https://dunastravel-dashbord.vercel.app',
+      'https://dunastravel-dashboard.vercel.app',
+      'https://dunastravel-tours.vercel.app',
+    ];
     const configured =
       this.configService.get<string>('corsAllowedOrigins') ??
       this.configService.get<string>('CORS_ALLOWED_ORIGINS') ??
       '';
-    const allowedOrigins = configured
+    const parsedOrigins = configured
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean);
 
+    const allowedOrigins = Array.from(new Set([...defaultOrigins, ...parsedOrigins]));
     return allowedOrigins.includes(origin);
   }
 }

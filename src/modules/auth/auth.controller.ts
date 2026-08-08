@@ -37,7 +37,7 @@ import {
   ResendVerificationDto,
   UpdateProfileDto,
 } from './dto';
-import { Public, CurrentUser } from '../../common/decorators';
+import { Public, CurrentUser, SkipCsrf } from '../../common/decorators';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { AuthenticatedUser } from '../../common/types';
 import { UserService } from '../users/users.service';
@@ -53,6 +53,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @SkipCsrf()
   @Post('register')
   @HttpCode(201)
   @ApiOperation({ summary: 'Register a new user' })
@@ -63,6 +64,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Login' })
@@ -89,6 +91,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('refresh')
   @HttpCode(200)
   @ApiOperation({ summary: 'Refresh access token' })
@@ -115,6 +118,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @UseGuards(OptionalJwtAuthGuard)
   @Post('logout')
   @HttpCode(200)
