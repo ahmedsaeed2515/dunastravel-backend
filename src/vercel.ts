@@ -82,18 +82,22 @@ async function bootstrapServerless(): Promise<express.Express> {
     );
 
     // Safe CORS — read from config/env, fallback to default origins, never crash
+    const defaultOrigins = [
+      'https://www.dunastravel.com',
+      'https://admin.dunastravel.com',
+      'https://dunastravel-dashbord.vercel.app',
+      'https://dunastravel-dashboard.vercel.app',
+      'https://dunastravel-tours.vercel.app',
+    ];
     const rawOrigins =
       configService.get<string>('corsAllowedOrigins') ||
       process.env.CORS_ALLOWED_ORIGINS ||
-      'https://www.dunastravel.com,https://admin.dunastravel.com';
-    const allowedOrigins = rawOrigins
+      '';
+    const parsedOrigins = rawOrigins
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean);
-    const corsOrigin =
-      allowedOrigins.length > 0
-        ? allowedOrigins
-        : ['https://www.dunastravel.com', 'https://admin.dunastravel.com'];
+    const corsOrigin = Array.from(new Set([...defaultOrigins, ...parsedOrigins]));
 
     app.enableCors({
       origin: corsOrigin,

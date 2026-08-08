@@ -32,8 +32,7 @@ describe('Environment Validation Schema', () => {
       CLOUDINARY_API_KEY: 'test',
       CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
       OPENEXCHANGERATES_APP_ID: 'test',
-      STRIPE_SECRET_KEY: 'sk_live_123456789',
-      STRIPE_WEBHOOK_SECRET: 'whsec_123456789',
+
     };
 
     const res = envValidationSchema.validate(validEnv);
@@ -84,8 +83,7 @@ describe('Environment Validation Schema', () => {
       MAIL_TRANSPORT: 'resend',
       RESEND_API_KEY: 're_12345678901234567890',
       MAIL_FROM_ADDRESS: 'test@test.com',
-      STRIPE_SECRET_KEY: 'sk_live_123456789',
-      STRIPE_WEBHOOK_SECRET: 'whsec_123456789',
+
     };
 
     const { error } = envValidationSchema.validate(sameSecretEnv);

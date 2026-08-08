@@ -37,29 +37,7 @@ If two identical webhooks arrive simultaneously, exactly one will commit and the
 ## Current Limitations
 - **Partial Refunds**: Not currently supported. The `Payment` schema does not track `amountRefunded`. Calling `POST /payments/:id/refund` with a partial amount will throw a `BadRequestException`.
 
-## Webhook Local Testing (Stripe)
+## Payment Webhook Testing
 
-To test the Stripe webhook locally:
-
-1. Install the Stripe CLI.
-2. Login: `stripe login`
-3. Forward events to your local NestJS server:
-```bash
-stripe listen --forward-to localhost:3000/payments/webhook/stripe
-```
-4. Copy the webhook secret provided in the terminal output and set it in your `.env`:
-```
-STRIPE_WEBHOOK_SECRET=whsec_your_secret_here
-```
-5. Trigger events:
-```bash
-stripe trigger checkout.session.completed
-```
-
-## Required Environment Variables
-
-```env
-# Stripe Config
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
+Payment webhooks are processed at `POST /payments/webhook/:gateway`.
+The system validates signatures and records transactions idempotently in the `ProcessedWebhookEvent` table.

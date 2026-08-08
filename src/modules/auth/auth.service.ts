@@ -38,7 +38,7 @@ const isSecureEnvironment = (nodeEnv: string) =>
 export const getCookieOptions = (nodeEnv: string): CookieOptions => ({
   httpOnly: true,
   secure: isSecureEnvironment(nodeEnv),
-  sameSite: isSecureEnvironment(nodeEnv) ? 'strict' : 'lax',
+  sameSite: isSecureEnvironment(nodeEnv) ? 'none' : 'lax',
   path: '/',
   maxAge: 15 * 60 * 1000, // 15 minutes for access token
 });
@@ -46,7 +46,7 @@ export const getCookieOptions = (nodeEnv: string): CookieOptions => ({
 export const getRefreshCookieOptions = (nodeEnv: string): CookieOptions => ({
   httpOnly: true,
   secure: isSecureEnvironment(nodeEnv),
-  sameSite: 'strict',
+  sameSite: isSecureEnvironment(nodeEnv) ? 'none' : 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 });

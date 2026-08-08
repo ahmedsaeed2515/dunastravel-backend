@@ -66,6 +66,7 @@ model User {
   transportationBookings TransportationBooking[]
   promotionRedemptions   PromotionRedemption[]
   reviews                TourReview[]
+  inAppNotifications     InAppNotification[]     @relation("UserInAppNotifications")
 
   @@index([deletedAt])
   @@index([customerNumber])
@@ -76,6 +77,46 @@ model User {
   @@index([createdAt])
   @@index([name])
   @@map("users")
+}
+
+enum InAppNotificationCategory {
+  BOOKING
+  PAYMENT
+  INQUIRY
+  TOUR
+  WALLET
+  COMMISSION
+  SYSTEM
+}
+
+enum InAppNotificationPriority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model InAppNotification {
+  id               String                    @id @default(uuid())
+  userId           String                    @map("user_id")
+  category         InAppNotificationCategory @default(SYSTEM)
+  priority         InAppNotificationPriority @default(NORMAL)
+  title            String                    @db.VarChar(255)
+  message          String                    @db.Text
+  targetApp        String                    @default("ADMIN") @map("target_app") @db.VarChar(50)
+  entityType       String?                   @map("entity_type") @db.VarChar(100)
+  entityId         String?                   @map("entity_id") @db.VarChar(255)
+  deepLink         String?                   @map("deep_link") @db.VarChar(500)
+  metadata         Json?
+  isRead           Boolean                   @default(false) @map("is_read")
+  readAt           DateTime?                 @map("read_at")
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @updatedAt @map("updated_at")
+
+  user             User                      @relation("UserInAppNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, category])
+  @@map("in_app_notifications")
 }
 
 model Company {

@@ -1653,7 +1653,7 @@ export class AdminService {
 
   async getTourStats(adminUserId: string): Promise<Record<string, unknown>> {
     this.logger.log(`getTourStats invoked by admin ${adminUserId}`);
-    const [totalTours, publishedTours, draftTours, featuredTours, allTours] =
+    const [totalTours, publishedTours, draftTours, featuredTours, capacityAgg] =
       await Promise.all([
         this.prisma.tour.count({ where: { deletedAt: null } }),
         this.prisma.tour.count({
@@ -1663,15 +1663,14 @@ export class AdminService {
         this.prisma.tour.count({
           where: { deletedAt: null, isFeatured: true },
         }),
-        this.prisma.tour.findMany({
-          where: { deletedAt: null },
-          select: {},
+        this.prisma.tourAvailability.aggregate({
+          _sum: { totalCapacity: true, remainingSeats: true },
         }),
       ]);
 
-    const totalCapacity = 100;
-    const totalRemaining = 50;
-    const seatsSold = 50;
+    const totalCapacity = capacityAgg._sum?.totalCapacity || 0;
+    const totalRemaining = capacityAgg._sum?.remainingSeats || 0;
+    const seatsSold = Math.max(0, totalCapacity - totalRemaining);
 
     return {
       totalTours,
@@ -1683,8 +1682,8 @@ export class AdminService {
       seatsSold,
       occupancyRate:
         totalCapacity > 0
-          ? ((seatsSold / totalCapacity) * 100).toFixed(1)
-          : '0.0',
+          ? Number(((seatsSold / totalCapacity) * 100).toFixed(1))
+          : 0,
     };
   }
 

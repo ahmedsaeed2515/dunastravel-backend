@@ -4,6 +4,13 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { PAYMENT_EVENTS } from '../../../common/events/payment-events';
 import { CommissionsService } from '../../commissions/commissions.service';
 
+import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
+import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+
+import { EmailCompositionService } from '../services/email-composition.service';
+import { EmailDeliveryService } from '../services/email-delivery.service';
+import { NotificationType } from '../types';
+
 interface PaymentEventPayload {
   bookingId: string;
 }
@@ -15,6 +22,9 @@ export class PaymentEventsListener {
   constructor(
     private readonly prisma: PrismaService,
     private readonly commissionsService: CommissionsService,
+    private readonly inAppNotifications: InAppNotificationsService,
+    private readonly emailComposition: EmailCompositionService,
+    private readonly emailDelivery: EmailDeliveryService,
   ) {}
 
   @OnEvent(PAYMENT_EVENTS.SUCCEEDED, { async: true })
@@ -25,36 +35,118 @@ export class PaymentEventsListener {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: payload.bookingId },
+      include: {
+        user: true,
+        tour: true,
+        billingInfo: true,
+        passengers: true,
+      },
     });
 
-    if (booking?.status === 'PAID') {
-      try {
-        await this.commissionsService.createCommissionForBooking(
-          payload.bookingId,
-        );
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : 'Unknown commission error';
-        this.logger.error(
-          `Commission creation failed for paid booking ${payload.bookingId}: ${message}`,
-        );
-        await this.prisma.auditLog.create({
-          data: {
-            action: 'COMMISSION_CREATION_REQUIRES_RECONCILIATION',
-            entityType: 'Booking',
-            entityId: payload.bookingId,
-            metadata: { error: 'Commission creation failed' },
-          },
+    if (booking) {
+      const customerUserId = booking.userId;
+      const customerEmail =
+        booking.user?.email ||
+        booking.billingInfo?.email ||
+        undefined;
+      const customerName =
+        booking.user?.name ||
+        booking.billingInfo?.fullName ||
+        booking.passengers[0]?.fullName ||
+        'Valued Customer';
+      const tourTitle =
+        (booking.tour?.titleJsonb as any)?.en ||
+        booking.tour?.slug ||
+        'Tour Package';
+
+      // In-App Notification for Admins
+      await this.inAppNotifications.notifyAdmins({
+        category: InAppNotificationCategory.PAYMENT,
+        priority: InAppNotificationPriority.HIGH,
+        title: `Payment Confirmed: #${booking.referenceCode}`,
+        message: `Payment of $${booking.totalAmountUsd} confirmed for booking #${booking.referenceCode}`,
+        entityType: 'BOOKING',
+        entityId: booking.referenceCode,
+        deepLink: '/admin/finance',
+        metadata: { bookingId: booking.id, amount: booking.totalAmountUsd },
+      });
+
+      if (customerUserId) {
+        await this.inAppNotifications.createNotification({
+          userId: customerUserId,
+          category: InAppNotificationCategory.PAYMENT,
+          priority: InAppNotificationPriority.HIGH,
+          title: `Payment Received: #${booking.referenceCode}`,
+          message: `Your payment of $${booking.totalAmountUsd} for booking #${booking.referenceCode} was successful!`,
+          targetApp: 'CUSTOMER',
+          entityType: 'BOOKING',
+          entityId: booking.referenceCode,
+          deepLink: '/account/bookings',
+          metadata: { bookingId: booking.id, amount: booking.totalAmountUsd },
         });
       }
-    }
 
-    // Trigger existing Resend email confirmation flow
-    // In a real app we might call a mailer service here, or emit a BOOKING_PAID event
-    // that the BookingListener handles. For now, we log the intent.
-    this.logger.log(
-      `Payment confirmed email would be sent to customer for booking ${payload.bookingId}`,
-    );
+      if (booking.status === 'PAID') {
+        try {
+          await this.commissionsService.createCommissionForBooking(
+            payload.bookingId,
+          );
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown commission error';
+          this.logger.error(
+            `Commission creation failed for paid booking ${payload.bookingId}: ${message}`,
+          );
+        }
+      }
+
+      // Dispatch emails to Customer and Admin
+      const paidAt = new Date();
+
+      if (customerEmail) {
+        try {
+          const customerEmailPayload = await this.emailComposition.composePaymentConfirmedCustomer({
+            customerEmail,
+            customerName,
+            referenceCode: booking.referenceCode,
+            tourTitle,
+            amountUsd: Number(booking.totalAmountUsd),
+            paidAt,
+          });
+
+          await this.emailDelivery.deliver(
+            NotificationType.CUSTOMER_ACKNOWLEDGMENT,
+            booking.referenceCode,
+            'BOOKING',
+            customerEmailPayload,
+          );
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(`Failed to send customer payment confirmation email: ${msg}`);
+        }
+      }
+
+      try {
+        const adminEmailPayload = await this.emailComposition.composePaymentConfirmedAdmin({
+          customerEmail: customerEmail || 'N/A',
+          customerName,
+          referenceCode: booking.referenceCode,
+          tourTitle,
+          amountUsd: Number(booking.totalAmountUsd),
+          paidAt,
+        });
+
+        await this.emailDelivery.deliver(
+          NotificationType.INTERNAL_SALES_ALERT,
+          booking.referenceCode,
+          'BOOKING',
+          adminEmailPayload,
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Failed to send admin payment alert email: ${msg}`);
+      }
+    }
   }
 
   @OnEvent(PAYMENT_EVENTS.FAILED, { async: true })
