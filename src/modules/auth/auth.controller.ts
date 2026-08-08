@@ -38,7 +38,7 @@ import {
   UpdateProfileDto,
 } from './dto';
 import { Public, CurrentUser } from '../../common/decorators';
-import { JwtAuthGuard } from '../../common/guards';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { AuthenticatedUser } from '../../common/types';
 import { UserService } from '../users/users.service';
 
@@ -114,16 +114,19 @@ export class AuthController {
     return { message: 'Token refreshed successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('logout')
   @HttpCode(200)
   @ApiOperation({ summary: 'Logout' })
   @ApiOkResponse()
   async logout(
-    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request & { user?: AuthenticatedUser },
     @Res({ passthrough: true }) res: Response,
   ) {
-    await this.authService.clearRefreshToken(user.id);
+    if (req.user?.id) {
+      await this.authService.clearRefreshToken(req.user.id);
+    }
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
     const accessOpts = getCookieOptions(nodeEnv);
     const refreshOpts = getRefreshCookieOptions(nodeEnv);
