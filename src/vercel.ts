@@ -7,6 +7,8 @@ import compression from 'compression';
 import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 let cachedApp: NestExpressApplication;
 
@@ -121,10 +123,6 @@ async function bootstrapServerless(): Promise<express.Express> {
       }),
     );
 
-    const { HttpExceptionFilter } =
-      await import('./common/filters/http-exception.filter');
-    const { PrismaExceptionFilter } =
-      await import('./common/filters/prisma-exception.filter');
     app.useGlobalFilters(
       new HttpExceptionFilter(),
       new PrismaExceptionFilter(),
