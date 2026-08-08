@@ -109,21 +109,24 @@ async function bootstrap(): Promise<void> {
   );
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
+  const defaultOrigins = [
+    'https://www.dunastravel.com',
+    'https://admin.dunastravel.com',
+    'https://dunastravel-dashbord.vercel.app',
+    'https://dunastravel-dashboard.vercel.app',
+    'https://dunastravel-tours.vercel.app',
+  ];
   const corsAllowedOrigins =
     configService.get<string>('corsAllowedOrigins') ?? '';
-  if (!corsAllowedOrigins) {
-    logger.warn(
-      'CORS_ALLOWED_ORIGINS is missing — defaulting to empty (all origins denied).',
-    );
-  }
-
-  const allowedOrigins = corsAllowedOrigins
+  const parsedOrigins = corsAllowedOrigins
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
 
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...parsedOrigins]));
+
   app.enableCors({
-    origin: allowedOrigins.length ? allowedOrigins : false,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

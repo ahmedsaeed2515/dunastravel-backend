@@ -15,6 +15,8 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { CommissionsModule } from '../commissions/commissions.module';
 
+import { InAppNotificationsModule } from '../in-app-notifications/in-app-notifications.module';
+
 const EmailProviderFactory = {
   provide: EMAIL_PROVIDER_TOKEN,
   useFactory: (configService: ConfigService) => {
@@ -32,6 +34,7 @@ const EmailProviderFactory = {
     ConfigModule,
     PrismaModule,
     CommissionsModule,
+    InAppNotificationsModule,
     CacheModule.register(),
   ],
   controllers: [NotificationsController],

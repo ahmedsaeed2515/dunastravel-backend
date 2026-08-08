@@ -9,6 +9,8 @@ import {
 import { BookingCreatedPayload } from '../interfaces/booking-created-payload.interface';
 import { NotificationDeliveryStatus } from '../types';
 
+import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
+
 describe('BookingCreatedListener', () => {
   let listener: BookingCreatedListener;
   let emailProvider: jest.Mocked<IEmailProvider>;
@@ -37,6 +39,13 @@ describe('BookingCreatedListener', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('mock-val'),
+          },
+        },
+        {
+          provide: InAppNotificationsService,
+          useValue: {
+            notifyAdmins: jest.fn().mockResolvedValue([]),
+            createNotification: jest.fn().mockResolvedValue({ id: 'inapp-1' }),
           },
         },
       ],

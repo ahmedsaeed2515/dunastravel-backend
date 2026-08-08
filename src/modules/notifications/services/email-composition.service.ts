@@ -209,6 +209,119 @@ export class EmailCompositionService {
     };
   }
 
+  async composePaymentConfirmedCustomer(payload: {
+    customerEmail: string;
+    customerName: string;
+    referenceCode: string;
+    tourTitle: string;
+    amountUsd: number;
+    paidAt: Date;
+  }): Promise<EmailPayload> {
+    const variables = {
+      customerName: payload.customerName,
+      referenceCode: payload.referenceCode,
+      tourTitle: payload.tourTitle,
+      amountUsd: payload.amountUsd.toFixed(2),
+      paidAt: payload.paidAt.toLocaleDateString(),
+    };
+
+    const template = await this.getTemplateFromDb(
+      'payment_confirmed_customer',
+      variables,
+      (vars) => ({
+        subject: `Payment Confirmed - Booking #${vars.referenceCode}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #061D5D; padding: 20px; text-align: center; color: white;">
+              <h1 style="margin: 0; font-size: 24px; color: #C9A227;">Dunas Travel</h1>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">Payment Confirmation</p>
+            </div>
+            <div style="padding: 24px; color: #333333; line-height: 1.6;">
+              <h2 style="color: #061D5D; margin-top: 0;">Payment Received!</h2>
+              <p>Hi <strong>${vars.customerName}</strong>,</p>
+              <p>We have successfully received your payment of <strong>$${vars.amountUsd} USD</strong> for booking <strong>#${vars.referenceCode}</strong>.</p>
+              <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f9f9f9;">
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Booking Ref:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.referenceCode}</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Tour:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.tourTitle}</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">$${vars.amountUsd} USD</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Date Paid:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.paidAt}</td></tr>
+              </table>
+              <p>Thank you for choosing Dunas Travel. We look forward to creating an unforgettable journey for you.</p>
+            </div>
+            <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+              &copy; Dunas Travel. All rights reserved.
+            </div>
+          </div>
+        `,
+        text: `Hi ${vars.customerName},\n\nWe have received your payment of $${vars.amountUsd} USD for booking #${vars.referenceCode} (${vars.tourTitle}).\nThank you for choosing Dunas Travel!`,
+      }),
+    );
+
+    return {
+      to: payload.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      tags: { notificationType: 'PAYMENT_CONFIRMED_CUSTOMER' },
+    };
+  }
+
+  async composePaymentConfirmedAdmin(payload: {
+    customerName: string;
+    customerEmail: string;
+    referenceCode: string;
+    tourTitle: string;
+    amountUsd: number;
+    paidAt: Date;
+  }): Promise<EmailPayload> {
+    const variables = {
+      customerName: payload.customerName,
+      customerEmail: payload.customerEmail,
+      referenceCode: payload.referenceCode,
+      tourTitle: payload.tourTitle,
+      amountUsd: payload.amountUsd.toFixed(2),
+      paidAt: payload.paidAt.toLocaleDateString(),
+      adminDashboardUrl: this.adminDashboardUrl,
+    };
+
+    const template = await this.getTemplateFromDb(
+      'payment_confirmed_admin',
+      variables,
+      (vars) => ({
+        subject: `[PAYMENT] Booking #${vars.referenceCode} Paid - $${vars.amountUsd}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #061D5D; padding: 20px; text-align: center; color: white;">
+              <h1 style="margin: 0; font-size: 24px; color: #C9A227;">Dunas Travel Admin Alert</h1>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">New Payment Confirmed</p>
+            </div>
+            <div style="padding: 24px; color: #333333; line-height: 1.6;">
+              <h2 style="color: #27ae60; margin-top: 0;">New Payment Received</h2>
+              <p>A new payment of <strong>$${vars.amountUsd} USD</strong> has been confirmed for booking <strong>#${vars.referenceCode}</strong>.</p>
+              <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f9f9f9;">
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Booking Ref:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.referenceCode}</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Customer:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.customerName} (${vars.customerEmail})</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Tour:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.tourTitle}</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">$${vars.amountUsd} USD</td></tr>
+                <tr><td style="padding: 10px; border: 1px solid #ddd;"><strong>Date Paid:</strong></td><td style="padding: 10px; border: 1px solid #ddd;">${vars.paidAt}</td></tr>
+              </table>
+              <p><a href="${vars.adminDashboardUrl}/bookings" style="display: inline-block; background-color: #061D5D; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Dashboard</a></p>
+            </div>
+          </div>
+        `,
+        text: `New Payment Received for booking #${vars.referenceCode} from ${vars.customerName} ($${vars.amountUsd} USD).`,
+      }),
+    );
+
+    return {
+      to: this.internalSalesEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+      tags: { notificationType: 'PAYMENT_CONFIRMED_ADMIN' },
+    };
+  }
+
   private validateInquiryPayload(payload: InquiryCreatedPayload) {
     if (!payload || !payload.email || !payload.referenceCode) {
       this.logger.error('Invalid inquiry payload: Missing required fields');

@@ -6434,6 +6434,95 @@
         ]
       }
     },
+    "/api/in-app-notifications": {
+      "get": {
+        "operationId": "InAppNotificationsController_getMyNotifications",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated notifications list with unreadCount"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current user in-app notifications",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/unread-count": {
+      "get": {
+        "operationId": "InAppNotificationsController_getUnreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Unread count object"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get unread notification count",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/read-all": {
+      "patch": {
+        "operationId": "InAppNotificationsController_markAllAsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Count of notifications marked read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all notifications as read",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/{id}/read": {
+      "patch": {
+        "operationId": "InAppNotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated notification object"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a single notification as read",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
     "/api/settings/{key}": {
       "get": {
         "operationId": "SettingsController_getSetting",

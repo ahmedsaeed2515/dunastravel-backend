@@ -58,6 +58,8 @@ import { RedisThrottlerStorage } from './common/security/redis-throttler-storage
 import { RedisKeyvStore } from './common/cache/redis-keyv.store';
 import Keyv from 'keyv';
 
+import { InAppNotificationsModule } from './modules/in-app-notifications/in-app-notifications.module';
+
 @Module({
   imports: [
     // Config — global, validates env vars on startup
@@ -177,6 +179,7 @@ import Keyv from 'keyv';
     ReviewsModule,
     UsersModule,
     JourneyMapsModule,
+    InAppNotificationsModule,
   ],
 
   providers: [

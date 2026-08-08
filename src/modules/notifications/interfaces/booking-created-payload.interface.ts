@@ -9,4 +9,5 @@ export interface BookingCreatedPayload {
   adults: number;
   children: number;
   infants: number;
+  userId?: string;
 }

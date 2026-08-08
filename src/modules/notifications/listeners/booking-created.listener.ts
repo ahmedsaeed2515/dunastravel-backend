@@ -13,6 +13,9 @@ import { renderBookingCustomerConfirmation } from '../templates/booking-confirma
 import { renderBookingInternalAlert } from '../templates/booking-alert.template';
 import { EmailPayload } from '../types/email-payload.type';
 
+import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
+import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+
 @Injectable()
 export class BookingCreatedListener {
   private readonly logger = new Logger(BookingCreatedListener.name);
@@ -23,6 +26,7 @@ export class BookingCreatedListener {
     private readonly emailProvider: IEmailProvider,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly inAppNotifications: InAppNotificationsService,
   ) {}
 
   @OnEvent(BOOKING_EVENTS.CREATED, { async: true })
@@ -58,6 +62,33 @@ export class BookingCreatedListener {
         internalRecipient,
         adminDashboardUrl,
       );
+
+      // 1. Create In-App Notifications for Admins & Customer
+      await this.inAppNotifications.notifyAdmins({
+        category: InAppNotificationCategory.BOOKING,
+        priority: InAppNotificationPriority.HIGH,
+        title: `New Booking #${payload.referenceCode}`,
+        message: `Booking #${payload.referenceCode} placed by ${payload.customerName} (${payload.tourTitle})`,
+        entityType: 'BOOKING',
+        entityId: payload.referenceCode,
+        deepLink: '/admin/bookings',
+        metadata: { referenceCode: payload.referenceCode, totalAmount: payload.totalAmountUsd },
+      });
+
+      if (payload.userId) {
+        await this.inAppNotifications.createNotification({
+          userId: payload.userId,
+          category: InAppNotificationCategory.BOOKING,
+          priority: InAppNotificationPriority.NORMAL,
+          title: `Booking #${payload.referenceCode} Received`,
+          message: `Your booking for ${payload.tourTitle} has been received and is being processed.`,
+          targetApp: 'CUSTOMER',
+          entityType: 'BOOKING',
+          entityId: payload.referenceCode,
+          deepLink: '/account/bookings',
+          metadata: { referenceCode: payload.referenceCode },
+        });
+      }
 
       await Promise.all([
         this.deliverWithRetry(

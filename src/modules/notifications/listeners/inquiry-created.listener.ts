@@ -5,6 +5,9 @@ import { EmailCompositionService } from '../services/email-composition.service';
 import { EmailDeliveryService } from '../services/email-delivery.service';
 import { NotificationType } from '../types';
 
+import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
+import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+
 @Injectable()
 export class InquiryCreatedListener {
   private readonly logger = new Logger(InquiryCreatedListener.name);
@@ -12,6 +15,7 @@ export class InquiryCreatedListener {
   constructor(
     private readonly compositionService: EmailCompositionService,
     private readonly deliveryService: EmailDeliveryService,
+    private readonly inAppNotifications: InAppNotificationsService,
   ) {}
 
   @OnEvent(INQUIRY_EVENTS.CREATED, { async: true })
@@ -21,6 +25,17 @@ export class InquiryCreatedListener {
     );
 
     try {
+      // In-App Notification for Admins
+      await this.inAppNotifications.notifyAdmins({
+        category: InAppNotificationCategory.INQUIRY,
+        priority: InAppNotificationPriority.HIGH,
+        title: `New Inquiry #${payload.referenceCode}`,
+        message: `Tailor-made travel inquiry from ${payload.fullName} (${payload.email})`,
+        entityType: 'INQUIRY',
+        entityId: payload.referenceCode,
+        deepLink: '/admin/crm/inquiries',
+        metadata: { referenceCode: payload.referenceCode },
+      });
       // 1. Compose emails
       const customerAck =
         await this.compositionService.composeInquiryCustomerAcknowledgment(
