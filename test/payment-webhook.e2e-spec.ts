@@ -32,7 +32,7 @@ describe('Payments Webhook (e2e)', () => {
     }
 
     mockGatewayPort = {
-      getProviderName: () => 'STRIPE',
+      getProviderName: () => 'GENERIC',
       verifyAndParseWebhook: jest.fn(),
     };
 
@@ -110,7 +110,7 @@ describe('Payments Webhook (e2e)', () => {
     );
 
     const response = await request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ type: 'checkout.session.completed' });
 
     // The adapter might throw an error. In NestJS unhandled errors are 500,
@@ -132,7 +132,7 @@ describe('Payments Webhook (e2e)', () => {
     const spy = jest.spyOn(eventEmitter, 'emit');
 
     const res = await request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ id: eventId });
 
     expect(res.status).toBe(200);
@@ -173,7 +173,7 @@ describe('Payments Webhook (e2e)', () => {
 
     // First call
     const res1 = await request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ id: eventId });
     if (res1.status !== 200) console.log('res1.body:', res1.body);
     expect(res1.status).toBe(200);
@@ -181,7 +181,7 @@ describe('Payments Webhook (e2e)', () => {
 
     // Second call
     const res2 = await request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ id: eventId });
     expect(res2.status).toBe(200);
     // Should NOT emit event again
@@ -203,10 +203,10 @@ describe('Payments Webhook (e2e)', () => {
 
     // Fire concurrently
     const req1 = request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ id: eventId });
     const req2 = request(app.getHttpServer())
-      .post('/payments/webhook/stripe')
+      .post('/payments/webhook/generic')
       .send({ id: eventId });
 
     const [res1, res2] = await Promise.all([req1, req2]);

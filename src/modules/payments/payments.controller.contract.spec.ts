@@ -107,16 +107,14 @@ describe('PaymentsController (HTTP Contract)', () => {
   });
 
   describe('POST /api/payments/webhook/:provider', () => {
-    it('should reject unsupported provider with 400', async () => {
+    it('should process webhook for valid provider', async () => {
       const response = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
-        .post('/api/payments/webhook/paypal')
-        .send({});
+        .post('/api/payments/webhook/generic')
+        .send({ eventId: 'evt_1', status: 'COMPLETED' });
 
-      expect(response.status).toBe(400);
-      const resBody = response.body as { message: string };
-      expect(resBody.message).toContain('Unsupported payment provider');
+      expect(response.status).toBe(200);
     });
   });
 });

@@ -86,7 +86,7 @@ describe('PaymentsService', () => {
             verifyAndParseWebhook: jest.fn(),
             refund: jest.fn(),
             expireSession: jest.fn(),
-            getProviderName: jest.fn().mockReturnValue('STRIPE'),
+            getProviderName: jest.fn().mockReturnValue('GENERIC_GATEWAY'),
           },
         },
         {

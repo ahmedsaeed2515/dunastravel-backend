@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
-import { StripeAdapter } from './adapters/stripe.adapter';
+import { GenericPaymentGatewayAdapter } from './adapters/generic-gateway.adapter';
 import { PaymentCronService } from './payment-cron.service';
 import { CommissionsModule } from '../commissions/commissions.module';
 
@@ -13,7 +13,7 @@ import { CommissionsModule } from '../commissions/commissions.module';
     PaymentsService,
     {
       provide: IPaymentGatewayPort,
-      useClass: StripeAdapter,
+      useClass: GenericPaymentGatewayAdapter,
     },
     PaymentCronService,
   ],

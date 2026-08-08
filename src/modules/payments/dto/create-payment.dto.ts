@@ -14,6 +14,5 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['STRIPE'])
-  provider?: string = 'STRIPE';
+  provider?: string = 'GENERIC';
 }

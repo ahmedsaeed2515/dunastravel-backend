@@ -64,8 +64,8 @@ export class PaymentsController {
     @Param('provider') provider: string,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
-    if (!provider || provider.toUpperCase() !== 'STRIPE') {
-      throw new BadRequestException('Unsupported payment provider');
+    if (!provider) {
+      throw new BadRequestException('Payment provider is required');
     }
 
     if (!req.rawBody) {
