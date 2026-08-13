@@ -12,6 +12,13 @@ export class JourneyMapsService {
 
   // --- PUBLIC API ---
 
+  async findAllPublic() {
+    return this.prisma.journeyRoute.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { tour: { select: { id: true, slug: true, titleJsonb: true } } },
+    });
+  }
+
   async findByTourIdPublic(tourId: string) {
     const route = await this.prisma.journeyRoute.findFirst({
       where: {

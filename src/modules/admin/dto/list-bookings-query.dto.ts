@@ -20,7 +20,7 @@ export class ListBookingsQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({ description: 'Items per page', example: 20 })
   @IsOptional()
@@ -28,7 +28,7 @@ export class ListBookingsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number;
 
   @ApiPropertyOptional({
     description: 'Filter by booking status',

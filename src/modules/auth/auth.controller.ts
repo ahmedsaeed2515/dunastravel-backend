@@ -84,10 +84,15 @@ export class AuthController {
       sessionUser.id,
     );
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
+    const csrfToken = crypto.randomBytes(32).toString('hex');
     res.cookie('access_token', token, getCookieOptions(nodeEnv));
     res.cookie('refresh_token', refreshToken, getRefreshCookieOptions(nodeEnv));
+    res.cookie('csrf_token', csrfToken, {
+      ...getCookieOptions(nodeEnv),
+      httpOnly: false,
+    });
     const { sessionVersion: _sessionVersion, ...user } = sessionUser;
-    return user;
+    return { ...user, csrfToken };
   }
 
   @Public()

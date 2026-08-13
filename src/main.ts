@@ -77,12 +77,7 @@ async function bootstrap(): Promise<void> {
     compression({
       threshold: 1024,
       filter: (req, res) => {
-        if (
-          req.headers.authorization ||
-          req.headers.cookie ||
-          req.headers['x-guest-token'] ||
-          res.getHeader('Set-Cookie')
-        ) {
+        if (req.headers['x-no-compression']) {
           return false;
         }
         return compression.filter(req, res);

@@ -6,7 +6,7 @@ import { PublicFaqQueryDto } from './dto/faq-query.dto';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('faq')
-@Controller('faq')
+@Controller(['faq', 'faqs'])
 @Public()
 @Throttle({ default: { limit: 60, ttl: 60_000 } })
 export class FaqController {

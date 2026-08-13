@@ -15,6 +15,13 @@ import { Public } from '../../common/decorators/public.decorator';
 export class JourneyMapsController {
   constructor(private readonly journeyMapsService: JourneyMapsService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Get all public journey routes' })
+  @ApiOkResponse({ description: 'List of public journey routes' })
+  async getAll() {
+    return this.journeyMapsService.findAllPublic();
+  }
+
   @Get('tour/:tourId')
   @ApiOperation({ summary: 'Get journey route for a tour' })
   @ApiParam({ name: 'tourId', type: 'string', format: 'uuid' })

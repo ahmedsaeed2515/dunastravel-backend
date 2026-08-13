@@ -289,7 +289,16 @@ CRITICAL RULES:
     } catch (err: any) {
       this.logger.error(`AI provider call failed: ${err.message}`);
       isError = true;
-      assistantReply = config.fallbackMessage;
+      if (recommendedTours.length > 0) {
+        const topTour = recommendedTours[0];
+        assistantReply = locale.startsWith('ar')
+          ? `أهلاً بك! يسعدني إجابة سؤالك وتوصيتك برحلة "${topTour.title}" المميزة والتي تقع في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. يسعدنا مساعدتك في حجزها الآن!`
+          : `Hello! I'd be happy to recommend our top tour "${topTour.title}" located in ${topTour.destination} starting from $${topTour.price} ${topTour.currency}. Click below to explore full details!`;
+      } else if (sources.length > 0) {
+        assistantReply = sources[0].content;
+      } else {
+        assistantReply = config.fallbackMessage;
+      }
     }
 
     // 6. Save assistant response to DB

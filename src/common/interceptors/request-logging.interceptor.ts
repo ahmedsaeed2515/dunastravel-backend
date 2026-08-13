@@ -27,13 +27,24 @@ export class RequestLoggingInterceptor implements NestInterceptor {
         const res = context.switchToHttp().getResponse<Response>();
         const statusCode = res.statusCode;
         const durationMs = Date.now() - startTime;
-        this.logger.log({
-          message: `${method} ${path} ${statusCode} - ${durationMs}ms`,
-          method,
-          path,
-          statusCode,
-          durationMs,
-        });
+
+        if (durationMs > 500) {
+          this.logger.warn({
+            message: `⚠️ SLOW API REQUEST: ${method} ${path} ${statusCode} - ${durationMs}ms`,
+            method,
+            path,
+            statusCode,
+            durationMs,
+          });
+        } else {
+          this.logger.log({
+            message: `${method} ${path} ${statusCode} - ${durationMs}ms`,
+            method,
+            path,
+            statusCode,
+            durationMs,
+          });
+        }
       }),
       catchError((err) => {
         const durationMs = Date.now() - startTime;

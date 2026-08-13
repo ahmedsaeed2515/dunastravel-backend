@@ -45,6 +45,12 @@ export class ToursService {
       query.limit,
     );
 
+    const cacheKey = `tours:catalog:${query.lang || 'en'}:${query.category || ''}:${query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
+    const cached = await this.cacheManager.get<PaginatedResponse<TourSummaryResponse>>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const where: Prisma.TourWhereInput = {
       isActive: true,
       status: 'PUBLISHED',
@@ -121,7 +127,9 @@ export class ToursService {
       heroImage: record.images[0]?.imageUrl ?? null,
     }));
 
-    return paginate(mappedItems, total, page, limit);
+    const result = paginate(mappedItems, total, page, limit);
+    await this.cacheManager.set(cacheKey, result, 60); // cache for 60 seconds
+    return result;
   }
 
   async findBySlug(slug: string, lang: string): Promise<TourDetailResponse> {

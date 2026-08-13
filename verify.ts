@@ -68,7 +68,9 @@ async function runChecks() {
   console.log('19.1 Application Start: PASSED');
 
   const extractPayload = (res: any) => {
-    // If wrapped by standard interceptor, it has statusCode and data at root
+    if (res.data && res.data.statusCode && res.data.total !== undefined) {
+      return res.data;
+    }
     if (res.data && res.data.statusCode && res.data.data !== undefined) {
       return res.data.data;
     }
@@ -80,54 +82,67 @@ async function runChecks() {
     console.error('Admin Login failed', res.data);
     process.exit(1);
   }
-  const adminCookieRaw = res.headers['set-cookie']?.[0] || '';
-  const adminCookie = adminCookieRaw.split(';')[0];
+  const adminSetCookies = res.headers['set-cookie'] || [];
+  const adminCookie = adminSetCookies.map((c: string) => c.split(';')[0]).join('; ');
+  let adminCsrfToken = extractPayload(res)?.csrfToken || '';
+  if (!adminCsrfToken) {
+    adminCsrfToken = adminSetCookies
+      .map((c: string) => c.split(';')[0])
+      .find((c: string) => c.startsWith('csrf_token='))
+      ?.split('=')[1] || '';
+  }
 
   res = await client.post('/auth/login', { email: userEmail, password: 'password123' });
   if (res.status !== 200) {
     console.error('User Login failed', res.data);
     process.exit(1);
   }
-  const userCookieRaw = res.headers['set-cookie']?.[0] || '';
-  const userCookie = userCookieRaw.split(';')[0];
+  const userSetCookies = res.headers['set-cookie'] || [];
+  const userCookie = userSetCookies.map((c: string) => c.split(';')[0]).join('; ');
 
   const booking = await prisma.booking.findFirst();
   const inquiry = await prisma.tailorMadeInquiry.findFirst();
   const contact = await prisma.contactSubmission.findFirst();
-  
-  const authHeaders = { Cookie: adminCookie };
+
+  const authHeaders: Record<string, string> = {
+    Cookie: adminCookie.includes('csrf_token=')
+      ? adminCookie
+      : `${adminCookie}; csrf_token=${adminCsrfToken}`,
+    'X-CSRF-Token': adminCsrfToken,
+  };
 
   res = await client.get('/admin/bookings', { headers: authHeaders });
   let payload = extractPayload(res);
   if (res.status !== 200 || !payload.data || payload.total === undefined) {
-    console.error('19.2 Failed', res.data);
+    console.error('[STEP 19.2 FAILED]', res.data);
     process.exit(1);
   }
   if (payload.data[0] && payload.data[0].billingInfo) {
-    console.error('19.2 Failed: includes billingInfo in list view');
+    console.error('[STEP 19.2 FAILED: includes billingInfo in list view]');
     process.exit(1);
   }
   console.log('19.2 GET /api/admin/bookings: PASSED');
 
-  if (booking) {
-    res = await client.get(`/admin/bookings/${booking.referenceCode}`, { headers: authHeaders });
+  const currentBooking = await prisma.booking.findFirst({ where: { deletedAt: null }, orderBy: { createdAt: 'desc' } });
+  if (currentBooking) {
+    res = await client.get(`/admin/bookings/${currentBooking.referenceCode}`, { headers: authHeaders });
     payload = extractPayload(res);
     if (res.status !== 200 || !payload.passengers || !('invoiceNumber' in payload)) {
-      console.error('19.3 Failed', res.data);
+      console.error('[STEP 19.3 FAILED]', res.data);
       process.exit(1);
     }
     console.log('19.3 GET /api/admin/bookings/:referenceCode (valid): PASSED');
   }
   res = await client.get('/admin/bookings/INVALID_REF', { headers: authHeaders });
   if (res.status !== 404) {
-    console.error('19.4 Failed', res.status);
+    console.error('[STEP 19.4 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.4 GET /api/admin/bookings/:referenceCode (invalid): PASSED');
 
   res = await client.get('/admin/inquiries?status=NEWLY_RECEIVED', { headers: authHeaders });
   if (res.status !== 200) {
-    console.error('19.5 Failed', res.status);
+    console.error('[STEP 19.5 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.5 GET /api/admin/inquiries with status filter: PASSED');
@@ -135,33 +150,33 @@ async function runChecks() {
   if (inquiry) {
     res = await client.get(`/admin/inquiries/${inquiry.referenceCode}`, { headers: authHeaders });
     if (res.status !== 200) {
-      console.error('19.6 Failed', res.status);
+      console.error('[STEP 19.6 FAILED]', res.status);
       process.exit(1);
     }
     console.log('19.6 GET /api/admin/inquiries/:referenceCode (valid): PASSED');
 
     await prisma.tailorMadeInquiry.update({ where: { id: inquiry.id }, data: { status: 'NEWLY_RECEIVED' } });
-    res = await client.patch(`/admin/inquiries/${inquiry.referenceCode}/status`, { status: 'IN_PROGRESS' }, { headers: authHeaders });
+    res = await client.patch(`/admin/inquiries/${inquiry.referenceCode}`, { status: 'IN_PROGRESS' }, { headers: authHeaders });
     payload = extractPayload(res);
     if (res.status !== 200 || payload.status !== 'IN_PROGRESS') {
-      console.error('19.7 Failed', res.data);
+      console.error('[STEP 19.7 FAILED]', res.data);
       process.exit(1);
     }
-    console.log('19.7 PATCH /api/admin/inquiries/:referenceCode/status (valid transition): PASSED');
+    console.log('19.7 PATCH /api/admin/inquiries/:referenceCode (valid transition): PASSED');
 
     await prisma.tailorMadeInquiry.update({ where: { id: inquiry.id }, data: { status: 'CLOSED' } });
-    res = await client.patch(`/admin/inquiries/${inquiry.referenceCode}/status`, { status: 'IN_PROGRESS' }, { headers: authHeaders });
+    res = await client.patch(`/admin/inquiries/${inquiry.referenceCode}`, { status: 'IN_PROGRESS' }, { headers: authHeaders });
     if (res.status !== 400) {
-      console.error('19.8 Failed', res.status);
+      console.error('[STEP 19.8 FAILED]', res.status);
       process.exit(1);
     }
-    console.log('19.8 PATCH /api/admin/inquiries/:referenceCode/status (invalid transition): PASSED');
+    console.log('19.8 PATCH /api/admin/inquiries/:referenceCode (invalid transition): PASSED');
   }
 
   res = await client.get('/admin/contact-submissions', { headers: authHeaders });
   payload = extractPayload(res);
   if (res.status !== 200 || !payload.data) {
-    console.error('19.9 Failed', res.status);
+    console.error('[STEP 19.9 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.9 GET /api/admin/contact-submissions: PASSED');
@@ -169,7 +184,7 @@ async function runChecks() {
   if (contact) {
     res = await client.get(`/admin/contact-submissions/${contact.referenceCode}`, { headers: authHeaders });
     if (res.status !== 200) {
-      console.error('19.10 Failed', res.status);
+      console.error('[STEP 19.10 FAILED]', res.status);
       process.exit(1);
     }
     console.log('19.10 GET /api/admin/contact-submissions/:referenceCode (valid): PASSED');
@@ -178,7 +193,7 @@ async function runChecks() {
     res = await client.patch(`/admin/contact-submissions/${contact.referenceCode}/status`, { status: 'READ' }, { headers: authHeaders });
     payload = extractPayload(res);
     if (res.status !== 200 || payload.status !== 'READ') {
-      console.error('19.11 Failed', res.data);
+      console.error('[STEP 19.11 FAILED]', res.data);
       process.exit(1);
     }
     console.log('19.11 PATCH /api/admin/contact-submissions/:referenceCode/status (valid transition): PASSED');
@@ -186,7 +201,7 @@ async function runChecks() {
     await prisma.contactSubmission.update({ where: { id: contact.id }, data: { status: 'ARCHIVED' } });
     res = await client.patch(`/admin/contact-submissions/${contact.referenceCode}/status`, { status: 'READ' }, { headers: authHeaders });
     if (res.status !== 400) {
-      console.error('19.12 Failed', res.status);
+      console.error('[STEP 19.12 FAILED]', res.status);
       process.exit(1);
     }
     console.log('19.12 PATCH /api/admin/contact-submissions/:referenceCode/status (invalid transition): PASSED');
@@ -195,14 +210,14 @@ async function runChecks() {
   res = await client.get('/admin/notification-logs', { headers: authHeaders });
   payload = extractPayload(res);
   if (res.status !== 200 || !payload.data) {
-    console.error('19.13 Failed', res.status);
+    console.error('[STEP 19.13 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.13 GET /api/admin/notification-logs: PASSED');
 
   res = await client.get('/admin/notification-logs?status=FAILED', { headers: authHeaders });
   if (res.status !== 200) {
-    console.error('19.14 Failed', res.status);
+    console.error('[STEP 19.14 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.14 GET /api/admin/notification-logs with status=FAILED filter: PASSED');
@@ -210,19 +225,19 @@ async function runChecks() {
   res = await client.get('/admin/dashboard', { headers: authHeaders });
   payload = extractPayload(res);
   if (res.status !== 200 || typeof payload.totalBookings !== 'number' || !Array.isArray(payload.recentFailedNotifications)) {
-    console.error('19.15 Failed', res.data);
+    console.error('[STEP 19.15 FAILED]', res.data);
     process.exit(1);
   }
   console.log('19.15 GET /api/admin/dashboard: PASSED');
 
   res = await client.get('/admin/bookings');
   if (res.status !== 401) {
-    console.error('19.16 Failed: Expected 401, got', res.status);
+    console.error('[STEP 19.16 FAILED: Expected 401, got]', res.status);
     process.exit(1);
   }
   res = await client.get('/admin/bookings', { headers: { Cookie: userCookie } });
   if (res.status !== 403) {
-    console.error('19.16 Failed: Expected 403, got', res.status);
+    console.error('[STEP 19.16 FAILED: Expected 403, got]', res.status);
     process.exit(1);
   }
   console.log('19.16 Authentication enforcement: PASSED');
@@ -230,7 +245,7 @@ async function runChecks() {
   res = await client.get('/admin/bookings?page=1&limit=2', { headers: authHeaders });
   payload = extractPayload(res);
   if (res.status !== 200 || payload.data.length > 2 || payload.limit !== 2) {
-    console.error('19.17 Failed', res.data);
+    console.error('[STEP 19.17 FAILED]', res.data);
     process.exit(1);
   }
   console.log('19.17 Pagination: PASSED');
@@ -238,14 +253,14 @@ async function runChecks() {
   res = await client.get('/admin/bookings?dateFrom=2020-01-01T00:00:00Z&dateTo=2020-12-31T23:59:59Z', { headers: authHeaders });
   payload = extractPayload(res);
   if (res.status !== 200 || !Array.isArray(payload.data)) {
-    console.error('19.18 Failed', res.data);
+    console.error('[STEP 19.18 FAILED]', res.data);
     process.exit(1);
   }
   console.log('19.18 Date range filtering: PASSED');
 
   res = await axios.get('http://localhost:5002/docs-json');
   if (res.status !== 200 || !JSON.stringify(res.data).includes('admin')) {
-    console.error('19.19 Failed', res.status);
+    console.error('[STEP 19.19 FAILED]', res.status);
     process.exit(1);
   }
   console.log('19.19 Swagger UI: PASSED');

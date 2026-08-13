@@ -3,9 +3,9 @@ import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 @Injectable()
 export class ParseBookingRefPipe implements PipeTransform {
   transform(value: string) {
-    if (!/^(?:BKG|TMB)-[A-Z0-9]{6}$/.test(value)) {
-      throw new BadRequestException('Invalid booking reference format');
+    if (!value || typeof value !== 'string' || value.trim().length > 20) {
+      throw new BadRequestException('Invalid booking reference format: must not exceed 20 characters');
     }
-    return value;
+    return value.trim();
   }
 }

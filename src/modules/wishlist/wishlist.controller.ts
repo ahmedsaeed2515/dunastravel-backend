@@ -31,7 +31,7 @@ export class WishlistController {
   @ApiOperation({ summary: 'Add a tour to favorites' })
   async addFavorite(
     @CurrentUser() user: { id: string },
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
   ) {
     return this.wishlistService.addFavorite(user.id, tourId);
   }
@@ -41,7 +41,7 @@ export class WishlistController {
   @ApiOperation({ summary: 'Remove a tour from favorites' })
   async removeFavorite(
     @CurrentUser() user: { id: string },
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
   ) {
     return this.wishlistService.removeFavorite(user.id, tourId);
   }

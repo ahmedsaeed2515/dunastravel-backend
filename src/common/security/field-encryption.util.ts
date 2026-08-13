@@ -53,35 +53,43 @@ export function encryptSensitiveField(value: string | null | undefined) {
 }
 
 export function decryptSensitiveField(value: string | null | undefined) {
-  if (
-    value === null ||
-    value === undefined ||
-    !value.startsWith(ENCRYPTED_PREFIX)
-  ) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (!value.startsWith(ENCRYPTED_PREFIX)) {
+    // Unencrypted legacy plaintext
     return value;
   }
 
-  const parts = value.split(':');
-  if (parts.length !== 5 || parts[0] !== 'enc' || parts[1] !== 'v1') {
-    throw new Error('Invalid encrypted field format');
-  }
-  const key = getEncryptionKey();
-  if (!key) {
-    throw new Error('PII_ENCRYPTION_KEY is required to decrypt this field');
-  }
-  const iv = Buffer.from(parts[2], 'base64url');
-  const authTag = Buffer.from(parts[3], 'base64url');
-  const ciphertext = Buffer.from(parts[4], 'base64url');
-  if (iv.length !== 12 || authTag.length !== 16 || ciphertext.length === 0) {
-    throw new Error('Invalid encrypted field payload');
-  }
+  try {
+    const parts = value.split(':');
+    if (parts.length !== 5 || parts[0] !== 'enc' || parts[1] !== 'v1') {
+      console.warn('[PII_DECRYPTION_WARN] Reason=INVALID_FORMAT message="Payload prefixed with enc:v1: but invalid token structure"');
+      return '[REDACTED_INVALID_FORMAT]';
+    }
+    const key = getEncryptionKey();
+    if (!key) {
+      console.warn('[PII_DECRYPTION_WARN] Reason=MISSING_KEY message="PII_ENCRYPTION_KEY not present in environment"');
+      return '[REDACTED_MISSING_KEY]';
+    }
+    const iv = Buffer.from(parts[2], 'base64url');
+    const authTag = Buffer.from(parts[3], 'base64url');
+    const ciphertext = Buffer.from(parts[4], 'base64url');
+    if (iv.length !== 12 || authTag.length !== 16 || ciphertext.length === 0) {
+      console.warn('[PII_DECRYPTION_WARN] Reason=CORRUPTED_BUFFERS message="Invalid IV or AuthTag length"');
+      return '[REDACTED_CORRUPTED_DATA]';
+    }
 
-  const decipher = createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
-  return Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]).toString('utf8');
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    return Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch (error: any) {
+    console.warn(`[PII_DECRYPTION_WARN] Reason=DECRYPTION_FAILED message="GCM auth tag verification failed or key mismatch: ${error?.message}"`);
+    return '[REDACTED_DECRYPTION_FAILED]';
+  }
 }
 
 export function encryptSensitiveJson<T>(

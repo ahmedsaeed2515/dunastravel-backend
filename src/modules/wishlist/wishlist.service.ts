@@ -12,19 +12,22 @@ export class WishlistService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async addFavorite(userId: string, tourId: string) {
+  async addFavorite(userId: string, tourIdOrSlug: string) {
     const tour = await this.prisma.tour.findFirst({
       where: {
-        id: tourId,
+        OR: [{ id: tourIdOrSlug }, { slug: tourIdOrSlug }],
         status: 'PUBLISHED',
         isActive: true,
         deletedAt: null,
       },
+      select: { id: true },
     });
     if (!tour) throw new NotFoundException('Tour not found');
 
+    const canonicalTourId = tour.id;
+
     const existing = await this.prisma.tourFavorite.findUnique({
-      where: { userId_tourId: { userId, tourId } },
+      where: { userId_tourId: { userId, tourId: canonicalTourId } },
     });
 
     if (existing) {
@@ -32,15 +35,24 @@ export class WishlistService {
     }
 
     await this.prisma.tourFavorite.create({
-      data: { userId, tourId },
+      data: { userId, tourId: canonicalTourId },
     });
 
     return { message: 'Tour added to favorites' };
   }
 
-  async removeFavorite(userId: string, tourId: string) {
+  async removeFavorite(userId: string, tourIdOrSlug: string) {
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        OR: [{ id: tourIdOrSlug }, { slug: tourIdOrSlug }],
+      },
+      select: { id: true },
+    });
+    
+    const canonicalTourId = tour ? tour.id : tourIdOrSlug;
+
     const existing = await this.prisma.tourFavorite.findUnique({
-      where: { userId_tourId: { userId, tourId } },
+      where: { userId_tourId: { userId, tourId: canonicalTourId } },
     });
 
     if (!existing) {
@@ -48,7 +60,7 @@ export class WishlistService {
     }
 
     await this.prisma.tourFavorite.delete({
-      where: { userId_tourId: { userId, tourId } },
+      where: { userId_tourId: { userId, tourId: canonicalTourId } },
     });
 
     return { message: 'Tour removed from favorites' };

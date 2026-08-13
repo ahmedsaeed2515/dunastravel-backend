@@ -108,7 +108,13 @@ export class ContactSubmissionsService {
       }),
     ]);
 
-    return paginate(records, total, page, limit);
+    return {
+      data: records,
+      total,
+      page,
+      limit,
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
+    };
   }
 
   async findById(id: string) {

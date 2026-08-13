@@ -142,9 +142,9 @@ export class AdminService {
     query: ListBookingsQueryDto,
     adminUserId: string,
   ): Promise<AdminPaginatedResponse<IAdminBookingSummary>> {
+    const page = query.page && Number(query.page) > 0 ? Number(query.page) : 1;
+    const limit = query.limit && Number(query.limit) > 0 ? Number(query.limit) : 20;
     const {
-      page = 1,
-      limit = 20,
       status,
       tourId,
       dateFrom,

@@ -423,9 +423,6 @@ export class AdminController {
   }
 
   @Get('dashboard')
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('admin:dashboard')
-  @CacheTTL(60) // cache for 1 minute
   @ApiOperation({ summary: 'Retrieve aggregated CRM dashboard metrics.' })
   @ApiOkResponse({ description: 'Dashboard metrics object' })
   async getDashboardMetrics(@CurrentUser() user: AuthenticatedUser) {

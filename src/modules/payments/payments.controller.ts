@@ -28,7 +28,7 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post('initiate')
+  @Post(['initiate', 'checkout-session'])
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })

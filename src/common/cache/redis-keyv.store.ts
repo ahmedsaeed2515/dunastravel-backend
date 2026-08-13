@@ -12,15 +12,20 @@ export class RedisKeyvStore
 
   constructor(redisUrl: string) {
     super();
+    // Register default no-op error listener to prevent Node.js Unhandled 'error' event process crashes
+    this.on('error', () => {});
     this.opts = { dialect: 'redis', url: redisUrl };
     this.redis = new Redis(redisUrl, {
+      lazyConnect: true,
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
       connectTimeout: 2_000,
       commandTimeout: 2_000,
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
-    this.redis.on('error', (error) => this.emit('error', error));
+    this.redis.on('error', () => {
+      // Intentionally handle error on underlying Redis client to prevent unhandled error crashes when Redis is offline
+    });
   }
 
   async get<Value>(key: string): Promise<StoredData<Value> | undefined> {

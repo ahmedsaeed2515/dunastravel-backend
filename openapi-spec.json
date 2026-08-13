@@ -2894,7 +2894,31 @@
     },
     "/api/payments/initiate": {
       "post": {
-        "operationId": "PaymentsController_initiatePayment",
+        "operationId": "PaymentsController_initiatePayment[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/checkout-session": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[1]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9875,7 +9899,39 @@
     },
     "/api/faq": {
       "get": {
-        "operationId": "FaqController_findAll",
+        "operationId": "FaqController_findAll[0]",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get public FAQ items",
+        "tags": [
+          "faq"
+        ]
+      }
+    },
+    "/api/faqs": {
+      "get": {
+        "operationId": "FaqController_findAll[1]",
         "parameters": [
           {
             "name": "locale",
@@ -10335,6 +10391,21 @@
         "summary": "Soft delete a review",
         "tags": [
           "admin-reviews"
+        ]
+      }
+    },
+    "/api/journey-maps": {
+      "get": {
+        "operationId": "JourneyMapsController_getAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of public journey routes"
+          }
+        },
+        "summary": "Get all public journey routes",
+        "tags": [
+          "Journey Maps"
         ]
       }
     },

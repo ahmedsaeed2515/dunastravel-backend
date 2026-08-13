@@ -253,6 +253,10 @@ model Tour {
   @@index([status])
   @@index([isFeatured])
   @@index([deletedAt])
+  @@index([status, isActive, deletedAt, category])
+  @@index([status, isActive, deletedAt, country])
+  @@index([status, isActive, deletedAt, city])
+  @@index([status, isActive, deletedAt, isFeatured])
   @@map("tours")
 }
 
@@ -315,6 +319,7 @@ model TourReview {
   @@index([bookingId], map: "idx_tour_reviews_booking_id")
   @@index([status], map: "idx_tour_reviews_status")
   @@index([tourId, isPublished])
+  @@index([tourId, status, isPublished, deletedAt])
   @@index([rating])
   @@index([deletedAt])
   @@map("tour_reviews")
@@ -396,6 +401,9 @@ model Booking {
   @@index([deletedAt])
   @@index([status, createdAt])
   @@index([tourId, createdAt])
+  @@index([deletedAt, status, createdAt])
+  @@index([deletedAt, tourId, createdAt])
+  @@index([userId, tourId, status, deletedAt])
   @@map("bookings")
 }
 
@@ -481,6 +489,7 @@ model TailorMadeInquiry {
   @@index([status])
   @@index([createdAt])
   @@index([assigneeId])
+  @@index([status, createdAt])
   @@map("tailor_made_inquiries")
 }
 
@@ -523,6 +532,7 @@ model ContactSubmission {
   @@index([status])
   @@index([email])
   @@index([createdAt])
+  @@index([status, createdAt])
   @@map("contact_submissions")
 }
 
@@ -1070,6 +1080,7 @@ model BlogArticle {
   @@index([category], map: "idx_blog_articles_category")
   @@index([deletedAt], map: "idx_blog_articles_deleted_at")
   @@index([isPublished, publishedAt], map: "idx_blog_articles_is_published_published_at")
+  @@index([isPublished, status, deletedAt, publishedAt], map: "idx_blog_articles_pub_status_del_date")
   @@map("blog_articles")
 }
 
