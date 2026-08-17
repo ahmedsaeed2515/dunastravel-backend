@@ -22,10 +22,15 @@ export class ListAdminToursQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by country' })
+  @ApiPropertyOptional({ description: 'Filter by country or destination' })
   @IsOptional()
   @IsString()
   country?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by destination' })
+  @IsOptional()
+  @IsString()
+  destination?: string;
 
   @ApiPropertyOptional({ description: 'Filter by city' })
   @IsOptional()
@@ -36,6 +41,11 @@ export class ListAdminToursQueryDto {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by market' })
+  @IsOptional()
+  @IsString()
+  market?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by status (PUBLISHED, DRAFT, ARCHIVED)',
