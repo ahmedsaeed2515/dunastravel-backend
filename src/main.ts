@@ -110,6 +110,8 @@ async function bootstrap(): Promise<void> {
     'https://dunastravel-dashbord.vercel.app',
     'https://dunastravel-dashboard.vercel.app',
     'https://dunastravel-tours.vercel.app',
+    'https://dunastravel-frontend-vpdk.vercel.app',
+    'https://dunastravel-frontend.vercel.app',
   ];
   const corsAllowedOrigins =
     configService.get<string>('corsAllowedOrigins') ?? '';
