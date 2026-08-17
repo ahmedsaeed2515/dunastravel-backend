@@ -48,6 +48,18 @@ export class GetToursQueryDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  destination?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  market?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   country?: string;
 
   @ApiPropertyOptional()

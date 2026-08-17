@@ -45,7 +45,7 @@ export class ToursService {
       query.limit,
     );
 
-    const cacheKey = `tours:catalog:${query.lang || 'en'}:${query.category || ''}:${query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
+    const cacheKey = `tours:catalog:${query.lang || 'en'}:${query.category || ''}:${query.destination || query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
     const cached = await this.cacheManager.get<PaginatedResponse<TourSummaryResponse>>(cacheKey);
     if (cached) {
       return cached;
@@ -58,8 +58,9 @@ export class ToursService {
     if (query.category) {
       where.category = { equals: query.category, mode: 'insensitive' };
     }
-    if (query.country) {
-      where.country = { equals: query.country, mode: 'insensitive' };
+    const targetCountry = query.destination || query.country;
+    if (targetCountry) {
+      where.country = { equals: targetCountry, mode: 'insensitive' };
     }
     if (query.city) {
       where.city = { equals: query.city, mode: 'insensitive' };
