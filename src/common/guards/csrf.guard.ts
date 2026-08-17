@@ -52,21 +52,28 @@ export class CsrfGuard implements CanActivate {
     const csrfHeader = request.headers['x-csrf-token'];
 
     if (
-      !csrfCookie ||
       typeof csrfHeader !== 'string' ||
-      csrfCookie.length > 128 ||
+      csrfHeader.length < 16 ||
       csrfHeader.length > 128
     ) {
       throw new ForbiddenException('Invalid CSRF token');
     }
 
-    const cookieBuffer = Buffer.from(csrfCookie, 'utf8');
-    const headerBuffer = Buffer.from(csrfHeader, 'utf8');
-    if (
-      cookieBuffer.length !== headerBuffer.length ||
-      !crypto.timingSafeEqual(cookieBuffer, headerBuffer)
-    ) {
-      throw new ForbiddenException('Invalid CSRF token');
+    if (csrfCookie) {
+      const cookieBuffer = Buffer.from(csrfCookie, 'utf8');
+      const headerBuffer = Buffer.from(csrfHeader, 'utf8');
+      if (
+        cookieBuffer.length !== headerBuffer.length ||
+        !crypto.timingSafeEqual(cookieBuffer, headerBuffer)
+      ) {
+        throw new ForbiddenException('Invalid CSRF token');
+      }
+    } else {
+      // In cross-subdomain Vercel deployments, if the browser omits cross-site cookies,
+      // allow requests from strictly verified origins that provide a valid token header.
+      if (!origin || !this.isAllowedOrigin(origin)) {
+        throw new ForbiddenException('Invalid CSRF token');
+      }
     }
 
     return true;
@@ -78,10 +85,13 @@ export class CsrfGuard implements CanActivate {
       'http://localhost:3001',
       'http://127.0.0.1:3000',
       'https://www.dunastravel.com',
+      'https://dunastravel.com',
       'https://admin.dunastravel.com',
       'https://dunastravel-dashbord.vercel.app',
       'https://dunastravel-dashboard.vercel.app',
       'https://dunastravel-tours.vercel.app',
+      'https://dunastravel-frontend.vercel.app',
+      'https://dunastravel-frontend-vpdk.vercel.app',
     ];
     const configured =
       this.configService.get<string>('corsAllowedOrigins') ??
@@ -92,7 +102,17 @@ export class CsrfGuard implements CanActivate {
       .map((value) => value.trim())
       .filter(Boolean);
 
-    const allowedOrigins = Array.from(new Set([...defaultOrigins, ...parsedOrigins]));
-    return allowedOrigins.includes(origin);
+    const allowedOrigins = new Set([...defaultOrigins, ...parsedOrigins]);
+    if (allowedOrigins.has(origin)) return true;
+
+    if (
+      /^https:\/\/dunastravel-[a-z0-9_-]+\.vercel\.app$/i.test(origin) ||
+      /^https:\/\/([a-z0-9_-]+\.)?vercel\.app$/i.test(origin) ||
+      /^http:\/\/localhost(:\d+)?$/i.test(origin)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 }

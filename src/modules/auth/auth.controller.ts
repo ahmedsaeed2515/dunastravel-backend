@@ -171,11 +171,12 @@ export class AuthController {
   getCsrfToken(@Res({ passthrough: true }) res: Response) {
     const token = crypto.randomBytes(32).toString('hex');
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
+    const isSecure = nodeEnv === 'production' || nodeEnv === 'staging';
 
     res.cookie('csrf_token', token, {
       httpOnly: false, // Must be readable by frontend JavaScript
-      secure: nodeEnv === 'production' || nodeEnv === 'staging',
-      sameSite: 'strict',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       path: '/',
     });
 
