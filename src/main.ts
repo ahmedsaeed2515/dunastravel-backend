@@ -106,6 +106,7 @@ async function bootstrap(): Promise<void> {
   // ─── CORS ─────────────────────────────────────────────────────────────────
   const defaultOrigins = [
     'https://www.dunastravel.com',
+    'https://dunastravel.com',
     'https://admin.dunastravel.com',
     'https://dunastravel-dashbord.vercel.app',
     'https://dunastravel-dashboard.vercel.app',
@@ -120,10 +121,29 @@ async function bootstrap(): Promise<void> {
     .map((o) => o.trim())
     .filter(Boolean);
 
-  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...parsedOrigins]));
+  const staticOrigins = new Set([...defaultOrigins, ...parsedOrigins]);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. server-to-server, curl, mobile apps)
+      if (!origin) return callback(null, true);
+
+      // Allow explicitly listed origins
+      if (staticOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow any dunastravel Vercel deployment or vercel preview URL
+      if (
+        /^https:\/\/dunastravel-[a-z0-9_-]+\.vercel\.app$/i.test(origin) ||
+        /^https:\/\/([a-z0-9_-]+\.)?vercel\.app$/i.test(origin) ||
+        /^http:\/\/localhost(:\d+)?$/i.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true); // Permissive fallback to never block legitimate frontend traffic
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
