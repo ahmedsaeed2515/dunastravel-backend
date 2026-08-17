@@ -1,14 +1,24 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto } from './dto/public-chat.dto';
+import { Response } from 'express';
+
+export class RecordFeedbackRequestDto {
+  conversationId!: string;
+  messageId?: string;
+  rating!: number; // +1 or -1
+  category?: string;
+  comments?: string;
+  locale?: string;
+}
 
 @ApiTags('Public AI Chatbot')
 @Controller('ai/chat')
 @Public()
-@Throttle({ default: { limit: 30, ttl: 60_000 } })
+@Throttle({ default: { limit: 45, ttl: 60_000 } })
 export class PublicChatController {
   constructor(private readonly chatOrchestrator: ChatOrchestratorService) {}
 
@@ -39,6 +49,18 @@ export class PublicChatController {
   @ApiOkResponse({ description: 'Structured AI assistant reply with grounded tour & destination recommendations' })
   async sendMessage(@Body() dto: SendChatMessageDto) {
     return this.chatOrchestrator.processVisitorMessage(dto);
+  }
+
+  @Post('stream')
+  @ApiOperation({ summary: 'Stream message from AI travel chatbot via Server-Sent Events (SSE)' })
+  async streamMessage(@Body() dto: SendChatMessageDto, @Res() res: Response) {
+    return this.chatOrchestrator.streamVisitorMessage(dto, res);
+  }
+
+  @Post('feedback')
+  @ApiOperation({ summary: 'Record traveler message rating (+1 / -1) and feedback' })
+  async recordFeedback(@Body() dto: RecordFeedbackRequestDto) {
+    return this.chatOrchestrator.recordFeedback(dto);
   }
 
   @Post('lead')

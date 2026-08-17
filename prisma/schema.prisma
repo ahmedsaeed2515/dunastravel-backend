@@ -1257,6 +1257,7 @@ model ChatConversation {
   closedAt             DateTime?          @map("closed_at")
   handedOffAt          DateTime?          @map("handed_off_at")
   messages             ChatMessage[]
+  feedbacks            ChatFeedback[]
 
   @@index([status])
   @@index([leadStatus])
@@ -1291,6 +1292,42 @@ model ChatMessage {
   @@index([role])
   @@index([createdAt])
   @@map("chat_messages")
+}
+
+model ChatFeedback {
+  id             String           @id @default(uuid())
+  conversationId String           @map("conversation_id")
+  messageId      String?          @map("message_id")
+  rating         Int              @default(1)
+  category       String?          @db.VarChar(50)
+  comments       String?          @db.Text
+  locale         String           @default("en") @db.VarChar(10)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([rating])
+  @@index([category])
+  @@index([createdAt])
+  @@map("chat_feedbacks")
+}
+
+model AiPromptVersion {
+  id            String    @id @default(uuid())
+  versionNumber Int       @map("version_number")
+  name          String    @db.VarChar(100)
+  systemPrompt  String    @db.Text @map("system_prompt")
+  status        String    @default("DRAFT") @db.VarChar(20)
+  changeNote    String?   @db.VarChar(500) @map("change_note")
+  createdById   String?   @map("created_by_id")
+  publishedById String?   @map("published_by_id")
+  publishedAt   DateTime? @map("published_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([versionNumber])
+  @@map("ai_prompt_versions")
 }
 
 model KnowledgeBaseItem {

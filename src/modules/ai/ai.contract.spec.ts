@@ -27,9 +27,14 @@ describe('AI HTTP Contract Spec', () => {
         escalationMessage: 'Escalation message',
         welcomeMessages: { en: 'Welcome to Dunas Travel' },
         suggestedQuestions: { en: ['Recommend Nile Cruise'] },
+        tourSettings: { apiKeysPool: [] },
         createdAt: new Date(),
       }),
       create: jest.fn(),
+      update: jest.fn().mockResolvedValue({
+        id: 'cfg-1',
+        tourSettings: { apiKeysPool: [] },
+      }),
     },
     chatConversation: {
       findUnique: jest.fn().mockResolvedValue({
@@ -61,9 +66,14 @@ describe('AI HTTP Contract Spec', () => {
     },
     knowledgeBaseItem: {
       findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
     },
     aiUsageLog: {
       create: jest.fn(),
+      aggregate: jest.fn().mockResolvedValue({
+        _sum: { inputTokens: 0, outputTokens: 0, latencyMs: 0 },
+        _count: { id: 0 },
+      }),
     },
     tour: {
       findMany: jest.fn().mockResolvedValue([]),

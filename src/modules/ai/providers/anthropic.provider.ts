@@ -62,6 +62,8 @@ export class AnthropicProvider implements IAiProvider {
         inputTokens: response.usage?.input_tokens || 0,
         outputTokens: response.usage?.output_tokens || 0,
         latencyMs,
+        provider: 'anthropic',
+        model,
       };
     } catch (error: any) {
       const latencyMs = Date.now() - startTime;

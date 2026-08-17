@@ -10,9 +10,11 @@ export interface GroundedTourRecommendation {
   price: number;
   currency: string;
   durationDays?: number;
+  duration?: string;
   image?: string;
   publicUrl: string;
-  reason?: string;
+  matchReasons?: string[];
+  highlights?: string[];
 }
 
 export interface GroundedDestinationRecommendation {
@@ -24,65 +26,252 @@ export interface GroundedDestinationRecommendation {
   publicUrl: string;
 }
 
+export interface TravelConstraints {
+  destination?: string;
+  country?: string;
+  targetDuration?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  maxBudget?: number;
+  currency?: string;
+  nileCruiseRequired?: boolean;
+  beachRequired?: boolean;
+  luxuryTier?: string;
+}
+
+export interface TourComparisonItem {
+  id: string;
+  slug: string;
+  title: string;
+  durationDays: number;
+  price: number;
+  currency: string;
+  destination: string;
+  hasNileCruise: boolean;
+  hasRedSeaBeach: boolean;
+  category: string;
+  image?: string;
+  publicUrl: string;
+  highlights: string[];
+}
+
+export interface StructuredTourComparison {
+  tours: TourComparisonItem[];
+  sharedFeatures: string[];
+  differences: Array<{
+    aspect: string;
+    tourAValue: string;
+    tourBValue: string;
+  }>;
+  summaryRecommendation: string;
+}
+
 @Injectable()
 export class TourCatalogToolService {
   private readonly logger = new Logger(TourCatalogToolService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeText(text: string): string {
+    if (!text) return '';
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/[\u064B-\u0652]/g, '')
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()?"'¿¡]/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Deterministic travel constraint extraction from traveler user message
+   */
+  extractTravelConstraints(message: string): TravelConstraints {
+    const text = this.normalizeText(message);
+    const constraints: TravelConstraints = {};
+
+    // Nile cruise detection
+    if (/(nile|cruise|cruzeiro|crucero|crociera|دهبية|دهبيه|نايل كروز|كروز|نيل)/i.test(text) || /(نايل|كروز|نيل|دهبية)/.test(message)) {
+      constraints.nileCruiseRequired = true;
+    }
+
+    // Beach / Red Sea detection
+    if (/(sharm|hurghada|red sea|mar vermelho|mar rojo|بحر احمر|شرم|الغردقة)/i.test(text) || /(الغردقة|شرم)/.test(message)) {
+      constraints.beachRequired = true;
+    }
+
+    // Duration extraction: e.g. "8 days", "10 dias", "8 أيام", "8 ايام"
+    const durationMatch = text.match(/(\d{1,2})\s*(day|days|dia|dias|giorni|dias|ايام|أيام|يوم)/i) ||
+                          message.match(/(\d{1,2})\s*(day|days|dia|dias|giorni|dias|ايام|أيام|يوم)/i);
+    if (durationMatch) {
+      const days = parseInt(durationMatch[1], 10);
+      if (!isNaN(days) && days > 0 && days <= 30) {
+        constraints.targetDuration = days;
+        constraints.minDuration = Math.max(1, days - 1);
+        constraints.maxDuration = days + 1;
+      }
+    }
+
+    // Budget extraction: e.g. "$2500", "3000 USD", "2500 دولار"
+    const budgetMatch = text.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i) ||
+                        message.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i);
+    if (budgetMatch) {
+      const val = parseInt(budgetMatch[1], 10);
+      if (val >= 500 && val <= 50000 && val !== constraints.targetDuration) {
+        constraints.maxBudget = val;
+      }
+    }
+
+    // Country detection
+    if (/(egypt|egito|egipto|egitto|مصر)/i.test(text) || /مصر/.test(message)) constraints.country = 'Egypt';
+    else if (/(turkey|turquia|turchia|تركيا)/i.test(text) || /تركيا/.test(message)) constraints.country = 'Turkey';
+    else if (/(jordan|jordania|giordania|الاردن|الأردن)/i.test(text) || /الاردن|الأردن/.test(message)) constraints.country = 'Jordan';
+    else if (/(dubai|uae|دبي|الامارات|الإمارات)/i.test(text) || /دبي|الامارات|الإمارات/.test(message)) constraints.country = 'Dubai';
+    else if (/(morocco|marruecos|marrocos|marocco|المغرب)/i.test(text) || /المغرب/.test(message)) constraints.country = 'Morocco';
+
+    return constraints;
+  }
+
   async searchGroundedTours(
     keywords: string[],
     limit: number = 4,
+    locale: string = 'en',
+    constraints?: TravelConstraints,
   ): Promise<GroundedTourRecommendation[]> {
     try {
-      if (!keywords || keywords.length === 0) {
-        // Return top featured active tours
-        const tours = await this.prisma.tour.findMany({
-          where: {
-            isActive: true,
-            status: 'PUBLISHED',
-            deletedAt: null,
-          },
-          take: limit,
-          orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
-          include: {
-            images: {
-              where: { isHero: true },
-              take: 1,
-              select: { imageUrl: true },
-            },
-          },
-        });
-
-        return tours.map((t) => this.mapTourToRecommendation(t));
-      }
-
-      // Build OR conditions for searching keywords in city, country, region, category, tags
-      const searchConditions = keywords.flatMap((kw) => [
-        { city: { contains: kw, mode: 'insensitive' as const } },
-        { country: { contains: kw, mode: 'insensitive' as const } },
-        { region: { contains: kw, mode: 'insensitive' as const } },
-        { category: { contains: kw, mode: 'insensitive' as const } },
-      ]);
-
+      // Fetch active published tours with images
       const tours = await this.prisma.tour.findMany({
         where: {
           isActive: true,
           status: 'PUBLISHED',
           deletedAt: null,
-          OR: searchConditions,
         },
-        take: limit,
+        take: 100,
         orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
         include: {
           images: {
             take: 1,
-            select: { imageUrl: true },
+            select: { imageUrl: true, isHero: true },
           },
         },
       });
 
-      return tours.map((t) => this.mapTourToRecommendation(t));
+      if (!tours || tours.length === 0) return [];
+
+      const normalizedKeywords = (keywords || [])
+        .map((k) => this.normalizeText(k))
+        .filter((k) => k.length > 0);
+
+      // Score each tour against keywords & constraints
+      const scored = tours.map((tour) => {
+        let score = tour.isFeatured ? 5 : 0;
+        const matchReasons: string[] = [];
+
+        // Multilingual titles
+        const titles: string[] = [];
+        if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
+          Object.values(tour.titleJsonb as Record<string, string>).forEach((v) => {
+            if (typeof v === 'string') titles.push(this.normalizeText(v));
+          });
+        }
+        titles.push(this.normalizeText(tour.slug));
+
+        // Destination & category
+        const dest = this.normalizeText([tour.city, tour.country, tour.region].filter(Boolean).join(' '));
+        const category = this.normalizeText(tour.category || '');
+        const tags = (tour.tags || []).map((t) => this.normalizeText(t));
+        const fullTourStr = `${titles.join(' ')} ${dest} ${category} ${tags.join(' ')}`;
+
+        // Target Duration Exact Matching
+        const tourDuration = this.getTourDurationDays(tour);
+        if (constraints?.targetDuration && tourDuration) {
+          if (tourDuration === constraints.targetDuration) {
+            score += 30;
+            matchReasons.push(
+              locale.startsWith('ar')
+                ? `مطابق للمدة المطلوبة (${tourDuration} أيام)`
+                : `Matches requested duration (${tourDuration} Days)`,
+            );
+          } else if (Math.abs(tourDuration - constraints.targetDuration) <= 1) {
+            score += 10;
+          }
+        }
+
+        // Constraint checking
+        if (constraints?.nileCruiseRequired) {
+          if (/(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)) {
+            score += 35;
+            matchReasons.push(
+              locale.startsWith('ar')
+                ? 'يشمل برنامج إبحار نيلي فاخر (نايل كروز)'
+                : 'Includes signature luxury Nile Cruise navigation',
+            );
+          }
+        }
+
+        if (constraints?.beachRequired) {
+          if (/(sharm|hurghada|red sea|mar vermelho|الغردقة|شرم)/i.test(fullTourStr)) {
+            score += 25;
+            matchReasons.push(
+              locale.startsWith('ar')
+                ? 'يجمع بين الآثار وشواطئ البحر الأحمر'
+                : 'Combines historical exploration with Red Sea beach luxury',
+            );
+          }
+        }
+
+        if (constraints?.country) {
+          const cNorm = this.normalizeText(constraints.country);
+          if (dest.includes(cNorm)) {
+            score += 20;
+          }
+        }
+
+        const price = Number(tour.basePriceUsd);
+        if (constraints?.maxBudget && price > 0) {
+          if (price <= constraints.maxBudget) {
+            score += 15;
+            matchReasons.push(
+              locale.startsWith('ar')
+                ? `ضمن الميزانية المقترحة ($${price} USD)`
+                : `Within your specified budget ($${price} USD)`,
+            );
+          } else {
+            score -= 10;
+          }
+        }
+
+        // Keywords scoring
+        normalizedKeywords.forEach((kw) => {
+          if (titles.some((t) => t.includes(kw))) score += 15;
+          if (dest.includes(kw)) score += 10;
+          if (category.includes(kw)) score += 8;
+          if (tags.some((tag) => tag.includes(kw))) score += 6;
+        });
+
+        if (matchReasons.length === 0) {
+          matchReasons.push(
+            locale.startsWith('ar')
+              ? 'برنامج سياحي فاخر معتمد من كتالوج دوناس ترافيل'
+              : 'Top rated signature luxury itinerary in Egypt catalog',
+          );
+        }
+
+        return { tour, score, matchReasons };
+      });
+
+      const matched = scored
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      const finalEntries = matched.length > 0 ? matched.slice(0, limit) : scored.slice(0, limit);
+
+      return finalEntries.map((entry) =>
+        this.mapTourToRecommendation(entry.tour, locale, entry.matchReasons),
+      );
     } catch (err: any) {
       this.logger.error(`Failed to search grounded tours: ${err.message}`);
       return [];
@@ -92,54 +281,176 @@ export class TourCatalogToolService {
   async searchGroundedDestinations(
     keywords: string[],
     limit: number = 3,
+    locale: string = 'en',
   ): Promise<GroundedDestinationRecommendation[]> {
     try {
-      const searchConditions = keywords.flatMap((kw) => [
-        { slug: { contains: kw, mode: 'insensitive' as const } },
-        { type: { contains: kw, mode: 'insensitive' as const } },
-      ]);
-
       const landingPages = await this.prisma.tourLandingPage.findMany({
         where: {
           isActive: true,
           status: 'PUBLISHED',
           deletedAt: null,
-          ...(searchConditions.length > 0 ? { OR: searchConditions } : {}),
         },
-        take: limit,
+        take: 30,
         orderBy: { sortOrder: 'asc' },
       });
 
-      return landingPages.map((lp) => {
-        let title = lp.slug.toUpperCase();
-        if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
-          const tMap = lp.titleJsonb as Record<string, string>;
-          title = tMap.en || tMap.ar || title;
-        }
+      if (!keywords || keywords.length === 0) {
+        return landingPages.slice(0, limit).map((lp) => this.mapDestinationToRecommendation(lp, locale));
+      }
 
-        return {
-          id: lp.id,
-          slug: lp.slug,
-          title,
-          heroImage: lp.heroImageUrl || undefined,
-          publicUrl: `/destinations/${lp.slug}`,
-        };
+      const normalizedKeywords = keywords
+        .map((k) => this.normalizeText(k))
+        .filter((k) => k.length > 1);
+
+      const scored = landingPages.map((lp) => {
+        let score = 0;
+        const titles: string[] = [];
+        if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
+          Object.values(lp.titleJsonb as Record<string, string>).forEach((v) => {
+            if (typeof v === 'string') titles.push(this.normalizeText(v));
+          });
+        }
+        titles.push(this.normalizeText(lp.slug));
+
+        normalizedKeywords.forEach((kw) => {
+          if (titles.some((t) => t.includes(kw))) score += 10;
+        });
+
+        return { lp, score };
       });
+
+      const matched = scored
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      const finalPages = matched.length > 0 ? matched.slice(0, limit) : landingPages.slice(0, limit);
+      return finalPages.map((lp) => this.mapDestinationToRecommendation(lp, locale));
     } catch (err: any) {
       this.logger.error(`Failed to search destinations: ${err.message}`);
       return [];
     }
   }
 
-  private mapTourToRecommendation(tour: any): GroundedTourRecommendation {
+  /**
+   * Deterministic Tour Comparison Engine
+   */
+  async compareTwoTours(tourAIdOrSlug: string, tourBIdOrSlug: string, locale: string = 'en'): Promise<StructuredTourComparison | null> {
+    try {
+      const tours = await this.prisma.tour.findMany({
+        where: {
+          OR: [
+            { id: tourAIdOrSlug },
+            { slug: tourAIdOrSlug },
+            { id: tourBIdOrSlug },
+            { slug: tourBIdOrSlug },
+          ],
+          isActive: true,
+          deletedAt: null,
+        },
+        include: {
+          images: { take: 1, select: { imageUrl: true } },
+        },
+      });
+
+      if (tours.length < 2) return null;
+
+      const [tourA, tourB] = tours;
+      const isArabic = locale.startsWith('ar');
+
+      const formatTour = (t: any): TourComparisonItem => {
+        const lang = locale.split('-')[0].toLowerCase();
+        let title = t.slug;
+        if (t.titleJsonb && typeof t.titleJsonb === 'object') {
+          const tMap = t.titleJsonb as Record<string, string>;
+          title = tMap[lang] || tMap.en || tMap.ar || title;
+        }
+
+        const fullStr = `${title} ${t.city || ''} ${t.category || ''} ${(t.tags || []).join(' ')}`.toLowerCase();
+        const hasNileCruise = /(nile|cruise|cruzeiro|crociera|دهبية|كروز|نيل)/.test(fullStr);
+        const hasRedSeaBeach = /(sharm|hurghada|red sea|الغردقة|شرم)/.test(fullStr);
+
+        const dDays = this.getTourDurationDays(t);
+        return {
+          id: t.id,
+          slug: t.slug,
+          title,
+          durationDays: dDays,
+          price: Number(t.basePriceUsd),
+          currency: t.currency || 'USD',
+          destination: [t.city, t.country].filter(Boolean).join(', ') || 'Egypt',
+          hasNileCruise,
+          hasRedSeaBeach,
+          category: t.category || 'Luxury',
+          image: t.images?.[0]?.imageUrl,
+          publicUrl: `/tours/${t.slug}`,
+          highlights: t.tags?.slice(0, 4) || [],
+        };
+      };
+
+      const compA = formatTour(tourA);
+      const compB = formatTour(tourB);
+
+      const sharedFeatures = [
+        isArabic ? 'إقامة 5 نجوم فاخرة مع استقبال وتوديع VIP بالمطار' : '5-Star luxury accommodations & VIP airport concierge',
+        isArabic ? 'مرشد سياحي خاص مرخص وخبير في الآثار المصرية' : 'Private licensed Egyptologist guide',
+        isArabic ? 'تنقلات بسيارات حديثة مكيفة ومريحة' : 'Private executive ground transportation',
+      ];
+
+      const differences = [
+        {
+          aspect: isArabic ? 'المدة الإجمالية للبرنامج' : 'Total Trip Duration',
+          tourAValue: `${compA.durationDays} ${isArabic ? 'أيام' : 'Days'}`,
+          tourBValue: `${compB.durationDays} ${isArabic ? 'أيام' : 'Days'}`,
+        },
+        {
+          aspect: isArabic ? 'سعر الباقة يبدأ من' : 'Starting Price per Person',
+          tourAValue: `$${compA.price} ${compA.currency}`,
+          tourBValue: `$${compB.price} ${compB.currency}`,
+        },
+        {
+          aspect: isArabic ? 'الإبحار في النايل كروز' : 'Nile Cruise Included',
+          tourAValue: compA.hasNileCruise ? (isArabic ? 'نعم (نايل كروز فاخر)' : 'Yes (Luxury Nile Cruise)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+          tourBValue: compB.hasNileCruise ? (isArabic ? 'نعم (نايل كروز فاخر)' : 'Yes (Luxury Nile Cruise)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+        },
+        {
+          aspect: isArabic ? 'شواطئ البحر الأحمر' : 'Red Sea Beach Extension',
+          tourAValue: compA.hasRedSeaBeach ? (isArabic ? 'نعم (منتجع شاطئي)' : 'Yes (Red Sea Resort)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+          tourBValue: compB.hasRedSeaBeach ? (isArabic ? 'نعم (منتجع شاطئي)' : 'Yes (Red Sea Resort)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+        },
+      ];
+
+      const summaryRecommendation = isArabic
+        ? `إذا كنت تبحث عن رحلة أطول تجمع بين المعالم والشاطئ فننصحك برحلة "${compA.durationDays > compB.durationDays ? compA.title : compB.title}"، أما إذا كنت تفضل برنامجاً مركزاً وسريعاً فإن "${compA.durationDays <= compB.durationDays ? compA.title : compB.title}" هي الخيار الأنسب.`
+        : `If you prefer a comprehensive journey including coastal relaxation, choose "${compA.durationDays > compB.durationDays ? compA.title : compB.title}". For a classic and focused exploration, "${compA.durationDays <= compB.durationDays ? compA.title : compB.title}" provides the premier experience.`;
+
+      return {
+        tours: [compA, compB],
+        sharedFeatures,
+        differences,
+        summaryRecommendation,
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to compare tours: ${err.message}`);
+      return null;
+    }
+  }
+
+  private mapTourToRecommendation(
+    tour: any,
+    locale: string = 'en',
+    matchReasons?: string[],
+  ): GroundedTourRecommendation {
+    const lang = locale.split('-')[0].toLowerCase();
     let title = tour.slug;
+
     if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
       const tMap = tour.titleJsonb as Record<string, string>;
-      title = tMap.en || tMap.ar || title;
+      title = tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
     }
 
     const image = tour.images?.[0]?.imageUrl || undefined;
     const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
+    const dDays = this.getTourDurationDays(tour);
 
     return {
       id: tour.id,
@@ -149,8 +460,43 @@ export class TourCatalogToolService {
       destination: dest,
       price: Number(tour.basePriceUsd),
       currency: tour.currency || 'USD',
+      duration: `${dDays} Days`,
+      durationDays: dDays,
       image,
       publicUrl: `/tours/${tour.slug}`,
+      matchReasons: matchReasons || [
+        locale.startsWith('ar')
+          ? 'باقة سياحية فاخرة معتمدة'
+          : 'Verified signature luxury itinerary',
+      ],
     };
+  }
+
+  private mapDestinationToRecommendation(lp: any, locale: string = 'en'): GroundedDestinationRecommendation {
+    const lang = locale.split('-')[0].toLowerCase();
+    const slug = lp?.slug || 'destination';
+    let title = slug.toUpperCase();
+
+    return {
+      id: lp?.id || slug,
+      slug,
+      title,
+      heroImage: lp?.heroImageUrl || undefined,
+      publicUrl: `/destinations/${slug}`,
+    };
+  }
+
+  private getTourDurationDays(tour: any): number {
+    if (tour?.durationJsonb && typeof tour.durationJsonb === 'object') {
+      const val = (tour.durationJsonb as any).days || (tour.durationJsonb as any).en || (tour.durationJsonb as any).pt;
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        const m = val.match(/(\d+)/);
+        if (m) return parseInt(m[1], 10);
+      }
+    }
+    const slugMatch = (tour?.slug || '').match(/(\d+)d/i);
+    if (slugMatch) return parseInt(slugMatch[1], 10);
+    return 8;
   }
 }
