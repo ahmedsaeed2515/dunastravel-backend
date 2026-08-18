@@ -2207,44 +2207,83 @@ export class AdminService {
     richText: boolean,
     requireEnglish = false,
   ): Prisma.InputJsonValue {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      if (requireEnglish) {
-        throw new BadRequestException(`Invalid ${fieldName}`);
-      }
-      return {};
-    }
-    const entries = Object.entries(value as Record<string, unknown>);
-    const locales = ['en', 'ar', 'es', 'pt', 'it'];
-    if (entries.length === 0) {
+    if (value === null || value === undefined) {
       if (requireEnglish) {
         throw new BadRequestException(`${fieldName}.en is required`);
       }
       return {};
     }
-    if (
-      entries.length > locales.length ||
-      entries.some(
-        ([locale, text]) =>
-          !locales.includes(locale) ||
-          typeof text !== 'string' ||
-          text.length > 20_000,
-      )
-    ) {
-      throw new BadRequestException(`Invalid ${fieldName}`);
+
+    // If it's a primitive string, wrap in { en: string }
+    if (typeof value === 'string') {
+      const sanitized = (
+        richText ? sanitizeHtmlContent(value) : sanitizePlainText(value)
+      ).slice(0, 20_000);
+      return { en: sanitized };
     }
-    const result = Object.fromEntries(
-      entries.map(([locale, text]) => [
-        locale,
-        (richText
-          ? sanitizeHtmlContent(text as string)
-          : sanitizePlainText(text as string)
-        ).slice(0, 20_000),
-      ]),
-    );
-    if (requireEnglish && !result.en?.trim()) {
-      throw new BadRequestException(`${fieldName}.en is required`);
+
+    // If it's an array, sanitize each item
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        if (typeof item === 'string') {
+          return (
+            richText ? sanitizeHtmlContent(item) : sanitizePlainText(item)
+          ).slice(0, 20_000);
+        }
+        if (typeof item === 'object' && item !== null) {
+          return this.sanitizeTourLocalizedJson(
+            item,
+            `${fieldName}[]`,
+            richText,
+            false,
+          );
+        }
+        return item;
+      }) as Prisma.InputJsonValue;
     }
-    return result;
+
+    // If it's an object
+    if (typeof value === 'object') {
+      const result: Record<string, any> = {};
+      for (const [key, val] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
+        if (val === null || val === undefined) continue;
+        if (typeof val === 'string') {
+          result[key] = (
+            richText ? sanitizeHtmlContent(val) : sanitizePlainText(val)
+          ).slice(0, 20_000);
+        } else if (Array.isArray(val)) {
+          result[key] = val.map((v) =>
+            typeof v === 'string'
+              ? (
+                  richText ? sanitizeHtmlContent(v) : sanitizePlainText(v)
+                ).slice(0, 20_000)
+              : v,
+          );
+        } else if (typeof val === 'object') {
+          result[key] = val;
+        } else {
+          result[key] = val;
+        }
+      }
+
+      if (
+        requireEnglish &&
+        (!result.en || (typeof result.en === 'string' && !result.en.trim()))
+      ) {
+        const firstVal = Object.values(result)[0];
+        if (typeof firstVal === 'string' && firstVal.trim()) {
+          result.en = firstVal;
+        } else if (!result.en) {
+          throw new BadRequestException(`${fieldName}.en is required`);
+        }
+      }
+
+      return result as Prisma.InputJsonValue;
+    }
+
+    return {};
   }
 
   async bulkUpdateTours(dto: BulkUpdateToursDto, adminUserId: string) {
