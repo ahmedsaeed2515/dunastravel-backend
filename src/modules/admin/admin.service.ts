@@ -1584,32 +1584,63 @@ export class AdminService {
     );
 
     const where: any = { deletedAt: null };
+    const andConditions: any[] = [];
+
     const targetDest = destination || country;
-    if (targetDest) {
-      where.OR = [
-        { country: { equals: targetDest, mode: 'insensitive' } },
-        { country: { contains: targetDest, mode: 'insensitive' } },
-        { slug: { contains: targetDest, mode: 'insensitive' } },
-      ];
+    if (targetDest && targetDest !== 'ALL') {
+      andConditions.push({
+        OR: [
+          { country: { equals: targetDest, mode: 'insensitive' } },
+          { country: { contains: targetDest, mode: 'insensitive' } },
+          { city: { contains: targetDest, mode: 'insensitive' } },
+          { region: { contains: targetDest, mode: 'insensitive' } },
+          { category: { contains: targetDest, mode: 'insensitive' } },
+          { slug: { contains: targetDest, mode: 'insensitive' } },
+        ],
+      });
     }
-    if (city) where.city = { equals: city, mode: 'insensitive' };
+
+    if (city && city !== 'ALL') {
+      andConditions.push({ city: { contains: city, mode: 'insensitive' } });
+    }
+
     const targetCategory = market || category;
-    if (targetCategory) where.category = { contains: targetCategory, mode: 'insensitive' };
-    if (status) where.status = status;
-    if (isFeatured !== undefined) where.isFeatured = isFeatured === 'true';
-    if (tag) where.tags = { has: tag };
-    if (search) {
-      const searchCondition = [
-        { slug: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
-        { country: { contains: search, mode: 'insensitive' } },
-      ];
-      if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: searchCondition }];
-        delete where.OR;
-      } else {
-        where.OR = searchCondition;
-      }
+    if (targetCategory && targetCategory !== 'ALL') {
+      andConditions.push({
+        OR: [
+          { category: { contains: targetCategory, mode: 'insensitive' } },
+          { tags: { has: targetCategory } },
+          { slug: { contains: targetCategory, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (status && status !== 'ALL') {
+      andConditions.push({ status });
+    }
+
+    if (isFeatured !== undefined) {
+      andConditions.push({ isFeatured: isFeatured === 'true' });
+    }
+
+    if (tag) {
+      andConditions.push({ tags: { has: tag } });
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      andConditions.push({
+        OR: [
+          { slug: { contains: q, mode: 'insensitive' } },
+          { category: { contains: q, mode: 'insensitive' } },
+          { country: { contains: q, mode: 'insensitive' } },
+          { city: { contains: q, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const skip = (page - 1) * limit;
