@@ -180,7 +180,7 @@ export class CreateTourDto {
 
   @ApiProperty({ description: 'Base price in USD' })
   @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
-  @Min(0.01)
+  @Min(0)
   @Max(99_999_999.99)
   @Type(() => Number)
   basePriceUsd!: number;
