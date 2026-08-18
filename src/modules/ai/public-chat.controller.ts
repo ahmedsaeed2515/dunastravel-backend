@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, Query, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto } from './dto/public-chat.dto';
 import { Response } from 'express';
@@ -18,6 +19,7 @@ export class RecordFeedbackRequestDto {
 @ApiTags('Public AI Chatbot')
 @Controller('ai/chat')
 @Public()
+@SkipCsrf()
 @Throttle({ default: { limit: 45, ttl: 60_000 } })
 export class PublicChatController {
   constructor(private readonly chatOrchestrator: ChatOrchestratorService) {}

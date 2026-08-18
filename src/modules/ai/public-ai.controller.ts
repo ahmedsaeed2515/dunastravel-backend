@@ -4,10 +4,12 @@ import { TranslateHieroglyphicsDto } from './dto/translate-hieroglyphics.dto';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 
 @ApiTags('Public AI')
 @Controller('ai')
 @Public()
+@SkipCsrf()
 @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
 export class PublicAiController {
   constructor(private readonly aiService: AiService) {}

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { PromotionsService } from './promotions.service';
 import { ValidatePromotionDto } from './dto/validate-promotion.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Promotions')
@@ -12,6 +13,7 @@ export class PromotionsController {
 
   @Post('validate')
   @Public()
+  @SkipCsrf()
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(200)
   @ApiOperation({ summary: 'Validate a promotion code' })

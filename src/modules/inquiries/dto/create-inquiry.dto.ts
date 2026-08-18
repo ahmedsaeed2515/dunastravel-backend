@@ -65,8 +65,8 @@ export class CreateInquiryDto {
   })
   phone!: string;
 
-  @ApiProperty({ example: 'en', enum: ['en', 'es', 'fr', 'de', 'it', 'ar'] })
-  @IsIn(['en', 'es', 'fr', 'de', 'it', 'ar'])
+  @ApiProperty({ example: 'en', enum: ['en', 'es', 'fr', 'de', 'it', 'ar', 'pt'] })
+  @IsIn(['en', 'es', 'fr', 'de', 'it', 'ar', 'pt'])
   @IsNotEmpty()
   preferredLanguage!: string;
 

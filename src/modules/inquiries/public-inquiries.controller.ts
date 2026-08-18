@@ -10,10 +10,12 @@ import {
 import { InquiriesService } from './inquiries.service';
 import { CreateInquiryDto } from './dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 
 @ApiTags('Inquiries (Public)')
 @Controller()
 @Public()
+@SkipCsrf()
 export class PublicInquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 

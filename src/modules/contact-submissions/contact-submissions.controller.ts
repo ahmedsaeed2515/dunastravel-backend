@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { ContactSubmissionsService } from './contact-submissions.service';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
 
@@ -21,6 +22,7 @@ export class ContactSubmissionsController {
 
   @Post()
   @Public()
+  @SkipCsrf()
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @ApiOperation({ summary: 'Submit a contact inquiry' })
   @ApiBody({ type: CreateContactSubmissionDto })

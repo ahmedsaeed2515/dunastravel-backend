@@ -196,6 +196,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('forgot-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Request password reset' })
@@ -205,6 +206,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Reset password using token' })
@@ -214,6 +216,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('verify-email')
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify user email' })
@@ -234,6 +237,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('resend-verification')
   @HttpCode(200)
   @ApiOperation({ summary: 'Resend verification email' })
