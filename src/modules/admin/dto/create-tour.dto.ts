@@ -22,6 +22,24 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateTourItineraryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  tourId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  createdAt?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  updatedAt?: any;
+
   @ApiPropertyOptional({ description: 'Day label, e.g., Day 1: Arrival' })
   @IsOptional()
   @IsString()
@@ -69,9 +87,27 @@ export class CreateTourItineraryDto {
 }
 
 export class CreateTourImageDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  tourId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  createdAt?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  updatedAt?: any;
+
   @ApiProperty({ description: 'Image URL' })
   @IsNotEmpty()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
   @MaxLength(2048)
   imageUrl!: string;
 
@@ -86,12 +122,12 @@ export class CreateTourImageDto {
   isVideo?: boolean;
 
   @ApiPropertyOptional({ description: 'Video URL if isVideo is true' })
+  @IsOptional()
   @ValidateIf(
     (dto: CreateTourImageDto) =>
-      dto.isVideo === true || dto.videoUrl !== undefined,
+      Boolean(dto.videoUrl && String(dto.videoUrl).trim().length > 0),
   )
-  @IsNotEmpty()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
   @MaxLength(2048)
   videoUrl?: string;
 
@@ -311,6 +347,77 @@ export class CreateTourDto {
   @IsString()
   @IsIn(['USD'])
   currency?: string;
+
+  @ApiPropertyOptional({ description: 'Capacity or max seats' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  capacity?: number;
+
+  @ApiPropertyOptional({ description: 'Min participants' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  minParticipants?: number;
+
+  @ApiPropertyOptional({ description: 'Max participants' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  maxParticipants?: number;
+
+  @ApiPropertyOptional({ description: 'Remaining seats' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  remainingSeats?: number;
+
+  @ApiPropertyOptional({ description: 'Subtitle JSONB' })
+  @IsOptional()
+  @IsObject()
+  subtitleJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Description JSONB' })
+  @IsOptional()
+  @IsObject()
+  descriptionJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Highlight JSONB' })
+  @IsOptional()
+  @IsObject()
+  highlightJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Inclusion JSONB' })
+  @IsOptional()
+  @IsObject()
+  inclusionJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Exclusion JSONB' })
+  @IsOptional()
+  @IsObject()
+  exclusionJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Important Notes JSONB' })
+  @IsOptional()
+  @IsObject()
+  importantNotesJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Operating Days JSONB' })
+  @IsOptional()
+  @IsObject()
+  operatingDaysJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Latitude' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude' })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  longitude?: number;
 
   @ApiPropertyOptional({ type: [CreateTourItineraryDto] })
   @IsOptional()

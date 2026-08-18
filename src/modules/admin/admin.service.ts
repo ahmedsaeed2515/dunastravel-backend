@@ -2013,12 +2013,29 @@ export class AdminService {
     isCreate: boolean,
   ): Record<string, unknown> {
     const result: Record<string, unknown> = { ...data };
+
+    // Fallback/alias mappings for frontend compatibility
+    if (data.descriptionJsonb && !data.overviewJsonb) {
+      result.overviewJsonb = data.descriptionJsonb;
+    }
+    if (data.inclusionJsonb && !data.includedServicesJsonb) {
+      result.includedServicesJsonb = data.inclusionJsonb;
+    }
+    if (data.exclusionJsonb && !data.excludedServicesJsonb) {
+      result.excludedServicesJsonb = data.exclusionJsonb;
+    }
+    if (data.importantNotesJsonb && !data.termsJsonb) {
+      result.termsJsonb = data.importantNotesJsonb;
+    }
+
     const plainStrings = [
       'category',
       'country',
       'city',
       'region',
       'meetingPoint',
+      'departureTime',
+      'returnTime',
       'difficultyLevel',
       'ageRestrictions',
       'seoTitle',
@@ -2062,9 +2079,9 @@ export class AdminService {
       'termsJsonb',
     ] as const;
     for (const key of plainJsonFields) {
-      if (data[key] !== undefined) {
+      if (result[key] !== undefined && result[key] !== null) {
         result[key] = this.sanitizeTourLocalizedJson(
-          data[key],
+          result[key],
           key,
           false,
           key === 'titleJsonb',
@@ -2072,9 +2089,9 @@ export class AdminService {
       }
     }
     for (const key of richJsonFields) {
-      if (data[key] !== undefined) {
+      if (result[key] !== undefined && result[key] !== null) {
         result[key] = this.sanitizeTourLocalizedJson(
-          data[key],
+          result[key],
           key,
           true,
         );
@@ -2089,13 +2106,37 @@ export class AdminService {
     } else if (data.status && data.status !== 'PUBLISHED') {
       result.isActive = false;
     }
+
+    // Strip non-Prisma Tour model fields so Prisma update does not fail
+    const nonPrismaKeys = [
+      'capacity',
+      'minParticipants',
+      'maxParticipants',
+      'remainingSeats',
+      'subtitleJsonb',
+      'descriptionJsonb',
+      'highlightJsonb',
+      'inclusionJsonb',
+      'exclusionJsonb',
+      'importantNotesJsonb',
+      'operatingDaysJsonb',
+      'latitude',
+      'longitude',
+      'itineraries',
+      'images',
+    ];
+    for (const key of nonPrismaKeys) {
+      delete result[key];
+    }
+
     return result;
   }
 
   private prepareTourItineraries(
     itineraries?: CreateTourDto['itineraries'],
   ) {
-    return itineraries?.map((itinerary) => ({
+    if (!itineraries) return undefined;
+    return itineraries.map((itinerary) => ({
       dayLabel: itinerary.dayLabel
         ? sanitizePlainText(itinerary.dayLabel).slice(0, 255)
         : undefined,
@@ -2105,55 +2146,58 @@ export class AdminService {
         true,
         true,
       ),
-      mealsJsonb: itinerary.mealsJsonb
+      mealsJsonb: itinerary.mealsJsonb && Object.keys(itinerary.mealsJsonb).length > 0
         ? this.sanitizeTourLocalizedJson(
             itinerary.mealsJsonb,
             'itinerary.mealsJsonb',
             true,
           )
         : undefined,
-      activitiesJsonb: itinerary.activitiesJsonb
+      activitiesJsonb: itinerary.activitiesJsonb && Object.keys(itinerary.activitiesJsonb).length > 0
         ? this.sanitizeTourLocalizedJson(
             itinerary.activitiesJsonb,
             'itinerary.activitiesJsonb',
             true,
           )
         : undefined,
-      hotelsJsonb: itinerary.hotelsJsonb
+      hotelsJsonb: itinerary.hotelsJsonb && Object.keys(itinerary.hotelsJsonb).length > 0
         ? this.sanitizeTourLocalizedJson(
             itinerary.hotelsJsonb,
             'itinerary.hotelsJsonb',
             true,
           )
         : undefined,
-      transportationJsonb: itinerary.transportationJsonb
+      transportationJsonb: itinerary.transportationJsonb && Object.keys(itinerary.transportationJsonb).length > 0
         ? this.sanitizeTourLocalizedJson(
             itinerary.transportationJsonb,
             'itinerary.transportationJsonb',
             true,
           )
         : undefined,
-      notesJsonb: itinerary.notesJsonb
+      notesJsonb: itinerary.notesJsonb && Object.keys(itinerary.notesJsonb).length > 0
         ? this.sanitizeTourLocalizedJson(
             itinerary.notesJsonb,
             'itinerary.notesJsonb',
             false,
           )
         : undefined,
-      sortOrder: itinerary.sortOrder,
+      sortOrder: itinerary.sortOrder ?? 1,
     }));
   }
 
   private prepareTourImages(images?: CreateTourDto['images']) {
-    return images?.map((image) => ({
+    if (!images) return undefined;
+    return images.map((image) => ({
       imageUrl: image.imageUrl,
-      isHero: image.isHero ?? false,
-      isVideo: image.isVideo ?? false,
-      videoUrl: image.videoUrl ?? undefined,
+      isHero: Boolean(image.isHero),
+      isVideo: Boolean(image.isVideo),
+      videoUrl: image.videoUrl && String(image.videoUrl).trim().length > 0
+        ? String(image.videoUrl).trim()
+        : null,
       altText: image.altText
         ? sanitizePlainText(image.altText).slice(0, 255)
-        : undefined,
-      sortOrder: image.sortOrder,
+        : null,
+      sortOrder: image.sortOrder ?? 1,
     }));
   }
 
@@ -2164,12 +2208,20 @@ export class AdminService {
     requireEnglish = false,
   ): Prisma.InputJsonValue {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      throw new BadRequestException(`Invalid ${fieldName}`);
+      if (requireEnglish) {
+        throw new BadRequestException(`Invalid ${fieldName}`);
+      }
+      return {};
     }
     const entries = Object.entries(value as Record<string, unknown>);
     const locales = ['en', 'ar', 'es', 'pt', 'it'];
+    if (entries.length === 0) {
+      if (requireEnglish) {
+        throw new BadRequestException(`${fieldName}.en is required`);
+      }
+      return {};
+    }
     if (
-      entries.length === 0 ||
       entries.length > locales.length ||
       entries.some(
         ([locale, text]) =>
