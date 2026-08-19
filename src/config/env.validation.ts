@@ -37,11 +37,11 @@ export const envValidationSchema = Joi.object({
     then: Joi.string().uri().required(),
     otherwise: Joi.string()
       .uri()
-      .default('postgresql://neondb_owner:npg_7ySL8IBrJYwN@ep-cool-sea-atufhdxz-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require'),
+      .default('postgresql://localhost:5432/dunastravel'),
   }),
   REDIS_URL: Joi.string()
     .uri({ scheme: ['redis', 'rediss'] })
-    .default('redis://default:gQAAAAAAAcqkAAIgcDI5ODA2MDY3MzliN2E0Y2MwOWE5OWZhZjYzYWU3N2IwNA@star-raccoon-117412.upstash.io:6379'),
+    .default('redis://localhost:6379'),
 
   // Auth
   JWT_SECRET: Joi.when('NODE_ENV', {
@@ -83,10 +83,11 @@ export const envValidationSchema = Joi.object({
           'FATAL: GUEST_TOKEN_SECRET must be different from JWT_SECRET and JWT_REFRESH_SECRET',
       }),
   }),
-  PII_ENCRYPTION_KEY: Joi.string()
-    .pattern(/^[a-fA-F0-9]{64}$/)
-    .optional()
-    .allow(''),
+  PII_ENCRYPTION_KEY: Joi.when('NODE_ENV', {
+    is: Joi.valid('production', 'staging'),
+    then: Joi.string().pattern(/^[a-fA-F0-9]{64}$/).required(),
+    otherwise: Joi.string().pattern(/^[a-fA-F0-9]{64}$/).optional().allow(''),
+  }),
   JWT_EXPIRES_IN: Joi.string()
     .pattern(/^\d+[smhd]$/)
     .default('7d'),
@@ -116,9 +117,21 @@ export const envValidationSchema = Joi.object({
   MAIL_INTERNAL_ALERT_RECIPIENT: Joi.string().optional().allow(''),
 
   // Media (Cloudinary)
-  CLOUDINARY_CLOUD_NAME: Joi.string().default('u7xf91gp'),
-  CLOUDINARY_API_KEY: Joi.string().default('883146814559189'),
-  CLOUDINARY_API_SECRET: Joi.string().default('rb359FxDNY_qUkI44RJgKDBopuA'),
+  CLOUDINARY_CLOUD_NAME: Joi.when('NODE_ENV', {
+    is: Joi.valid('production', 'staging'),
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  CLOUDINARY_API_KEY: Joi.when('NODE_ENV', {
+    is: Joi.valid('production', 'staging'),
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  CLOUDINARY_API_SECRET: Joi.when('NODE_ENV', {
+    is: Joi.valid('production', 'staging'),
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
 
   // Currency
   OPENEXCHANGERATES_APP_ID: Joi.string().optional().allow(''),

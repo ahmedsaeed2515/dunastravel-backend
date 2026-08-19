@@ -133,16 +133,19 @@ async function bootstrap(): Promise<void> {
         return callback(null, true);
       }
 
-      // Allow any dunastravel Vercel deployment or vercel preview URL
+      // Allow only this application's Vercel deployments. Never trust every
+      // Vercel project: with credentialed CORS that would let an attacker
+      // host a page on Vercel and issue requests with a customer's cookies.
       if (
-        /^https:\/\/dunastravel-[a-z0-9_-]+\.vercel\.app$/i.test(origin) ||
-        /^https:\/\/([a-z0-9_-]+\.)?vercel\.app$/i.test(origin) ||
+        /^https:\/\/dunastravel(?:-[a-z0-9_-]+)?\.vercel\.app$/i.test(
+          origin,
+        ) ||
         /^http:\/\/localhost(:\d+)?$/i.test(origin)
       ) {
         return callback(null, true);
       }
 
-      return callback(null, true); // Permissive fallback to never block legitimate frontend traffic
+      return callback(new Error('Origin is not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

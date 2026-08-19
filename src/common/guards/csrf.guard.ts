@@ -106,8 +106,9 @@ export class CsrfGuard implements CanActivate {
     if (allowedOrigins.has(origin)) return true;
 
     if (
-      /^https:\/\/dunastravel-[a-z0-9_-]+\.vercel\.app$/i.test(origin) ||
-      /^https:\/\/([a-z0-9_-]+\.)?vercel\.app$/i.test(origin) ||
+      /^https:\/\/dunastravel(?:-[a-z0-9_-]+)?\.vercel\.app$/i.test(
+        origin,
+      ) ||
       /^http:\/\/localhost(:\d+)?$/i.test(origin)
     ) {
       return true;

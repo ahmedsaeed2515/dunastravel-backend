@@ -195,7 +195,7 @@ export class PaymentsService {
         new Date(),
       );
 
-      await this.prisma.payment.create({
+      const payment = await this.prisma.payment.create({
         data: {
           bookingId: booking.id,
           amount: money.toDecimal(),
@@ -217,7 +217,9 @@ export class PaymentsService {
       this.logger.log(
         `Payment initiated for booking ${booking.id} with transactionId ${session.transactionId}`,
       );
-      return session;
+      // The customer must poll using the opaque payment record ID, never a
+      // provider session/transaction reference whose format is provider-owned.
+      return { ...session, paymentId: payment.id };
     } catch (error: unknown) {
       const errObj = error as { code?: string; message?: string };
       // P2002 from partial unique index: clean up losing orphan session
@@ -948,13 +950,32 @@ export class PaymentsService {
     }
   }
 
-  async getPaymentStatus(paymentId: string, userId: string) {
+  async getPaymentStatus(
+    paymentId: string,
+    userId?: string,
+    guestToken?: string,
+  ) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
       include: { booking: true },
     });
 
-    if (!payment || payment.booking.userId !== userId) {
+    let authorized = Boolean(payment && userId && payment.booking.userId === userId);
+    if (!authorized && payment?.booking.guestTokenHash && guestToken) {
+      const guestTokenHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      const expectedHash = payment.booking.guestTokenHash;
+      authorized =
+        guestTokenHash.length === expectedHash.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(guestTokenHash, 'hex'),
+          Buffer.from(expectedHash, 'hex'),
+        );
+    }
+
+    if (!payment || !authorized) {
       throw new NotFoundException(`Payment ${paymentId} not found`);
     }
 

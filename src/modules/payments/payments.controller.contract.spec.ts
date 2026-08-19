@@ -74,10 +74,11 @@ describe('PaymentsController (HTTP Contract)', () => {
   });
 
   describe('POST /api/payments/initiate', () => {
-    it('should return sessionUrl, url, and transactionId on valid initiate request', async () => {
+    it('should return sessionUrl, URL, provider transaction and internal payment IDs', async () => {
       initiatePaymentMock.mockResolvedValue({
         url: 'https://checkout.stripe.com/test-session',
         transactionId: 'cs_test_123',
+        paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
 
       const response = await request(
@@ -92,6 +93,7 @@ describe('PaymentsController (HTTP Contract)', () => {
         sessionUrl: 'https://checkout.stripe.com/test-session',
         url: 'https://checkout.stripe.com/test-session',
         transactionId: 'cs_test_123',
+        paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
     });
 

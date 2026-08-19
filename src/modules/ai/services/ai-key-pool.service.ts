@@ -2,6 +2,10 @@ import { Injectable, Logger, ServiceUnavailableException, NotFoundException } fr
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UniversalAiProvider } from '../providers/universal-ai.provider';
 import { IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
+import {
+  decryptSensitiveField,
+  encryptSensitiveField,
+} from '../../../common/security/field-encryption.util';
 
 export interface ApiKeyPoolEntry {
   id: string;
@@ -34,6 +38,7 @@ export class AiKeyPoolService {
   ) {}
 
   private maskKey(key: string): string {
+    key = decryptSensitiveField(key) || '';
     if (!key) return '';
     if (key.length <= 8) return '••••••••';
     const prefix = key.slice(0, 6);
@@ -112,7 +117,7 @@ export class AiKeyPoolService {
       provider: dto.provider.toLowerCase(),
       model: dto.model.trim(),
       baseUrl: dto.baseUrl?.trim() || undefined,
-      encryptedKey: dto.apiKey.trim(),
+      encryptedKey: encryptSensitiveField(dto.apiKey.trim())!,
       label: dto.label?.trim() || `${dto.provider} - ${dto.model}`,
       priority: dto.priority ?? (pool.length + 1),
       isActive: dto.isActive ?? true,
@@ -164,7 +169,7 @@ export class AiKeyPoolService {
     if (dto.priority !== undefined) current.priority = dto.priority;
     if (dto.isActive !== undefined) current.isActive = dto.isActive;
     if (dto.apiKey && dto.apiKey.trim().length > 5 && !dto.apiKey.includes('••')) {
-      current.encryptedKey = dto.apiKey.trim();
+      current.encryptedKey = encryptSensitiveField(dto.apiKey.trim())!;
       current.lastStatus = 'UNTESTED';
       current.failCount = 0;
     }
@@ -227,7 +232,7 @@ export class AiKeyPoolService {
           maxTokens: 20,
           timeoutMs: 12_000,
         },
-        keyEntry.encryptedKey,
+        decryptSensitiveField(keyEntry.encryptedKey) || '',
       );
 
       keyEntry.lastStatus = 'HEALTHY';
@@ -305,7 +310,7 @@ export class AiKeyPoolService {
           provider: k.provider,
           model: k.model,
           baseUrl: k.baseUrl,
-          apiKey: k.encryptedKey,
+          apiKey: decryptSensitiveField(k.encryptedKey) || '',
           priority: k.priority,
         });
       });
@@ -316,7 +321,7 @@ export class AiKeyPoolService {
         id: 'root-config-key',
         provider: config.provider || 'anthropic',
         model: config.model || 'claude-3-5-sonnet-20241022',
-        apiKey: config.encryptedApiKey,
+        apiKey: decryptSensitiveField(config.encryptedApiKey) || '',
         priority: 99,
       });
     }

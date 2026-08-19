@@ -11,6 +11,10 @@ import { UniversalAiProvider } from './providers/universal-ai.provider';
 import { AiKeyPoolService } from './services/ai-key-pool.service';
 import { UpdateAiConfigDto, TestProviderConnectionDto } from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
+import {
+  decryptSensitiveField,
+  encryptSensitiveField,
+} from '../../common/security/field-encryption.util';
 
 @ApiTags('Admin - AI Command Center')
 @Controller('admin/ai')
@@ -110,7 +114,7 @@ export class AdminAiController {
     };
 
     if (dto.apiKey && dto.apiKey.trim().length > 0 && !dto.apiKey.includes('••')) {
-      dataToUpdate.encryptedApiKey = dto.apiKey.trim();
+      dataToUpdate.encryptedApiKey = encryptSensitiveField(dto.apiKey.trim());
     }
 
     const updated = await this.prisma.aiConfig.update({
@@ -227,7 +231,10 @@ export class AdminAiController {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
     const providerName = dto.provider || currentConfig.provider || 'anthropic';
     const model = dto.model || currentConfig.model;
-    const key = (dto.apiKey && !dto.apiKey.includes('••')) ? dto.apiKey : currentConfig.encryptedApiKey || undefined;
+    const key =
+      dto.apiKey && !dto.apiKey.includes('••')
+        ? dto.apiKey
+        : decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
 
     if (!key) {
       return { success: false, message: `No API key provided or configured for provider '${providerName}'.` };

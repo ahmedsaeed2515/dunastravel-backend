@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import {
@@ -13,6 +13,22 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
 
   constructor(private readonly configService: ConfigService) {}
 
+  /**
+   * This adapter exists only as a deterministic local/test double. It does not
+   * contact a PSP and cannot verify a webhook signature, so allowing it in a
+   * deployed environment would let arbitrary JSON mark a booking as paid.
+   */
+  private assertNonProduction(): void {
+    if (
+      this.configService.get<string>('nodeEnv') === 'production' ||
+      process.env.NODE_ENV === 'production'
+    ) {
+      throw new ServiceUnavailableException(
+        'Online payments are unavailable until a verified payment provider is configured',
+      );
+    }
+  }
+
   getProviderName(): string {
     return 'GENERIC_GATEWAY';
   }
@@ -24,6 +40,7 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
     referenceCode: string,
     idempotencyKey?: string,
   ): Promise<CheckoutSessionData> {
+    this.assertNonProduction();
     this.logger.log(
       `[GenericGateway] Creating checkout session for booking ${bookingId} (${referenceCode}) amount: ${amountUsd} ${currency}`,
     );
@@ -40,6 +57,7 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
     req: Request,
     _rawBody: Buffer,
   ): Promise<WebhookPayload> {
+    this.assertNonProduction();
     const body = (req.body || {}) as Record<string, unknown>;
     const eventId = String(body.eventId || body.id || `evt_${Date.now()}`);
     const paymentId = String(body.paymentId || body.transactionId || '');
@@ -69,6 +87,7 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
     amount?: number,
     _idempotencyKey?: string,
   ): Promise<{ refundId: string }> {
+    this.assertNonProduction();
     this.logger.log(
       `[GenericGateway] Refund requested for txn ${transactionId}, amount: ${amount ?? 'full'}`,
     );

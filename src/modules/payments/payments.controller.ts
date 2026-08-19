@@ -53,6 +53,7 @@ export class PaymentsController {
       sessionUrl: session.url,
       url: session.url,
       transactionId: session.transactionId,
+      paymentId: session.paymentId,
     };
   }
 
@@ -95,11 +96,19 @@ export class PaymentsController {
   }
 
   @Get(':id/status')
-  @UseGuards(JwtAuthGuard)
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   async getPaymentStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: ExpressRequest & { user: { id: string } },
+    @Req() req: ExpressRequest & { user?: { id: string } },
   ) {
-    return this.paymentsService.getPaymentStatus(id, req.user.id);
+    const rawGuestToken = req.headers['x-guest-token'];
+    const guestToken =
+      typeof rawGuestToken === 'string'
+        ? rawGuestToken
+        : Array.isArray(rawGuestToken)
+          ? rawGuestToken[0]
+          : undefined;
+    return this.paymentsService.getPaymentStatus(id, req.user?.id, guestToken);
   }
 }
