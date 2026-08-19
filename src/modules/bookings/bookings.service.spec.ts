@@ -335,6 +335,7 @@ describe('BookingsService', () => {
 
     it('should throw UnprocessableEntityException when tour missing', async () => {
       mockTx.tour.findUnique.mockResolvedValue(null);
+      mockTx.tour.findFirst.mockResolvedValue(null);
       await expect(service.createBooking(baseDto, 'user-1', 'test-idem-missing')).rejects.toThrow(
         UnprocessableEntityException,
       );

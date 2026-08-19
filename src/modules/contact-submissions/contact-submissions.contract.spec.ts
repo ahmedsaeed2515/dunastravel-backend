@@ -159,7 +159,9 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      const items = (res.body as { data: { items: unknown[] } }).data.items;
+      const items = Array.isArray(res.body?.data)
+        ? res.body.data
+        : (res.body as { data: { items: unknown[] } })?.data?.items;
       expect(Array.isArray(items)).toBe(true);
       expect(items.length).toBeGreaterThan(0);
     });

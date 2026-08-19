@@ -79,9 +79,21 @@ export class PricingService {
     options?: CalculatePriceOptions,
   ): Promise<CalculatedPriceResponse> {
     const db = tx || this.prisma;
-    const tour = await db.tour.findUnique({
-      where: { id: dto.tourId },
-    });
+    const isUUID =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        dto.tourId,
+      );
+    let tour = isUUID && typeof db.tour.findUnique === 'function'
+      ? await db.tour.findUnique({ where: { id: dto.tourId } })
+      : null;
+
+    if (!tour && typeof db.tour.findUnique === 'function') {
+      tour = await db.tour.findUnique({ where: { id: dto.tourId } });
+    }
+
+    if (!tour && !isUUID && typeof db.tour.findFirst === 'function') {
+      tour = await db.tour.findFirst({ where: { slug: dto.tourId } });
+    }
 
     if (
       !tour ||

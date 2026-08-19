@@ -27,9 +27,12 @@ export class CreateBookingDto {
   @IsOptional()
   tourTitle?: string;
 
-  @ApiProperty({ description: 'ID of the tour' })
-  @IsUUID()
+  @ApiProperty({ description: 'ID or slug of the tour' })
+  @IsString()
   @IsNotEmpty()
+  @Matches(/^[A-Za-z0-9_-]+$/, {
+    message: 'tourId must be a valid alphanumeric identifier, UUID, or slug',
+  })
   tourId!: string;
 
   @ApiPropertyOptional({ description: 'ID of the availability/departure slot' })

@@ -87,10 +87,10 @@ export class CreateContactSubmissionDto {
   @ApiPropertyOptional({
     description: 'Preferred language locale for communications (e.g. en, es)',
     example: 'en',
-    enum: ['en', 'es', 'fr', 'de', 'ar', 'pt'],
+    enum: ['en', 'es', 'fr', 'de', 'ar', 'pt', 'it'],
   })
   @IsOptional()
-  @IsIn(['en', 'es', 'fr', 'de', 'ar', 'pt'])
+  @IsIn(['en', 'es', 'fr', 'de', 'ar', 'pt', 'it'])
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   locale?: string = 'en';
 }

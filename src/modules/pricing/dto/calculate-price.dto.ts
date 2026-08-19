@@ -15,9 +15,12 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CalculatePriceDto {
-  @ApiProperty()
-  @IsUUID()
+  @ApiProperty({ description: 'ID or slug of the tour' })
+  @IsString()
   @IsNotEmpty()
+  @Matches(/^[A-Za-z0-9_-]+$/, {
+    message: 'tourId must be a valid alphanumeric identifier, UUID, or slug',
+  })
   tourId!: string;
 
   @ApiPropertyOptional()

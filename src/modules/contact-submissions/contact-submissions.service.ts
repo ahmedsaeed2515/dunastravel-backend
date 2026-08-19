@@ -109,6 +109,7 @@ export class ContactSubmissionsService {
     ]);
 
     return {
+      items: records,
       data: records,
       total,
       page,

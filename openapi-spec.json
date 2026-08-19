@@ -1645,7 +1645,16 @@
             "name": "country",
             "required": false,
             "in": "query",
-            "description": "Filter by country",
+            "description": "Filter by country or destination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "destination",
+            "required": false,
+            "in": "query",
+            "description": "Filter by destination",
             "schema": {
               "type": "string"
             }
@@ -1664,6 +1673,15 @@
             "required": false,
             "in": "query",
             "description": "Filter by category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "market",
+            "required": false,
+            "in": "query",
+            "description": "Filter by market",
             "schema": {
               "type": "string"
             }
@@ -1839,7 +1857,16 @@
             "name": "country",
             "required": false,
             "in": "query",
-            "description": "Filter by country",
+            "description": "Filter by country or destination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "destination",
+            "required": false,
+            "in": "query",
+            "description": "Filter by destination",
             "schema": {
               "type": "string"
             }
@@ -1858,6 +1885,15 @@
             "required": false,
             "in": "query",
             "description": "Filter by category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "market",
+            "required": false,
+            "in": "query",
+            "description": "Filter by market",
             "schema": {
               "type": "string"
             }
@@ -4029,6 +4065,22 @@
             "schema": {
               "default": 10,
               "type": "number"
+            }
+          },
+          {
+            "name": "destination",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "market",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -7551,6 +7603,56 @@
         ]
       }
     },
+    "/api/ai/chat/stream": {
+      "post": {
+        "operationId": "PublicChatController_streamMessage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendChatMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Stream message from AI travel chatbot via Server-Sent Events (SSE)",
+        "tags": [
+          "Public AI Chatbot"
+        ]
+      }
+    },
+    "/api/ai/chat/feedback": {
+      "post": {
+        "operationId": "PublicChatController_recordFeedback",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordFeedbackRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Record traveler message rating (+1 / -1) and feedback",
+        "tags": [
+          "Public AI Chatbot"
+        ]
+      }
+    },
     "/api/ai/chat/lead": {
       "post": {
         "operationId": "PublicChatController_submitLead",
@@ -7621,6 +7723,26 @@
         ]
       }
     },
+    "/api/admin/ai/analytics": {
+      "get": {
+        "operationId": "AdminAiController_getAnalytics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get detailed AI analytics, conversion funnels, FinOps cost, and latency",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
     "/api/admin/ai/config": {
       "get": {
         "operationId": "AdminAiController_getConfig",
@@ -7669,6 +7791,245 @@
         ]
       }
     },
+    "/api/admin/ai/prompts": {
+      "get": {
+        "operationId": "AdminAiController_getPromptVersions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all prompt versions (drafts, published, archived)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAiController_createPromptDraft",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new draft prompt version",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/prompts/{id}/publish": {
+      "post": {
+        "operationId": "AdminAiController_publishPromptVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish prompt version, making it the active production system prompt",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/prompts/{id}/rollback": {
+      "post": {
+        "operationId": "AdminAiController_rollbackPromptVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rollback to a previous prompt version",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/feedback": {
+      "get": {
+        "operationId": "AdminAiController_getFeedback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get traveler message ratings, satisfaction trends, and feedback",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys": {
+      "get": {
+        "operationId": "AdminAiController_getKeyPool",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all configured API keys in the multi-provider pool (masked)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAiController_addKeyToPool",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a new API key to the failover pool",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys/{id}": {
+      "put": {
+        "operationId": "AdminAiController_updateKeyInPool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing API key entry or toggle status",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminAiController_deleteKeyFromPool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an API key from the pool",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys/{id}/test": {
+      "post": {
+        "operationId": "AdminAiController_testSpecificKey",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Test health, connectivity, and latency of a specific API key in the pool",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
     "/api/admin/ai/config/test": {
       "post": {
         "operationId": "AdminAiController_testConnection",
@@ -7693,7 +8054,7 @@
             "bearer": []
           }
         ],
-        "summary": "Safely test connection to configured AI provider",
+        "summary": "Safely test connection to configured AI provider or custom key",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -7768,6 +8129,142 @@
           }
         ],
         "summary": "Get detailed conversation transcript & visitor details",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/conversations/{id}/takeover": {
+      "post": {
+        "operationId": "AdminAiController_takeoverConversation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Staff takes over conversation (pauses autonomous AI)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/conversations/{id}/reply": {
+      "post": {
+        "operationId": "AdminAiController_staffReply",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send direct staff message to visitor",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/conversations/{id}/return-to-ai": {
+      "post": {
+        "operationId": "AdminAiController_returnToAi",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return conversation to autonomous AI management",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/conversations/{id}/resolve": {
+      "post": {
+        "operationId": "AdminAiController_resolveConversation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resolve and close conversation",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/safety-events": {
+      "get": {
+        "operationId": "AdminAiController_getSafetyEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get security and safety audit events (blocked attacks, errors)",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -7985,6 +8482,66 @@
           }
         ],
         "summary": "Sync active database Tours & Destinations into RAG Knowledge Base",
+        "tags": [
+          "Admin - Knowledge Base"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/auto-translate": {
+      "post": {
+        "operationId": "AdminKnowledgeController_autoTranslateKnowledge",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Auto-generate and translate article into 5 languages (AR, EN, ES, PT, IT) with AI",
+        "tags": [
+          "Admin - Knowledge Base"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/batch-multi-lang": {
+      "post": {
+        "operationId": "AdminKnowledgeController_saveBatchMultiLang",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save all 5 localized language versions of an article",
+        "tags": [
+          "Admin - Knowledge Base"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/upload": {
+      "post": {
+        "operationId": "AdminKnowledgeController_uploadKnowledgeDocument",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload custom document or text into Knowledge Base",
         "tags": [
           "Admin - Knowledge Base"
         ]
@@ -10982,6 +11539,18 @@
       "CreateTourItineraryDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tourId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "object"
+          },
+          "updatedAt": {
+            "type": "object"
+          },
           "dayLabel": {
             "type": "string",
             "description": "Day label, e.g., Day 1: Arrival"
@@ -11023,6 +11592,18 @@
       "CreateTourImageDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tourId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "object"
+          },
+          "updatedAt": {
+            "type": "object"
+          },
           "imageUrl": {
             "type": "string",
             "description": "Image URL"
@@ -11194,6 +11775,58 @@
             "type": "string",
             "description": "Currency code",
             "default": "USD"
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Capacity or max seats"
+          },
+          "minParticipants": {
+            "type": "number",
+            "description": "Min participants"
+          },
+          "maxParticipants": {
+            "type": "number",
+            "description": "Max participants"
+          },
+          "remainingSeats": {
+            "type": "number",
+            "description": "Remaining seats"
+          },
+          "subtitleJsonb": {
+            "type": "object",
+            "description": "Subtitle JSONB"
+          },
+          "descriptionJsonb": {
+            "type": "object",
+            "description": "Description JSONB"
+          },
+          "highlightJsonb": {
+            "type": "object",
+            "description": "Highlight JSONB"
+          },
+          "inclusionJsonb": {
+            "type": "object",
+            "description": "Inclusion JSONB"
+          },
+          "exclusionJsonb": {
+            "type": "object",
+            "description": "Exclusion JSONB"
+          },
+          "importantNotesJsonb": {
+            "type": "object",
+            "description": "Important Notes JSONB"
+          },
+          "operatingDaysJsonb": {
+            "type": "object",
+            "description": "Operating Days JSONB"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude"
           },
           "itineraries": {
             "type": "array",
@@ -11384,6 +12017,58 @@
             "type": "string",
             "description": "Currency code",
             "default": "USD"
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Capacity or max seats"
+          },
+          "minParticipants": {
+            "type": "number",
+            "description": "Min participants"
+          },
+          "maxParticipants": {
+            "type": "number",
+            "description": "Max participants"
+          },
+          "remainingSeats": {
+            "type": "number",
+            "description": "Remaining seats"
+          },
+          "subtitleJsonb": {
+            "type": "object",
+            "description": "Subtitle JSONB"
+          },
+          "descriptionJsonb": {
+            "type": "object",
+            "description": "Description JSONB"
+          },
+          "highlightJsonb": {
+            "type": "object",
+            "description": "Highlight JSONB"
+          },
+          "inclusionJsonb": {
+            "type": "object",
+            "description": "Inclusion JSONB"
+          },
+          "exclusionJsonb": {
+            "type": "object",
+            "description": "Exclusion JSONB"
+          },
+          "importantNotesJsonb": {
+            "type": "object",
+            "description": "Important Notes JSONB"
+          },
+          "operatingDaysJsonb": {
+            "type": "object",
+            "description": "Operating Days JSONB"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude"
           },
           "itineraries": {
             "type": "array",
@@ -11612,7 +12297,7 @@
           },
           "tourId": {
             "type": "string",
-            "description": "ID of the tour"
+            "description": "ID or slug of the tour"
           },
           "availabilityId": {
             "type": "string",
@@ -11734,7 +12419,8 @@
         "type": "object",
         "properties": {
           "tourId": {
-            "type": "string"
+            "type": "string",
+            "description": "ID or slug of the tour"
           },
           "availabilityId": {
             "type": "string"
@@ -12549,7 +13235,8 @@
               "fr",
               "de",
               "it",
-              "ar"
+              "ar",
+              "pt"
             ]
           },
           "destinations": {
@@ -13051,6 +13738,10 @@
           "message",
           "sessionId"
         ]
+      },
+      "RecordFeedbackRequestDto": {
+        "type": "object",
+        "properties": {}
       },
       "SubmitLeadDto": {
         "type": "object",

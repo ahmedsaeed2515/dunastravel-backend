@@ -328,9 +328,21 @@ export class BookingsService {
       try {
         const result = await this.prisma.$transaction(async (tx) => {
           // 1. Load exact active, published, non-deleted tour
-          const tour = await tx.tour.findUnique({
-            where: { id: dto.tourId },
-          });
+          const isUUID =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              dto.tourId,
+            );
+          let tour = isUUID && typeof tx.tour.findUnique === 'function'
+            ? await tx.tour.findUnique({ where: { id: dto.tourId } })
+            : null;
+
+          if (!tour && typeof tx.tour.findUnique === 'function') {
+            tour = await tx.tour.findUnique({ where: { id: dto.tourId } });
+          }
+
+          if (!tour && !isUUID && typeof tx.tour.findFirst === 'function') {
+            tour = await tx.tour.findFirst({ where: { slug: dto.tourId } });
+          }
 
           if (
             !tour ||
