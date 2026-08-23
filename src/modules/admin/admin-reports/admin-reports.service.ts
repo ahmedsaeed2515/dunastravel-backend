@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -7,73 +8,138 @@ export class AdminReportsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getBookingsTrend(period: string) {
-    this.logger.log(`Fetching bookings trend for period: ${period}`);
+  private getDatesForPeriod(period?: string): { from: Date; to: Date; trunc: string } {
+    const to = new Date();
+    const from = new Date();
+    let trunc = 'month';
 
-    // In a real scenario with proper time-series we'd group by month/day.
-    // We'll approximate this by pulling all active bookings and grouping in memory,
-    // or just return aggregate counts for now.
+    switch (period?.toLowerCase()) {
+      case 'daily':
+      case 'day':
+      case '7d':
+        from.setDate(to.getDate() - 7);
+        trunc = 'day';
+        break;
+      case 'weekly':
+      case '30d':
+      case '1m':
+        from.setDate(to.getDate() - 30);
+        trunc = 'day';
+        break;
+      case '90d':
+      case '3m':
+        from.setDate(to.getDate() - 90);
+        trunc = 'week';
+        break;
+      case 'yearly':
+      case '1y':
+        from.setFullYear(to.getFullYear() - 1);
+        trunc = 'month';
+        break;
+      case 'monthly':
+      default:
+        from.setMonth(to.getMonth() - 12);
+        trunc = 'month';
+        break;
+    }
 
-    const active = { deletedAt: null };
-    const [total, pending, completed, cancelled] = await Promise.all([
-      this.prisma.booking.count({ where: active }),
-      this.prisma.booking.count({
-        where: { ...active, status: 'PENDING' },
-      }),
-      this.prisma.booking.count({
-        where: { ...active, status: 'COMPLETED' },
-      }),
-      this.prisma.booking.count({
-        where: { ...active, status: 'CANCELLED' },
-      }),
-    ]);
-
-    return {
-      period,
-      total,
-      pending,
-      completed,
-      cancelled,
-    };
+    return { from, to, trunc };
   }
 
-  async getRevenueTrend(period: string) {
+  async getBookingsTrend(period: string = 'monthly') {
+    this.logger.log(`Fetching bookings trend for period: ${period}`);
+    const { from, to, trunc } = this.getDatesForPeriod(period);
+
+    const truncSql =
+      trunc === 'day'
+        ? Prisma.sql`DATE_TRUNC('day', b."created_at")`
+        : trunc === 'week'
+          ? Prisma.sql`DATE_TRUNC('week', b."created_at")`
+          : Prisma.sql`DATE_TRUNC('month', b."created_at")`;
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        period: Date;
+        total: bigint;
+        confirmed: bigint;
+        pending: bigint;
+        completed: bigint;
+        cancelled: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT
+        ${truncSql} AS "period",
+        COUNT(*) AS "total",
+        COUNT(*) FILTER (WHERE b.status::text IN ('CONFIRMED', 'PAID', 'PARTIALLY_PAID')) AS "confirmed",
+        COUNT(*) FILTER (WHERE b.status::text = 'PENDING') AS "pending",
+        COUNT(*) FILTER (WHERE b.status::text = 'COMPLETED') AS "completed",
+        COUNT(*) FILTER (WHERE b.status::text = 'CANCELLED') AS "cancelled"
+      FROM "bookings" b
+      WHERE b."created_at" >= ${from}
+        AND b."created_at" <= ${to}
+        AND b."deleted_at" IS NULL
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    return rows.map((row) => ({
+      period: row.period.toISOString(),
+      total: Number(row.total),
+      confirmed: Number(row.confirmed),
+      pending: Number(row.pending),
+      completed: Number(row.completed),
+      cancelled: Number(row.cancelled),
+    }));
+  }
+
+  async getRevenueTrend(period: string = 'monthly') {
     this.logger.log(`Fetching revenue trend for period: ${period}`);
+    const { from, to, trunc } = this.getDatesForPeriod(period);
 
-    const [captured, refunded] = await Promise.all([
-      this.prisma.payment.aggregate({
-        where: {
-          status: 'CAPTURED',
-          isRefund: false,
-          booking: { deletedAt: null },
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.refundRecord.aggregate({
-        where: {
-          status: 'COMPLETED',
-          payment: { booking: { deletedAt: null } },
-        },
-        _sum: { amount: true },
-      }),
-    ]);
-    const grossRevenue = captured._sum.amount?.toNumber() ?? 0;
-    const refunds = refunded._sum.amount?.toNumber() ?? 0;
-    const totalRevenue = Math.max(0, grossRevenue - refunds);
+    const truncSql =
+      trunc === 'day'
+        ? Prisma.sql`DATE_TRUNC('day', b."created_at")`
+        : trunc === 'week'
+          ? Prisma.sql`DATE_TRUNC('week', b."created_at")`
+          : Prisma.sql`DATE_TRUNC('month', b."created_at")`;
 
-    return {
-      period,
-      totalRevenue,
-      grossRevenue,
-      refunds,
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        period: Date;
+        grossRevenue: Prisma.Decimal;
+        collectedRevenue: Prisma.Decimal;
+        bookingsCount: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT
+        ${truncSql} AS "period",
+        COALESCE(SUM(b."total_amount_usd"), 0) AS "grossRevenue",
+        COALESCE(SUM(b."paid_amount_usd"), 0) AS "collectedRevenue",
+        COUNT(*) AS "bookingsCount"
+      FROM "bookings" b
+      WHERE b."created_at" >= ${from}
+        AND b."created_at" <= ${to}
+        AND b."deleted_at" IS NULL
+        AND b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    return rows.map((row) => ({
+      period: row.period.toISOString(),
+      grossRevenue: Number(row.grossRevenue),
+      totalRevenue: Number(row.collectedRevenue),
+      collectedRevenue: Number(row.collectedRevenue),
+      bookingsCount: Number(row.bookingsCount),
       currency: 'USD',
-    };
+    }));
   }
 
   async getDestinationsReport() {
     this.logger.log(`Fetching destinations report`);
 
     const tours = await this.prisma.tour.findMany({
+      where: { deletedAt: null },
       select: {
         country: true,
         city: true,
@@ -104,6 +170,6 @@ export class AdminReportsService {
     // Sort by most booked
     destinations.sort((a, b) => b.bookingCount - a.bookingCount);
 
-    return { destinations };
+    return destinations;
   }
 }

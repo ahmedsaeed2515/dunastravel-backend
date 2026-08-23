@@ -2976,9 +2976,80 @@
         ]
       }
     },
+    "/api/admin/payments/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[2]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/checkout-session": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[3]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
     "/api/payments/webhook/{provider}": {
       "post": {
-        "operationId": "PaymentsController_handleWebhook",
+        "operationId": "PaymentsController_handleWebhook[0]",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/webhook/{provider}": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook[1]",
         "parameters": [
           {
             "name": "provider",
@@ -3001,7 +3072,40 @@
     },
     "/api/payments/{id}/refund": {
       "post": {
-        "operationId": "PaymentsController_refundPayment",
+        "operationId": "PaymentsController_refundPayment[0]",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/{id}/refund": {
+      "post": {
+        "operationId": "PaymentsController_refundPayment[1]",
         "parameters": [
           {
             "name": "id",
@@ -3034,7 +3138,30 @@
     },
     "/api/payments/{id}/status": {
       "get": {
-        "operationId": "PaymentsController_getPaymentStatus",
+        "operationId": "PaymentsController_getPaymentStatus[0]",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/{id}/status": {
+      "get": {
+        "operationId": "PaymentsController_getPaymentStatus[1]",
         "parameters": [
           {
             "name": "id",
@@ -4279,7 +4406,7 @@
     },
     "/api/admin/tour-landing-pages": {
       "get": {
-        "operationId": "TourLandingPagesAdminController_findAll",
+        "operationId": "TourLandingPagesAdminController_findAll[0]",
         "parameters": [],
         "responses": {
           "200": {
@@ -4297,7 +4424,103 @@
         ]
       },
       "post": {
-        "operationId": "TourLandingPagesAdminController_create",
+        "operationId": "TourLandingPagesAdminController_create[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations": {
+      "get": {
+        "operationId": "TourLandingPagesAdminController_findAll[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all tour landing pages/interfaces with pagination and status filters",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "post": {
+        "operationId": "TourLandingPagesAdminController_create[1]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages": {
+      "get": {
+        "operationId": "TourLandingPagesAdminController_findAll[2]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all tour landing pages/interfaces with pagination and status filters",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "post": {
+        "operationId": "TourLandingPagesAdminController_create[2]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4327,7 +4550,7 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}": {
       "get": {
-        "operationId": "TourLandingPagesAdminController_findOne",
+        "operationId": "TourLandingPagesAdminController_findOne[0]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4354,7 +4577,7 @@
         ]
       },
       "patch": {
-        "operationId": "TourLandingPagesAdminController_update",
+        "operationId": "TourLandingPagesAdminController_update[0]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4391,7 +4614,193 @@
         ]
       },
       "delete": {
-        "operationId": "TourLandingPagesAdminController_softDelete",
+        "operationId": "TourLandingPagesAdminController_softDelete[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Safely soft delete a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}": {
+      "get": {
+        "operationId": "TourLandingPagesAdminController_findOne[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get full details of a single tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_update[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a tour landing page details, media, translations or SEO",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "delete": {
+        "operationId": "TourLandingPagesAdminController_softDelete[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Safely soft delete a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}": {
+      "get": {
+        "operationId": "TourLandingPagesAdminController_findOne[2]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get full details of a single tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_update[2]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a tour landing page details, media, translations or SEO",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "delete": {
+        "operationId": "TourLandingPagesAdminController_softDelete[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4420,7 +4829,67 @@
     },
     "/api/admin/tour-landing-pages/reorder": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_reorderInterfaces",
+        "operationId": "TourLandingPagesAdminController_reorderInterfaces[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderLandingPagesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder landing page interfaces",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/reorder": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_reorderInterfaces[1]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderLandingPagesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder landing page interfaces",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/reorder": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_reorderInterfaces[2]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -4450,7 +4919,65 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/publish": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_publish",
+        "operationId": "TourLandingPagesAdminController_publish[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/publish": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_publish[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/publish": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_publish[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4479,7 +5006,65 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/unpublish": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_unpublish",
+        "operationId": "TourLandingPagesAdminController_unpublish[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unpublish a tour landing page (set to DRAFT)",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/unpublish": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_unpublish[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unpublish a tour landing page (set to DRAFT)",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/unpublish": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_unpublish[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4508,7 +5093,65 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/activate": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_activate",
+        "operationId": "TourLandingPagesAdminController_activate[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activate a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/activate": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_activate[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activate a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/activate": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_activate[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4537,7 +5180,65 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/deactivate": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_deactivate",
+        "operationId": "TourLandingPagesAdminController_deactivate[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/deactivate": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_deactivate[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/deactivate": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_deactivate[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4566,7 +5267,65 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/archive": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_archive",
+        "operationId": "TourLandingPagesAdminController_archive[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/archive": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_archive[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a tour landing page",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/archive": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_archive[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4595,7 +5354,85 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/tours": {
       "post": {
-        "operationId": "TourLandingPagesAdminController_attachTours",
+        "operationId": "TourLandingPagesAdminController_attachTours[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach existing tours to a landing page interface",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours": {
+      "post": {
+        "operationId": "TourLandingPagesAdminController_attachTours[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach existing tours to a landing page interface",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/tours": {
+      "post": {
+        "operationId": "TourLandingPagesAdminController_attachTours[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4634,7 +5471,85 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/tours/reorder": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_reorderToursInInterface",
+        "operationId": "TourLandingPagesAdminController_reorderToursInInterface[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder tours inside a landing page interface",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours/reorder": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_reorderToursInInterface[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder tours inside a landing page interface",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/tours/reorder": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_reorderToursInInterface[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4673,7 +5588,7 @@
     },
     "/api/admin/tour-landing-pages/{idOrSlug}/tours/{tourId}": {
       "patch": {
-        "operationId": "TourLandingPagesAdminController_updateTourRelation",
+        "operationId": "TourLandingPagesAdminController_updateTourRelation[0]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4718,7 +5633,171 @@
         ]
       },
       "delete": {
-        "operationId": "TourLandingPagesAdminController_detachTour",
+        "operationId": "TourLandingPagesAdminController_detachTour[0]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a tour from a landing page interface without deleting global tour record",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours/{tourId}": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_updateTourRelation[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourRelationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update tour relation properties (sort order, featured, visible, custom badge)",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "delete": {
+        "operationId": "TourLandingPagesAdminController_detachTour[1]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a tour from a landing page interface without deleting global tour record",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/admin/landing-pages/{idOrSlug}/tours/{tourId}": {
+      "patch": {
+        "operationId": "TourLandingPagesAdminController_updateTourRelation[2]",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourRelationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update tour relation properties (sort order, featured, visible, custom badge)",
+        "tags": [
+          "Admin Tour Landing Pages"
+        ]
+      },
+      "delete": {
+        "operationId": "TourLandingPagesAdminController_detachTour[2]",
         "parameters": [
           {
             "name": "idOrSlug",
@@ -4755,7 +5834,22 @@
     },
     "/api/tour-landing-pages": {
       "get": {
-        "operationId": "TourLandingPagesPublicController_findAll",
+        "operationId": "TourLandingPagesPublicController_findAll[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all published active tour landing pages/interfaces",
+        "tags": [
+          "Public Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/landing-pages": {
+      "get": {
+        "operationId": "TourLandingPagesPublicController_findAll[1]",
         "parameters": [],
         "responses": {
           "200": {
@@ -4770,7 +5864,31 @@
     },
     "/api/tour-landing-pages/{slug}": {
       "get": {
-        "operationId": "TourLandingPagesPublicController_findOne",
+        "operationId": "TourLandingPagesPublicController_findOne[0]",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a published active tour landing page by slug",
+        "tags": [
+          "Public Tour Landing Pages"
+        ]
+      }
+    },
+    "/api/landing-pages/{slug}": {
+      "get": {
+        "operationId": "TourLandingPagesPublicController_findOne[1]",
         "parameters": [
           {
             "name": "slug",
@@ -6790,7 +7908,69 @@
     },
     "/api/inquiries": {
       "post": {
-        "operationId": "PublicInquiriesController_create",
+        "operationId": "PublicInquiriesController_create[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInquiryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inquiry successfully submitted"
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "summary": "Submit a new tailor-made tour inquiry",
+        "tags": [
+          "Inquiries (Public)"
+        ]
+      }
+    },
+    "/api/tailor-made-inquiries": {
+      "post": {
+        "operationId": "PublicInquiriesController_create[1]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInquiryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inquiry successfully submitted"
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "summary": "Submit a new tailor-made tour inquiry",
+        "tags": [
+          "Inquiries (Public)"
+        ]
+      }
+    },
+    "/api/tailor-made": {
+      "post": {
+        "operationId": "PublicInquiriesController_create[2]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8958,9 +10138,81 @@
         ]
       }
     },
+    "/api/cms/blocks/{key}": {
+      "get": {
+        "operationId": "CmsController_getPublicBlockByBlocksPath[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a public CMS block by blocks/:key (Cached)",
+        "tags": [
+          "CMS"
+        ]
+      }
+    },
+    "/api/cms-blocks/blocks/{key}": {
+      "get": {
+        "operationId": "CmsController_getPublicBlockByBlocksPath[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a public CMS block by blocks/:key (Cached)",
+        "tags": [
+          "CMS"
+        ]
+      }
+    },
     "/api/cms/{key}": {
       "get": {
-        "operationId": "CmsController_getPublicBlock",
+        "operationId": "CmsController_getPublicBlock[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a public CMS block (Cached)",
+        "tags": [
+          "CMS"
+        ]
+      }
+    },
+    "/api/cms-blocks/{key}": {
+      "get": {
+        "operationId": "CmsController_getPublicBlock[1]",
         "parameters": [
           {
             "name": "key",
@@ -8984,7 +10236,52 @@
     },
     "/api/admin/cms-blocks": {
       "get": {
-        "operationId": "AdminCmsController_findAll",
+        "operationId": "AdminCmsController_findAll[0]",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List CMS blocks",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms": {
+      "get": {
+        "operationId": "AdminCmsController_findAll[1]",
         "parameters": [
           {
             "name": "search",
@@ -9029,7 +10326,7 @@
     },
     "/api/admin/cms-blocks/{key}": {
       "get": {
-        "operationId": "AdminCmsController_findOne",
+        "operationId": "AdminCmsController_findOne[0]",
         "parameters": [
           {
             "name": "key",
@@ -9056,7 +10353,7 @@
         ]
       },
       "put": {
-        "operationId": "AdminCmsController_upsert",
+        "operationId": "AdminCmsController_upsert[0]",
         "parameters": [
           {
             "name": "key",
@@ -9093,7 +10390,100 @@
         ]
       },
       "delete": {
-        "operationId": "AdminCmsController_delete",
+        "operationId": "AdminCmsController_delete[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a CMS block",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms/{key}": {
+      "get": {
+        "operationId": "AdminCmsController_findOne[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a CMS block by key",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "put": {
+        "operationId": "AdminCmsController_upsert[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCmsBlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create or update a CMS block",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCmsController_delete[1]",
         "parameters": [
           {
             "name": "key",
@@ -10520,7 +11910,7 @@
     },
     "/api/admin/faq": {
       "get": {
-        "operationId": "AdminFaqController_findAll",
+        "operationId": "AdminFaqController_findAll[0]",
         "parameters": [
           {
             "name": "category",
@@ -10563,7 +11953,80 @@
         ]
       },
       "post": {
-        "operationId": "AdminFaqController_create",
+        "operationId": "AdminFaqController_create[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFaqDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new FAQ item",
+        "tags": [
+          "admin-faq"
+        ]
+      }
+    },
+    "/api/admin/faqs": {
+      "get": {
+        "operationId": "AdminFaqController_findAll[1]",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List FAQ items for admin",
+        "tags": [
+          "admin-faq"
+        ]
+      },
+      "post": {
+        "operationId": "AdminFaqController_create[1]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -10593,7 +12056,7 @@
     },
     "/api/admin/faq/{id}": {
       "get": {
-        "operationId": "AdminFaqController_findOne",
+        "operationId": "AdminFaqController_findOne[0]",
         "parameters": [
           {
             "name": "id",
@@ -10620,7 +12083,7 @@
         ]
       },
       "put": {
-        "operationId": "AdminFaqController_update",
+        "operationId": "AdminFaqController_update[0]",
         "parameters": [
           {
             "name": "id",
@@ -10657,7 +12120,100 @@
         ]
       },
       "delete": {
-        "operationId": "AdminFaqController_delete",
+        "operationId": "AdminFaqController_delete[0]",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a FAQ item",
+        "tags": [
+          "admin-faq"
+        ]
+      }
+    },
+    "/api/admin/faqs/{id}": {
+      "get": {
+        "operationId": "AdminFaqController_findOne[1]",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get FAQ item by ID for admin",
+        "tags": [
+          "admin-faq"
+        ]
+      },
+      "put": {
+        "operationId": "AdminFaqController_update[1]",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFaqDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing FAQ item",
+        "tags": [
+          "admin-faq"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminFaqController_delete[1]",
         "parameters": [
           {
             "name": "id",
@@ -10686,7 +12242,37 @@
     },
     "/api/admin/faq/reorder": {
       "patch": {
-        "operationId": "AdminFaqController_reorder",
+        "operationId": "AdminFaqController_reorder[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderFaqDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder FAQ items",
+        "tags": [
+          "admin-faq"
+        ]
+      }
+    },
+    "/api/admin/faqs/reorder": {
+      "patch": {
+        "operationId": "AdminFaqController_reorder[1]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -12631,7 +14217,8 @@
               "fr",
               "de",
               "ar",
-              "pt"
+              "pt",
+              "it"
             ]
           }
         },

@@ -119,20 +119,20 @@ export class PricingService {
           'Selected availability is not available',
         );
       }
-      if (availability.tourId !== dto.tourId) {
+      if (availability.tourId !== tour.id) {
         throw new UnprocessableEntityException(
           'Availability slot does not belong to the requested tour',
         );
       }
 
       if (dto.date) {
-        const availDateStr = new Date(availability.date)
-          .toISOString()
-          .split('T')[0];
-        const reqDateStr = new Date(dto.date).toISOString().split('T')[0];
-        if (availDateStr !== reqDateStr) {
+        const availDate = new Date(availability.date);
+        const availDateStr = `${availDate.getUTCFullYear()}-${String(availDate.getUTCMonth() + 1).padStart(2, '0')}-${String(availDate.getUTCDate()).padStart(2, '0')}`;
+        const reqDate = new Date(dto.date);
+        const reqDateStr = `${reqDate.getUTCFullYear()}-${String(reqDate.getUTCMonth() + 1).padStart(2, '0')}-${String(reqDate.getUTCDate()).padStart(2, '0')}`;
+        if (availDateStr !== reqDateStr && dto.date !== availDateStr) {
           throw new UnprocessableEntityException(
-            'Selected availability slot date does not match requested pricing date',
+            `Selected availability slot date (${availDateStr}) does not match requested pricing date (${dto.date})`,
           );
         }
       }

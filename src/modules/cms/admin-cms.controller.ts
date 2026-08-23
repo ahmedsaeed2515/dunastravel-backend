@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Put,
+  Patch,
   Delete,
   Body,
   Query,
@@ -30,7 +31,7 @@ import {
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
-@Controller('admin/cms-blocks')
+@Controller(['admin/cms-blocks', 'admin/cms'])
 export class AdminCmsController {
   constructor(private readonly cmsService: CmsService) {}
 
@@ -56,6 +57,7 @@ export class AdminCmsController {
   }
 
   @Put(':key')
+  @Patch(':key')
   @ApiOperation({ summary: 'Create or update a CMS block' })
   async upsert(
     @Param('key') key: string,

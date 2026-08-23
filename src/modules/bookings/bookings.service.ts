@@ -373,9 +373,8 @@ export class BookingsService {
                 'Selected availability is not available or has insufficient seats',
               );
             }
-            const availDateStr = new Date(avail.date)
-              .toISOString()
-              .split('T')[0];
+            const availDate = new Date(avail.date);
+            const availDateStr = `${availDate.getUTCFullYear()}-${String(availDate.getUTCMonth() + 1).padStart(2, '0')}-${String(availDate.getUTCDate()).padStart(2, '0')}`;
             if (availDateStr !== arrivalDateStr) {
               throw new UnprocessableEntityException(
                 'Selected availability slot date does not match arrival date',

@@ -22,18 +22,9 @@ export class HealthController {
   @HealthCheck()
   @ApiOperation({ summary: 'Health check endpoint' })
   async checkHealth() {
-    try {
-      return await this.health.check([
-        () => this.db.pingCheck('database', this.prisma),
-      ]);
-    } catch {
-      return {
-        status: 'ok',
-        info: { database: { status: 'up' } },
-        error: {},
-        details: { database: { status: 'up' } },
-      };
-    }
+    return this.health.check([
+      () => this.db.pingCheck('database', this.prisma),
+    ]);
   }
 
   @Get('liveness')

@@ -398,9 +398,9 @@ export class UserService {
       this.prisma.booking.findMany({
         where: {
           deletedAt: null,
-          status: { in: ['CONFIRMED', 'PAID', 'COMPLETED'] },
+          status: { in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'] },
         },
-        select: { totalAmountUsd: true },
+        select: { totalAmountUsd: true, status: true },
       }),
     ]);
 
@@ -514,7 +514,7 @@ export class UserService {
             select: {
               totalAmountUsd: true,
               status: true,
-              payments: { select: { amount: true, isRefund: true } },
+              payments: { select: { amount: true, isRefund: true, status: true } },
             },
           },
           _count: {
@@ -537,10 +537,12 @@ export class UserService {
           totalSpent += Number(b.totalAmountUsd);
         }
         b.payments.forEach((p) => {
-          if (!p.isRefund) {
-            totalPaid += Number(p.amount);
-          } else {
-            totalPaid -= Number(p.amount);
+          if (p.status === 'CAPTURED') {
+            if (!p.isRefund) {
+              totalPaid += Number(p.amount);
+            } else {
+              totalPaid -= Number(p.amount);
+            }
           }
         });
       });
@@ -664,10 +666,12 @@ export class UserService {
         totalSpent += Number(b.totalAmountUsd);
       }
       b.payments.forEach((p) => {
-        if (!p.isRefund) {
-          totalPaid += Number(p.amount);
-        } else {
-          totalPaid -= Number(p.amount);
+        if (p.status === 'CAPTURED') {
+          if (!p.isRefund) {
+            totalPaid += Number(p.amount);
+          } else {
+            totalPaid -= Number(p.amount);
+          }
         }
       });
 
@@ -1097,7 +1101,7 @@ export class UserService {
             select: {
               totalAmountUsd: true,
               status: true,
-              payments: { select: { amount: true, isRefund: true } },
+              payments: { select: { amount: true, isRefund: true, status: true } },
             },
           },
         },
@@ -1112,10 +1116,12 @@ export class UserService {
             totalSpent += Number(b.totalAmountUsd);
           }
           b.payments.forEach((p) => {
-            if (!p.isRefund) {
-              totalPaid += Number(p.amount);
-            } else {
-              totalPaid -= Number(p.amount);
+            if (p.status === 'CAPTURED') {
+              if (!p.isRefund) {
+                totalPaid += Number(p.amount);
+              } else {
+                totalPaid -= Number(p.amount);
+              }
             }
           });
         });

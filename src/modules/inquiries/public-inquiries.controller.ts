@@ -19,9 +19,9 @@ import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 export class PublicInquiriesController {
   constructor(private readonly inquiriesService: InquiriesService) {}
 
-  @Post('inquiries')
+  @Post(['inquiries', 'tailor-made-inquiries', 'tailor-made'])
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 3, ttl: 3600000 } })
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
   @ApiOperation({ summary: 'Submit a new tailor-made tour inquiry' })
   @ApiCreatedResponse({ description: 'Inquiry successfully submitted' })
   @ApiBadRequestResponse({ description: 'Validation failed' })

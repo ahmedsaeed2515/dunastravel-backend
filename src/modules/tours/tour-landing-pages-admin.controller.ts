@@ -31,7 +31,7 @@ import { ParseUuidOrSlugPipe } from '../../common/pipes';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-@Controller('admin/tour-landing-pages')
+@Controller(['admin/tour-landing-pages', 'admin/destinations', 'admin/landing-pages'])
 export class TourLandingPagesAdminController {
   constructor(private readonly landingPagesService: TourLandingPagesService) {}
 

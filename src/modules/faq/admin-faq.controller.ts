@@ -31,7 +31,7 @@ import { UserRole } from '@prisma/client';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-@Controller('admin/faq')
+@Controller(['admin/faq', 'admin/faqs'])
 export class AdminFaqController {
   constructor(private readonly faqService: FaqService) {}
 

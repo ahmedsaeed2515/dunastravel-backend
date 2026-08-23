@@ -24,7 +24,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
 
-@Controller('payments')
+@Controller(['payments', 'admin/payments'])
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 

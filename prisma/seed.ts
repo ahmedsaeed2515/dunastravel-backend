@@ -493,6 +493,149 @@ async function seedCmsBlocks(): Promise<void> {
   const blocks = [
     { key: 'homepage-hero', content: { en: 'Welcome to Dunas Travel' } },
     { key: 'footer-info', content: { en: '© 2026 Dunas Travel' } },
+    {
+      key: 'hotels_catalog',
+      content: [
+        {
+          id: 'htl-eg-01',
+          name: 'Four Seasons Hotel Cairo at Nile Plaza',
+          destination: 'egypt',
+          city: 'Cairo',
+          stars: 5,
+          rating: 4.9,
+          pricePerNight: 350,
+          image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+          description: 'إطلالة بانورامية ساحرة على نهر النيل وقلب القاهرة التاريخية مع خدمات كونسيرج فاخرة على مدار الساعة.',
+          amenities: ['Spa & Wellness', 'Nile View', 'Fine Dining', 'Infinity Pool']
+        },
+        {
+          id: 'htl-eg-02',
+          name: 'Sofitel Legend Old Cataract Aswan',
+          destination: 'egypt',
+          city: 'Aswan',
+          stars: 5,
+          rating: 4.95,
+          pricePerNight: 420,
+          image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80',
+          description: 'قصر تاريخي فخم على ضفاف النيل بأسوان استضاف أشهر ملوك العالم وأجاثا كريستي.',
+          amenities: ['Historic Palace', 'Royal Suite', 'Sunset Terrace', 'Luxury Spa']
+        },
+        {
+          id: 'htl-tr-01',
+          name: 'Ciragan Palace Kempinski Istanbul',
+          destination: 'turkey',
+          city: 'Istanbul',
+          stars: 5,
+          rating: 4.9,
+          pricePerNight: 500,
+          image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+          description: 'القصر العثماني الوحيد على مضيق البوسفور الذي يقدم تجربة إقامة ملكية استثنائية.',
+          amenities: ['Bosphorus View', 'Ottoman Cuisine', 'Helipad', 'Heated Pool']
+        },
+        {
+          id: 'htl-jo-01',
+          name: 'Kempinski Hotel Ishtar Dead Sea',
+          destination: 'jordan',
+          city: 'Dead Sea',
+          stars: 5,
+          rating: 4.85,
+          pricePerNight: 280,
+          image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+          description: 'ملاذ استرخاء فاخر على شاطئ البحر الميت محاط بحدائق معلقة وبحيرات سباحة خاصة.',
+          amenities: ['Private Beach', 'Dead Sea Mud Spa', '9 Pools', 'Fine Dining']
+        }
+      ]
+    },
+    {
+      key: 'holiday_packages',
+      content: [
+        {
+          id: 'pkg-egypt-classic',
+          title: 'برنامج مصر الكلاسيكي الشامل (القاهرة والنيل)',
+          slug: 'egypt-classic-package',
+          destination: 'Multi-City Egypt',
+          duration: '8 أيام / 7 ليالي',
+          price: 1850,
+          type: 'Classic Holiday',
+          popular: true,
+          description: 'رحلة كلاسيكية فاخرة تشمل أهرامات الجيزة، المتحف الكبير، وإقامة كروز 5 نجوم بين الأقصر وأسوان.',
+          image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          id: 'pkg-egypt-dubai',
+          title: 'باكدج مصر ودبي الفاخر (Multi-Country)',
+          slug: 'egypt-dubai-combo',
+          destination: 'Multi-Country',
+          duration: '10 أيام / 9 ليالي',
+          price: 2450,
+          type: 'Luxury Combo',
+          popular: true,
+          description: 'أفضل دمج بين سحر الحضارة الفرعونية وفخامة أبراج وتسوق دبي مع إقامة في فنادق 5 نجوم.',
+          image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          id: 'pkg-honeymoon-redsea',
+          title: 'باكدج شهر العسل (القاهرة والجونة)',
+          slug: 'honeymoon-red-sea',
+          destination: 'Egypt Resorts',
+          duration: '7 أيام / 6 ليالي',
+          price: 1650,
+          type: 'Honeymoon',
+          popular: false,
+          description: 'عطلة رومانسية هادئة تشمل منتجعات الجونة الفاخرة، يخت خاص في البحر الأحمر، وعشاء فاخر على ضفاف النيل.',
+          image: 'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80'
+        }
+      ]
+    },
+    {
+      key: 'transportation_fleet',
+      content: [
+        {
+          id: 'veh-bus-01',
+          name: 'Mercedes-Benz Tourismo VIP Coach',
+          category: 'bus',
+          seats: 48,
+          doors: 2,
+          rating: 4.95,
+          pricePerDay: 450,
+          image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
+          features: ['تكييف هوائي كامل', 'واي فاي 5G مجاني', 'مقاعد جلدية مريحة', 'شاشات عرض ترفيهية', 'ثلاجة ومشروبات', 'سائق محترف متعدد اللغات']
+        },
+        {
+          id: 'veh-van-01',
+          name: 'Mercedes-Benz Sprinter Executive',
+          category: 'van',
+          seats: 14,
+          doors: 2,
+          rating: 4.9,
+          pricePerDay: 280,
+          image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=800&q=80',
+          features: ['مقاعد VIP قابلة للإمالة', 'منافذ شحن USB', 'واي فاي مجاني', 'عازل صوت ممتاز', 'إضاءة محيطية هادئة']
+        },
+        {
+          id: 'veh-sedan-01',
+          name: 'Mercedes-Benz S-Class Maybach Edition',
+          category: 'luxury_sedan',
+          seats: 4,
+          doors: 4,
+          rating: 5.0,
+          pricePerDay: 350,
+          image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=800&q=80',
+          features: ['خدمة VIP Chauffeur', 'مقاعد مساج وتبريد', 'شامبانيا وضيافة فاخرة', 'نظام صوتي Burmester']
+        },
+        {
+          id: 'veh-suv-01',
+          name: 'Toyota Land Cruiser V8 Safari 4x4',
+          category: 'suv',
+          seats: 6,
+          doors: 5,
+          rating: 4.85,
+          pricePerDay: 220,
+          image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80',
+          features: ['دفع رباعي للصحراء والسفاري', 'قفص حماية معزز', 'نظام تبريد صحراوي فائق', 'جهاز ملاحة GPS واتصال بالأقمار الصناعية']
+        }
+      ]
+    }
   ];
 
   for (const block of blocks) {
