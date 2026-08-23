@@ -10,6 +10,7 @@ import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   extractI18n,
+  extractI18nList,
   getPaginationParams,
   paginate,
   PaginatedResponse,
@@ -104,6 +105,8 @@ export class ToursService {
           category: true,
           basePriceUsd: true,
           durationJsonb: true,
+          country: true,
+          languages: true,
           images: {
             where: { isHero: true },
             take: 1,
@@ -126,6 +129,8 @@ export class ToursService {
       basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
       duration: extractI18n(record.durationJsonb, query.lang),
       heroImage: record.images[0]?.imageUrl ?? null,
+      country: record.country,
+      languages: record.languages,
     }));
 
     const result = paginate(mappedItems, total, page, limit);
@@ -184,12 +189,8 @@ export class ToursService {
       cancellationPolicy: tour.cancellationPolicyJsonb
         ? extractI18n(tour.cancellationPolicyJsonb, lang)
         : null,
-      includedServices: tour.includedServicesJsonb
-        ? extractI18n(tour.includedServicesJsonb, lang)
-        : null,
-      excludedServices: tour.excludedServicesJsonb
-        ? extractI18n(tour.excludedServicesJsonb, lang)
-        : null,
+      includedServices: extractI18nList(tour.includedServicesJsonb, lang),
+      excludedServices: extractI18nList(tour.excludedServicesJsonb, lang),
       hotelInfo: tour.hotelInfoJsonb
         ? extractI18n(tour.hotelInfoJsonb, lang)
         : null,
@@ -199,6 +200,9 @@ export class ToursService {
       tags: tour.tags,
       difficultyLevel: tour.difficultyLevel,
       meetingPoint: tour.meetingPoint,
+      country: tour.country,
+      languages: tour.languages,
+      isFeatured: tour.isFeatured,
 
       itinerary,
       images,

@@ -22,6 +22,8 @@ export interface TourSummaryResponse {
   basePriceUsd: string;
   duration: string;
   heroImage: string | null;
+  country: string | null;
+  languages: string[];
 }
 
 export interface TourDetailResponse {
@@ -33,13 +35,16 @@ export interface TourDetailResponse {
   duration: string;
   overview: string;
   cancellationPolicy: string | null;
-  includedServices: string | null;
-  excludedServices: string | null;
+  includedServices: string[];
+  excludedServices: string[];
   hotelInfo: string | null;
   seasonPricing: string | null;
   tags: string[];
   difficultyLevel: string | null;
   meetingPoint: string | null;
+  country: string | null;
+  languages: string[];
+  isFeatured: boolean;
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
 }

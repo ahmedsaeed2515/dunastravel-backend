@@ -1,5 +1,6 @@
 import {
   extractI18n,
+  extractI18nList,
   getPaginationParams,
   paginate,
   generateReferenceCode,
@@ -26,6 +27,24 @@ describe('Common Utils', () => {
     it('should return empty string if jsonb is null or undefined', () => {
       expect(extractI18n(null, 'en')).toBe('');
       expect(extractI18n(undefined, 'en')).toBe('');
+    });
+  });
+
+  describe('extractI18nList', () => {
+    it('returns the requested localized list without flattening commas', () => {
+      expect(
+        extractI18nList(
+          { en: ['Breakfast, taxes and transfers'], ar: ['الإفطار والانتقالات'] },
+          'en',
+        ),
+      ).toEqual(['Breakfast, taxes and transfers']);
+    });
+
+    it('falls back to English and supports legacy newline-delimited text', () => {
+      expect(extractI18nList({ en: 'Breakfast\nTransfers' }, 'it')).toEqual([
+        'Breakfast',
+        'Transfers',
+      ]);
     });
   });
 

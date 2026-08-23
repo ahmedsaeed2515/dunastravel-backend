@@ -56,3 +56,35 @@ export function extractI18n(
     ? String(jsonb)
     : '';
 }
+
+export function extractI18nList(
+  jsonb: unknown,
+  lang: string,
+  fallbackLang: string = 'en',
+): string[] {
+  if (jsonb === null || jsonb === undefined) return [];
+  const normalize = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    if (typeof value === 'string') {
+      return value
+        .split(/\r?\n+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
+  if (Array.isArray(jsonb) || typeof jsonb === 'string') return normalize(jsonb);
+  if (typeof jsonb !== 'object') return [];
+  const record = jsonb as Record<string, unknown>;
+  for (const locale of [lang, fallbackLang, 'en', ...Object.keys(record)]) {
+    const result = normalize(record[locale]);
+    if (result.length > 0) return result;
+  }
+  return [];
+}
