@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ServiceUnavailableException } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -23,6 +23,11 @@ const EmailProviderFactory = {
     const transport = configService.get<string>('mail.transport');
     if (transport === 'resend') {
       return new ResendEmailProvider(configService);
+    }
+    if (process.env.NODE_ENV === 'production') {
+      throw new ServiceUnavailableException(
+        'A real email provider is required in production',
+      );
     }
     return new MockEmailProvider();
   },

@@ -186,7 +186,7 @@ export class PaymentsService {
     }
 
     try {
-      const mockEntity = new PaymentEntity(
+      const paymentEntity = new PaymentEntity(
         'mock-id',
         bookingId,
         money,
@@ -204,7 +204,7 @@ export class PaymentsService {
           method: this.paymentGateway.getProviderName(),
           transactionId: session.transactionId,
           sessionUrl: session.url,
-          status: mockEntity.status,
+          status: paymentEntity.status,
         },
       });
 
@@ -506,10 +506,9 @@ export class PaymentsService {
         'Captured payments exceed the booking total',
       );
     }
-    const newStatus =
-      totalCaptured.equals(booking.totalAmountUsd)
-        ? 'PAID'
-        : 'PARTIALLY_PAID';
+    const newStatus = totalCaptured.equals(booking.totalAmountUsd)
+      ? 'PAID'
+      : 'PARTIALLY_PAID';
 
     await tx.booking.update({
       where: { id: bookingId },
@@ -584,10 +583,7 @@ export class PaymentsService {
     }
 
     const ikey = idempotencyKey;
-    if (
-      ikey.length > 100 ||
-      !/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(ikey)
-    ) {
+    if (ikey.length > 100 || !/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(ikey)) {
       throw new BadRequestException('Invalid refund idempotency key');
     }
 
@@ -630,8 +626,7 @@ export class PaymentsService {
       existingPayment.status === 'REFUND_PENDING' &&
       Boolean(
         refundRecord &&
-          (refundRecord.status === 'PENDING' ||
-            refundRecord.status === 'FAILED'),
+        (refundRecord.status === 'PENDING' || refundRecord.status === 'FAILED'),
       );
     if (
       existingPayment.booking.status !== 'PAID' ||
@@ -652,13 +647,10 @@ export class PaymentsService {
       !(
         existingPayment.status === 'REFUND_PENDING' &&
         refundRecord &&
-        (refundRecord.status === 'PENDING' ||
-          refundRecord.status === 'FAILED')
+        (refundRecord.status === 'PENDING' || refundRecord.status === 'FAILED')
       )
     ) {
-      throw new BadRequestException(
-        'Payment is not eligible for a refund',
-      );
+      throw new BadRequestException('Payment is not eligible for a refund');
     }
 
     const refundMoney = Money.fromDecimal(
@@ -729,9 +721,7 @@ export class PaymentsService {
       }
     } else {
       if (!refundRecord) {
-        throw new ConflictException(
-          'Refund recovery record is missing',
-        );
+        throw new ConflictException('Refund recovery record is missing');
       }
 
       const leaseAgeMs = Date.now() - refundRecord.updatedAt.getTime();
@@ -813,8 +803,7 @@ export class PaymentsService {
           data: {
             status: 'REFUNDED',
             paidAmountUsd: 0,
-            cancellationReason:
-              safeReason || 'Payment refunded by super admin',
+            cancellationReason: safeReason || 'Payment refunded by super admin',
           },
         });
 
@@ -857,8 +846,7 @@ export class PaymentsService {
 
         if (existingPayment.booking.availabilityId) {
           const totalPassengers =
-            existingPayment.booking.adults +
-            existingPayment.booking.children;
+            existingPayment.booking.adults + existingPayment.booking.children;
           await tx.$executeRaw`
             UPDATE tour_availabilities
             SET remaining_seats = LEAST(
@@ -962,7 +950,9 @@ export class PaymentsService {
       include: { booking: true },
     });
 
-    let authorized = Boolean(payment && userId && payment.booking.userId === userId);
+    let authorized = Boolean(
+      payment && userId && payment.booking.userId === userId,
+    );
     if (!authorized && payment?.booking.guestTokenHash && guestToken) {
       const guestTokenHash = crypto
         .createHash('sha256')

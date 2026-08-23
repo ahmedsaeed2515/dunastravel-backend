@@ -15,8 +15,12 @@ const strongSecret = Joi.string()
 
 const productionHttpsUrl = Joi.when('NODE_ENV', {
   is: Joi.valid('production', 'staging'),
-  then: Joi.string().uri({ scheme: ['https'] }).required(),
-  otherwise: Joi.string().uri({ scheme: ['http', 'https'] }).required(),
+  then: Joi.string()
+    .uri({ scheme: ['https'] })
+    .required(),
+  otherwise: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .required(),
 });
 
 export const envValidationSchema = Joi.object({
@@ -26,9 +30,12 @@ export const envValidationSchema = Joi.object({
     .default('development'),
   PORT: Joi.number().integer().positive().default(3000),
   FRONTEND_URL: Joi.string().uri().default('https://www.dunastravel.com'),
-  CORS_ALLOWED_ORIGINS: Joi.string()
-    .default('https://www.dunastravel.com,https://admin.dunastravel.com'),
-  ADMIN_DASHBOARD_BASE_URL: Joi.string().uri().default('https://admin.dunastravel.com'),
+  CORS_ALLOWED_ORIGINS: Joi.string().default(
+    'https://www.dunastravel.com,https://admin.dunastravel.com',
+  ),
+  ADMIN_DASHBOARD_BASE_URL: Joi.string()
+    .uri()
+    .default('https://admin.dunastravel.com'),
   TRUST_PROXY_HOPS: Joi.number().integer().min(0).max(3).default(0),
 
   // DB
@@ -47,17 +54,16 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.when('NODE_ENV', {
     is: 'production',
     then: strongSecret.required(),
-    otherwise: strongSecret.default('r6kbq8LwyHF1cMNEAGgVUzBTCiKIQRl9vfhYX2ad7PjSJon5Z4Wpmu0x3tseOD'),
+    otherwise: strongSecret.default(
+      'r6kbq8LwyHF1cMNEAGgVUzBTCiKIQRl9vfhYX2ad7PjSJon5Z4Wpmu0x3tseOD',
+    ),
   }),
   JWT_REFRESH_SECRET: Joi.when('NODE_ENV', {
     is: 'production',
-    then: strongSecret
-      .invalid(Joi.ref('JWT_SECRET'))
-      .required()
-      .messages({
-        'any.invalid':
-          'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
-      }),
+    then: strongSecret.invalid(Joi.ref('JWT_SECRET')).required().messages({
+      'any.invalid':
+        'FATAL: JWT_SECRET and JWT_REFRESH_SECRET must be different values',
+    }),
     otherwise: strongSecret
       .invalid(Joi.ref('JWT_SECRET'))
       .default('txhE6ViYpeRo7cqKPXn4d5M938LTbQuWgHNlBICfFAaJvzSmD1yk2ZOGsrU0wj')
@@ -85,8 +91,13 @@ export const envValidationSchema = Joi.object({
   }),
   PII_ENCRYPTION_KEY: Joi.when('NODE_ENV', {
     is: Joi.valid('production', 'staging'),
-    then: Joi.string().pattern(/^[a-fA-F0-9]{64}$/).required(),
-    otherwise: Joi.string().pattern(/^[a-fA-F0-9]{64}$/).optional().allow(''),
+    then: Joi.string()
+      .pattern(/^[a-fA-F0-9]{64}$/)
+      .required(),
+    otherwise: Joi.string()
+      .pattern(/^[a-fA-F0-9]{64}$/)
+      .optional()
+      .allow(''),
   }),
   JWT_EXPIRES_IN: Joi.string()
     .pattern(/^\d+[smhd]$/)
@@ -105,16 +116,34 @@ export const envValidationSchema = Joi.object({
     .valid('true', 'false')
     .default('false'),
 
-  MAIL_TRANSPORT: Joi.string()
-    .valid('resend', 'mock')
-    .optional()
-    .default('mock'),
+  MAIL_TRANSPORT: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().valid('resend').default('resend'),
+    otherwise: Joi.string().valid('resend', 'mock').default('mock'),
+  }),
 
-  // Mail keys — optional so startup doesn't crash if not configured yet
-  RESEND_API_KEY: Joi.string().optional().allow(''),
-  MAIL_FROM_ADDRESS: Joi.string().optional().allow(''),
-  MAIL_FROM_NAME: Joi.string().max(100).optional().allow(''),
-  MAIL_INTERNAL_ALERT_RECIPIENT: Joi.string().optional().allow(''),
+  RESEND_API_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string()
+      .pattern(/^re_[a-zA-Z0-9_]{8,}$/)
+      .required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  MAIL_FROM_ADDRESS: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().email().required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  MAIL_FROM_NAME: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().max(100).required(),
+    otherwise: Joi.string().max(100).optional().allow(''),
+  }),
+  MAIL_INTERNAL_ALERT_RECIPIENT: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().email().required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
 
   // Media (Cloudinary)
   CLOUDINARY_CLOUD_NAME: Joi.when('NODE_ENV', {

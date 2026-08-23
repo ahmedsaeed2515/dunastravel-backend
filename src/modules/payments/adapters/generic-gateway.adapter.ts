@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import {
@@ -95,6 +99,7 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
   }
 
   async expireSession(sessionId: string): Promise<void> {
+    this.assertNonProduction();
     this.logger.log(`[GenericGateway] Session expired: ${sessionId}`);
   }
 }

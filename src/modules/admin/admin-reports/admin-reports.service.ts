@@ -8,7 +8,11 @@ export class AdminReportsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private getDatesForPeriod(period?: string): { from: Date; to: Date; trunc: string } {
+  private getDatesForPeriod(period?: string): {
+    from: Date;
+    to: Date;
+    trunc: string;
+  } {
     const to = new Date();
     const from = new Date();
     let trunc = 'month';
@@ -149,23 +153,35 @@ export class AdminReportsService {
       },
     });
 
-    const destinationsMap = new Map<string, number>();
+    const destinationsMap = new Map<
+      string,
+      {
+        location: string;
+        country: string | null;
+        city: string | null;
+        bookingCount: number;
+        tourCount: number;
+      }
+    >();
 
     tours.forEach((t) => {
-      const location = `${t.city}, ${t.country}`;
-      const count = t._count.bookings;
-      destinationsMap.set(
+      const country = t.country?.trim() || null;
+      const city = t.city?.trim() || null;
+      const location = [city, country].filter(Boolean).join(', ');
+      if (!location) return;
+
+      const key = `${city ?? ''}|${country ?? ''}`.toLocaleLowerCase();
+      const current = destinationsMap.get(key);
+      destinationsMap.set(key, {
         location,
-        (destinationsMap.get(location) || 0) + count,
-      );
+        country,
+        city,
+        bookingCount: (current?.bookingCount ?? 0) + t._count.bookings,
+        tourCount: (current?.tourCount ?? 0) + 1,
+      });
     });
 
-    const destinations = Array.from(destinationsMap.entries()).map(
-      ([location, count]) => ({
-        location,
-        bookingCount: count,
-      }),
-    );
+    const destinations = Array.from(destinationsMap.values());
 
     // Sort by most booked
     destinations.sort((a, b) => b.bookingCount - a.bookingCount);

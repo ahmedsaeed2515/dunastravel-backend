@@ -32,7 +32,6 @@ describe('Environment Validation Schema', () => {
       CLOUDINARY_API_KEY: 'test',
       CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
       OPENEXCHANGERATES_APP_ID: 'test',
-
     };
 
     const res = envValidationSchema.validate(validEnv);
@@ -83,7 +82,6 @@ describe('Environment Validation Schema', () => {
       MAIL_TRANSPORT: 'resend',
       RESEND_API_KEY: 're_12345678901234567890',
       MAIL_FROM_ADDRESS: 'test@test.com',
-
     };
 
     const { error } = envValidationSchema.validate(sameSecretEnv);
@@ -97,5 +95,34 @@ describe('Environment Validation Schema', () => {
     const { error } = envValidationSchema.validate({ NODE_ENV: 'invalid' });
     expect(error).toBeDefined();
     expect(error?.details[0].message).toContain('NODE_ENV');
+  });
+
+  it('should reject the mock mail transport in production', () => {
+    const { error } = envValidationSchema.validate(
+      { NODE_ENV: 'production', MAIL_TRANSPORT: 'mock' },
+      { abortEarly: false },
+    );
+
+    expect(
+      error?.details.some((detail) => detail.context?.key === 'MAIL_TRANSPORT'),
+    ).toBe(true);
+  });
+
+  it('should require the real mail configuration in production', () => {
+    const { error } = envValidationSchema.validate(
+      { NODE_ENV: 'production', MAIL_TRANSPORT: 'resend' },
+      { abortEarly: false },
+    );
+
+    for (const key of [
+      'RESEND_API_KEY',
+      'MAIL_FROM_ADDRESS',
+      'MAIL_FROM_NAME',
+      'MAIL_INTERNAL_ALERT_RECIPIENT',
+    ]) {
+      expect(error?.details.some((detail) => detail.context?.key === key)).toBe(
+        true,
+      );
+    }
   });
 });
