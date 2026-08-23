@@ -10658,6 +10658,99 @@
         ]
       }
     },
+    "/api/admin/dashboard/overview": {
+      "get": {
+        "operationId": "DashboardController_getOverview",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Start date filter (ISO string, e.g. 2026-01-01)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "End date filter (ISO string, e.g. 2026-01-31)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "required": false,
+            "in": "query",
+            "description": "Timezone identifier (e.g. UTC, Africa/Cairo)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "Language code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interfaceSlug",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Tour Landing Page Interface Slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourSlug",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Tour Slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Currency (e.g. USD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "required": false,
+            "in": "query",
+            "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consolidated dashboard overview object"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve consolidated dashboard overview KPIs, trends, and feeds in a single request.",
+        "tags": [
+          "Admin Dashboard"
+        ]
+      }
+    },
     "/api/admin/dashboard/summary": {
       "get": {
         "operationId": "DashboardController_getExecutiveSummary",

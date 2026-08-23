@@ -20,6 +20,15 @@ import { DashboardQueryDto } from './dto/dashboard-query.dto';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  @Get('overview')
+  @ApiOperation({
+    summary: 'Retrieve consolidated dashboard overview KPIs, trends, and feeds in a single request.',
+  })
+  @ApiOkResponse({ description: 'Consolidated dashboard overview object' })
+  async getOverview(@Query() query: DashboardQueryDto) {
+    return this.dashboardService.getOverview(query);
+  }
+
   @Get('summary')
   @ApiOperation({
     summary: 'Retrieve executive summary KPIs and comparison metrics.',

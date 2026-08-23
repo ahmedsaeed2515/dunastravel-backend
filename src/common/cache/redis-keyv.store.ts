@@ -42,7 +42,8 @@ export class RedisKeyvStore
       const serialized =
         typeof value === 'string' ? value : JSON.stringify(value);
       if (ttl && ttl > 0) {
-        await this.redis.set(key, serialized, 'PX', ttl);
+        const effectiveTtl = ttl < 1000 ? ttl * 1000 : ttl;
+        await this.redis.set(key, serialized, 'PX', effectiveTtl);
       } else {
         await this.redis.set(key, serialized);
       }

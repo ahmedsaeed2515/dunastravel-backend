@@ -1,11 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   private parseDates(query: DashboardQueryDto) {
     const now = new Date();
@@ -942,5 +947,42 @@ export class DashboardService {
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
+  }
+
+  async getOverview(query: DashboardQueryDto) {
+    const cacheKey = `dashboard:overview:${query.from || ''}:${query.to || ''}:${query.period || ''}:${query.tourSlug || ''}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
+    const [
+      summary,
+      revenueTrend,
+      bookingsTrend,
+      tourPerformance,
+      actionCenter,
+      recentBookings,
+      recentActivity,
+    ] = await Promise.all([
+      this.getExecutiveSummary(query),
+      this.getRevenueTrend(query),
+      this.getBookingsTrend(query),
+      this.getTourPerformance(query),
+      this.getActionCenter(query),
+      this.getRecentBookings(),
+      this.getRecentActivity(),
+    ]);
+
+    const result = {
+      summary,
+      revenueTrend,
+      bookingsTrend,
+      tourPerformance,
+      actionCenter,
+      recentBookings,
+      recentActivity,
+    };
+
+    await this.cacheManager.set(cacheKey, result, 60_000); // 60s cache
+    return result;
   }
 }

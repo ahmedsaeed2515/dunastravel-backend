@@ -129,7 +129,7 @@ export class ToursService {
     }));
 
     const result = paginate(mappedItems, total, page, limit);
-    await this.cacheManager.set(cacheKey, result, 60); // cache for 60 seconds
+    await this.cacheManager.set(cacheKey, result, 60_000); // cache for 60 seconds
     return result;
   }
 
@@ -204,7 +204,7 @@ export class ToursService {
       images,
     };
 
-    await this.cacheManager.set(cacheKey, response, 300); // cache for 5 minutes
+    await this.cacheManager.set(cacheKey, response, 300_000); // cache for 5 minutes
     return response;
   }
 

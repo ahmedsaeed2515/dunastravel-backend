@@ -20,17 +20,28 @@ export class PrismaService
     const connectionString =
       process.env.DATABASE_URL ||
       'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
-    const pool = new Pool({ connectionString });
+    const pool = new Pool({
+      connectionString,
+      max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
     const adapter = new PrismaPg(pool);
 
+    const isProduction = process.env.NODE_ENV === 'production';
     super({
       adapter,
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'info' },
-        { emit: 'stdout', level: 'warn' },
-        { emit: 'stdout', level: 'error' },
-      ],
+      log: isProduction
+        ? [
+            { emit: 'stdout', level: 'warn' },
+            { emit: 'stdout', level: 'error' },
+          ]
+        : [
+            { emit: 'event', level: 'query' },
+            { emit: 'stdout', level: 'info' },
+            { emit: 'stdout', level: 'warn' },
+            { emit: 'stdout', level: 'error' },
+          ],
       errorFormat: 'colorless',
     });
   }
