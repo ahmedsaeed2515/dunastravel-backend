@@ -143,7 +143,8 @@ export class AdminService {
     adminUserId: string,
   ): Promise<AdminPaginatedResponse<IAdminBookingSummary>> {
     const page = query.page && Number(query.page) > 0 ? Number(query.page) : 1;
-    const limit = query.limit && Number(query.limit) > 0 ? Number(query.limit) : 20;
+    const limit =
+      query.limit && Number(query.limit) > 0 ? Number(query.limit) : 20;
     const {
       status,
       tourId,
@@ -390,9 +391,10 @@ export class AdminService {
             notes: sanitizePlainText(dto.notes).slice(0, 5_000),
           }),
           ...(dto.cancellationReason !== undefined && {
-            cancellationReason: sanitizePlainText(
-              dto.cancellationReason,
-            ).slice(0, 2_000),
+            cancellationReason: sanitizePlainText(dto.cancellationReason).slice(
+              0,
+              2_000,
+            ),
           }),
           ...(dto.arrivalDate && { arrivalDate }),
           ...(dto.departureDate && { departureDate }),
@@ -486,13 +488,9 @@ export class AdminService {
           ) {
             return existing;
           }
-          throw new ConflictException(
-            'Transaction reference was already used',
-          );
+          throw new ConflictException('Transaction reference was already used');
         }
-        if (
-          ['CANCELLED', 'REFUNDED', 'ARCHIVED'].includes(booking.status)
-        ) {
+        if (['CANCELLED', 'REFUNDED', 'ARCHIVED'].includes(booking.status)) {
           throw new BadRequestException(
             'Payments cannot be added to this booking',
           );
@@ -1038,9 +1036,7 @@ export class AdminService {
 
     return [
       headers.join(','),
-      ...rows.map((row) =>
-        row.map((cell) => this.toCsvCell(cell)).join(','),
-      ),
+      ...rows.map((row) => row.map((cell) => this.toCsvCell(cell)).join(',')),
     ].join('\n');
   }
 
@@ -1058,6 +1054,7 @@ export class AdminService {
       sortBy = 'createdAt',
       sortOrder = 'desc',
       assigneeId,
+      search,
     } = query;
     this.logger.log(`listInquiries invoked by admin ${adminUserId}`);
 
@@ -1065,6 +1062,15 @@ export class AdminService {
     if (status) where.status = status;
     if (email) where.email = { contains: email, mode: 'insensitive' };
     if (assigneeId) where.assigneeId = assigneeId;
+    if (search?.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { referenceCode: { contains: term, mode: 'insensitive' } },
+        { fullName: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+      ];
+    }
     if (dateFrom || dateTo) {
       if (
         dateFrom &&
@@ -1098,6 +1104,7 @@ export class AdminService {
           phone: true,
           adults: true,
           children: true,
+          assigneeId: true,
           createdAt: true,
         },
       }),
@@ -1116,6 +1123,7 @@ export class AdminService {
         email: r.email,
         phone: r.phone || null,
         numberOfTravelers: r.adults + r.children,
+        assigneeId: r.assigneeId,
         createdAt: r.createdAt,
       };
     });
@@ -1163,6 +1171,7 @@ export class AdminService {
       email: r.email,
       phone: r.phone || null,
       numberOfTravelers: r.adults + r.children,
+      assigneeId: r.assigneeId,
       createdAt: r.createdAt,
       departureDate: r.startDate || null,
       returnDate: r.endDate || null,
@@ -1171,6 +1180,8 @@ export class AdminService {
       budget,
       locale: r.preferredLanguage,
       ipAddress: null,
+      followUpAt: r.followUpAt,
+      internalNote: r.internalNote,
       updatedAt: r.updatedAt,
     };
   }
@@ -1288,11 +1299,7 @@ export class AdminService {
       { isolationLevel: 'Serializable' },
     );
 
-    return this.getInquiryByReferenceCode(
-      referenceCode,
-      adminUserId,
-      isAgent,
-    );
+    return this.getInquiryByReferenceCode(referenceCode, adminUserId, isAgent);
   }
 
   async listContactSubmissions(
@@ -1805,9 +1812,7 @@ export class AdminService {
     );
     return [
       headers.join(','),
-      ...rows.map((row) =>
-        row.map((cell) => this.toCsvCell(cell)).join(','),
-      ),
+      ...rows.map((row) => row.map((cell) => this.toCsvCell(cell)).join(',')),
     ].join('\n');
   }
 
@@ -2121,11 +2126,7 @@ export class AdminService {
     }
     for (const key of richJsonFields) {
       if (result[key] !== undefined && result[key] !== null) {
-        result[key] = this.sanitizeTourLocalizedJson(
-          result[key],
-          key,
-          true,
-        );
+        result[key] = this.sanitizeTourLocalizedJson(result[key], key, true);
       }
     }
 
@@ -2163,9 +2164,7 @@ export class AdminService {
     return result;
   }
 
-  private prepareTourItineraries(
-    itineraries?: CreateTourDto['itineraries'],
-  ) {
+  private prepareTourItineraries(itineraries?: CreateTourDto['itineraries']) {
     if (!itineraries) return undefined;
     return itineraries.map((itinerary) => ({
       dayLabel: itinerary.dayLabel
@@ -2177,41 +2176,48 @@ export class AdminService {
         true,
         true,
       ),
-      mealsJsonb: itinerary.mealsJsonb && Object.keys(itinerary.mealsJsonb).length > 0
-        ? this.sanitizeTourLocalizedJson(
-            itinerary.mealsJsonb,
-            'itinerary.mealsJsonb',
-            true,
-          )
-        : undefined,
-      activitiesJsonb: itinerary.activitiesJsonb && Object.keys(itinerary.activitiesJsonb).length > 0
-        ? this.sanitizeTourLocalizedJson(
-            itinerary.activitiesJsonb,
-            'itinerary.activitiesJsonb',
-            true,
-          )
-        : undefined,
-      hotelsJsonb: itinerary.hotelsJsonb && Object.keys(itinerary.hotelsJsonb).length > 0
-        ? this.sanitizeTourLocalizedJson(
-            itinerary.hotelsJsonb,
-            'itinerary.hotelsJsonb',
-            true,
-          )
-        : undefined,
-      transportationJsonb: itinerary.transportationJsonb && Object.keys(itinerary.transportationJsonb).length > 0
-        ? this.sanitizeTourLocalizedJson(
-            itinerary.transportationJsonb,
-            'itinerary.transportationJsonb',
-            true,
-          )
-        : undefined,
-      notesJsonb: itinerary.notesJsonb && Object.keys(itinerary.notesJsonb).length > 0
-        ? this.sanitizeTourLocalizedJson(
-            itinerary.notesJsonb,
-            'itinerary.notesJsonb',
-            false,
-          )
-        : undefined,
+      mealsJsonb:
+        itinerary.mealsJsonb && Object.keys(itinerary.mealsJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.mealsJsonb,
+              'itinerary.mealsJsonb',
+              true,
+            )
+          : undefined,
+      activitiesJsonb:
+        itinerary.activitiesJsonb &&
+        Object.keys(itinerary.activitiesJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.activitiesJsonb,
+              'itinerary.activitiesJsonb',
+              true,
+            )
+          : undefined,
+      hotelsJsonb:
+        itinerary.hotelsJsonb && Object.keys(itinerary.hotelsJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.hotelsJsonb,
+              'itinerary.hotelsJsonb',
+              true,
+            )
+          : undefined,
+      transportationJsonb:
+        itinerary.transportationJsonb &&
+        Object.keys(itinerary.transportationJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.transportationJsonb,
+              'itinerary.transportationJsonb',
+              true,
+            )
+          : undefined,
+      notesJsonb:
+        itinerary.notesJsonb && Object.keys(itinerary.notesJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.notesJsonb,
+              'itinerary.notesJsonb',
+              false,
+            )
+          : undefined,
       sortOrder: itinerary.sortOrder ?? 1,
     }));
   }
@@ -2222,9 +2228,10 @@ export class AdminService {
       imageUrl: image.imageUrl,
       isHero: Boolean(image.isHero),
       isVideo: Boolean(image.isVideo),
-      videoUrl: image.videoUrl && String(image.videoUrl).trim().length > 0
-        ? String(image.videoUrl).trim()
-        : null,
+      videoUrl:
+        image.videoUrl && String(image.videoUrl).trim().length > 0
+          ? String(image.videoUrl).trim()
+          : null,
       altText: image.altText
         ? sanitizePlainText(image.altText).slice(0, 255)
         : null,
@@ -2287,8 +2294,9 @@ export class AdminService {
         } else if (Array.isArray(val)) {
           result[key] = val.map((v) =>
             typeof v === 'string'
-              ? (
-                  richText ? sanitizeHtmlContent(v) : sanitizePlainText(v)
+              ? (richText
+                  ? sanitizeHtmlContent(v)
+                  : sanitizePlainText(v)
                 ).slice(0, 20_000)
               : v,
           );
@@ -2324,9 +2332,7 @@ export class AdminService {
       dto.status !== undefined &&
       dto.status !== 'PUBLISHED'
     ) {
-      throw new BadRequestException(
-        'Only published tours can be activated',
-      );
+      throw new BadRequestException('Only published tours can be activated');
     }
     if (dto.isActive === true && dto.status === undefined) {
       throw new BadRequestException(
@@ -2518,11 +2524,7 @@ export class AdminService {
     });
   }
 
-  async addTourImage(
-    slug: string,
-    dto: AddTourImageDto,
-    adminUserId: string,
-  ) {
+  async addTourImage(slug: string, dto: AddTourImageDto, adminUserId: string) {
     this.logger.log(`Admin ${adminUserId} adding image to tour ${slug}`);
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException('Tour not found');
@@ -2658,11 +2660,7 @@ export class AdminService {
             true,
           ),
           mealsJsonb: dto.mealsJsonb
-            ? this.sanitizeTourLocalizedJson(
-                dto.mealsJsonb,
-                'mealsJsonb',
-                true,
-              )
+            ? this.sanitizeTourLocalizedJson(dto.mealsJsonb, 'mealsJsonb', true)
             : Prisma.JsonNull,
           sortOrder: dto.sortOrder,
         },

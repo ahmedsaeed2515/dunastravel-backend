@@ -6,6 +6,8 @@ import {
   IsUUID,
   Max,
   Min,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CommissionStatus } from '@prisma/client';
@@ -40,6 +42,14 @@ export class UpdateCommissionStatusDto {
 }
 
 export class CommissionQueryFilters {
+  @ApiPropertyOptional({
+    description: 'Filter by human-readable booking reference',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bookingReference?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()

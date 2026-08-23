@@ -34,6 +34,14 @@ export class AgentsService {
       deletedAt: null,
     };
     if (query.companyId) where.companyId = query.companyId;
+    if (query.search?.trim()) {
+      const term = query.search.trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+      ];
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -44,8 +52,10 @@ export class AgentsService {
           email: true,
           phone: true,
           companyId: true,
+          role: true,
           status: true,
           createdAt: true,
+          updatedAt: true,
           company: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -70,8 +80,10 @@ export class AgentsService {
         email: true,
         phone: true,
         companyId: true,
+        role: true,
         status: true,
         createdAt: true,
+        updatedAt: true,
         company: { select: { id: true, name: true, referenceCode: true } },
       },
     });
@@ -188,6 +200,9 @@ export class AgentsService {
           email: true,
           phone: true,
           companyId: true,
+          role: true,
+          status: true,
+          createdAt: true,
           updatedAt: true,
         },
       });

@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import * as crypto from 'crypto';
 import { SKIP_CSRF_KEY } from '../decorators/skip-csrf.decorator';
+import { isAllowedBrowserOrigin } from '../security/allowed-origin.util';
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
@@ -80,40 +81,6 @@ export class CsrfGuard implements CanActivate {
   }
 
   private isAllowedOrigin(origin: string): boolean {
-    const defaultOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'https://www.dunastravel.com',
-      'https://dunastravel.com',
-      'https://admin.dunastravel.com',
-      'https://dunastravel-dashbord.vercel.app',
-      'https://dunastravel-dashboard.vercel.app',
-      'https://dunastravel-tours.vercel.app',
-      'https://dunastravel-frontend.vercel.app',
-      'https://dunastravel-frontend-vpdk.vercel.app',
-    ];
-    const configured =
-      this.configService.get<string>('corsAllowedOrigins') ??
-      this.configService.get<string>('CORS_ALLOWED_ORIGINS') ??
-      '';
-    const parsedOrigins = configured
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean);
-
-    const allowedOrigins = new Set([...defaultOrigins, ...parsedOrigins]);
-    if (allowedOrigins.has(origin)) return true;
-
-    if (
-      /^https:\/\/dunastravel(?:-[a-z0-9_-]+)?\.vercel\.app$/i.test(
-        origin,
-      ) ||
-      /^http:\/\/localhost(:\d+)?$/i.test(origin)
-    ) {
-      return true;
-    }
-
-    return false;
+    return isAllowedBrowserOrigin(origin, this.configService);
   }
 }

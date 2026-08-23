@@ -32,10 +32,27 @@ export class AdminPromotionsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async listPromotions() {
-    return this.prisma.promotion.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async listPromotions(
+    query: { page?: number; limit?: number; search?: string } = {},
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const where: Prisma.PromotionWhereInput = query.search?.trim()
+      ? { code: { contains: query.search.trim(), mode: 'insensitive' } }
+      : {};
+    const [data, total] = await Promise.all([
+      this.prisma.promotion.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.promotion.count({ where }),
+    ]);
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getPromotion(id: string) {
@@ -146,10 +163,7 @@ export class AdminPromotionsService {
     if (validFrom >= validUntil) {
       throw new BadRequestException('validFrom must be before validUntil');
     }
-    if (
-      dto.maxUses !== undefined &&
-      dto.maxUses < promo.currentUses
-    ) {
+    if (dto.maxUses !== undefined && dto.maxUses < promo.currentUses) {
       throw new BadRequestException(
         'Maximum uses cannot be lower than current redemptions',
       );

@@ -68,9 +68,9 @@ export class CommissionsService {
     if (
       booking.deletedAt ||
       booking.companyId !== data.companyId ||
-      !([BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]).includes(
-        booking.status,
-      )
+      !(
+        [BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]
+      ).includes(booking.status)
     ) {
       throw new BadRequestException(
         'The booking is not eligible for this company commission',
@@ -255,9 +255,9 @@ export class CommissionsService {
       return null;
     }
     if (
-      !([BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]).includes(
-        booking.status,
-      ) ||
+      !(
+        [BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]
+      ).includes(booking.status) ||
       booking.deletedAt ||
       booking.company.deletedAt ||
       booking.company.status !== CompanyStatus.ACTIVE
@@ -299,12 +299,27 @@ export class CommissionsService {
   }
 
   async findAll(filters: CommissionQueryFilters) {
-    const { page = 1, limit = 10, companyId, bookingId, status } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      companyId,
+      bookingId,
+      bookingReference,
+      status,
+    } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.CommissionWhereInput = {};
     if (companyId) where.companyId = companyId;
     if (bookingId) where.bookingId = bookingId;
+    if (bookingReference?.trim()) {
+      where.booking = {
+        referenceCode: {
+          contains: bookingReference.trim(),
+          mode: 'insensitive',
+        },
+      };
+    }
     if (status) where.status = status;
 
     const [data, total] = await Promise.all([
@@ -312,7 +327,13 @@ export class CommissionsService {
         where,
         include: {
           company: { select: { name: true, referenceCode: true } },
-          booking: { select: { referenceCode: true, totalAmountUsd: true } },
+          booking: {
+            select: {
+              referenceCode: true,
+              totalAmountUsd: true,
+              invoice: { select: { invoiceNumber: true } },
+            },
+          },
         },
         skip,
         take: Number(limit),
@@ -322,7 +343,14 @@ export class CommissionsService {
     ]);
 
     return {
-      data,
+      data: data.map(({ booking, ...commission }) => ({
+        ...commission,
+        booking: {
+          referenceCode: booking.referenceCode,
+          totalAmountUsd: booking.totalAmountUsd,
+          invoiceNumber: booking.invoice?.invoiceNumber ?? null,
+        },
+      })),
       meta: {
         total,
         page,

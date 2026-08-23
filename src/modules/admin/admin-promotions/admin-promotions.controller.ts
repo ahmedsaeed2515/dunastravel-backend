@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -15,7 +16,11 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { AdminPromotionsService } from './admin-promotions.service';
-import { CreatePromotionDto, UpdatePromotionDto } from './dto/promotion.dto';
+import {
+  CreatePromotionDto,
+  ListPromotionsQueryDto,
+  UpdatePromotionDto,
+} from './dto/promotion.dto';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../../common/types';
 
@@ -31,8 +36,8 @@ export class AdminPromotionsController {
 
   @Get()
   @ApiOperation({ summary: 'List all promotions' })
-  async listPromotions() {
-    return this.adminPromotionsService.listPromotions();
+  async listPromotions(@Query() query: ListPromotionsQueryDto) {
+    return this.adminPromotionsService.listPromotions(query);
   }
 
   @Get(':id')

@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
@@ -12,6 +11,7 @@ import { JsonLoggerService } from './common/logging/json-logger.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import * as Sentry from '@sentry/nestjs';
+import { isAllowedBrowserOrigin } from './common/security/allowed-origin.util';
 
 async function bootstrap(): Promise<void> {
   if (process.env.SENTRY_DSN) {
@@ -52,10 +52,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   // ─── Trust Proxy ──────────────────────────────────────────────────────────
-  app.set(
-    'trust proxy',
-    configService.get<number>('trustProxyHops') ?? 0,
-  );
+  app.set('trust proxy', configService.get<number>('trustProxyHops') ?? 0);
 
   // ─── Security Middleware ───────────────────────────────────────────────────
   app.use(
@@ -105,39 +102,10 @@ async function bootstrap(): Promise<void> {
   );
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
-  const defaultOrigins = [
-    'https://www.dunastravel.com',
-    'https://dunastravel.com',
-    'https://admin.dunastravel.com',
-    'https://dunastravel-dashbord.vercel.app',
-    'https://dunastravel-dashboard.vercel.app',
-    'https://dunastravel-tours.vercel.app',
-    'https://dunastravel-frontend-vpdk.vercel.app',
-    'https://dunastravel-frontend.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-  ];
-  const corsAllowedOrigins =
-    configService.get<string>('corsAllowedOrigins') ?? '';
-  const parsedOrigins = corsAllowedOrigins
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-
-  const staticOrigins = new Set([...defaultOrigins, ...parsedOrigins]);
-
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (staticOrigins.has(origin)) {
-        return callback(null, true);
-      }
-      if (
-        /^https:\/\/dunastravel(?:-[a-z0-9_-]+)?\.vercel\.app$/i.test(
-          origin,
-        ) ||
-        /^http:\/\/localhost(:\d+)?$/i.test(origin)
-      ) {
+      if (isAllowedBrowserOrigin(origin, configService)) {
         return callback(null, true);
       }
       return callback(new Error('Origin is not allowed by CORS'));

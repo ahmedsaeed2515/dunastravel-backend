@@ -124,6 +124,45 @@ describe('AdminService', () => {
     });
   });
 
+  describe('listInquiries', () => {
+    it('searches real inquiry fields and returns assignment state', async () => {
+      prisma.tailorMadeInquiry.count.mockResolvedValue(1);
+      prisma.tailorMadeInquiry.findMany.mockResolvedValue([
+        {
+          id: 'inquiry-1',
+          referenceCode: 'INQ-2026-0001',
+          status: 'IN_PROGRESS',
+          fullName: 'Ahmed Saeed',
+          email: 'ahmed@example.com',
+          phone: '+201000000000',
+          adults: 2,
+          children: 1,
+          assigneeId: 'agent-1',
+          createdAt: new Date('2026-08-01T00:00:00Z'),
+        },
+      ]);
+
+      const result = await service.listInquiries(
+        { search: 'Ahmed', page: 1, limit: 20 },
+        'admin-1',
+      );
+
+      expect(prisma.tailorMadeInquiry.count).toHaveBeenCalledWith({
+        where: {
+          OR: expect.arrayContaining([
+            { fullName: { contains: 'Ahmed', mode: 'insensitive' } },
+          ]),
+        },
+      });
+      expect(result.data[0]).toMatchObject({
+        firstName: 'Ahmed',
+        lastName: 'Saeed',
+        numberOfTravelers: 3,
+        assigneeId: 'agent-1',
+      });
+    });
+  });
+
   describe('bulkUpdateBookings', () => {
     it('should update multiple bookings and log activity', async () => {
       const dto = {

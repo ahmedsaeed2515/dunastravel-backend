@@ -69,6 +69,12 @@ export class UpdateAgentDto {
 }
 
 export class AgentQueryDto {
+  @ApiPropertyOptional({ description: 'Search by agent name, email, or phone' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+
   @ApiPropertyOptional({ example: '1' })
   @IsOptional()
   @Type(() => Number)

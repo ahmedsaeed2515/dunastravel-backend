@@ -8,5 +8,7 @@ export interface IAdminInquiryDetail extends IAdminInquirySummary {
   readonly budget: string | null;
   readonly locale: string;
   readonly ipAddress: string | null;
+  readonly followUpAt: Date | null;
+  readonly internalNote: string | null;
   readonly updatedAt: Date;
 }

@@ -3,6 +3,7 @@ import {
   IsDefined,
   IsInt,
   IsOptional,
+  IsObject,
   IsString,
   Max,
   MaxLength,
@@ -12,6 +13,12 @@ import {
 export class UpsertCmsBlockDto {
   @IsDefined()
   content!: unknown;
+}
+
+export class CmsCatalogItemDto {
+  @IsDefined()
+  @IsObject()
+  item!: Record<string, unknown>;
 }
 
 export class ListCmsBlocksQueryDto {

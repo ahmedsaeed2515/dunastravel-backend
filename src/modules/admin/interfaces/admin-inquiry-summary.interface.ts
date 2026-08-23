@@ -7,5 +7,6 @@ export interface IAdminInquirySummary {
   readonly email: string;
   readonly phone: string | null;
   readonly numberOfTravelers: number;
+  readonly assigneeId: string | null;
   readonly createdAt: Date;
 }

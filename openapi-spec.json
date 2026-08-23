@@ -456,7 +456,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -649,7 +649,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -1250,6 +1250,15 @@
       "get": {
         "operationId": "AdminController_listInquiries",
         "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by reference, customer name, email, or phone",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "page",
             "required": false,
@@ -3207,6 +3216,15 @@
         "operationId": "CommissionsController_findAll",
         "parameters": [
           {
+            "name": "bookingReference",
+            "required": false,
+            "in": "query",
+            "description": "Filter by human-readable booking reference",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "companyId",
             "required": false,
             "in": "query",
@@ -3360,6 +3378,14 @@
       "get": {
         "operationId": "WalletsController_getWallet",
         "parameters": [
+          {
+            "name": "ownerType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "ownerId",
             "required": true,
@@ -6350,7 +6376,35 @@
     "/api/admin/promotions": {
       "get": {
         "operationId": "AdminPromotionsController_listPromotions",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by promotion code",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -7547,7 +7601,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -7555,7 +7609,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -9732,6 +9786,15 @@
         "operationId": "AgentsController_findAll",
         "parameters": [
           {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by agent name, email, or phone",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -10510,6 +10573,248 @@
         ]
       }
     },
+    "/api/admin/cms-blocks/{key}/items": {
+      "post": {
+        "operationId": "AdminCmsController_createCatalogItem[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically append an item to a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms/{key}/items": {
+      "post": {
+        "operationId": "AdminCmsController_createCatalogItem[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically append an item to a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms-blocks/{key}/items/{itemId}": {
+      "patch": {
+        "operationId": "AdminCmsController_updateCatalogItem[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically update an item in a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCmsController_deleteCatalogItem[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically delete an item from a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms/{key}/items/{itemId}": {
+      "patch": {
+        "operationId": "AdminCmsController_updateCatalogItem[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically update an item in a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCmsController_deleteCatalogItem[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atomically delete an item from a managed CMS catalog",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
     "/api/analytics/events": {
       "post": {
         "operationId": "AnalyticsController_trackEvent",
@@ -10733,6 +11038,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10823,6 +11137,15 @@
             "required": false,
             "in": "query",
             "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
             "schema": {
               "type": "string"
             }
@@ -10919,6 +11242,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -11009,6 +11341,15 @@
             "required": false,
             "in": "query",
             "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
             "schema": {
               "type": "string"
             }
@@ -11105,6 +11446,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -11118,6 +11468,108 @@
           }
         ],
         "summary": "Retrieve ranked tours performance metrics.",
+        "tags": [
+          "Admin Dashboard"
+        ]
+      }
+    },
+    "/api/admin/dashboard/top-destinations": {
+      "get": {
+        "operationId": "DashboardController_getTopDestinations",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Start date filter (ISO string, e.g. 2026-01-01)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "End date filter (ISO string, e.g. 2026-01-31)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timezone",
+            "required": false,
+            "in": "query",
+            "description": "Timezone identifier (e.g. UTC, Africa/Cairo)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "Language code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interfaceSlug",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Tour Landing Page Interface Slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourSlug",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Tour Slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Currency (e.g. USD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "required": false,
+            "in": "query",
+            "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top destinations array"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retrieve top destinations distribution and revenue.",
         "tags": [
           "Admin Dashboard"
         ]
@@ -11195,6 +11647,15 @@
             "required": false,
             "in": "query",
             "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
             "schema": {
               "type": "string"
             }
@@ -11291,6 +11752,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -11384,6 +11854,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -11474,6 +11953,15 @@
             "required": false,
             "in": "query",
             "description": "Period interval for trends (daily, weekly, monthly)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "Preset period filter (all, 30d, 90d, 12m)",
             "schema": {
               "type": "string"
             }
@@ -12858,10 +13346,6 @@
       }
     },
     "schemas": {
-      "Object": {
-        "type": "object",
-        "properties": {}
-      },
       "AdminCreatePassengerDto": {
         "type": "object",
         "properties": {
@@ -14195,7 +14679,7 @@
             "example": 30
           },
           "status": {
-            "type": "object",
+            "type": "string",
             "description": "Slot status",
             "example": "AVAILABLE"
           }
@@ -14254,7 +14738,7 @@
             "example": 25
           },
           "status": {
-            "type": "object",
+            "type": "string",
             "description": "Status override",
             "example": "AVAILABLE"
           }
@@ -15773,6 +16257,10 @@
             }
           }
         }
+      },
+      "CmsCatalogItemDto": {
+        "type": "object",
+        "properties": {}
       },
       "UpsertCmsBlockDto": {
         "type": "object",

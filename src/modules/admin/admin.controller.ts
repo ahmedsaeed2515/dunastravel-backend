@@ -8,12 +8,10 @@ import {
   Param,
   Body,
   UseGuards,
-  UseInterceptors,
   ParseUUIDPipe,
   Headers,
   BadRequestException,
 } from '@nestjs/common';
-import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -102,6 +100,7 @@ export class AdminController {
   }
 
   @Get('bookings/:referenceCode')
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
   @ApiOperation({ summary: 'Get full detail for a single booking.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
   @ApiOkResponse({ description: 'Full booking record' })

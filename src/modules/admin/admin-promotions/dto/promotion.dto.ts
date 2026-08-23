@@ -11,6 +11,7 @@ import {
   Matches,
   IsInt,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePromotionDto {
@@ -83,4 +84,27 @@ export class UpdatePromotionDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class ListPromotionsQueryDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 10;
+
+  @ApiPropertyOptional({ description: 'Search by promotion code' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
 }

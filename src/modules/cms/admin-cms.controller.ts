@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Put,
+  Post,
   Patch,
   Delete,
   Body,
@@ -24,6 +25,7 @@ import { AuthenticatedUser } from '../../common/types';
 import { UserRole } from '@prisma/client';
 import {
   ListCmsBlocksQueryDto,
+  CmsCatalogItemDto,
   UpsertCmsBlockDto,
 } from './dto/cms.dto';
 
@@ -40,20 +42,51 @@ export class AdminCmsController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
-  async findAll(
-    @Query() query: ListCmsBlocksQueryDto,
-  ) {
-    return this.cmsService.findAllAdmin(
-      query.page,
-      query.limit,
-      query.search,
-    );
+  async findAll(@Query() query: ListCmsBlocksQueryDto) {
+    return this.cmsService.findAllAdmin(query.page, query.limit, query.search);
   }
 
   @Get(':key')
   @ApiOperation({ summary: 'Get a CMS block by key' })
   async findOne(@Param('key') key: string) {
     return this.cmsService.findOneAdmin(key);
+  }
+
+  @Post(':key/items')
+  @ApiOperation({
+    summary: 'Atomically append an item to a managed CMS catalog',
+  })
+  async createCatalogItem(
+    @Param('key') key: string,
+    @Body() dto: CmsCatalogItemDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.cmsService.createCatalogItem(key, dto.item, user);
+  }
+
+  @Patch(':key/items/:itemId')
+  @ApiOperation({
+    summary: 'Atomically update an item in a managed CMS catalog',
+  })
+  async updateCatalogItem(
+    @Param('key') key: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: CmsCatalogItemDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.cmsService.updateCatalogItem(key, itemId, dto.item, user);
+  }
+
+  @Delete(':key/items/:itemId')
+  @ApiOperation({
+    summary: 'Atomically delete an item from a managed CMS catalog',
+  })
+  async deleteCatalogItem(
+    @Param('key') key: string,
+    @Param('itemId') itemId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.cmsService.deleteCatalogItem(key, itemId, user);
   }
 
   @Put(':key')

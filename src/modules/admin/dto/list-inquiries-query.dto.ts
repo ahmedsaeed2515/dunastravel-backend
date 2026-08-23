@@ -10,10 +10,20 @@ import {
   IsIn,
   IsEmail,
   IsUUID,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { TailorMadeInquiryStatus } from '@prisma/client';
 
 export class ListInquiriesQueryDto {
+  @ApiPropertyOptional({
+    description: 'Search by reference, customer name, email, or phone',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+
   @ApiPropertyOptional({ description: 'Page number', example: 1 })
   @IsOptional()
   @Type(() => Number)

@@ -11,9 +11,15 @@ import { Prisma } from '@prisma/client';
 import { sanitizeHtmlContent } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
 import { AuthenticatedUser } from '../../common/types';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CmsService {
+  private readonly managedCatalogKeys = new Set([
+    'holiday_packages',
+    'hotels_catalog',
+    'transportation_fleet',
+  ]);
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -41,7 +47,7 @@ export class CmsService {
     search?: string,
   ) {
     const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
-    const where: any = search
+    const where: Prisma.CmsBlockWhereInput = search
       ? { key: { contains: search, mode: 'insensitive' } }
       : {};
 
@@ -65,11 +71,7 @@ export class CmsService {
     return block;
   }
 
-  async upsertAdmin(
-    key: string,
-    content: unknown,
-    actor: AuthenticatedUser,
-  ) {
+  async upsertAdmin(key: string, content: unknown, actor: AuthenticatedUser) {
     this.assertValidKey(key);
     const sanitizedKey = key.trim();
     const serialized = JSON.stringify(content);
@@ -136,11 +138,125 @@ export class CmsService {
     return { success: true, message: `CMS block '${key}' deleted.` };
   }
 
+  async createCatalogItem(
+    key: string,
+    item: Record<string, unknown>,
+    actor: AuthenticatedUser,
+  ) {
+    const itemId = randomUUID();
+    return this.mutateCatalog(key, itemId, actor, 'create', item);
+  }
+
+  async updateCatalogItem(
+    key: string,
+    itemId: string,
+    item: Record<string, unknown>,
+    actor: AuthenticatedUser,
+  ) {
+    return this.mutateCatalog(key, itemId, actor, 'update', item);
+  }
+
+  async deleteCatalogItem(
+    key: string,
+    itemId: string,
+    actor: AuthenticatedUser,
+  ) {
+    await this.mutateCatalog(key, itemId, actor, 'delete');
+    return { success: true };
+  }
+
+  private async mutateCatalog(
+    key: string,
+    itemId: string,
+    actor: AuthenticatedUser,
+    operation: 'create' | 'update' | 'delete',
+    item?: Record<string, unknown>,
+  ) {
+    this.assertManagedCatalogKey(key);
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(itemId)) {
+      throw new BadRequestException('Invalid catalog item id');
+    }
+
+    const sanitizedItem = item
+      ? (this.sanitizeContent({ ...item, id: itemId }, 0) as Record<
+          string,
+          unknown
+        >)
+      : undefined;
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.cmsBlock.findUnique({ where: { key } });
+        const catalog = existing?.content;
+        if (catalog !== undefined && !Array.isArray(catalog)) {
+          throw new BadRequestException('CMS catalog content must be an array');
+        }
+        const items =
+          (catalog as Array<Record<string, unknown>> | undefined) ?? [];
+        const index = items.findIndex((entry) => entry?.id === itemId);
+
+        if (operation !== 'create' && index < 0) {
+          throw new NotFoundException('Catalog item not found');
+        }
+
+        let next: Array<Record<string, unknown>>;
+        if (operation === 'create') {
+          next = [sanitizedItem!, ...items];
+        } else if (operation === 'update') {
+          next = items.map((entry, entryIndex) =>
+            entryIndex === index
+              ? { ...entry, ...sanitizedItem, id: itemId }
+              : entry,
+          );
+        } else {
+          next = items.filter((_, entryIndex) => entryIndex !== index);
+        }
+
+        const serialized = JSON.stringify(next);
+        if (Buffer.byteLength(serialized, 'utf8') > 100_000) {
+          throw new BadRequestException('CMS content exceeds the size limit');
+        }
+
+        await tx.cmsBlock.upsert({
+          where: { key },
+          create: {
+            key,
+            content: next as Prisma.InputJsonValue,
+            lastUpdatedBy: actor.id,
+          },
+          update: {
+            content: next as Prisma.InputJsonValue,
+            lastUpdatedBy: actor.id,
+          },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: `CMS_CATALOG_ITEM_${operation.toUpperCase()}D`,
+            entityType: 'CMS_CATALOG_ITEM',
+            entityId: itemId,
+            metadata: { key },
+          },
+        });
+        return sanitizedItem;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    await this.cacheManager.del(`cms:${key}`);
+    return result;
+  }
+
+  private assertManagedCatalogKey(key: string): void {
+    this.assertValidKey(key);
+    if (!this.managedCatalogKeys.has(key)) {
+      throw new BadRequestException('CMS block is not a managed catalog');
+    }
+  }
+
   private assertValidKey(key: string): void {
-    if (
-      typeof key !== 'string' ||
-      !/^[a-z][a-z0-9_.-]{0,99}$/.test(key)
-    ) {
+    if (typeof key !== 'string' || !/^[a-z][a-z0-9_.-]{0,99}$/.test(key)) {
       throw new BadRequestException('Invalid CMS block key');
     }
   }
@@ -173,7 +289,7 @@ export class CmsService {
       if (entries.length > 100) {
         throw new BadRequestException('CMS object exceeds the key limit');
       }
-      const result: Record<string, unknown> = Object.create(null);
+      const result: Record<string, unknown> = {};
       for (const [key, child] of entries) {
         if (
           !/^[A-Za-z][A-Za-z0-9_.-]{0,99}$/.test(key) ||
