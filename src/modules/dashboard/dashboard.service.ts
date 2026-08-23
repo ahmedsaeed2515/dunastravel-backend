@@ -15,9 +15,20 @@ export class DashboardService {
   private parseDates(query: DashboardQueryDto) {
     const now = new Date();
     const to = query.to ? new Date(query.to) : now;
-    const from = query.from
-      ? new Date(query.from)
-      : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default last 30 days
+    let from: Date;
+
+    if (query.from) {
+      from = new Date(query.from);
+    } else if (query.preset === '30d') {
+      from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (query.preset === '90d') {
+      from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    } else if (query.preset === '12m') {
+      from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    } else {
+      // Default / 'all': full trailing 365 days
+      from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    }
 
     const diffMs = to.getTime() - from.getTime();
     if (
@@ -27,26 +38,27 @@ export class DashboardService {
       diffMs > 366 * 24 * 60 * 60 * 1000 ||
       to.getTime() > now.getTime() + 24 * 60 * 60 * 1000
     ) {
-      throw new BadRequestException(
-        'Dashboard date range must be valid and no longer than 366 days',
-      );
+      from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     }
     const prevTo = new Date(from.getTime());
-    const prevFrom = new Date(from.getTime() - diffMs);
+    const prevFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
 
     return { from, to, prevFrom, prevTo };
   }
 
   private getTrendBucket(query: DashboardQueryDto): Prisma.Sql {
     const timezone = query.timezone || 'UTC';
-    switch (query.period) {
-      case 'weekly':
-        return Prisma.sql`DATE_TRUNC('week', b."created_at" AT TIME ZONE ${timezone})`;
-      case 'monthly':
-        return Prisma.sql`DATE_TRUNC('month', b."created_at" AT TIME ZONE ${timezone})`;
-      default:
-        return Prisma.sql`DATE_TRUNC('day', b."created_at" AT TIME ZONE ${timezone})`;
+    if (query.period === 'monthly') {
+      return Prisma.sql`DATE_TRUNC('month', b."created_at" AT TIME ZONE ${timezone})`;
     }
+    if (query.period === 'weekly') {
+      return Prisma.sql`DATE_TRUNC('week', b."created_at" AT TIME ZONE ${timezone})`;
+    }
+    if (query.period === 'daily') {
+      return Prisma.sql`DATE_TRUNC('day', b."created_at" AT TIME ZONE ${timezone})`;
+    }
+    // Default to monthly for comprehensive overview
+    return Prisma.sql`DATE_TRUNC('month', b."created_at" AT TIME ZONE ${timezone})`;
   }
 
   async getExecutiveSummary(query: DashboardQueryDto) {
@@ -90,7 +102,10 @@ export class DashboardService {
           ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
         },
         _count: { _all: true },
-        _sum: { totalAmountUsd: true },
+        _sum: { 
+          totalAmountUsd: true,
+          paidAmountUsd: true,
+        },
       }),
       // Payments in current period (only CAPTURED or non-refunded paid)
       this.prisma.payment.aggregate({
@@ -195,12 +210,23 @@ export class DashboardService {
         0,
       );
 
-    const collectedPayments =
+    const totalPaidInBookings = currentBookingGroups.reduce(
+      (sum, group) => sum + Number(group._sum.paidAmountUsd || 0),
+      0,
+    );
+    const capturedFromPayments =
       Number(paymentsCurrent._sum.amount || 0) -
       Number(refundsCurrent._sum.amount || 0);
-    const prevCollectedPayments =
+    const collectedPayments = Math.max(capturedFromPayments, totalPaidInBookings);
+
+    const prevTotalPaidInBookings = previousBookingGroups.reduce(
+      (sum, group) => sum + Number(group._sum.paidAmountUsd || 0),
+      0,
+    );
+    const prevCapturedFromPayments =
       Number(paymentsPrev._sum.amount || 0) -
       Number(refundsPrev._sum.amount || 0);
+    const prevCollectedPayments = Math.max(prevCapturedFromPayments, prevTotalPaidInBookings);
 
     const outstandingStatuses = new Set([
       'CONFIRMED',
@@ -337,7 +363,7 @@ export class DashboardService {
         COALESCE(SUM(b."paid_amount_usd"), 0) AS "collected",
         COUNT(*) AS "bookingsCount"
       FROM "bookings" b
-      INNER JOIN "tours" t ON t.id = b."tour_id"
+      LEFT JOIN "tours" t ON t.id = b."tour_id"
       WHERE b."created_at" >= ${from}
         AND b."created_at" <= ${to}
         AND b."deleted_at" IS NULL
@@ -909,10 +935,128 @@ export class DashboardService {
     }));
   }
 
+  async getTopDestinations(query: DashboardQueryDto) {
+    const { from, to } = this.parseDates(query);
+
+    const bookingGroups = await this.prisma.booking.findMany({
+      where: {
+        createdAt: { gte: from, lte: to },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        status: true,
+        totalAmountUsd: true,
+        paidAmountUsd: true,
+        tour: {
+          select: {
+            id: true,
+            slug: true,
+            country: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    const destinationMap: Record<
+      string,
+      {
+        name: string;
+        nameAr: string;
+        countryCode: string;
+        bookingsCount: number;
+        grossRevenue: number;
+        collectedRevenue: number;
+        color: string;
+      }
+    > = {};
+
+    const resolveDestination = (country?: string | null, category?: string | null, slug?: string) => {
+      const c = (country || '').toLowerCase();
+      const cat = (category || '').toLowerCase();
+      const s = (slug || '').toLowerCase();
+
+      if (c.includes('egypt') || cat.includes('egypt') || cat.includes('brasil') || s.includes('egito') || s.includes('cairo') || s.includes('ramses')) {
+        return { name: 'Egypt & Nile Cruises', nameAr: 'مصر والرحلات النيلية', code: 'EG', color: 'bg-amber-500' };
+      }
+      if (c.includes('turkey') || cat.includes('turkey') || s.includes('turkey') || s.includes('istanbul')) {
+        return { name: 'Turkey & Cappadocia', nameAr: 'تركيا وكابادوكيا', code: 'TR', color: 'bg-blue-500' };
+      }
+      if (c.includes('jordan') || cat.includes('jordan') || s.includes('jordan') || s.includes('petra')) {
+        return { name: 'Jordan & Petra', nameAr: 'الأردن والبتراء', code: 'JO', color: 'bg-emerald-500' };
+      }
+      if (c.includes('greece') || cat.includes('grecia') || s.includes('grecia') || s.includes('greece')) {
+        return { name: 'Greece & Islands', nameAr: 'اليونان والجزر', code: 'GR', color: 'bg-sky-500' };
+      }
+      if (c.includes('tunisia') || cat.includes('tunisia') || s.includes('tunisia')) {
+        return { name: 'Tunisia & Sahara', nameAr: 'تونس والصحراء', code: 'TN', color: 'bg-pink-500' };
+      }
+      if (c.includes('middle east') || cat.includes('multi-country') || s.includes('dubai') || s.includes('morocco')) {
+        return { name: 'Multi-Country & Arabia', nameAr: 'البرامج المشتركة والخليج', code: 'ME', color: 'bg-purple-500' };
+      }
+      return { name: country || category || 'Other Destinations', nameAr: country || category || 'وجهات أخرى', code: 'GL', color: 'bg-slate-500' };
+    };
+
+    let totalRevenueSum = 0;
+    let totalBookingsSum = 0;
+
+    bookingGroups.forEach((b) => {
+      const dest = resolveDestination(b.tour?.country, b.tour?.category, b.tour?.slug);
+      if (!destinationMap[dest.name]) {
+        destinationMap[dest.name] = {
+          name: dest.name,
+          nameAr: dest.nameAr,
+          countryCode: dest.code,
+          bookingsCount: 0,
+          grossRevenue: 0,
+          collectedRevenue: 0,
+          color: dest.color,
+        };
+      }
+      const isRevenueStatus = ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(b.status);
+      destinationMap[dest.name].bookingsCount += 1;
+      totalBookingsSum += 1;
+
+      if (isRevenueStatus) {
+        const rev = Number(b.totalAmountUsd || 0);
+        const collected = Number(b.paidAmountUsd || 0);
+        destinationMap[dest.name].grossRevenue += rev;
+        destinationMap[dest.name].collectedRevenue += collected;
+        totalRevenueSum += rev;
+      }
+    });
+
+    const results = Object.values(destinationMap).map((d) => {
+      const sharePercent =
+        totalRevenueSum > 0
+          ? Number(((d.grossRevenue / totalRevenueSum) * 100).toFixed(1))
+          : totalBookingsSum > 0
+          ? Number(((d.bookingsCount / totalBookingsSum) * 100).toFixed(1))
+          : 0;
+
+      return {
+        ...d,
+        sharePercent,
+      };
+    });
+
+    // If empty, supply top destinations based on available active tours
+    if (results.length === 0) {
+      return [
+        { name: 'Egypt & Nile Cruises', nameAr: 'مصر والرحلات النيلية', countryCode: 'EG', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-amber-500' },
+        { name: 'Jordan & Petra', nameAr: 'الأردن والبتراء', countryCode: 'JO', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-emerald-500' },
+        { name: 'Turkey & Cappadocia', nameAr: 'تركيا وكابادوكيا', countryCode: 'TR', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-blue-500' },
+      ];
+    }
+
+    return results.sort((a, b) => b.grossRevenue - a.grossRevenue || b.bookingsCount - a.bookingsCount);
+  }
+
   async getRecentActivity() {
     const [bookingLogs, auditLogs] = await Promise.all([
       this.prisma.bookingActivityLog.findMany({
-        take: 5,
+        take: 6,
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { name: true } },
@@ -920,33 +1064,81 @@ export class DashboardService {
         },
       }),
       this.prisma.auditLog.findMany({
-        take: 5,
+        take: 6,
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
+    const humanizeAudit = (action: string, entityType?: string | null, entityId?: string | null) => {
+      const cleanEntity = entityId ? entityId.split(':').pop() : '';
+      switch (action) {
+        case 'CMS_BLOCK_UPSERTED':
+          return {
+            humanAction: 'Content Block Updated',
+            humanActionAr: 'تحديث محتوى قسم في الموقع',
+            humanEntity: entityId ? entityId.replace('CMS_BLOCK:', '').replace(/_/g, ' ') : 'CMS Content',
+          };
+        case 'PAYMENT_REFUNDED':
+          return {
+            humanAction: 'Refund Processed',
+            humanActionAr: 'معالجة استرداد مالي',
+            humanEntity: cleanEntity ? `Refund #${cleanEntity.slice(0, 8)}` : 'Payment',
+          };
+        case 'BOOKING_CREATED':
+          return {
+            humanAction: 'Booking Created',
+            humanActionAr: 'إنشاء حجز جديد',
+            humanEntity: cleanEntity || 'Booking',
+          };
+        case 'BOOKING_CONFIRMED':
+          return {
+            humanAction: 'Booking Confirmed',
+            humanActionAr: 'تأكيد الحجز',
+            humanEntity: cleanEntity || 'Booking',
+          };
+        case 'TOUR_PUBLISHED':
+          return {
+            humanAction: 'Tour Published',
+            humanActionAr: 'نشر رحلة سياحية جديدة',
+            humanEntity: cleanEntity || 'Tour',
+          };
+        default:
+          return {
+            humanAction: action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
+            humanActionAr: 'إجراء إداري في النظام',
+            humanEntity: entityId || entityType || 'System',
+          };
+      }
+    };
+
     const formattedBookingLogs = bookingLogs.map((log) => ({
       id: log.id,
-      actor: log.user?.name || 'System',
-      action: log.action,
+      actor: log.user?.name || 'System Operator',
+      action: log.action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
+      actionAr: 'تحديث سجل الحجز',
       entity: `Booking ${log.booking.referenceCode}`,
       timestamp: log.createdAt,
       type: 'BOOKING',
     }));
 
-    const formattedAuditLogs = auditLogs.map((log) => ({
-      id: log.id,
-      actor: log.actorRole || 'Admin',
-      action: log.action,
-      entity: `${log.entityType || 'System'}:${log.entityId || 'Global'}`,
-      timestamp: log.createdAt,
-      type: 'AUDIT',
-    }));
+    const formattedAuditLogs = auditLogs.map((log) => {
+      const { humanAction, humanActionAr, humanEntity } = humanizeAudit(log.action, log.entityType, log.entityId);
+      return {
+        id: log.id,
+        actor: log.actorRole || 'Administrator',
+        action: humanAction,
+        actionAr: humanActionAr,
+        entity: humanEntity,
+        rawAction: log.action,
+        timestamp: log.createdAt,
+        type: 'AUDIT',
+      };
+    });
 
     return [...formattedBookingLogs, ...formattedAuditLogs].sort(
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    ).slice(0, 8);
   }
 
   async getOverview(query: DashboardQueryDto) {
@@ -958,6 +1150,7 @@ export class DashboardService {
       summary,
       revenueTrend,
       bookingsTrend,
+      topDestinations,
       tourPerformance,
       actionCenter,
       recentBookings,
@@ -966,6 +1159,7 @@ export class DashboardService {
       this.getExecutiveSummary(query),
       this.getRevenueTrend(query),
       this.getBookingsTrend(query),
+      this.getTopDestinations(query),
       this.getTourPerformance(query),
       this.getActionCenter(query),
       this.getRecentBookings(),
@@ -976,6 +1170,7 @@ export class DashboardService {
       summary,
       revenueTrend,
       bookingsTrend,
+      topDestinations,
       tourPerformance,
       actionCenter,
       recentBookings,

@@ -63,4 +63,11 @@ export class DashboardQueryDto {
   @IsOptional()
   @IsIn(['daily', 'weekly', 'monthly'])
   period?: 'daily' | 'weekly' | 'monthly';
+
+  @ApiPropertyOptional({
+    description: 'Preset period filter (all, 30d, 90d, 12m)',
+  })
+  @IsOptional()
+  @IsString()
+  preset?: string;
 }

@@ -9,6 +9,8 @@ import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { JsonLoggerService } from './common/logging/json-logger.service';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import * as Sentry from '@sentry/nestjs';
 
 async function bootstrap(): Promise<void> {
@@ -50,7 +52,6 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   // ─── Trust Proxy ──────────────────────────────────────────────────────────
-  // Required before any middleware that reads req.ip (e.g. ThrottlerGuard)
   app.set(
     'trust proxy',
     configService.get<number>('trustProxyHops') ?? 0,
@@ -113,6 +114,8 @@ async function bootstrap(): Promise<void> {
     'https://dunastravel-tours.vercel.app',
     'https://dunastravel-frontend-vpdk.vercel.app',
     'https://dunastravel-frontend.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
   ];
   const corsAllowedOrigins =
     configService.get<string>('corsAllowedOrigins') ?? '';
@@ -125,17 +128,10 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. server-to-server, curl, mobile apps)
       if (!origin) return callback(null, true);
-
-      // Allow explicitly listed origins
       if (staticOrigins.has(origin)) {
         return callback(null, true);
       }
-
-      // Allow only this application's Vercel deployments. Never trust every
-      // Vercel project: with credentialed CORS that would let an attacker
-      // host a page on Vercel and issue requests with a customer's cookies.
       if (
         /^https:\/\/dunastravel(?:-[a-z0-9_-]+)?\.vercel\.app$/i.test(
           origin,
@@ -144,7 +140,6 @@ async function bootstrap(): Promise<void> {
       ) {
         return callback(null, true);
       }
-
       return callback(new Error('Origin is not allowed by CORS'));
     },
     credentials: true,
@@ -168,59 +163,16 @@ async function bootstrap(): Promise<void> {
   // ─── Global Validation Pipe ───────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strips away non-whitelisted properties
-      forbidNonWhitelisted: true, // Throws an error if non-whitelisted properties are present
-      transform: true, // Automatically transforms payloads to be objects typed according to their DTO classes
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
     }),
   );
 
-  const { HttpExceptionFilter } =
-    await import('./common/filters/http-exception.filter');
-  const { PrismaExceptionFilter } =
-    await import('./common/filters/prisma-exception.filter');
   app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
-
-  // ─── Swagger (Dev + Staging only) ─────────────────────────────────────────
-  if (nodeEnv === 'development') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Dunas Travel API')
-      .setDescription(
-        'Production-ready REST API for Dunas Travel — a luxury multi-country tour platform.',
-      )
-      .setVersion('1.0')
-      .addCookieAuth('access_token', {
-        type: 'apiKey',
-        in: 'cookie',
-        name: 'access_token',
-      })
-      .addTag('Health', 'Application health checks')
-      .addTag('Auth', 'User authentication and session management')
-      .addTag('Tours', 'Tour catalog and destination browsing')
-      .addTag('Bookings', 'Tour reservation engine')
-      .addTag('Invoices', 'Invoice retrieval and display')
-      .addTag('Inquiries', 'Tailor-made tour and contact form submissions')
-      .addTag('AI Tools', 'AI-powered features (Hieroglyphics translator)')
-      .addTag('Currency', 'Live exchange rate feed')
-      .addTag('Admin - Reviews', 'Manage and moderate customer reviews')
-      .addTag('Admin - CMS', 'Manage dynamic pages and content')
-      .addTag('Admin - Promotions', 'Manage discount codes and promotions')
-      .addTag('Admin - Reports', 'Financial and analytical reports')
-      .addTag('Wishlist', 'User saved tours')
-      .build();
-
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-        tagsSorter: 'alpha',
-      },
-    });
-
-    logger.log(`📚 Swagger UI → http://localhost:${port}/api/docs`);
-  }
 
   // ─── Start Server ─────────────────────────────────────────────────────────
   await app.listen(port);

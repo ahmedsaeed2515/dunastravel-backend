@@ -59,6 +59,13 @@ export class DashboardController {
     return this.dashboardService.getTourPerformance(query);
   }
 
+  @Get('top-destinations')
+  @ApiOperation({ summary: 'Retrieve top destinations distribution and revenue.' })
+  @ApiOkResponse({ description: 'Top destinations array' })
+  async getTopDestinations(@Query() query: DashboardQueryDto) {
+    return this.dashboardService.getTopDestinations(query);
+  }
+
   @Get('interface-performance')
   @ApiOperation({
     summary: 'Retrieve performance metrics for all landing page interfaces.',
