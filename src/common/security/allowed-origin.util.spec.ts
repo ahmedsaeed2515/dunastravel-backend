@@ -27,6 +27,15 @@ describe('isAllowedBrowserOrigin', () => {
     expect(
       isAllowedBrowserOrigin('https://dunastravel-evil.vercel.app', production),
     ).toBe(false);
+    expect(
+      isAllowedBrowserOrigin(
+        'https://evil-dunastravel-dashbord.vercel.app',
+        production,
+      ),
+    ).toBe(false);
+    expect(isAllowedBrowserOrigin('https://attacker.example', production)).toBe(
+      false,
+    );
     expect(isAllowedBrowserOrigin('http://localhost:3000', production)).toBe(
       false,
     );
