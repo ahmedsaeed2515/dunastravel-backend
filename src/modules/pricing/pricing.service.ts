@@ -255,7 +255,7 @@ export class PricingService {
     );
     if (
       !finalTotal.isFinite() ||
-      finalTotal.lte(0) ||
+      finalTotal.lt(0) ||
       finalTotal.gt(99_999_999.99)
     ) {
       throw new UnprocessableEntityException(

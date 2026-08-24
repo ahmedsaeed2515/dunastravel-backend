@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { isComplimentaryTourCountry } from '../src/common/domain/tour-pricing-policy';
 import {
   loadAhmedCatalog,
   NormalizedTour,
@@ -25,7 +26,10 @@ interface ImportReport {
 
 function argValue(name: string): string | undefined {
   const prefix = `--${name}=`;
-  return process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+  return process.argv
+    .slice(2)
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length);
 }
 
 function json(value: unknown): Prisma.InputJsonValue {
@@ -42,7 +46,10 @@ interface ExistingTourContent {
   excludedServicesJsonb: unknown;
 }
 
-function mergeLocalized(existing: unknown, incoming: unknown): Prisma.InputJsonValue {
+function mergeLocalized(
+  existing: unknown,
+  incoming: unknown,
+): Prisma.InputJsonValue {
   const existingRecord =
     existing && typeof existing === 'object' && !Array.isArray(existing)
       ? (existing as Record<string, unknown>)
@@ -55,7 +62,10 @@ function mergeLocalized(existing: unknown, incoming: unknown): Prisma.InputJsonV
 }
 
 function tourData(tour: NormalizedTour, existing?: ExistingTourContent) {
-  const knownPrice = tour.basePriceUsd !== null;
+  const effectivePrice = isComplimentaryTourCountry(tour.country)
+    ? new Prisma.Decimal(0)
+    : tour.basePriceUsd;
+  const knownPrice = effectivePrice !== null;
   return {
     titleJsonb: mergeLocalized(existing?.titleJsonb, tour.titleJsonb),
     durationJsonb: mergeLocalized(existing?.durationJsonb, tour.durationJsonb),
@@ -74,7 +84,7 @@ function tourData(tour: NormalizedTour, existing?: ExistingTourContent) {
     currency: tour.currency,
     languages: tour.languages,
     tags: tour.tags,
-    ...(knownPrice ? { basePriceUsd: tour.basePriceUsd! } : {}),
+    ...(knownPrice ? { basePriceUsd: effectivePrice! } : {}),
     ...(!knownPrice && existing?.basePriceUsd.gt(0)
       ? {}
       : { status: tour.status, isActive: tour.isActive }),
@@ -138,12 +148,23 @@ async function main(): Promise<void> {
   const execute = process.argv.includes('--execute');
   const sourceDirectory = path.resolve(
     argValue('source') ??
-      path.join(process.cwd(), '..', 'dunas-travel2026.com', 'src', 'data', 'داتا احمد'),
+      path.join(
+        process.cwd(),
+        '..',
+        'dunas-travel2026.com',
+        'src',
+        'data',
+        'داتا احمد',
+      ),
   );
-  const availabilityDays = Math.max(0, Number(argValue('availability-days') ?? 0));
+  const availabilityDays = Math.max(
+    0,
+    Number(argValue('availability-days') ?? 0),
+  );
   const capacity = Math.max(1, Number(argValue('capacity') ?? 30));
   const outputPath = path.resolve(
-    argValue('output-report') ?? path.join(process.cwd(), 'reports', 'ahmed-tour-import.json'),
+    argValue('output-report') ??
+      path.join(process.cwd(), 'reports', 'ahmed-tour-import.json'),
   );
   const snapshotPath = argValue('write-snapshot');
   const catalog = loadAhmedCatalog(sourceDirectory);
@@ -152,7 +173,11 @@ async function main(): Promise<void> {
   if (snapshotPath) {
     const absoluteSnapshot = path.resolve(snapshotPath);
     fs.mkdirSync(path.dirname(absoluteSnapshot), { recursive: true });
-    fs.writeFileSync(absoluteSnapshot, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+      absoluteSnapshot,
+      `${JSON.stringify(catalog, null, 2)}\n`,
+      'utf8',
+    );
   }
 
   const prisma = new PrismaService();
@@ -178,7 +203,8 @@ async function main(): Promise<void> {
     mode: execute ? 'execute' : 'dry-run',
     sourceDirectory,
     catalogCount: catalog.length,
-    publishedCount: catalog.filter((tour) => tour.status === 'PUBLISHED').length,
+    publishedCount: catalog.filter((tour) => tour.status === 'PUBLISHED')
+      .length,
     draftCount: catalog.filter((tour) => tour.status === 'DRAFT').length,
     created: [],
     updated: [],
@@ -219,7 +245,7 @@ async function main(): Promise<void> {
         return created;
       });
       (current ? report.updated : report.created).push(tour.slug);
-      if (saved.status === 'PUBLISHED' && saved.isActive && saved.basePriceUsd.gt(0)) {
+      if (saved.status === 'PUBLISHED' && saved.isActive) {
         activeTourIds.push(saved.id);
       }
     } catch (error) {

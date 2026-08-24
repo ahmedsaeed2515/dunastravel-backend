@@ -52,6 +52,7 @@ import {
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { sanitizeCsvField } from '../../common/utils/sanitize.util';
+import { isComplimentaryTourCountry } from '../../common/domain/tour-pricing-policy';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
@@ -1906,7 +1907,7 @@ export class AdminService {
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
     const { itineraries, images, ...tourData } = dto;
     this.assertTourImages(images);
-    const safeTourData = this.prepareTourData(tourData, true);
+    const safeTourData = this.prepareTourData(tourData, true, tourData.country);
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
 
@@ -1947,7 +1948,11 @@ export class AdminService {
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
     const { itineraries, images, ...tourData } = dto;
     this.assertTourImages(images);
-    const safeTourData = this.prepareTourData(tourData, false);
+    const safeTourData = this.prepareTourData(
+      tourData,
+      false,
+      tourData.country ?? tour.country,
+    );
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -2047,6 +2052,7 @@ export class AdminService {
   private prepareTourData(
     data: Partial<CreateTourDto>,
     isCreate: boolean,
+    effectiveCountry: unknown = data.country,
   ): Record<string, unknown> {
     const result: Record<string, unknown> = { ...data };
 
@@ -2097,6 +2103,12 @@ export class AdminService {
     }
     if (data.languages) {
       result.languages = [...new Set(data.languages)];
+    }
+
+    // Egypt tours are a complimentary catalog product. Enforce the rule at
+    // the write boundary so dashboard edits cannot restore a non-zero price.
+    if (isComplimentaryTourCountry(effectiveCountry)) {
+      result.basePriceUsd = 0;
     }
 
     const plainJsonFields = [

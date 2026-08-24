@@ -60,6 +60,26 @@ describe('PricingService Unit Tests', () => {
       expect(res.currency).toBe('USD');
     });
 
+    it('keeps a complimentary tour total at zero for adults and children', async () => {
+      prismaMock.tour.findUnique.mockResolvedValue({
+        ...mockTour,
+        country: 'Egypt',
+        basePriceUsd: new Prisma.Decimal(0),
+      });
+
+      const res = await service.calculatePrice({
+        tourId: 'tour-100',
+        date: '2027-06-15',
+        adults: 2,
+        children: 1,
+      });
+
+      expect(res.basePriceUsd).toBe('0.00');
+      expect(res.adultTotalUsd).toBe('0.00');
+      expect(res.childTotalUsd).toBe('0.00');
+      expect(res.totalAmountUsd).toBe('0.00');
+    });
+
     it('handles invalid promo code gracefully in preview mode without throwing (promoValid: false)', async () => {
       prismaMock.promotion.findFirst.mockResolvedValue(null);
 
