@@ -2937,6 +2937,34 @@
         ]
       }
     },
+    "/api/payments/readiness": {
+      "get": {
+        "operationId": "PaymentsController_getReadiness[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/readiness": {
+      "get": {
+        "operationId": "PaymentsController_getReadiness[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
     "/api/payments/initiate": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[0]",
