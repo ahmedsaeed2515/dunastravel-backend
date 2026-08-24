@@ -510,6 +510,13 @@ export class AdminController {
     return this.adminService.updateTour(slug, dto, user.id);
   }
 
+  @Delete('tours/clear-all')
+  @ApiOperation({ summary: 'Clear all active tours from database.' })
+  @ApiOkResponse({ description: 'All tours cleared successfully' })
+  async clearAllTours(@CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.clearAllTours(user.id);
+  }
+
   @Delete('tours/:slug')
   @ApiOperation({ summary: 'Soft delete a tour.' })
   @ApiParam({ name: 'slug', type: 'string' })

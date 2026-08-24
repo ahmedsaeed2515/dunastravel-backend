@@ -2411,6 +2411,19 @@ export class AdminService {
     return { success: true };
   }
 
+  async clearAllTours(adminUserId: string) {
+    this.logger.log(`clearAllTours invoked by admin ${adminUserId}`);
+    await this.prisma.tour.updateMany({
+      data: {
+        deletedAt: new Date(),
+        status: 'ARCHIVED',
+        isActive: false,
+      },
+    });
+    await this.invalidateTourCache();
+    return { success: true, message: 'All tours cleared successfully' };
+  }
+
   async suspendUser(userId: string, reason: string, adminUserId: string) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, deletedAt: null },
