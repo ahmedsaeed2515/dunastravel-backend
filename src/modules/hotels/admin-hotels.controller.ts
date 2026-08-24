@@ -29,21 +29,21 @@ export class AdminHotelsController {
   }
 
   @Post()
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create hotel' })
   create(@Body() dto: CreateHotelDto) {
     return this.hotelsService.createAdmin(dto);
   }
 
   @Put(':id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update hotel' })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateHotelDto) {
     return this.hotelsService.updateAdmin(id, dto);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Soft-delete hotel and disable its rooms' })
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.hotelsService.softDeleteAdmin(id);
