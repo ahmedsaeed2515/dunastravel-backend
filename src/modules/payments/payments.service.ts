@@ -19,6 +19,7 @@ import { PaymentEntity } from './domain/payment.entity';
 import crypto from 'crypto';
 import { CommissionsService } from '../commissions/commissions.service';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PaymentsService {
@@ -33,7 +34,12 @@ export class PaymentsService {
     private readonly paymentGateway: IPaymentGatewayPort,
     private readonly eventEmitter: EventEmitter2,
     private readonly commissionsService: CommissionsService,
+    private readonly configService: ConfigService,
   ) {}
+
+  getReadiness() {
+    return this.paymentGateway.getReadiness();
+  }
 
   async initiatePayment(
     bookingId: string,
@@ -45,6 +51,7 @@ export class PaymentsService {
       include: {
         tour: true,
         invoice: true,
+        billingInfo: true,
         payments: {
           where: { status: 'CAPTURED', isRefund: false },
           select: { amount: true },
@@ -167,15 +174,38 @@ export class PaymentsService {
 
     const chargeCurrency = 'USD';
     const money = Money.fromDecimal(amountDue.toNumber(), chargeCurrency);
+    if (!booking.billingInfo) {
+      throw new UnprocessableEntityException(
+        'Booking billing information is required for online payment',
+      );
+    }
+
+    const paymentId = crypto.randomUUID();
+    const frontendUrl = this.configService
+      .getOrThrow<string>('frontendUrl')
+      .replace(/\/$/, '');
+    const publicApiUrl = this.configService
+      .getOrThrow<string>('payments.publicApiUrl')
+      .replace(/\/$/, '');
 
     let session;
     try {
-      session = await this.paymentGateway.createSession(
-        booking.id,
-        money.toDecimal(),
-        money.currency,
-        booking.referenceCode,
-      );
+      session = await this.paymentGateway.createSession({
+        paymentId,
+        bookingId: booking.id,
+        referenceCode: booking.referenceCode,
+        amount: money.toDecimal(),
+        currency: money.currency,
+        successUrl: `${frontendUrl}/booking/success?payment_id=${paymentId}&booking_id=${booking.id}`,
+        cancelUrl: `${frontendUrl}/booking/cancel?payment_id=${paymentId}&booking_id=${booking.id}`,
+        webhookUrl: `${publicApiUrl}/api/payments/webhook/getpayin`,
+        customer: {
+          fullName: booking.billingInfo.fullName,
+          email: booking.billingInfo.email,
+          phone: booking.billingInfo.phone,
+        },
+        idempotencyKey: `checkout:${paymentId}`,
+      });
     } catch (error: unknown) {
       const msg =
         error instanceof Error ? error.message : 'Unknown gateway error';
@@ -187,7 +217,7 @@ export class PaymentsService {
 
     try {
       const paymentEntity = new PaymentEntity(
-        'mock-id',
+        paymentId,
         bookingId,
         money,
         this.paymentGateway.getProviderName(),
@@ -198,6 +228,7 @@ export class PaymentsService {
 
       const payment = await this.prisma.payment.create({
         data: {
+          id: paymentId,
           bookingId: booking.id,
           amount: money.toDecimal(),
           currency: money.currency,
@@ -278,7 +309,15 @@ export class PaymentsService {
     }
   }
 
-  async handleWebhook(req: ExpressRequest, rawBody: Buffer) {
+  async handleWebhook(
+    requestedProvider: string,
+    req: ExpressRequest,
+    rawBody: Buffer,
+  ) {
+    const activeProvider = this.paymentGateway.getProviderName();
+    if (requestedProvider.trim().toUpperCase() !== activeProvider) {
+      throw new NotFoundException('Payment webhook provider not found');
+    }
     const payload = await this.paymentGateway.verifyAndParseWebhook(
       req,
       rawBody,
@@ -306,6 +345,7 @@ export class PaymentsService {
     let attempt = 0;
     let success = false;
     let shouldEmitSuccess = false;
+    let shouldEmitFailure = false;
     let lastError: unknown = null;
 
     while (attempt < maxRetries && !success) {
@@ -332,6 +372,12 @@ export class PaymentsService {
                 payload.paymentId,
                 payload.currency || 'USD',
               );
+            } else if (payload.status === 'FAILED') {
+              await this.handleFailedPaymentTx(
+                tx,
+                payload.bookingId,
+                payload.paymentId,
+              );
             } else {
               this.logger.log(
                 `Unhandled or pending payment status: ${payload.status} for booking ${payload.bookingId}`,
@@ -351,13 +397,18 @@ export class PaymentsService {
                 },
               },
             });
-            return payload.status === 'COMPLETED'
-              ? ('PAYMENT_SUCCEEDED' as const)
-              : ('NON_SUCCESS_EVENT' as const);
+            if (payload.status === 'COMPLETED') {
+              return 'PAYMENT_SUCCEEDED' as const;
+            }
+            if (payload.status === 'FAILED') {
+              return 'PAYMENT_FAILED' as const;
+            }
+            return 'NON_SUCCESS_EVENT' as const;
           },
           { isolationLevel: 'Serializable' },
         );
         shouldEmitSuccess = outcome === 'PAYMENT_SUCCEEDED';
+        shouldEmitFailure = outcome === 'PAYMENT_FAILED';
         success = true;
       } catch (error: unknown) {
         const errObj = error as { code?: string };
@@ -387,6 +438,16 @@ export class PaymentsService {
       throw lastError instanceof Error
         ? lastError
         : new Error('Webhook transaction processing failed');
+    }
+
+    if (shouldEmitFailure) {
+      this.eventEmitter.emit(PAYMENT_EVENTS.FAILED, {
+        paymentId: payload.paymentId,
+        bookingId: payload.bookingId,
+        reason: 'Payment provider reported a failed payment',
+        gateway: provider,
+      });
+      return { received: true };
     }
 
     if (!shouldEmitSuccess) {
@@ -423,6 +484,58 @@ export class PaymentsService {
       });
 
     return { received: true };
+  }
+
+  private async handleFailedPaymentTx(
+    tx: Prisma.TransactionClient,
+    bookingId: string,
+    transactionId: string,
+  ): Promise<void> {
+    if (!bookingId || !transactionId) {
+      throw new UnprocessableEntityException(
+        'Failed payment event is missing a booking or payment reference',
+      );
+    }
+
+    const payment = await tx.payment.findFirst({
+      where: {
+        bookingId,
+        transactionId,
+        status: { in: ['PENDING', 'AUTHORIZED'] },
+        isRefund: false,
+      },
+    });
+    if (!payment) {
+      throw new UnprocessableEntityException(
+        'No matching open payment session exists',
+      );
+    }
+
+    const entity = new PaymentEntity(
+      payment.id,
+      payment.bookingId,
+      Money.fromDecimal(payment.amount.toNumber(), payment.currency),
+      payment.method,
+      payment.transactionId,
+      payment.status,
+      payment.createdAt,
+    );
+    entity.markFailed();
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: { status: entity.status },
+    });
+    await tx.bookingActivityLog.create({
+      data: {
+        bookingId,
+        action: 'PAYMENT_FAILED',
+        details: {
+          paymentId: payment.id,
+          transactionId,
+          provider: this.paymentGateway.getProviderName(),
+        },
+      },
+    });
   }
 
   private async handleSuccessfulPaymentTx(

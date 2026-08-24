@@ -28,6 +28,7 @@ export interface BookingCreatedResponse {
   children: number;
   infants: number;
   totalAmountUsd: string;
+  paymentRequired?: boolean;
   passengers: PassengerResponse[];
   billing: BillingInfoResponse;
   guestToken?: string | null;

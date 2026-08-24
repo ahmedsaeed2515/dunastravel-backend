@@ -29,10 +29,25 @@ describe('GenericPaymentGatewayAdapter', () => {
   });
 
   it('should create session and return checkout URL', async () => {
-    const result = await adapter.createSession('booking-123', 150, 'USD', 'BK-REF-1');
+    const result = await adapter.createSession({
+      paymentId: '00000000-0000-4000-8000-000000000001',
+      bookingId: 'booking-123',
+      amount: 150,
+      currency: 'USD',
+      referenceCode: 'BK-REF-1',
+      successUrl: 'https://www.dunastravel.com/booking/success?payment_id=1',
+      cancelUrl: 'https://www.dunastravel.com/booking/cancel?payment_id=1',
+      webhookUrl: 'https://api.example.test/api/payments/webhook/generic_gateway',
+      customer: {
+        fullName: 'Test Customer',
+        email: 'test@example.com',
+        phone: '+201000000000',
+      },
+      idempotencyKey: 'checkout:test',
+    });
     expect(result).toHaveProperty('url');
     expect(result).toHaveProperty('transactionId');
-    expect(result.url).toContain('bookingId=booking-123');
+    expect(result.url).toContain('/booking/success');
   });
 
   it('should verify and parse webhook payload', async () => {

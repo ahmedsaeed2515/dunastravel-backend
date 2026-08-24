@@ -8,6 +8,8 @@ import { Request } from 'express';
 import {
   IPaymentGatewayPort,
   CheckoutSessionData,
+  CreateCheckoutSessionData,
+  PaymentGatewayReadiness,
   WebhookPayload,
 } from '../interfaces/payment-gateway.port';
 
@@ -37,22 +39,31 @@ export class GenericPaymentGatewayAdapter implements IPaymentGatewayPort {
     return 'GENERIC_GATEWAY';
   }
 
+  getReadiness(): PaymentGatewayReadiness {
+    const production =
+      this.configService.get<string>('nodeEnv') === 'production' ||
+      process.env.NODE_ENV === 'production';
+    return {
+      provider: this.getProviderName(),
+      enabled: !production,
+      configured: !production,
+      mode: production ? 'disabled' : 'local',
+      supportedCurrencies: ['USD'],
+      missingConfiguration: production ? ['PAYMENT_PROVIDER'] : [],
+    };
+  }
+
   async createSession(
-    bookingId: string,
-    amountUsd: number,
-    currency: string,
-    referenceCode: string,
-    idempotencyKey?: string,
+    input: CreateCheckoutSessionData,
   ): Promise<CheckoutSessionData> {
     this.assertNonProduction();
     this.logger.log(
-      `[GenericGateway] Creating checkout session for booking ${bookingId} (${referenceCode}) amount: ${amountUsd} ${currency}`,
+      `[GenericGateway] Creating checkout session for booking ${input.bookingId} (${input.referenceCode}) amount: ${input.amount} ${input.currency}`,
     );
     const mockTransactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const redirectUrl = `${this.configService.get<string>('FRONTEND_URL') || 'https://www.dunastravel.com'}/checkout/complete?bookingId=${bookingId}&txn=${mockTransactionId}`;
 
     return {
-      url: redirectUrl,
+      url: input.successUrl,
       transactionId: mockTransactionId,
     };
   }

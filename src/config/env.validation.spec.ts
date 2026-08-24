@@ -108,6 +108,18 @@ describe('Environment Validation Schema', () => {
     ).toBe(true);
   });
 
+  it('keeps payments disabled by default and rejects unknown providers', () => {
+    const valid = envValidationSchema.validate({ NODE_ENV: 'development' });
+    expect(valid.error).toBeUndefined();
+    expect(valid.value.PAYMENT_PROVIDER).toBe('DISABLED');
+
+    const invalid = envValidationSchema.validate({
+      NODE_ENV: 'development',
+      PAYMENT_PROVIDER: 'STRIPE_GUESS',
+    });
+    expect(invalid.error).toBeDefined();
+  });
+
   it('should require the real mail configuration in production', () => {
     const { error } = envValidationSchema.validate(
       { NODE_ENV: 'production', MAIL_TRANSPORT: 'resend' },

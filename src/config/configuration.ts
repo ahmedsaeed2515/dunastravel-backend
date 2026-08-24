@@ -2,7 +2,7 @@ export default () => ({
   port: parseInt(process.env.PORT ?? '5000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
-  frontendUrl: process.env.FRONTEND_URL,
+  frontendUrl: process.env.FRONTEND_URL ?? 'https://www.dunastravel.com',
   trustProxyHops: parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10),
   database: {
     url: process.env.DATABASE_URL,
@@ -34,5 +34,11 @@ export default () => ({
   },
   currency: {
     openExchangeRatesAppId: process.env.OPENEXCHANGERATES_APP_ID,
+  },
+  payments: {
+    provider: process.env.PAYMENT_PROVIDER ?? 'DISABLED',
+    publicApiUrl:
+      process.env.PUBLIC_API_URL ??
+      'https://dunastravel-backend-seven.vercel.app',
   },
 });

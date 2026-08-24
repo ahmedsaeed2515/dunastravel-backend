@@ -165,6 +165,21 @@ export const envValidationSchema = Joi.object({
   // Currency
   OPENEXCHANGERATES_APP_ID: Joi.string().optional().allow(''),
 
+  // Payments remain fail-closed unless an explicitly selected provider has a
+  // complete, reviewed merchant contract.
+  PAYMENT_PROVIDER: Joi.string()
+    .valid('DISABLED', 'GENERIC', 'GETPAYIN')
+    .default('DISABLED'),
+  PUBLIC_API_URL: Joi.string()
+    .uri({ scheme: ['https'] })
+    .default('https://dunastravel-backend-seven.vercel.app'),
+  GETPAYIN_MODE: Joi.string().valid('sandbox', 'production').default('sandbox'),
+  GETPAYIN_API_BASE_URL: Joi.string().uri().optional().allow(''),
+  GETPAYIN_API_KEY: Joi.string().optional().allow(''),
+  GETPAYIN_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+  GETPAYIN_MERCHANT_ID: Joi.string().optional().allow(''),
+  GETPAYIN_CONTRACT_VERSION: Joi.string().optional().allow(''),
+
   // AI Platform
   AI_PROVIDER: Joi.string().optional(),
   AI_PUBLIC_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),

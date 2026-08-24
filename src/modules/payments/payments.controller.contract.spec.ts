@@ -26,6 +26,14 @@ describe('PaymentsController (HTTP Contract)', () => {
             handleWebhook: jest.fn(),
             refundPayment: jest.fn(),
             getPaymentStatus: jest.fn(),
+            getReadiness: jest.fn().mockReturnValue({
+              provider: 'DISABLED',
+              enabled: false,
+              configured: false,
+              mode: 'disabled',
+              supportedCurrencies: [],
+              missingConfiguration: ['PAYMENT_PROVIDER'],
+            }),
           },
         },
       ],
@@ -105,6 +113,26 @@ describe('PaymentsController (HTTP Contract)', () => {
         .send({ bookingId: 'invalid-id' });
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/payments/readiness', () => {
+    it('returns only public non-secret provider readiness', async () => {
+      const response = await request(
+        app.getHttpServer() as Parameters<typeof request>[0],
+      ).get('/api/payments/readiness');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({
+        provider: 'DISABLED',
+        enabled: false,
+        configured: false,
+        mode: 'disabled',
+        supportedCurrencies: [],
+        missingConfiguration: ['PAYMENT_PROVIDER'],
+      });
+      expect(JSON.stringify(response.body)).not.toContain('secret');
+      expect(JSON.stringify(response.body)).not.toContain('apiKey');
     });
   });
 

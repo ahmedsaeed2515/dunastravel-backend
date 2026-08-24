@@ -5,6 +5,32 @@ export interface CheckoutSessionData {
   transactionId: string;
 }
 
+export interface CreateCheckoutSessionData {
+  paymentId: string;
+  bookingId: string;
+  referenceCode: string;
+  amount: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+  webhookUrl: string;
+  customer: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  idempotencyKey: string;
+}
+
+export interface PaymentGatewayReadiness {
+  provider: string;
+  enabled: boolean;
+  configured: boolean;
+  mode: 'disabled' | 'sandbox' | 'production' | 'local';
+  supportedCurrencies: string[];
+  missingConfiguration: string[];
+}
+
 export interface WebhookPayload {
   eventId: string;
   paymentId: string;
@@ -26,13 +52,9 @@ export interface IPaymentGatewayPort {
    * @param referenceCode A human-readable reference code.
    * @param idempotencyKey Optional idempotency key for session creation.
    */
-  createSession(
-    bookingId: string,
-    amountUsd: number,
-    currency: string,
-    referenceCode: string,
-    idempotencyKey?: string,
-  ): Promise<CheckoutSessionData>;
+  createSession(input: CreateCheckoutSessionData): Promise<CheckoutSessionData>;
+
+  getReadiness(): PaymentGatewayReadiness;
 
   /**
    * Verifies the signature of the incoming webhook and parses the payload into a standard format.

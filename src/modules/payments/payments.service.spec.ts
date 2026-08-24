@@ -11,6 +11,7 @@ import {
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { CommissionsService } from '../commissions/commissions.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -87,6 +88,14 @@ describe('PaymentsService', () => {
             refund: jest.fn(),
             expireSession: jest.fn(),
             getProviderName: jest.fn().mockReturnValue('GENERIC_GATEWAY'),
+            getReadiness: jest.fn().mockReturnValue({
+              provider: 'GENERIC_GATEWAY',
+              enabled: true,
+              configured: true,
+              mode: 'local',
+              supportedCurrencies: ['USD'],
+              missingConfiguration: [],
+            }),
           },
         },
         {
@@ -100,6 +109,16 @@ describe('PaymentsService', () => {
           useValue: {
             createCommissionForBooking: jest.fn().mockResolvedValue(null),
             reverseCommissionForBooking: jest.fn().mockResolvedValue(null),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: jest.fn((key: string) =>
+              key === 'frontendUrl'
+                ? 'https://www.dunastravel.com'
+                : 'https://api.example.test',
+            ),
           },
         },
       ],
@@ -128,6 +147,11 @@ describe('PaymentsService', () => {
           currency: 'USD',
           total: new Prisma.Decimal(100),
         },
+        billingInfo: {
+          fullName: 'Test Customer',
+          email: 'test@example.com',
+          phone: '+201000000000',
+        },
         payments: [],
       };
 
@@ -144,6 +168,19 @@ describe('PaymentsService', () => {
       const result = await service.initiatePayment('bkg-123', 'usr-123');
 
       expect(result.url).toBe('https://checkout.stripe.com/123');
+      expect(gatewayMock.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingId: 'bkg-123',
+          referenceCode: 'REF-123',
+          amount: 100,
+          currency: 'USD',
+          successUrl: expect.stringMatching(
+            /^https:\/\/www\.dunastravel\.com\/booking\/success\?payment_id=[0-9a-f-]+&booking_id=bkg-123$/,
+          ),
+          cancelUrl: expect.stringContaining('/booking/cancel?payment_id='),
+          webhookUrl: 'https://api.example.test/api/payments/webhook/getpayin',
+        }),
+      );
       expect(
         (prisma.payment.create as jest.Mock).mock.calls.length,
       ).toBeGreaterThan(0);
@@ -167,6 +204,11 @@ describe('PaymentsService', () => {
         invoice: {
           currency: 'USD',
           total: new Prisma.Decimal(150),
+        },
+        billingInfo: {
+          fullName: 'Guest Customer',
+          email: 'guest@example.com',
+          phone: '+201000000001',
         },
         payments: [],
       };
@@ -217,6 +259,11 @@ describe('PaymentsService', () => {
           currency: 'USD',
           total: new Prisma.Decimal(100),
         },
+        billingInfo: {
+          fullName: 'Race Customer',
+          email: 'race@example.com',
+          phone: '+201000000002',
+        },
         payments: [],
       };
 
@@ -253,6 +300,55 @@ describe('PaymentsService', () => {
   });
 
   describe('handleWebhook', () => {
+    it('rejects a webhook route that does not match the active provider', async () => {
+      const reqMock = { headers: {} } as unknown as import('express').Request;
+
+      await expect(
+        service.handleWebhook('GETPAYIN', reqMock, Buffer.from('{}')),
+      ).rejects.toThrow(NotFoundException);
+      expect(gatewayMock.verifyAndParseWebhook).not.toHaveBeenCalled();
+    });
+
+    it('marks a matching open payment as failed and keeps the booking retryable', async () => {
+      jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
+        eventId: 'evt-failed-1',
+        paymentId: 'provider-payment-1',
+        bookingId: 'bkg-123',
+        amountUsd: 100,
+        currency: 'USD',
+        status: 'FAILED',
+        rawEvent: {},
+      });
+      jest
+        .spyOn(prisma.processedWebhookEvent, 'findUnique')
+        .mockResolvedValue(null);
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue({
+        id: 'payment-1',
+        bookingId: 'bkg-123',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        method: 'GENERIC_GATEWAY',
+        transactionId: 'provider-payment-1',
+        status: 'PENDING',
+        isRefund: false,
+        createdAt: new Date(),
+      } as never);
+
+      await expect(
+        service.handleWebhook(
+          'GENERIC_GATEWAY',
+          { headers: {} } as unknown as import('express').Request,
+          Buffer.from('{}'),
+        ),
+      ).resolves.toEqual({ received: true });
+
+      expect(prisma.payment.update).toHaveBeenCalledWith({
+        where: { id: 'payment-1' },
+        data: { status: 'FAILED' },
+      });
+      expect(prisma.booking.update).not.toHaveBeenCalled();
+    });
+
     it('should reject webhook with amount mismatch', async () => {
       jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
         eventId: 'evt-mismatch',
@@ -285,7 +381,7 @@ describe('PaymentsService', () => {
 
       const reqMock = { headers: {} } as unknown as import('express').Request;
       await expect(
-        service.handleWebhook(reqMock, Buffer.from('')),
+        service.handleWebhook('GENERIC_GATEWAY', reqMock, Buffer.from('')),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -305,7 +401,11 @@ describe('PaymentsService', () => {
         .mockResolvedValue({ id: 'dup-123' } as never);
 
       const reqMock = { headers: {} } as unknown as import('express').Request;
-      const result = await service.handleWebhook(reqMock, Buffer.from(''));
+      const result = await service.handleWebhook(
+        'GENERIC_GATEWAY',
+        reqMock,
+        Buffer.from(''),
+      );
 
       expect(result).toEqual({ received: true });
       expect((prisma.booking.update as jest.Mock).mock.calls.length).toBe(0);
@@ -356,15 +456,15 @@ describe('PaymentsService', () => {
       } as never);
 
       jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
-        { id: 'payment-123', amount: new Prisma.Decimal(100) },
-      ] as never);
       jest
-        .spyOn(prisma.refundRecord, 'create')
-        .mockResolvedValue({
-          id: 'rf-rec-1',
-          status: 'PENDING',
-        } as never);
+        .spyOn(prisma.payment, 'findMany')
+        .mockResolvedValue([
+          { id: 'payment-123', amount: new Prisma.Decimal(100) },
+        ] as never);
+      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
+        id: 'rf-rec-1',
+        status: 'PENDING',
+      } as never);
       jest
         .spyOn(gatewayMock, 'refund')
         .mockResolvedValue({ refundId: 'rf-stripe-123' });

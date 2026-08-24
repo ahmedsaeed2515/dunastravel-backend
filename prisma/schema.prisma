@@ -572,7 +572,7 @@ model Payment {
   method        String         @db.VarChar(100)
   transactionId String?        @map("transaction_id") @db.VarChar(255)
   /// Checkout URL returned by the gateway. Stored so we can replay it on duplicate initiation
-  /// without creating a second Stripe session. Null for admin-added payments.
+  /// without creating a second provider session. Null for admin-added payments.
   sessionUrl    String?        @map("session_url")
   status        PaymentStatus  @default(PENDING)
   isRefund      Boolean        @default(false) @map("is_refund")

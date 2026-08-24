@@ -813,6 +813,7 @@ export class BookingsService {
       children: booking.children ?? 0,
       infants: booking.infants ?? 0,
       totalAmountUsd: (booking.totalAmountUsd || '0').toString(),
+      paymentRequired: Number(booking.totalAmountUsd || 0) > 0,
       passengers: (passengers || []).map((p) => ({
         id: p.id,
         passengerType: p.passengerType,

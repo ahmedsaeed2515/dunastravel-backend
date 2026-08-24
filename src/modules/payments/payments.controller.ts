@@ -28,6 +28,13 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('readiness')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  getReadiness() {
+    return this.paymentsService.getReadiness();
+  }
+
   @Post(['initiate', 'checkout-session'])
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
@@ -75,7 +82,7 @@ export class PaymentsController {
       );
     }
 
-    return this.paymentsService.handleWebhook(req, req.rawBody);
+    return this.paymentsService.handleWebhook(provider, req, req.rawBody);
   }
 
   @Post(':id/refund')
