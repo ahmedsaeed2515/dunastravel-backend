@@ -1698,6 +1698,8 @@ export class AdminService {
       titleJsonb: t.titleJsonb,
       category: t.category,
       basePriceUsd: t.basePriceUsd.toString(),
+      durationJsonb: t.durationJsonb,
+      overviewJsonb: t.overviewJsonb,
       currency: t.currency,
       isActive: t.isActive,
       status: t.status,
@@ -1717,6 +1719,7 @@ export class AdminService {
         sortOrder: lp.sortOrder,
       })),
       createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
     }));
 
     return {
