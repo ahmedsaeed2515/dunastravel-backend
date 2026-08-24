@@ -12633,6 +12633,203 @@
           "Admin — Journey Maps"
         ]
       }
+    },
+    "/api/hotels": {
+      "get": {
+        "operationId": "HotelsController_findAll",
+        "parameters": [
+          {
+            "name": "destinationSlug",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List published, active hotels",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/{slug}": {
+      "get": {
+        "operationId": "HotelsController_findOne",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a published, active hotel by slug",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels": {
+      "get": {
+        "operationId": "AdminHotelsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List hotels for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "post": {
+        "operationId": "AdminHotelsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}": {
+      "get": {
+        "operationId": "AdminHotelsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get hotel for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "put": {
+        "operationId": "AdminHotelsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHotelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminHotelsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete hotel and disable its rooms",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
     }
   },
   "info": {
@@ -15995,6 +16192,40 @@
           "tourId": {
             "type": "string",
             "description": "Associated Tour UUID"
+          }
+        }
+      },
+      "CreateHotelDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "nile-palace-luxor"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Nile Palace Luxor"
+            }
+          }
+        },
+        "required": [
+          "slug",
+          "nameJsonb"
+        ]
+      },
+      "UpdateHotelDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "nile-palace-luxor"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Nile Palace Luxor"
+            }
           }
         }
       }
