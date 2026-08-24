@@ -59,6 +59,7 @@ import { RedisKeyvStore } from './common/cache/redis-keyv.store';
 import Keyv from 'keyv';
 
 import { InAppNotificationsModule } from './modules/in-app-notifications/in-app-notifications.module';
+import { HotelsModule } from './modules/hotels/hotels.module';
 
 @Module({
   imports: [
@@ -180,6 +181,7 @@ import { InAppNotificationsModule } from './modules/in-app-notifications/in-app-
     UsersModule,
     JourneyMapsModule,
     InAppNotificationsModule,
+    HotelsModule,
   ],
 
   providers: [

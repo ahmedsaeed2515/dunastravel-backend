@@ -32,6 +32,7 @@ export interface TourDetailResponse {
   title: string;
   category: string | null;
   basePriceUsd: string;
+  currency: string;
   duration: string;
   overview: string;
   cancellationPolicy: string | null;
@@ -47,4 +48,16 @@ export interface TourDetailResponse {
   isFeatured: boolean;
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
+}
+
+/**
+ * The admin-only preview uses the exact public presentation fields plus the
+ * visibility context needed to label an unpublished tour safely.
+ */
+export interface TourPreviewResponse extends TourDetailResponse {
+  preview: {
+    status: string;
+    isActive: boolean;
+    isPublic: boolean;
+  };
 }

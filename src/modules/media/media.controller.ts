@@ -128,6 +128,9 @@ export class MediaAdminController {
   @ApiQuery({ name: 'entityType', required: false, enum: MediaEntityType })
   @ApiQuery({ name: 'entityId', required: false, type: String })
   @ApiQuery({ name: 'includeDeleted', required: false, type: Boolean })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'bytes'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiOkResponse({
     schema: {
       type: 'object',
@@ -157,6 +160,12 @@ export class MediaAdminController {
       meta: result.meta,
     };
   }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get persisted media library totals (admin)' })
+  async getSummary() {
+    return this.mediaService.getSummary();
+  }
 }
 
 @ApiTags('Media')
@@ -183,6 +192,17 @@ export class MediaPublicController {
     @Param('tourId', ParseUUIDPipe) tourId: string,
   ): Promise<PublicMediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByTourId(tourId);
+    return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
+  }
+
+  @Get('hotels/:hotelId')
+  @ApiOperation({ summary: 'Get all active media assets for a hotel' })
+  @ApiParam({ name: 'hotelId', type: 'string', format: 'uuid' })
+  @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
+  async getAssetsByHotelId(
+    @Param('hotelId', ParseUUIDPipe) hotelId: string,
+  ): Promise<PublicMediaAssetResponseDto[]> {
+    const assets = await this.mediaService.getAssetsByHotelId(hotelId);
     return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
   }
 }

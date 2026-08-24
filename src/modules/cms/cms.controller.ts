@@ -1,7 +1,8 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CmsService } from './cms.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { PublicCmsBlockQueryDto } from './dto/cms.dto';
 
 @ApiTags('CMS')
 @Controller(['cms', 'cms-blocks'])
@@ -11,13 +12,13 @@ export class CmsController {
 
   @Get('blocks/:key')
   @ApiOperation({ summary: 'Get a public CMS block by blocks/:key (Cached)' })
-  async getPublicBlockByBlocksPath(@Param('key') key: string) {
-    return this.cmsService.getPublicBlock(key);
+  async getPublicBlockByBlocksPath(@Param('key') key: string, @Query() query: PublicCmsBlockQueryDto) {
+    return this.cmsService.getPublicBlock(key, query.lang);
   }
 
   @Get(':key')
   @ApiOperation({ summary: 'Get a public CMS block (Cached)' })
-  async getPublicBlock(@Param('key') key: string) {
-    return this.cmsService.getPublicBlock(key);
+  async getPublicBlock(@Param('key') key: string, @Query() query: PublicCmsBlockQueryDto) {
+    return this.cmsService.getPublicBlock(key, query.lang);
   }
 }

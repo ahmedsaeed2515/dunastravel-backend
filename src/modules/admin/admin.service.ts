@@ -227,10 +227,12 @@ export class AdminService {
 
     return {
       data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -543,6 +545,10 @@ export class AdminService {
             paidAmountUsd: newPaid,
             status: nextStatus,
           },
+        });
+        await tx.invoice.updateMany({
+          where: { bookingId: booking.id },
+          data: { status: nextStatus === 'PAID' ? 'PAID' : 'SENT', paymentId: payment.id },
         });
         await tx.bookingActivityLog.create({
           data: {
@@ -1129,7 +1135,10 @@ export class AdminService {
       };
     });
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getInquiryByReferenceCode(
@@ -1353,7 +1362,10 @@ export class AdminService {
       createdAt: r.createdAt,
     }));
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getContactSubmissionByReferenceCode(
@@ -1480,7 +1492,10 @@ export class AdminService {
       updatedAt: r.updatedAt,
     }));
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getDashboardMetrics(
@@ -1704,7 +1719,10 @@ export class AdminService {
       createdAt: t.createdAt,
     }));
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getTourStats(adminUserId: string): Promise<Record<string, unknown>> {
@@ -1946,7 +1964,7 @@ export class AdminService {
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
-    const { itineraries, images, ...tourData } = dto;
+    const { itineraries, images, expectedUpdatedAt, ...tourData } = dto;
     this.assertTourImages(images);
     const safeTourData = this.prepareTourData(
       tourData,
@@ -1956,6 +1974,20 @@ export class AdminService {
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
     const updated = await this.prisma.$transaction(async (tx) => {
+      const currentTour = await tx.tour.findUnique({
+        where: { id: tour.id },
+        select: { updatedAt: true },
+      });
+      if (
+        expectedUpdatedAt &&
+        (!currentTour ||
+          currentTour.updatedAt.getTime() !==
+            new Date(expectedUpdatedAt).getTime())
+      ) {
+        throw new ConflictException(
+          'This tour was changed by another user. Reload it before saving your changes.',
+        );
+      }
       if (safeItineraries) {
         await tx.tourItinerary.deleteMany({
           where: { tourId: tour.id },
@@ -1989,6 +2021,7 @@ export class AdminService {
                 action: 'TOUR_UPDATED',
                 details: {
                   changedFields: Object.keys(tourData),
+                  expectedUpdatedAt: expectedUpdatedAt ?? null,
                   itinerariesReplaced: Boolean(itineraries),
                   imagesReplaced: Boolean(images),
                 },
@@ -2641,6 +2674,46 @@ export class AdminService {
           userId: adminUserId,
           action: 'TOUR_IMAGE_REORDERED',
           details: { imageId, sortOrder },
+        },
+      });
+      return tx.tourImage.findUniqueOrThrow({ where: { id: imageId } });
+    });
+    await this.invalidateTourCache(slug);
+    return image;
+  }
+
+  async setTourHeroImage(
+    slug: string,
+    imageId: string,
+    adminUserId: string,
+  ) {
+    this.logger.log(
+      `Admin ${adminUserId} selecting image ${imageId} as hero for tour ${slug}`,
+    );
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    const image = await this.prisma.$transaction(async (tx) => {
+      const selected = await tx.tourImage.findFirst({
+        where: { id: imageId, tourId: tour.id },
+        select: { id: true },
+      });
+      if (!selected) throw new NotFoundException('Tour image not found');
+
+      await tx.tourImage.updateMany({
+        where: { tourId: tour.id, isHero: true },
+        data: { isHero: false },
+      });
+      await tx.tourImage.update({
+        where: { id: imageId },
+        data: { isHero: true },
+      });
+      await tx.tourActivityLog.create({
+        data: {
+          tourId: tour.id,
+          userId: adminUserId,
+          action: 'TOUR_HERO_IMAGE_UPDATED',
+          details: { imageId },
         },
       });
       return tx.tourImage.findUniqueOrThrow({ where: { id: imageId } });

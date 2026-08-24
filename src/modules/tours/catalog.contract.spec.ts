@@ -170,12 +170,12 @@ describe('Catalog & Destinations Engine (HTTP Contracts)', () => {
         .get('/api/tours?lang=es&page=1&limit=10')
         .expect(200);
 
-      const payload = (res.body.data || res.body) as {
-        items: Array<{ title: string; basePriceUsd: string }>;
+      const payload = res.body as {
+        data: Array<{ title: string; basePriceUsd: string }>;
       };
-      expect(Array.isArray(payload.items)).toBe(true);
-      expect(payload.items[0]?.title).toBe('Crucero de Lujo por el Nilo');
-      expect(payload.items[0]?.basePriceUsd).toBe('1500.00');
+      expect(Array.isArray(payload.data)).toBe(true);
+      expect(payload.data[0]?.title).toBe('Crucero de Lujo por el Nilo');
+      expect(payload.data[0]?.basePriceUsd).toBe('1500.00');
     });
   });
 

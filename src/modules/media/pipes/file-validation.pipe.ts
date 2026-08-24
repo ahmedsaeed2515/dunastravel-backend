@@ -26,6 +26,12 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
       );
     }
 
+    if (!this.matchesDeclaredExtension(file.originalname, file.mimetype)) {
+      throw new BadRequestException(
+        'File extension does not match the declared MIME type.',
+      );
+    }
+
     if (!this.verifyMagicNumber(file.buffer, file.mimetype)) {
       throw new BadRequestException(
         'File content does not match declared MIME type.',
@@ -79,5 +85,21 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
     }
 
     return false;
+  }
+
+  private matchesDeclaredExtension(
+    originalname: string,
+    mimetype: string,
+  ): boolean {
+    if (typeof originalname !== 'string' || !originalname.includes('.')) {
+      return false;
+    }
+    const extension = originalname.split('.').pop()?.toLowerCase();
+    const expectedExtensions: Record<string, string[]> = {
+      'image/jpeg': ['jpg', 'jpeg'],
+      'image/png': ['png'],
+      'image/webp': ['webp'],
+    };
+    return Boolean(extension && expectedExtensions[mimetype]?.includes(extension));
   }
 }

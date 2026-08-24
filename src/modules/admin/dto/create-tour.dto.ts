@@ -248,7 +248,7 @@ export class CreateTourDto {
 
   @ApiPropertyOptional({
     description: 'Publishing status',
-    default: 'PUBLISHED',
+    default: 'DRAFT',
   })
   @IsOptional()
   @IsString()

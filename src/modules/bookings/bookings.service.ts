@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   Inject,
 } from '@nestjs/common';
 
@@ -1102,7 +1103,7 @@ export class BookingsService {
     }
 
     if (booking.status === targetStatus) {
-      throw new BadRequestException(
+      throw new ConflictException(
         `Booking is already in status ${targetStatus}`,
       );
     }
@@ -1127,7 +1128,7 @@ export class BookingsService {
 
     const allowed = validTransitions[booking.status] || [];
     if (!allowed.includes(targetStatus)) {
-      throw new BadRequestException(
+      throw new ConflictException(
         `Cannot transition booking status from ${booking.status} to ${targetStatus}`,
       );
     }

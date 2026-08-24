@@ -85,7 +85,7 @@ describe('ToursService', () => {
           }),
         }),
       );
-      expect(result.items).toHaveLength(1);
+      expect(result.data).toHaveLength(1);
     });
   });
 
@@ -96,6 +96,7 @@ describe('ToursService', () => {
         .mockResolvedValue({
           id: 'tour-2',
           slug: 'my-tour',
+          currency: 'USD',
           itineraries: [],
           images: [],
           titleJsonb: { en: 'test' },
@@ -107,9 +108,81 @@ describe('ToursService', () => {
       expect(result?.slug).toBe('my-tour');
       expect(findFirstSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { slug: 'my-tour', isActive: true, status: 'PUBLISHED' },
+          where: {
+            slug: 'my-tour',
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+          },
         }),
       );
+    });
+
+    it('keeps a draft preview out of the public cache and adds only visibility context', async () => {
+      const findFirstSpy = jest
+        .spyOn(prisma.tour, 'findFirst')
+        .mockResolvedValue({
+          id: 'tour-draft',
+          slug: 'draft-tour',
+          status: 'DRAFT',
+          isActive: true,
+          currency: 'USD',
+          titleJsonb: { en: 'Draft Tour' },
+          durationJsonb: { en: '2 days' },
+          overviewJsonb: { en: 'Draft overview' },
+          basePriceUsd: new Prisma.Decimal('250.00'),
+          includedServicesJsonb: { en: ['Guide'] },
+          excludedServicesJsonb: { en: ['Flights'] },
+          tags: [],
+          itineraries: [],
+          images: [],
+        } as any);
+
+      const result = await service.findPreviewBySlug('draft-tour', 'en');
+
+      expect(result).toMatchObject({
+        slug: 'draft-tour',
+        title: 'Draft Tour',
+        currency: 'USD',
+        preview: { status: 'DRAFT', isActive: true, isPublic: false },
+      });
+      expect(findFirstSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { slug: 'draft-tour', deletedAt: null } }),
+      );
+    });
+
+    it('projects identical published presentation fields for public detail and admin preview', async () => {
+      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({
+        id: 'tour-published',
+        slug: 'published-tour',
+        status: 'PUBLISHED',
+        isActive: true,
+        currency: 'USD',
+        titleJsonb: { en: 'Published Tour' },
+        durationJsonb: { en: '4 days' },
+        overviewJsonb: { en: 'Published overview' },
+        cancellationPolicyJsonb: { en: '48 hours' },
+        basePriceUsd: new Prisma.Decimal('500.00'),
+        includedServicesJsonb: { en: ['Transfers'] },
+        excludedServicesJsonb: { en: ['Flights'] },
+        tags: ['luxury'],
+        itineraries: [{
+          id: 'day-1',
+          dayLabel: 'Arrival',
+          descriptionJsonb: { en: 'Meet the guide.' },
+          mealsJsonb: { en: 'Dinner' },
+          sortOrder: 0,
+        }],
+        images: [{ id: 'image-1', imageUrl: 'https://cdn.example.test/hero.jpg', isHero: true, altText: 'Hero', sortOrder: 0 }],
+      } as any);
+
+      const publicDetail = await service.findBySlug('published-tour', 'en');
+      const preview = await service.findPreviewBySlug('published-tour', 'en');
+
+      expect(preview).toMatchObject({
+        ...publicDetail,
+        preview: { status: 'PUBLISHED', isActive: true, isPublic: true },
+      });
     });
   });
 });

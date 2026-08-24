@@ -6,6 +6,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { AuthenticatedUser } from '../../common/types';
 import { Prisma } from '@prisma/client';
 import { CreateTourLandingPageDto } from './dto/create-tour-landing-page.dto';
 import { UpdateTourLandingPageDto } from './dto/update-tour-landing-page.dto';
@@ -26,7 +28,26 @@ const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
 export class TourLandingPagesService {
   private readonly logger = new Logger(TourLandingPagesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
+
+  private async audit(
+    actor: AuthenticatedUser,
+    action: string,
+    landingPageId: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action,
+      entityType: 'TourLandingPage',
+      entityId: landingPageId,
+      metadata,
+    });
+  }
 
   private calculateLocaleCompletion(landingPage: any) {
     const completion: Record<
@@ -165,7 +186,7 @@ export class TourLandingPagesService {
     };
   }
 
-  async createAdmin(dto: CreateTourLandingPageDto) {
+  async createAdmin(dto: CreateTourLandingPageDto, actor: AuthenticatedUser) {
     const existing = await this.prisma.tourLandingPage.findUnique({
       where: { slug: dto.slug },
     });
@@ -228,10 +249,19 @@ export class TourLandingPagesService {
       },
     });
 
+    await this.audit(actor, 'TOUR_LANDING_PAGE_CREATED', created.id, {
+      slug: created.slug,
+      type: created.type,
+      status: created.status,
+    });
     return this.findOneAdmin(created.id);
   }
 
-  async updateAdmin(idOrSlug: string, dto: UpdateTourLandingPageDto) {
+  async updateAdmin(
+    idOrSlug: string,
+    dto: UpdateTourLandingPageDto,
+    actor: AuthenticatedUser,
+  ) {
     const existing = await this.prisma.tourLandingPage.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
@@ -241,6 +271,15 @@ export class TourLandingPagesService {
 
     if (!existing) {
       throw new NotFoundException(`Tour landing page '${idOrSlug}' not found`);
+    }
+
+    if (
+      dto.expectedUpdatedAt &&
+      new Date(dto.expectedUpdatedAt).getTime() !== existing.updatedAt.getTime()
+    ) {
+      throw new ConflictException(
+        'This interface was changed by another user. Refresh before saving.',
+      );
     }
 
     if (dto.slug && dto.slug !== existing.slug) {
@@ -254,7 +293,7 @@ export class TourLandingPagesService {
       }
     }
 
-    await this.prisma.tourLandingPage.update({
+    const updated = await this.prisma.tourLandingPage.update({
       where: { id: existing.id },
       data: {
         ...(dto.slug && { slug: dto.slug.toLowerCase() }),
@@ -334,17 +373,28 @@ export class TourLandingPagesService {
       },
     });
 
+    await this.audit(actor, 'TOUR_LANDING_PAGE_UPDATED', existing.id, {
+      slug: updated.slug,
+      changedFields: Object.keys(dto),
+      status: updated.status,
+      isActive: updated.isActive,
+    });
     return this.findOneAdmin(existing.id);
   }
 
-  async setStatusAdmin(idOrSlug: string, status: string, isActive?: boolean) {
+  async setStatusAdmin(
+    idOrSlug: string,
+    status: string,
+    isActive: boolean | undefined,
+    actor: AuthenticatedUser,
+  ) {
     const existing = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
     if (!existing)
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
-    await this.prisma.tourLandingPage.update({
+    const updated = await this.prisma.tourLandingPage.update({
       where: { id: existing.id },
       data: {
         status,
@@ -352,10 +402,16 @@ export class TourLandingPagesService {
       },
     });
 
+    await this.audit(actor, 'TOUR_LANDING_PAGE_STATUS_UPDATED', existing.id, {
+      slug: updated.slug,
+      previousStatus: existing.status,
+      status: updated.status,
+      isActive: updated.isActive,
+    });
     return this.findOneAdmin(existing.id);
   }
 
-  async softDeleteAdmin(idOrSlug: string) {
+  async softDeleteAdmin(idOrSlug: string, actor: AuthenticatedUser) {
     const existing = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
@@ -370,13 +426,33 @@ export class TourLandingPagesService {
       },
     });
 
+    await this.audit(actor, 'TOUR_LANDING_PAGE_DELETED', existing.id, {
+      slug: existing.slug,
+    });
     return {
       success: true,
       message: `Landing page '${existing.slug}' deleted.`,
     };
   }
 
-  async reorderInterfacesAdmin(items: { id: string; sortOrder: number }[]) {
+  async reorderInterfacesAdmin(
+    items: { id: string; sortOrder: number }[],
+    actor: AuthenticatedUser,
+  ) {
+    if (items.length === 0) {
+      throw new BadRequestException('At least one interface is required to reorder');
+    }
+    const ids = items.map((item) => item.id);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException('Interface reorder contains duplicate ids');
+    }
+    const pages = await this.prisma.tourLandingPage.findMany({
+      where: { id: { in: ids }, deletedAt: null },
+      select: { id: true },
+    });
+    if (pages.length !== ids.length) {
+      throw new BadRequestException('One or more interfaces are invalid');
+    }
     await this.prisma.$transaction(
       items.map((item) =>
         this.prisma.tourLandingPage.update({
@@ -385,12 +461,19 @@ export class TourLandingPagesService {
         }),
       ),
     );
+    await this.audit(actor, 'TOUR_LANDING_PAGE_REORDERED', ids[0], {
+      items,
+    });
     return { success: true, count: items.length };
   }
 
   // --- TOUR RELATION MANAGEMENT ---
 
-  async attachTours(idOrSlug: string, dto: AttachToursDto) {
+  async attachTours(
+    idOrSlug: string,
+    dto: AttachToursDto,
+    actor: AuthenticatedUser,
+  ) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
@@ -398,6 +481,9 @@ export class TourLandingPagesService {
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
     const tourIds = [...new Set(dto.tourIds)];
+    if (tourIds.length === 0) {
+      throw new BadRequestException('At least one tour is required to attach');
+    }
     const tours = await this.prisma.tour.findMany({
       where: { id: { in: tourIds }, deletedAt: null },
       select: { id: true },
@@ -446,21 +532,36 @@ export class TourLandingPagesService {
       { isolationLevel: 'Serializable' },
     );
 
+    await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_ATTACHED', landingPage.id, {
+      tourIds,
+      isFeatured: dto.isFeatured ?? false,
+      isVisible: dto.isVisible ?? true,
+    });
     return this.findOneAdmin(landingPage.id);
   }
 
-  async detachTour(idOrSlug: string, tourId: string) {
+  async detachTour(
+    idOrSlug: string,
+    tourId: string,
+    actor: AuthenticatedUser,
+  ) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
     if (!landingPage)
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
-    await this.prisma.tourLandingPageTour.deleteMany({
+    const deleted = await this.prisma.tourLandingPageTour.deleteMany({
       where: {
         landingPageId: landingPage.id,
         tourId,
       },
+    });
+    if (deleted.count !== 1) {
+      throw new NotFoundException('Tour is not attached to this interface');
+    }
+    await this.audit(actor, 'TOUR_LANDING_PAGE_TOUR_DETACHED', landingPage.id, {
+      tourId,
     });
 
     return {
@@ -473,6 +574,7 @@ export class TourLandingPagesService {
     idOrSlug: string,
     tourId: string,
     dto: UpdateTourRelationDto,
+    actor: AuthenticatedUser,
   ) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
@@ -494,24 +596,46 @@ export class TourLandingPagesService {
         ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
         ...(dto.isVisible !== undefined && { isVisible: dto.isVisible }),
         ...(dto.customBadge !== undefined && {
-          customBadge: this.sanitizeLocalized(
-            dto.customBadge,
-            'customBadge',
-            100,
-          ),
+          customBadge:
+            Object.keys(dto.customBadge).length === 0
+              ? Prisma.JsonNull
+              : this.sanitizeLocalized(dto.customBadge, 'customBadge', 100),
         }),
       },
+    });
+
+    await this.audit(actor, 'TOUR_LANDING_PAGE_TOUR_UPDATED', landingPage.id, {
+      tourId,
+      changedFields: Object.keys(dto),
     });
 
     return this.findOneAdmin(landingPage.id);
   }
 
-  async reorderToursInInterface(idOrSlug: string, dto: ReorderToursDto) {
+  async reorderToursInInterface(
+    idOrSlug: string,
+    dto: ReorderToursDto,
+    actor: AuthenticatedUser,
+  ) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
     if (!landingPage)
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
+
+    const tourIds = dto.items.map((item) => item.tourId);
+    if (tourIds.length === 0) {
+      throw new BadRequestException('At least one attached tour is required to reorder');
+    }
+    if (new Set(tourIds).size !== tourIds.length) {
+      throw new BadRequestException('Tour reorder contains duplicate tour ids');
+    }
+    const relationCount = await this.prisma.tourLandingPageTour.count({
+      where: { landingPageId: landingPage.id, tourId: { in: tourIds } },
+    });
+    if (relationCount !== tourIds.length) {
+      throw new BadRequestException('One or more tours are not attached to this interface');
+    }
 
     await this.prisma.$transaction(
       dto.items.map((item) =>
@@ -526,6 +650,10 @@ export class TourLandingPagesService {
         }),
       ),
     );
+
+    await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_REORDERED', landingPage.id, {
+      items: dto.items,
+    });
 
     return this.findOneAdmin(landingPage.id);
   }
@@ -613,7 +741,6 @@ export class TourLandingPagesService {
             tour: {
               include: {
                 images: { orderBy: { sortOrder: 'asc' } },
-                itineraries: { orderBy: { sortOrder: 'asc' } },
               },
             },
           },
@@ -644,8 +771,8 @@ export class TourLandingPagesService {
         slug: t.tour.slug,
         title: extractI18n(t.tour.titleJsonb, locale),
         overview: extractI18n(t.tour.overviewJsonb, locale),
-        duration: t.tour.durationJsonb,
-        basePriceUsd: t.tour.basePriceUsd,
+        duration: extractI18n(t.tour.durationJsonb, locale),
+        basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
         currency: t.tour.currency,
         country: t.tour.country,
         city: t.tour.city,

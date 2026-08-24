@@ -8,6 +8,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { CmsBlockStatus } from '@prisma/client';
 
 import { Reflector } from '@nestjs/core';
 import { ResponseTransformInterceptor } from '../../common/interceptors/response-transform.interceptor';
@@ -22,6 +23,8 @@ describe('CMS HTTP Contract Spec', () => {
       en: 'Welcome to Dunas Travel',
       ar: 'مرحبا بكم في دوناس ترافيل',
     },
+    status: CmsBlockStatus.PUBLISHED,
+    version: 1,
     lastUpdatedBy: 'admin-1',
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
@@ -45,6 +48,7 @@ describe('CMS HTTP Contract Spec', () => {
           typeof cb === 'function'
             ? cb({
                 cmsBlock: {
+                  findUnique: jest.fn().mockResolvedValue(mockBlock),
                   upsert: jest.fn().mockResolvedValue(mockBlock),
                 },
                 auditLog: {

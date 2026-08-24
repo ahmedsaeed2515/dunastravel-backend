@@ -1,7 +1,7 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { of } from 'rxjs';
-import { TransformInterceptor } from './transform.interceptor';
+import { isCanonicalPaginatedPayload, TransformInterceptor } from './transform.interceptor';
 import {
   ResponseTransformInterceptor,
   IGNORE_TRANSFORM_KEY,
@@ -52,6 +52,22 @@ describe('TransformInterceptor', () => {
       done();
     });
   });
+
+  it('preserves a collection payload and its server-supplied pagination metadata', (done) => {
+    const context = {
+      switchToHttp: () => ({ getResponse: () => ({ statusCode: 200 }), getRequest: () => ({ url: '/api/tours' }) }),
+    } as ExecutionContext;
+    const next: CallHandler = { handle: () => of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }) };
+    interceptor.intercept(context, next).subscribe((result) => {
+      expect(result.data).toEqual([]);
+      expect(result.meta).toEqual({ total: 0, page: 1, limit: 20, totalPages: 0 });
+      done();
+    });
+  });
+
+  it('does not mistake an item with incomplete data/meta fields for pagination', () => {
+    expect(isCanonicalPaginatedPayload({ data: { id: 'item' }, meta: { total: 1 } })).toBe(false);
+  });
 });
 
 describe('ResponseTransformInterceptor', () => {
@@ -69,6 +85,7 @@ describe('ResponseTransformInterceptor', () => {
     const context = {
       getHandler: jest.fn(),
       getClass: jest.fn(),
+      switchToHttp: () => ({ getResponse: () => ({ statusCode: 200 }) }),
     } as unknown as ExecutionContext;
 
     const next: CallHandler = {
@@ -76,8 +93,10 @@ describe('ResponseTransformInterceptor', () => {
     };
 
     interceptor.intercept(context, next).subscribe((result) => {
+      expect(result.success).toBe(true);
+      expect(result.statusCode).toBe(200);
       expect(result.data).toEqual({ title: 'Test Tour' });
-      expect(result.meta.timestamp).toBeDefined();
+      expect(result.timestamp).toBeDefined();
       done();
     });
   });

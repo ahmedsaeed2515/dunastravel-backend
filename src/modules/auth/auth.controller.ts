@@ -192,7 +192,7 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     const updatedUser = await this.userService.updateProfile(user.id, dto);
-    return { user: updatedUser };
+    return updatedUser;
   }
 
   @Public()

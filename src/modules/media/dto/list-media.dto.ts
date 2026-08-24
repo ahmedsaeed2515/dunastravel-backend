@@ -3,10 +3,13 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { MediaEntityType } from '@prisma/client';
@@ -42,4 +45,20 @@ export class ListMediaDto {
   @IsBoolean()
   @Type(() => Boolean)
   includeDeleted?: boolean = false;
+
+  @ApiPropertyOptional({ description: 'Searches persisted alt text and provider asset ID' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  search?: string;
+
+  @ApiPropertyOptional({ enum: ['createdAt', 'bytes'], default: 'createdAt' })
+  @IsOptional()
+  @IsIn(['createdAt', 'bytes'])
+  sortBy?: 'createdAt' | 'bytes' = 'createdAt';
+
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'desc' })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }

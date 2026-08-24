@@ -15,7 +15,7 @@ describe('FileValidationPipe', () => {
   describe('transform', () => {
     it('should pass for valid JPEG magic numbers', () => {
       const validJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
-      const file = { buffer: validJpeg, mimetype: 'image/jpeg' } as any;
+      const file = { buffer: validJpeg, mimetype: 'image/jpeg', originalname: 'image.jpg' } as any;
       expect(pipe.transform(file)).toBe(file);
     });
 
@@ -23,7 +23,7 @@ describe('FileValidationPipe', () => {
       const validPng = Buffer.from([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
       ]);
-      const file = { buffer: validPng, mimetype: 'image/png' } as any;
+      const file = { buffer: validPng, mimetype: 'image/png', originalname: 'image.png' } as any;
       expect(pipe.transform(file)).toBe(file);
     });
 
@@ -42,19 +42,25 @@ describe('FileValidationPipe', () => {
         0x42,
         0x50, // WEBP
       ]);
-      const file = { buffer: validWebP, mimetype: 'image/webp' } as any;
+      const file = { buffer: validWebP, mimetype: 'image/webp', originalname: 'image.webp' } as any;
       expect(pipe.transform(file)).toBe(file);
     });
 
     it('should throw BadRequestException for PHP disguised as JPG', () => {
       const maliciousPhp = Buffer.from('<?php echo "hello"; ?>');
-      const file = { buffer: maliciousPhp, mimetype: 'image/jpeg' } as any;
+      const file = { buffer: maliciousPhp, mimetype: 'image/jpeg', originalname: 'shell.jpg' } as any;
       expect(() => pipe.transform(file)).toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for empty buffer', () => {
       const emptyBuffer = Buffer.from([]);
-      const file = { buffer: emptyBuffer, mimetype: 'image/jpeg' } as any;
+      const file = { buffer: emptyBuffer, mimetype: 'image/jpeg', originalname: 'empty.jpg' } as any;
+      expect(() => pipe.transform(file)).toThrow(BadRequestException);
+    });
+
+    it('rejects an extension that does not match the declared image MIME type', () => {
+      const validPng = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      const file = { buffer: validPng, mimetype: 'image/png', originalname: 'image.jpg' } as any;
       expect(() => pipe.transform(file)).toThrow(BadRequestException);
     });
   });

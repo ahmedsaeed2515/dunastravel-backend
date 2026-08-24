@@ -19,6 +19,7 @@ import { GetToursQueryDto, CreateTourReviewDto } from './dto';
 import {
   TourSummaryResponse,
   TourDetailResponse,
+  TourPreviewResponse,
   TourItineraryResponse,
   TourImageResponse,
 } from './types';
@@ -26,6 +27,10 @@ import { Prisma } from '@prisma/client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+
+type TourWithPresentation = Prisma.TourGetPayload<{
+  include: { itineraries: true; images: true };
+}>;
 
 @Injectable()
 export class ToursService {
@@ -147,7 +152,7 @@ export class ToursService {
     }
 
     const tour = await this.prisma.tour.findFirst({
-      where: { slug, isActive: true, status: 'PUBLISHED' },
+      where: { slug, isActive: true, status: 'PUBLISHED', deletedAt: null },
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
         images: { orderBy: { sortOrder: 'asc' } },
@@ -161,6 +166,47 @@ export class ToursService {
 
     this.logger.debug(`Tour detail queried | slug=${slug} lang=${lang}`);
 
+    const response = this.toTourDetailResponse(tour, lang);
+
+    await this.cacheManager.set(cacheKey, response, 300_000); // cache for 5 minutes
+    return response;
+  }
+
+  /**
+   * Admin-only preview lookup. It deliberately bypasses the public cache so a
+   * draft or archived representation can never be served by public endpoints.
+   */
+  async findPreviewBySlug(
+    slug: string,
+    lang: string,
+  ): Promise<TourPreviewResponse> {
+    const tour = await this.prisma.tour.findFirst({
+      where: { slug, deletedAt: null },
+      include: {
+        itineraries: { orderBy: { sortOrder: 'asc' } },
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+
+    if (!tour) {
+      throw new NotFoundException('Tour not found');
+    }
+
+    this.logger.debug(`Admin tour preview queried | slug=${slug} lang=${lang}`);
+    return {
+      ...this.toTourDetailResponse(tour, lang),
+      preview: {
+        status: tour.status,
+        isActive: tour.isActive,
+        isPublic: tour.status === 'PUBLISHED' && tour.isActive,
+      },
+    };
+  }
+
+  private toTourDetailResponse(
+    tour: TourWithPresentation,
+    lang: string,
+  ): TourDetailResponse {
     const itinerary: TourItineraryResponse[] = tour.itineraries.map((it) => ({
       id: it.id,
       dayLabel: it.dayLabel,
@@ -177,12 +223,13 @@ export class ToursService {
       sortOrder: img.sortOrder,
     }));
 
-    const response: TourDetailResponse = {
+    return {
       id: tour.id,
       slug: tour.slug,
       title: extractI18n(tour.titleJsonb, lang),
       category: tour.category,
       basePriceUsd: new Prisma.Decimal(tour.basePriceUsd).toFixed(2),
+      currency: tour.currency,
 
       duration: extractI18n(tour.durationJsonb, lang),
       overview: extractI18n(tour.overviewJsonb, lang),
@@ -207,9 +254,6 @@ export class ToursService {
       itinerary,
       images,
     };
-
-    await this.cacheManager.set(cacheKey, response, 300_000); // cache for 5 minutes
-    return response;
   }
 
   async update(slug: string, data: Prisma.TourUpdateInput) {

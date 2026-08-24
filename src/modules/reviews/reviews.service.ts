@@ -62,10 +62,12 @@ export class ReviewsService {
       _count: { rating: true },
     });
 
-    const paginated = paginate(records, total, page, limit);
-
     return {
-      ...paginated,
+      // Keep review aggregates beside the page items. Returning a canonical
+      // { data, meta } payload here would make the global response interceptor
+      // unwrap the array and discard ratingSummary.
+      items: records,
+      meta: paginate(records, total, page, limit).meta,
       ratingSummary: {
         averageRating: aggregates._avg.rating
           ? Number(aggregates._avg.rating.toFixed(2))

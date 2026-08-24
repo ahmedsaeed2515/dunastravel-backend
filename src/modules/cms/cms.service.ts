@@ -3,31 +3,32 @@ import {
   NotFoundException,
   Inject,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { CmsBlockStatus, Prisma } from '@prisma/client';
 import { sanitizeHtmlContent } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
 import { AuthenticatedUser } from '../../common/types';
 import { randomUUID } from 'crypto';
+import { CmsLocale, getCmsBlockDefinition, isCmsLocale } from './cms.registry';
+import { UpsertCmsBlockDto } from './dto/cms.dto';
 
 @Injectable()
 export class CmsService {
-  private readonly managedCatalogKeys = new Set([
-    'holiday_packages',
-    'hotels_catalog',
-    'transportation_fleet',
-  ]);
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async getPublicBlock(key: string) {
+  async getPublicBlock(key: string, lang?: CmsLocale) {
     this.assertValidKey(key);
-    const cacheKey = `cms:${key}`;
+    const definition = getCmsBlockDefinition(key);
+    if (!definition?.public) throw new NotFoundException('CMS block not found');
+    const locale = isCmsLocale(lang) ? lang : undefined;
+    const cacheKey = `cms:${key}:${locale ?? 'raw'}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) {
       return cached;
@@ -36,9 +37,15 @@ export class CmsService {
     const block = await this.prisma.cmsBlock.findUnique({ where: { key } });
     if (!block) throw new NotFoundException('CMS block not found');
 
+    if (block.status !== CmsBlockStatus.PUBLISHED) {
+      throw new NotFoundException('CMS block not found');
+    }
+
     // Cache for 30 minutes
-    await this.cacheManager.set(cacheKey, block, 1800000);
-    return block;
+    const content = this.localizePublicContent(block.content, locale);
+    const response = { ...block, content: content.content, locale: locale ?? null, translationStatus: content.translationStatus };
+    await this.cacheManager.set(cacheKey, response, 1800000);
+    return response;
   }
 
   async findAllAdmin(
@@ -71,9 +78,10 @@ export class CmsService {
     return block;
   }
 
-  async upsertAdmin(key: string, content: unknown, actor: AuthenticatedUser) {
+  async upsertAdmin(key: string, dto: UpsertCmsBlockDto, actor: AuthenticatedUser) {
     this.assertValidKey(key);
     const sanitizedKey = key.trim();
+    const content = dto.content;
     const serialized = JSON.stringify(content);
     if (!serialized || Buffer.byteLength(serialized, 'utf8') > 100_000) {
       throw new BadRequestException('CMS content exceeds the size limit');
@@ -81,17 +89,14 @@ export class CmsService {
     const sanitizedContent = this.sanitizeContent(content, 0);
 
     const block = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.cmsBlock.findUnique({ where: { key: sanitizedKey } });
+      if (existing && dto.expectedVersion !== undefined && existing.version !== dto.expectedVersion) {
+        throw new ConflictException('CMS block has changed; reload before saving');
+      }
       const saved = await tx.cmsBlock.upsert({
         where: { key: sanitizedKey },
-        create: {
-          key: sanitizedKey,
-          content: sanitizedContent as Prisma.InputJsonValue,
-          lastUpdatedBy: actor?.id || 'system-admin',
-        },
-        update: {
-          content: sanitizedContent as Prisma.InputJsonValue,
-          lastUpdatedBy: actor?.id || 'system-admin',
-        },
+        create: { key: sanitizedKey, content: sanitizedContent as Prisma.InputJsonValue, status: dto.status ?? CmsBlockStatus.DRAFT, version: 1, lastUpdatedBy: actor?.id || 'system-admin' },
+        update: { content: sanitizedContent as Prisma.InputJsonValue, status: dto.status ?? existing!.status, version: { increment: 1 }, lastUpdatedBy: actor?.id || 'system-admin' },
       });
       await tx.auditLog.create({
         data: {
@@ -102,14 +107,15 @@ export class CmsService {
           entityId: sanitizedKey,
           metadata: {
             contentBytes: Buffer.byteLength(serialized, 'utf8'),
+            status: saved.status,
+            version: saved.version,
           },
         },
       });
       return saved;
     });
 
-    const cacheKey = `cms:${sanitizedKey}`;
-    await this.cacheManager.del(cacheKey);
+    await this.clearPublicCache(sanitizedKey);
 
     return block;
   }
@@ -133,7 +139,7 @@ export class CmsService {
         },
       });
     });
-    await this.cacheManager.del(`cms:${key}`);
+    await this.clearPublicCache(key);
 
     return { success: true, message: `CMS block '${key}' deleted.` };
   }
@@ -244,19 +250,23 @@ export class CmsService {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
-    await this.cacheManager.del(`cms:${key}`);
+    await this.clearPublicCache(key);
     return result;
   }
 
   private assertManagedCatalogKey(key: string): void {
     this.assertValidKey(key);
-    if (!this.managedCatalogKeys.has(key)) {
+    if (getCmsBlockDefinition(key)?.kind !== 'catalog') {
       throw new BadRequestException('CMS block is not a managed catalog');
     }
   }
 
   private assertValidKey(key: string): void {
-    if (typeof key !== 'string' || !/^[a-z][a-z0-9_.-]{0,99}$/.test(key)) {
+    if (
+      typeof key !== 'string' ||
+      !/^[a-z][a-z0-9_.-]{0,99}$/.test(key) ||
+      !getCmsBlockDefinition(key)
+    ) {
       throw new BadRequestException('Invalid CMS block key');
     }
   }
@@ -302,5 +312,22 @@ export class CmsService {
       return result;
     }
     throw new BadRequestException('CMS content contains an unsupported value');
+  }
+
+  private localizePublicContent(content: unknown, locale?: CmsLocale): { content: unknown; translationStatus: 'NOT_LOCALIZED' | 'PRESENT' | 'MISSING' } {
+    if (!locale || !content || typeof content !== 'object' || Array.isArray(content)) {
+      return { content, translationStatus: 'NOT_LOCALIZED' };
+    }
+    const object = content as Record<string, unknown>;
+    const hasLocaleShape = ['en', 'ar', 'es', 'pt', 'it'].some((candidate) => Object.prototype.hasOwnProperty.call(object, candidate));
+    if (!hasLocaleShape) return { content, translationStatus: 'NOT_LOCALIZED' };
+    if (!Object.prototype.hasOwnProperty.call(object, locale)) {
+      return { content: null, translationStatus: 'MISSING' };
+    }
+    return { content: object[locale], translationStatus: 'PRESENT' };
+  }
+
+  private async clearPublicCache(key: string): Promise<void> {
+    await Promise.all([undefined, 'en', 'ar', 'es', 'pt', 'it'].map((locale) => this.cacheManager.del(`cms:${key}:${locale ?? 'raw'}`)));
   }
 }

@@ -45,7 +45,7 @@ describe('CmsService managed catalogs', () => {
         },
       }),
     );
-    expect(cache.del).toHaveBeenCalledWith('cms:hotels_catalog');
+    expect(cache.del).toHaveBeenCalledWith('cms:hotels_catalog:raw');
   });
 
   it('rejects mutation of non-catalog CMS blocks', async () => {

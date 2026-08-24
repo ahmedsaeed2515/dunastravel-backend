@@ -10,7 +10,9 @@ import { ParseUuidOrSlugPipe } from '../../common/pipes';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Public Tour Landing Pages')
-@Controller(['tour-landing-pages', 'landing-pages'])
+// Public destination routes are owned by `DestinationsController`; this
+// controller owns the generic landing-page collection.
+@Controller('tour-landing-pages')
 @Public()
 @Throttle({ default: { limit: 60, ttl: 60_000 } })
 export class TourLandingPagesPublicController {

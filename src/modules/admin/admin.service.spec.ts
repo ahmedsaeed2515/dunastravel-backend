@@ -124,6 +124,32 @@ describe('AdminService', () => {
     });
   });
 
+  describe('listBookings', () => {
+    it('returns pagination only in the canonical meta object', async () => {
+      prisma.booking.count.mockResolvedValue(1);
+      prisma.booking.findMany.mockResolvedValue([
+        {
+          id: 'booking-1',
+          referenceCode: 'BKG-A4X7Z2',
+          status: 'PENDING',
+          totalAmountUsd: { toString: () => '0.00' },
+          createdAt: new Date('2026-08-01T00:00:00Z'),
+          _count: { passengers: 0 },
+          invoice: null,
+          tour: { id: 'tour-1', slug: 'nile', titleJsonb: { en: 'Nile' } },
+        },
+      ]);
+
+      const result = await service.listBookings({ page: 1, limit: 20 }, 'admin-1');
+
+      expect(result).toEqual({
+        data: [expect.objectContaining({ totalAmount: '0.00', passengerCount: 0 })],
+        meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      });
+      expect('total' in result).toBe(false);
+    });
+  });
+
   describe('listInquiries', () => {
     it('searches real inquiry fields and returns assignment state', async () => {
       prisma.tailorMadeInquiry.count.mockResolvedValue(1);

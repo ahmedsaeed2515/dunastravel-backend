@@ -6,9 +6,10 @@ import * as path from 'path';
 import { seedMediaAssets } from './seeds/media.seed';
 import * as bcrypt from 'bcryptjs';
 
-const connectionString =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required for an explicitly authorized development seed.');
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
@@ -1112,16 +1113,14 @@ async function main(): Promise<void> {
   const isProduction = process.env.NODE_ENV === 'production';
   const seedDemoData = process.env.SEED_DEMO_DATA === 'true';
 
-  if (isProduction && seedDemoData) {
-    throw new Error('SEED_DEMO_DATA is forbidden in production.');
+  if (isProduction || process.env.ALLOW_DEVELOPMENT_SEED !== 'true') {
+    throw new Error('Seeds are development-only. Refusing to run without ALLOW_DEVELOPMENT_SEED=true outside production.');
   }
 
   // Attempt to read programs.json from the frontend
   const possiblePaths = [
-    path.join(__dirname, '../../frontend/src/data/programs.json'),
-    path.join(__dirname, '../frontend/src/data/programs.json'),
-    path.join(process.cwd(), '../frontend/src/data/programs.json'),
-    path.join(process.cwd(), 'frontend/src/data/programs.json'),
+    path.join(__dirname, 'data/ahmed-tours.normalized.json'),
+    path.join(process.cwd(), 'prisma/data/ahmed-tours.normalized.json'),
   ];
 
   let programs: RawProgram[] | null = null;
@@ -1166,7 +1165,7 @@ async function main(): Promise<void> {
     }
     console.warn('⚠  programs.json not found or empty.');
     console.log('📌 Using fallback sample data instead.\n');
-    await seedFallbackTours();
+    throw new Error('Development reference catalog is missing or empty; sample fallback tours are forbidden.');
   }
 
   await seedTourLandingPages();

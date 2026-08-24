@@ -8,6 +8,7 @@ import {
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { AuthenticatedUser } from '../../common/types';
 
 export const LIMITED_CAPACITY_THRESHOLD = 10;
 
@@ -55,6 +56,7 @@ export class AvailabilityService {
       UPDATE tour_availabilities
       SET remaining_seats = LEAST(total_capacity, remaining_seats + ${seatsToRelease}),
           status = CASE
+            WHEN status = 'CLOSED' THEN 'CLOSED'
             WHEN LEAST(total_capacity, remaining_seats + ${seatsToRelease}) >= ${LIMITED_CAPACITY_THRESHOLD} THEN 'AVAILABLE'
             WHEN LEAST(total_capacity, remaining_seats + ${seatsToRelease}) > 0 THEN 'LIMITED'
             ELSE 'SOLD_OUT'
@@ -65,7 +67,7 @@ export class AvailabilityService {
   }
 
   async getAvailability(tourSlug: string) {
-    const tour = await this.prisma.tour.findUnique({
+    const tour = await this.prisma.tour.findFirst({
       where: { slug: tourSlug, status: 'PUBLISHED', isActive: true },
       select: { id: true, titleJsonb: true },
     });
@@ -84,13 +86,28 @@ export class AvailabilityService {
     return { tour, availabilities };
   }
 
+  /** Admin reads include every slot so editors can correct future, closed, and sold-out departures. */
+  async listAdminAvailability(tourId: string) {
+    const tour = await this.prisma.tour.findFirst({
+      where: { id: tourId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!tour) throw new NotFoundException('Tour not found');
+
+    return this.prisma.tourAvailability.findMany({
+      where: { tourId },
+      orderBy: { date: 'asc' },
+    });
+  }
+
   // ─── Admin Availability Management ─────────────────────────────────────────
 
   async createAvailability(
     tourId: string,
     dateStr: string,
-    totalCapacity: number = 30,
+    totalCapacity: number,
     status: string = 'AVAILABLE',
+    actor?: AuthenticatedUser,
   ) {
     const tour = await this.prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) throw new NotFoundException('Tour not found');
@@ -109,14 +126,32 @@ export class AvailabilityService {
       );
     }
 
-    return this.prisma.tourAvailability.create({
-      data: {
-        tourId,
-        date,
-        totalCapacity,
-        remainingSeats: totalCapacity,
-        status,
-      },
+    const remainingSeats = status === 'SOLD_OUT' ? 0 : totalCapacity;
+    const normalizedStatus =
+      status === 'CLOSED'
+        ? 'CLOSED'
+        : remainingSeats === 0
+          ? 'SOLD_OUT'
+          : remainingSeats < LIMITED_CAPACITY_THRESHOLD
+            ? 'LIMITED'
+            : 'AVAILABLE';
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.tourAvailability.create({
+        data: { tourId, date, totalCapacity, remainingSeats, status: normalizedStatus },
+      });
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TOUR_AVAILABILITY_CREATED',
+            entityType: 'TOUR_AVAILABILITY',
+            entityId: created.id,
+            metadata: { tourId, date: date.toISOString(), totalCapacity, status: normalizedStatus },
+          },
+        });
+      }
+      return created;
     });
   }
 
@@ -124,8 +159,9 @@ export class AvailabilityService {
     tourId: string,
     startDateStr: string,
     endDateStr: string,
-    totalCapacity: number = 30,
+    totalCapacity: number,
     daysOfWeek?: number[],
+    actor?: AuthenticatedUser,
   ) {
     const tour = await this.prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) throw new NotFoundException('Tour not found');
@@ -138,51 +174,94 @@ export class AvailabilityService {
     if (startDate > endDate) {
       throw new BadRequestException('Start date must be before end date');
     }
+    const calendarDays = Math.floor(
+      (Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()) -
+        Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate())) /
+        86_400_000,
+    ) + 1;
+    if (calendarDays > 366) {
+      throw new BadRequestException('Availability batch cannot exceed 366 calendar days');
+    }
 
-    const createdSlots = [];
+    const slotDates: Date[] = [];
     const curr = new Date(startDate);
     while (curr <= endDate) {
       const dayOfWeek = curr.getDay(); // 0 = Sun, 1 = Mon ...
       if (!daysOfWeek || daysOfWeek.includes(dayOfWeek)) {
-        const slotDate = new Date(curr);
-        try {
-          const slot = await this.prisma.tourAvailability.upsert({
-            where: { tourId_date: { tourId, date: slotDate } },
-            update: {
-              totalCapacity,
-              remainingSeats: totalCapacity,
-              status: 'AVAILABLE',
-            },
-            create: {
-              tourId,
-              date: slotDate,
-              totalCapacity,
-              remainingSeats: totalCapacity,
-              status: 'AVAILABLE',
-            },
-          });
-          createdSlots.push(slot);
-        } catch {
-          // Ignore duplicate conflict in batch loop
-        }
+        slotDates.push(new Date(curr));
       }
       curr.setDate(curr.getDate() + 1);
     }
 
-    return { count: createdSlots.length, slots: createdSlots };
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.tourAvailability.createMany({
+        data: slotDates.map((date) => ({
+          tourId,
+          date,
+          totalCapacity,
+          remainingSeats: totalCapacity,
+          status: 'AVAILABLE',
+        })),
+        skipDuplicates: true,
+      });
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TOUR_AVAILABILITY_BATCH_CREATED',
+            entityType: 'TOUR',
+            entityId: tourId,
+            metadata: {
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
+              requestedSlots: slotDates.length,
+              createdSlots: created.count,
+              totalCapacity,
+            },
+          },
+        });
+      }
+      return { count: created.count };
+    });
   }
 
   async updateAvailability(
     id: string,
-    dto: { totalCapacity?: number; remainingSeats?: number; status?: string },
+    dto: {
+      totalCapacity?: number;
+      remainingSeats?: number;
+      status?: string;
+      expectedUpdatedAt?: string;
+    },
+    actor?: AuthenticatedUser,
   ) {
     const slot = await this.prisma.tourAvailability.findUnique({
       where: { id },
     });
     if (!slot) throw new NotFoundException('Availability slot not found');
 
+    if (
+      dto.expectedUpdatedAt &&
+      slot.updatedAt.getTime() !== new Date(dto.expectedUpdatedAt).getTime()
+    ) {
+      throw new ConflictException(
+        'This availability slot was changed by another user. Reload it before saving.',
+      );
+    }
+
     const totalCapacity = dto.totalCapacity ?? slot.totalCapacity;
-    let remainingSeats = dto.remainingSeats ?? slot.remainingSeats;
+    const seatsAlreadyReserved = slot.totalCapacity - slot.remainingSeats;
+    if (totalCapacity < seatsAlreadyReserved) {
+      throw new ConflictException(
+        'Capacity cannot be reduced below seats already reserved for this departure.',
+      );
+    }
+    let remainingSeats =
+      dto.remainingSeats ??
+      (dto.totalCapacity !== undefined
+        ? totalCapacity - seatsAlreadyReserved
+        : slot.remainingSeats);
 
     if (remainingSeats > totalCapacity) {
       remainingSeats = totalCapacity;
@@ -192,32 +271,73 @@ export class AvailabilityService {
     }
 
     let status = dto.status ?? slot.status;
-    if (remainingSeats === 0) {
+    if (status === 'CLOSED') {
+      // A manual closure remains closed when seats are released later.
+      status = 'CLOSED';
+    } else if (remainingSeats === 0) {
       status = 'SOLD_OUT';
-    } else if (
-      remainingSeats < LIMITED_CAPACITY_THRESHOLD &&
-      status === 'AVAILABLE'
-    ) {
-      status = 'LIMITED';
+    } else {
+      status =
+        remainingSeats < LIMITED_CAPACITY_THRESHOLD ? 'LIMITED' : 'AVAILABLE';
     }
 
-    return this.prisma.tourAvailability.update({
-      where: { id },
-      data: {
-        totalCapacity,
-        remainingSeats,
-        status,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tourAvailability.update({
+        where: { id },
+        data: { totalCapacity, remainingSeats, status },
+      });
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TOUR_AVAILABILITY_UPDATED',
+            entityType: 'TOUR_AVAILABILITY',
+            entityId: id,
+            metadata: {
+              before: {
+                totalCapacity: slot.totalCapacity,
+                remainingSeats: slot.remainingSeats,
+                status: slot.status,
+              },
+              after: { totalCapacity, remainingSeats, status },
+            },
+          },
+        });
+      }
+      return updated;
     });
   }
 
-  async deleteAvailability(id: string) {
+  async deleteAvailability(id: string, actor?: AuthenticatedUser) {
     const slot = await this.prisma.tourAvailability.findUnique({
       where: { id },
     });
     if (!slot) throw new NotFoundException('Availability slot not found');
 
-    await this.prisma.tourAvailability.delete({ where: { id } });
+    const bookingCount = await this.prisma.booking.count({
+      where: { availabilityId: id },
+    });
+    if (bookingCount > 0) {
+      throw new ConflictException(
+        'Availability with booking history cannot be deleted. Close it instead.',
+      );
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tourAvailability.delete({ where: { id } });
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TOUR_AVAILABILITY_DELETED',
+            entityType: 'TOUR_AVAILABILITY',
+            entityId: id,
+            metadata: { tourId: slot.tourId, date: slot.date.toISOString() },
+          },
+        });
+      }
+    });
     return { success: true };
   }
 
@@ -252,4 +372,3 @@ export class AvailabilityService {
     });
   }
 }
-

@@ -50,6 +50,7 @@ import { UpdateTourDto } from './dto/update-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 import { AddTourImageDto } from './dto/add-tour-image.dto';
 import { ReorderTourImageDto } from './dto/reorder-tour-image.dto';
+import { SetTourImageHeroDto } from './dto/set-tour-image-hero.dto';
 import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
 import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
 import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
@@ -564,6 +565,20 @@ export class AdminController {
       dto.sortOrder,
       user.id,
     );
+  }
+
+  @Patch('tours/:slug/images/:imageId/hero')
+  @ApiOperation({ summary: 'Set a tour image as the single hero image.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiParam({ name: 'imageId', type: 'string' })
+  @ApiBody({ type: SetTourImageHeroDto })
+  @ApiOkResponse({ description: 'Hero image updated successfully.' })
+  async setTourHeroImage(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Param('imageId', ParseUUIDPipe) imageId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.setTourHeroImage(slug, imageId, user.id);
   }
 
   @Post('tours/:slug/itinerary')

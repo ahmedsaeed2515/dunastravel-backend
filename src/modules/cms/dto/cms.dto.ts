@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import {
   IsDefined,
+  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsObject,
@@ -9,10 +11,21 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { CmsBlockStatus } from '@prisma/client';
 
 export class UpsertCmsBlockDto {
   @IsDefined()
   content!: unknown;
+
+  @IsOptional()
+  @IsEnum(CmsBlockStatus)
+  status?: CmsBlockStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  expectedVersion?: number;
 }
 
 export class CmsCatalogItemDto {
@@ -39,4 +52,11 @@ export class ListCmsBlocksQueryDto {
   @IsString()
   @MaxLength(100)
   search?: string;
+}
+
+export class PublicCmsBlockQueryDto {
+  @IsOptional()
+  @IsString()
+  @IsIn(['en', 'ar', 'es', 'pt', 'it'])
+  lang?: 'en' | 'ar' | 'es' | 'pt' | 'it';
 }

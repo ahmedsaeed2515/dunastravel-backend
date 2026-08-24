@@ -2,9 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const connectionString =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString || process.env.NODE_ENV !== 'test' || process.env.ALLOW_TEST_SEED !== 'true') {
+  throw new Error('seed-test-data requires NODE_ENV=test, DATABASE_URL, and ALLOW_TEST_SEED=true.');
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });

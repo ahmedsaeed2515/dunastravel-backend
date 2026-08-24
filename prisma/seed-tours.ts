@@ -5,14 +5,17 @@ import * as path from 'path';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString || process.env.NODE_ENV === 'production' || process.env.ALLOW_DEVELOPMENT_SEED !== 'true') {
+  throw new Error('seed-tours is development-only and requires DATABASE_URL plus ALLOW_DEVELOPMENT_SEED=true outside production.');
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const jsonPath = path.join(__dirname, '../../frontend/src/data/programs.json');
+  const jsonPath = path.join(__dirname, 'data/ahmed-tours.normalized.json');
   if (!fs.existsSync(jsonPath)) {
     console.log('Programs JSON not found at:', jsonPath);
     return;
@@ -83,19 +86,6 @@ async function main() {
           },
         });
       }
-    }
-
-    // Assign mock image if it doesn't have one
-    const imageCount = await prisma.tourImage.count({ where: { tourId: tour.id } });
-    if (imageCount === 0) {
-      await prisma.tourImage.create({
-        data: {
-          tourId: tour.id,
-          imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg',
-          isHero: true,
-          sortOrder: 1,
-        }
-      });
     }
 
     console.log(`Seeded tour: ${tourData.slug}`);

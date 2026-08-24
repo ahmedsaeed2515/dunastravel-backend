@@ -97,7 +97,7 @@ export class AdminCmsController {
     @Body() dto: UpsertCmsBlockDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.cmsService.upsertAdmin(key, dto.content, user);
+    return this.cmsService.upsertAdmin(key, dto, user);
   }
 
   @Delete(':key')

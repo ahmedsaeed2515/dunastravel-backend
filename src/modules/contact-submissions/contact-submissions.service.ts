@@ -109,12 +109,13 @@ export class ContactSubmissionsService {
     ]);
 
     return {
-      items: records,
       data: records,
-      total,
-      page,
-      limit,
-      totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
+      },
     };
   }
 

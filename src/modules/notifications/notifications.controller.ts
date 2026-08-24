@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -49,6 +49,10 @@ export class NotificationsController {
   @Roles('SUPER_ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60 * 60_000 } })
   @ApiOperation({ summary: 'Manually retry a failed notification' })
+  @ApiResponse({ status: 200, description: 'Retry was accepted by the notification service.' })
+  @ApiResponse({ status: 403, description: 'Only a super admin may retry a notification.' })
+  @ApiResponse({ status: 404, description: 'Notification delivery log not found.' })
+  @ApiResponse({ status: 429, description: 'Retry throttle exceeded.' })
   async retryNotification(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() actor: AuthenticatedUser,

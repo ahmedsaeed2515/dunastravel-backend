@@ -12,7 +12,38 @@ export interface Response<T> {
   success: boolean;
   statusCode: number;
   data: T;
+  meta?: Record<string, unknown>;
   timestamp: string;
+}
+
+export interface PaginationMeta {
+  [key: string]: unknown;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CanonicalPaginatedPayload<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Only a list paired with the complete canonical pagination metadata is
+ * unwrapped into the outer success envelope. A business object that happens
+ * to have `data` and `meta` properties remains an item response.
+ */
+export function isCanonicalPaginatedPayload(
+  value: unknown,
+): value is CanonicalPaginatedPayload<unknown> {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  if (!Array.isArray(candidate.data) || !candidate.meta || typeof candidate.meta !== 'object') return false;
+  const meta = candidate.meta as Record<string, unknown>;
+  return ['total', 'page', 'limit', 'totalPages'].every(
+    (key) => typeof meta[key] === 'number' && Number.isFinite(meta[key]),
+  );
 }
 
 @Injectable()
@@ -35,14 +66,15 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((resData: unknown) => {
-        // Avoid double-enveloping if the response is already paginated or wrapped
-        if (resData && typeof resData === 'object' && 'data' in resData) {
-          const { data, ...meta } = resData as Record<string, unknown>;
+        // Collections are represented only as { data: T[], meta: PaginationMeta }.
+        // Do not treat a business object with a `data` property as an envelope.
+        if (isCanonicalPaginatedPayload(resData)) {
+          const { data, meta } = resData;
           return {
             success: true,
             statusCode: response.statusCode,
             data: data as T,
-            ...meta,
+            meta,
             timestamp: new Date().toISOString(),
           };
         }

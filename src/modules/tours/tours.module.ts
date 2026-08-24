@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ToursService } from './tours.service';
 import { ToursController } from './tours.controller';
+import { AdminTourPreviewController } from './admin-tour-preview.controller';
 import { TourLandingPagesService } from './tour-landing-pages.service';
 import { TourLandingPagesAdminController } from './tour-landing-pages-admin.controller';
 import { TourLandingPagesPublicController } from './tour-landing-pages-public.controller';
@@ -10,6 +11,7 @@ import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
   imports: [],
   controllers: [
     ToursController,
+    AdminTourPreviewController,
     TourLandingPagesAdminController,
     TourLandingPagesPublicController,
   ],

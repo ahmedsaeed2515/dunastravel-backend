@@ -20,11 +20,15 @@ export class UploadMediaDto {
   entityType!: MediaEntityType;
 
   @ApiPropertyOptional({
-    description: 'Required if entityType is TOUR',
+    description: 'Required if entityType is TOUR or HOTEL',
     type: 'string',
     format: 'uuid',
   })
-  @ValidateIf((o) => o.entityType === MediaEntityType.TOUR)
+  @ValidateIf(
+    (o) =>
+      o.entityType === MediaEntityType.TOUR ||
+      o.entityType === MediaEntityType.HOTEL,
+  )
   @IsNotEmpty()
   @IsUUID()
   entityId!: string | null;

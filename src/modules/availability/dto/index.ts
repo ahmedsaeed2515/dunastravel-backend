@@ -22,16 +22,15 @@ export class CreateAvailabilityDto {
   @IsDateString()
   date!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Total capacity for this slot',
     example: 30,
   })
-  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10_000)
-  totalCapacity?: number;
+  totalCapacity!: number;
 
   @ApiPropertyOptional({ description: 'Slot status', example: 'AVAILABLE' })
   @IsOptional()
@@ -51,13 +50,12 @@ export class CreateBatchAvailabilityDto {
   @IsDateString()
   endDate!: string;
 
-  @ApiPropertyOptional({ description: 'Total capacity per slot', example: 30 })
-  @IsOptional()
+  @ApiProperty({ description: 'Total capacity per slot', example: 30 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10_000)
-  totalCapacity?: number;
+  totalCapacity!: number;
 
   @ApiPropertyOptional({
     description: 'Days of week to generate (0 = Sun, 1 = Mon ... 6 = Sat)',
@@ -75,6 +73,13 @@ export class CreateBatchAvailabilityDto {
 }
 
 export class UpdateAvailabilityDto {
+  @ApiPropertyOptional({
+    description: 'The slot updatedAt value from the latest admin read. Rejects a stale edit with HTTP 409.',
+  })
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
+
   @ApiPropertyOptional({ description: 'Total capacity', example: 40 })
   @IsOptional()
   @Type(() => Number)

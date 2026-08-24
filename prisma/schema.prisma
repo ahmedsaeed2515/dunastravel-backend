@@ -232,7 +232,7 @@ model Tour {
   seasonPricingJsonb      Json?                 @map("season_pricing_jsonb")
   seoDescription          String?               @map("seo_description")
   seoTitle                String?               @map("seo_title") @db.VarChar(255)
-  status                  String                @default("PUBLISHED") @db.VarChar(50)
+  status                  String                @default("DRAFT") @db.VarChar(50)
   tags                    String[]              @default([])
   termsJsonb              Json?                 @map("terms_jsonb")
   transportationJsonb     Json?                 @map("transportation_jsonb")
@@ -809,7 +809,13 @@ enum ContactSubmissionStatus {
 
 enum MediaEntityType {
   TOUR
+  HOTEL
   GENERAL
+}
+
+enum CmsBlockStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum MediaProvenance {
@@ -882,6 +888,8 @@ model CmsBlock {
   id            String   @id @default(uuid())
   key           String   @unique @db.VarChar(100)
   content       Json
+  status        CmsBlockStatus @default(DRAFT)
+  version       Int      @default(1)
   lastUpdatedBy String?  @map("last_updated_by")
   updatedAt     DateTime @updatedAt @map("updated_at")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -960,6 +968,60 @@ model TourLandingPageTour {
   @@map("tour_landing_page_tours")
 }
 
+model Hotel {
+  id                    String      @id @default(uuid())
+  slug                  String      @unique @db.VarChar(100)
+  nameJsonb             Json        @map("name_jsonb")
+  descriptionJsonb      Json?       @map("description_jsonb")
+  destinationSlug       String      @map("destination_slug") @db.VarChar(100)
+  city                  String      @db.VarChar(100)
+  stars                 Int
+  rating                Decimal?    @db.Decimal(3, 2)
+  currency              String      @default("USD") @db.VarChar(10)
+  addressJsonb          Json?       @map("address_jsonb")
+  phone                 String?     @db.VarChar(50)
+  email                 String?     @db.VarChar(255)
+  website               String?     @db.VarChar(2048)
+  amenitiesJsonb        Json?       @map("amenities_jsonb")
+  policiesJsonb         Json?       @map("policies_jsonb")
+  heroMediaId           String?     @map("hero_media_id") @db.VarChar(50)
+  status                String      @default("DRAFT") @db.VarChar(50)
+  isActive              Boolean     @default(false) @map("is_active")
+  sortOrder             Int         @default(0) @map("sort_order")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  deletedAt             DateTime?   @map("deleted_at")
+  rooms                 HotelRoom[]
+
+  @@index([destinationSlug, status, isActive, deletedAt])
+  @@index([city])
+  @@index([deletedAt])
+  @@map("hotels")
+}
+
+model HotelRoom {
+  id                    String   @id @default(uuid())
+  hotelId               String   @map("hotel_id")
+  slug                  String   @db.VarChar(100)
+  nameJsonb             Json     @map("name_jsonb")
+  descriptionJsonb      Json?    @map("description_jsonb")
+  ratePerNight          Decimal  @map("rate_per_night") @db.Decimal(10, 2)
+  currency              String   @default("USD") @db.VarChar(10)
+  mealPlanJsonb         Json?    @map("meal_plan_jsonb")
+  maxOccupancy          Int      @map("max_occupancy")
+  inventory             Int      @default(0)
+  isActive              Boolean  @default(false) @map("is_active")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+  hotel                 Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@unique([hotelId, slug])
+  @@index([hotelId, isActive, deletedAt])
+  @@map("hotel_rooms")
+}
+
 model AnalyticsEvent {
   id             String    @id @default(uuid())
   eventId        String    @unique @map("event_id") @db.VarChar(100)
@@ -997,8 +1059,8 @@ model TourAvailability {
   id             String    @id @default(uuid())
   tourId         String    @map("tour_id")
   date           DateTime  @db.Date
-  totalCapacity  Int       @default(30) @map("total_capacity")
-  remainingSeats Int       @default(30) @map("remaining_seats")
+  totalCapacity  Int       @map("total_capacity")
+  remainingSeats Int       @map("remaining_seats")
   status         String    @default("AVAILABLE") @db.VarChar(50)
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")

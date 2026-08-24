@@ -17,9 +17,9 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEVELOPMENT_SEED !== 'true') {
     throw new Error(
-      'Comprehensive fake-data seeding is forbidden in production.',
+      'Comprehensive fake-data seeding is development-only and requires ALLOW_DEVELOPMENT_SEED=true.',
     );
   }
   console.log('🌱 Starting comprehensive database population with Faker...');

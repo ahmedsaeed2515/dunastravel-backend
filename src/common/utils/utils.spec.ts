@@ -72,13 +72,15 @@ describe('Common Utils', () => {
       const result = paginate(items, total, 2, 10);
 
       expect(result).toEqual({
-        items,
-        total: 25,
-        page: 2,
-        limit: 10,
-        totalPages: 3,
-        hasNextPage: true,
-        hasPrevPage: true,
+        data: items,
+        meta: {
+          total: 25,
+          page: 2,
+          limit: 10,
+          totalPages: 3,
+          hasNextPage: true,
+          hasPrevPage: true,
+        },
       });
     });
   });

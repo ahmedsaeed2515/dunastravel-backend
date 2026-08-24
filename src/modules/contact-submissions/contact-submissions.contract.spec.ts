@@ -159,11 +159,15 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      const items = Array.isArray(res.body?.data)
-        ? res.body.data
-        : (res.body as { data: { items: unknown[] } })?.data?.items;
-      expect(Array.isArray(items)).toBe(true);
-      expect(items.length).toBeGreaterThan(0);
+      const body = res.body as {
+        success: boolean;
+        data: unknown[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+      };
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBeGreaterThan(0);
+      expect(body.meta).toEqual({ total: 1, page: 1, limit: 10, totalPages: 1 });
     });
   });
 

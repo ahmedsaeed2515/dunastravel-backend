@@ -1,11 +1,13 @@
 export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
 export function paginate<T>(
@@ -19,13 +21,15 @@ export function paginate<T>(
   const hasPrevPage = page > 1;
 
   return {
-    items,
-    total,
-    page,
-    limit,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
+    data: items,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage,
+      hasPrevPage,
+    },
   };
 }
 
