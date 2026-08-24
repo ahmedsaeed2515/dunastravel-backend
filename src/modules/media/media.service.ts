@@ -49,11 +49,7 @@ export class MediaService {
     dto: UploadMediaDto,
     uploadedByUserId: string,
   ): Promise<IMediaAsset> {
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const maxSizeBytes =
       this.configService.get<number>('storage.maxFileSizeBytes') ||
       10 * 1024 * 1024;
@@ -63,22 +59,16 @@ export class MediaService {
       !file.mimetype ||
       !allowedMimeTypes.includes(file.mimetype.toLowerCase())
     ) {
-      throw new BadRequestException(
-        'Unsupported file type',
-      );
+      throw new BadRequestException('Unsupported file type');
     }
 
     if (file.size > maxSizeBytes) {
-      throw new BadRequestException(
-        'File exceeds the maximum allowed size',
-      );
+      throw new BadRequestException('File exceeds the maximum allowed size');
     }
 
     if (dto.entityType === MediaEntityType.TOUR) {
       if (!dto.entityId) {
-        throw new BadRequestException(
-          'entityId is required for tour media',
-        );
+        throw new BadRequestException('entityId is required for tour media');
       }
       const tour = await this.prisma.tour.findFirst({
         where: { id: dto.entityId, deletedAt: null },
@@ -113,9 +103,7 @@ export class MediaService {
       folder,
       entityType: dto.entityType,
       entityId:
-        dto.entityType === MediaEntityType.TOUR
-          ? (dto.entityId ?? null)
-          : null,
+        dto.entityType === MediaEntityType.TOUR ? (dto.entityId ?? null) : null,
       altText: sanitizePlainText(dto.altText).slice(0, 255) || null,
       eager,
     };
@@ -184,9 +172,7 @@ export class MediaService {
           'Invalid uploaded media also failed provider cleanup',
         );
       }
-      throw new BadRequestException(
-        'Uploaded media failed content validation',
-      );
+      throw new BadRequestException('Uploaded media failed content validation');
     }
 
     // Provider success, now database transaction
@@ -207,12 +193,9 @@ export class MediaService {
               height: result.height,
               entityType: dto.entityType,
               entityId:
-                dto.entityType === MediaEntityType.TOUR
-                  ? dto.entityId
-                  : null,
+                dto.entityType === MediaEntityType.TOUR ? dto.entityId : null,
               provenance: MediaProvenance.UPLOADED,
-              altText:
-                sanitizePlainText(dto.altText).slice(0, 255) || null,
+              altText: sanitizePlainText(dto.altText).slice(0, 255) || null,
               uploadedBy: uploadedByUserId,
             },
           });
@@ -255,9 +238,7 @@ export class MediaService {
               metadata: {
                 mediaEntityType: dto.entityType,
                 mediaEntityId:
-                  dto.entityType === MediaEntityType.TOUR
-                    ? dto.entityId
-                    : null,
+                  dto.entityType === MediaEntityType.TOUR ? dto.entityId : null,
                 bytes: result.bytes,
                 format: result.format,
               },
@@ -390,7 +371,10 @@ export class MediaService {
 
   async listAssets(
     query: ListMediaDto,
-  ): Promise<{ data: IMediaAsset[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+  ): Promise<{
+    data: IMediaAsset[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }> {
     const {
       page = 1,
       limit = 20,
@@ -462,6 +446,17 @@ export class MediaService {
       `Tour assets queried { tourId: ${tourId}, count: ${assets.length} }`,
     );
     return assets;
+  }
+
+  async getPublicGallery(limit = 100): Promise<IMediaAsset[]> {
+    return this.prisma.mediaAsset.findMany({
+      where: {
+        entityType: MediaEntityType.GENERAL,
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 100),
+    });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

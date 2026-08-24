@@ -89,7 +89,7 @@ async function bootstrapServerless(): Promise<express.Express> {
           return callback(null, true);
         }
 
-        return callback(new Error('Origin is not allowed by CORS'));
+        return callback(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

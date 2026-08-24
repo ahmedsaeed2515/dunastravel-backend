@@ -70,12 +70,7 @@ export class MediaAdminController {
       fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) {
-          return cb(
-            new BadRequestException(
-              'Invalid file type',
-            ),
-            false,
-          );
+          return cb(new BadRequestException('Invalid file type'), false);
         }
         cb(null, true);
       },
@@ -104,11 +99,7 @@ export class MediaAdminController {
     @Body() dto: UploadMediaDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MediaAssetResponseDto> {
-    const asset = await this.mediaService.uploadAsset(
-      file,
-      dto,
-      user.id,
-    );
+    const asset = await this.mediaService.uploadAsset(file, dto, user.id);
     return MediaAssetResponseDto.fromPrisma(asset);
   }
 
@@ -174,6 +165,15 @@ export class MediaAdminController {
 export class MediaPublicController {
   constructor(private readonly mediaService: MediaService) {}
 
+  @Get()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Get active public gallery assets' })
+  @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
+  async getPublicGallery(): Promise<PublicMediaAssetResponseDto[]> {
+    const assets = await this.mediaService.getPublicGallery();
+    return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
+  }
+
   @Get('tours/:tourId')
   @ApiOperation({ summary: 'Get all active media assets for a tour' })
   @ApiParam({ name: 'tourId', type: 'string', format: 'uuid' })
@@ -183,8 +183,6 @@ export class MediaPublicController {
     @Param('tourId', ParseUUIDPipe) tourId: string,
   ): Promise<PublicMediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByTourId(tourId);
-    return assets.map((asset) =>
-      PublicMediaAssetResponseDto.fromPrisma(asset),
-    );
+    return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
   }
 }

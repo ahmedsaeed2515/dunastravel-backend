@@ -456,7 +456,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -649,7 +649,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -3378,14 +3378,6 @@
       "get": {
         "operationId": "WalletsController_getWallet",
         "parameters": [
-          {
-            "name": "ownerType",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "ownerId",
             "required": true,
@@ -7601,7 +7593,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -7609,7 +7601,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -8262,6 +8254,31 @@
         "summary": "List media assets (admin, paginated)",
         "tags": [
           "Admin — Media"
+        ]
+      }
+    },
+    "/api/media": {
+      "get": {
+        "operationId": "MediaPublicController_getPublicGallery",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicMediaAssetResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get active public gallery assets",
+        "tags": [
+          "Media"
         ]
       }
     },
@@ -13346,6 +13363,10 @@
       }
     },
     "schemas": {
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
       "AdminCreatePassengerDto": {
         "type": "object",
         "properties": {
@@ -14679,7 +14700,7 @@
             "example": 30
           },
           "status": {
-            "type": "string",
+            "type": "object",
             "description": "Slot status",
             "example": "AVAILABLE"
           }
@@ -14738,7 +14759,7 @@
             "example": 25
           },
           "status": {
-            "type": "string",
+            "type": "object",
             "description": "Status override",
             "example": "AVAILABLE"
           }
