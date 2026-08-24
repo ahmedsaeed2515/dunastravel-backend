@@ -10,23 +10,23 @@ export interface StorageConfig {
 }
 
 export default registerAs('storage', (): StorageConfig => {
-  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY;
-  const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET;
+  const isProd =
+    process.env.NODE_ENV === 'production' ||
+    process.env.NODE_ENV === 'staging';
 
-  if (!cloudinaryCloudName || !cloudinaryApiKey || !cloudinaryApiSecret) {
-    throw new Error(
-      'StorageConfig error: Cloudinary credentials are not properly configured.',
-    );
-  }
+  const cloudinaryCloudName =
+    process.env.CLOUDINARY_CLOUD_NAME || (isProd ? '' : 'mock');
+  const cloudinaryApiKey =
+    process.env.CLOUDINARY_API_KEY || (isProd ? '' : 'mock');
+  const cloudinaryApiSecret =
+    process.env.CLOUDINARY_API_SECRET || (isProd ? '' : 'mock');
 
   if (
-    process.env.NODE_ENV === 'production' &&
-    (cloudinaryCloudName === 'mock' ||
-      cloudinaryCloudName === 'your_cloud_name')
+    isProd &&
+    (!cloudinaryCloudName || !cloudinaryApiKey || !cloudinaryApiSecret)
   ) {
     throw new Error(
-      'FATAL: Cannot use mock Cloudinary credentials in production.',
+      'StorageConfig error: Cloudinary credentials are not properly configured.',
     );
   }
 

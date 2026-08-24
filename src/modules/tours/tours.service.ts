@@ -45,7 +45,8 @@ export class ToursService {
       query.limit,
     );
 
-    const cacheKey = `tours:catalog:${query.lang || 'en'}:${query.category || ''}:${query.destination || query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
+    const version = (await this.cacheManager.get<number>('tours:catalog:v')) || 1;
+    const cacheKey = `tours:catalog:v${version}:${query.lang || 'en'}:${query.category || ''}:${query.destination || query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
     const cached = await this.cacheManager.get<PaginatedResponse<TourSummaryResponse>>(cacheKey);
     if (cached) {
       return cached;

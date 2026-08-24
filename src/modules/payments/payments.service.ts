@@ -132,6 +132,7 @@ export class PaymentsService {
         return {
           url: existingPendingPayment.sessionUrl!,
           transactionId: existingPendingPayment.transactionId,
+          paymentId: existingPendingPayment.id,
         };
       } else {
         this.logger.log(
@@ -247,6 +248,7 @@ export class PaymentsService {
           return {
             url: concurrent.sessionUrl,
             transactionId: concurrent.transactionId,
+            paymentId: concurrent.id,
           };
         }
       }

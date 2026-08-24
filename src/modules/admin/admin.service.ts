@@ -1930,6 +1930,7 @@ export class AdminService {
       },
     });
 
+    await this.invalidateTourCache(tour.slug);
     return { success: true, slug: tour.slug };
   }
 
@@ -1989,11 +1990,8 @@ export class AdminService {
       });
     });
 
-    // Invalidate cache
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
-    for (const l of langs) {
-      await this.cacheManager.del(`tour:${slug}:${l}`);
-    }
+    // Invalidate detail and catalog cache
+    await this.invalidateTourCache(slug);
 
     return { success: true, slug: updated.slug };
   }
@@ -2376,11 +2374,8 @@ export class AdminService {
       { isolationLevel: 'Serializable' },
     );
 
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const t of tours) {
-      for (const l of langs) {
-        await this.cacheManager.del(`tour:${t.slug}:${l}`);
-      }
+      await this.invalidateTourCache(t.slug);
     }
 
     return { count: result.count };
@@ -2411,10 +2406,7 @@ export class AdminService {
       },
     });
 
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
-    for (const l of langs) {
-      await this.cacheManager.del(`tour:${slug}:${l}`);
-    }
+    await this.invalidateTourCache(slug);
 
     return { success: true };
   }
@@ -2765,9 +2757,20 @@ export class AdminService {
     return { message: 'Itinerary deleted' };
   }
 
-  private async invalidateTourCache(slug: string): Promise<void> {
-    for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
-      await this.cacheManager.del(`tour:${slug}:${locale}`);
+  private async invalidateTourCache(slug?: string): Promise<void> {
+    if (slug) {
+      for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
+        await this.cacheManager.del(`tour:${slug}:${locale}`);
+      }
+    }
+    try {
+      const currentV =
+        (await this.cacheManager.get<number>('tours:catalog:v')) || 1;
+      await this.cacheManager.set('tours:catalog:v', currentV + 1, 86400000);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to bump tours catalog cache version: ${(err as any)?.message}`,
+      );
     }
   }
 }
