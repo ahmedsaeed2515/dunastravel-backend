@@ -42,6 +42,7 @@ export class AdminReviewsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'tourId', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'isPublished', required: false, type: Boolean })
   async findAll(
     @Query() query: AdminReviewQueryDto,
   ) {
@@ -50,6 +51,7 @@ export class AdminReviewsController {
       query.limit,
       query.tourId,
       query.status,
+      query.isPublished,
     );
   }
 

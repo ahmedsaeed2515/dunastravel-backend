@@ -170,6 +170,7 @@ export class ReviewsService {
     limitVal: number = 10,
     tourId?: string,
     status?: string,
+    isPublished?: boolean,
   ) {
     const { page, limit, skip } = getPaginationParams(pageVal, limitVal);
 
@@ -179,6 +180,7 @@ export class ReviewsService {
 
     if (tourId) where.tourId = tourId;
     if (status) where.status = status;
+    if (isPublished !== undefined) where.isPublished = isPublished;
 
     const [total, records] = await Promise.all([
       this.prisma.tourReview.count({ where }),

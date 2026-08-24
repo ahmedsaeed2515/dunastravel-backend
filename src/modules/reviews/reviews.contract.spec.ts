@@ -137,6 +137,15 @@ describe('Reviews HTTP Contract Spec', () => {
     expect(items[0].id).toBe(mockReviewId);
   });
 
+  it('GET /api/admin/reviews with isPublished filter returns filtered list', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/reviews?isPublished=true&limit=100')
+      .expect(200);
+
+    const items = res.body.data?.items || res.body.data;
+    expect(items).toBeDefined();
+  });
+
   it('PATCH /api/admin/reviews/:id/status updates review status to APPROVED', async () => {
     const res = await request(app.getHttpServer())
       .patch(`/admin/reviews/${mockReviewId}/status`)

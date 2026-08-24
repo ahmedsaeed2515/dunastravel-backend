@@ -105,9 +105,9 @@ export class CreateTourImageDto {
   @IsOptional()
   updatedAt?: any;
 
-  @ApiProperty({ description: 'Image URL' })
+  @ApiProperty({ description: 'Image URL or path' })
   @IsNotEmpty()
-  @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
+  @IsString()
   @MaxLength(2048)
   imageUrl!: string;
 
@@ -127,7 +127,7 @@ export class CreateTourImageDto {
     (dto: CreateTourImageDto) =>
       Boolean(dto.videoUrl && String(dto.videoUrl).trim().length > 0),
   )
-  @IsUrl({ protocols: ['https', 'http'], require_protocol: true })
+  @IsString()
   @MaxLength(2048)
   videoUrl?: string;
 
