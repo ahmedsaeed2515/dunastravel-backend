@@ -128,13 +128,6 @@ async function seedFromJson(programs: RawProgram[]): Promise<void> {
       continue;
     }
 
-    const rawCountry = String((program as any).country || (program as any).destination || '').toLowerCase();
-    if (rawCountry.includes('egypt') || rawCountry.includes('مصر') || slug.includes('egypt') || slug.includes('cairo')) {
-      console.log(`  ⚠  Skipping Egypt tour: ${slug}`);
-      skipped++;
-      continue;
-    }
-
     const existing = await prisma.tour.findUnique({ where: { slug } });
     if (existing) {
       console.log(`  ↩  Already exists: ${slug}`);

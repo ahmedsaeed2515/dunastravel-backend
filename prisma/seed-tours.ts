@@ -27,11 +27,6 @@ async function main() {
   console.log(`Starting to seed ${programs.length} tours...`);
 
   for (const program of programs) {
-    const progCountry = (program.country || program.destination || '').toLowerCase();
-    if (progCountry.includes('egypt') || progCountry.includes('مصر')) {
-      console.log(`Skipping Egypt tour seed: ${program.slug || program.id}`);
-      continue;
-    }
     // Merge highlights into overview for each language
     const overviewJsonb: any = { ...program.overview };
     if (program.highlights) {
