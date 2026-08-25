@@ -241,12 +241,12 @@ async function seedFallbackTours(): Promise<void> {
         it: '2 Pax',
         pt: '2 Pax',
       },
-      overviewJsonb: {
-        ar: 'انغمس في روعة اليونان القديمة وسحر البحر إيجة في هذا المسار الرائع الممتد لتسعة أيام. من الأكروبوليس في أثينا إلى غروب الشمس الساحر في سانتوريني وميكونوس، مروراً بطبيعة ومأكولات جزيرة كريت الخلابة.',
-        en: 'Immerse yourself in the splendor of Ancient Greece and the charm of the Aegean Sea on this spectacular nine-day itinerary. From the grand Acropolis of Athens to the vibrant sunsets in Santorini and Mykonos, to authentic Cretan culture.',
-        es: 'Sumérgete en el esplendor de la Antigua Grecia y el encanto del mar Egeo en este espectacular itinerario de nueve días. Desde la grandiosa Acrópolis de Atenas hasta los vibrantes atardeceres en Santorini y Mykonos, cada escala revela un pedazo de paraíso y cultura.',
-        it: "Immergiti nello splendore dell'Antica Grecia e nel fascino del Mar Egeo in questo spettacolare itinerario di nove giorni.",
-        pt: 'Mergulhe no esplendor da Grécia Antiga e no encanto do Mar Egeu neste espetacular itinerário de nove dias.',
+            overviewJsonb: {
+        ar: 'انغمس في روعة اليونان القديمة وسحر البحر إيجة في هذا المسار الرائع الممتد لتسعة أيام. من الأكروبوليس في أثينا إلى غروب الشمس الساحر في سانتوريني وميكونوس، مروراً بطبيعة ومأكولات جزيرة كريت الخلابة وتاريخها المينوي العريق، تدمج هذه الرحلة بين الثقافة الكلاسيكية وروعة البحر الأبيض المتوسط.',
+        en: 'Immerse yourself in the splendor of Ancient Greece and the charm of the Aegean Sea on this spectacular nine-day itinerary. From the grand Acropolis of Athens to the vibrant sunsets in Santorini and Mykonos, each stop reveals a piece of paradise and culture. Crowned with authentic gastronomy and Minoan history in Crete, this journey combines classical culture with pure Mediterranean essence.',
+        es: 'Sumérgete en el esplendor de la Antigua Grecia y el encanto del mar Egeo en este espectacular itinerario de nueve días. Desde la grandiosa Acrópolis de Atenas hasta los vibrantes atardeceres en Santorini y Mykonos, cada escala revela un pedazo de paraíso y cultura. Coronando la travesía con la auténtica gastronomía e historia minoica en Creta, este viaje combina cultura clásica y pura esencia mediterránea.',
+        it: "Immergiti nello splendore dell'Antica Grecia e nel fascino del Mar Egeo in questo spettacolare itinerario di nove giorni. Dalla grandiosa Acropoli di Atene ai vibranti tramonti di Santorini e Mykonos, ogni tappa rivela un pezzo di paradiso e cultura. Coronando il viaggio con l'autentica gastronomia e la storia minoica a Creta, questo viaggio unisce la cultura classica alla pura essenza mediterranea.",
+        pt: 'Mergulhe no esplendor da Grécia Antiga e no encanto do Mar Egeu neste espetacular itinerário de nove dias. Da grandiosa Acrópole de Atenas aos vibrantes por do sol em Santorini e Mykonos, cada parada revela um pedaço do paraíso e da cultura. Coroando a viagem com a autêntica gastronomia e história minóica em Creta, esta viagem combina cultura clássica e pura essência mediterrânea.',
       },
       includedServicesJsonb: {
         ar: [
