@@ -50,7 +50,7 @@ async function main() {
       minPaxJsonb: program.minPax || {},
       isActive: true,
       capacity: 30,
-      country: 'Turkey',
+      country: program.country || program.destination || 'Egypt',
       currency: 'USD',
       transportationJsonb: program.transportOptions || {},
       status: 'PUBLISHED',

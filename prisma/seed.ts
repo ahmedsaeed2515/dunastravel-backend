@@ -222,7 +222,7 @@ async function seedFallbackTours(): Promise<void> {
         it: 'Cairo Express',
       },
       category: 'egypt',
-      country: 'egypt',
+      country: 'Egypt',
       city: 'Cairo',
       basePriceUsd: 450,
       durationJsonb: {
