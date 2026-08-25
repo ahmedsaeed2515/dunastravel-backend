@@ -214,6 +214,334 @@ async function seedFallbackTours(): Promise<void> {
 
   const fallbackTours = [
 {
+      slug: 'tunisia-8-days-desert-sea',
+      code: 'tunisia-8d-7n-tour',
+      titleJsonb: {
+        "ar": "برنامج تونس الخضراء المتميز",
+        "en": "Tunisia Tour - 8 Days / 7 Nights",
+        "es": "Circuito Túnez - 8 Días / 7 Noches",
+        "it": "Tour Tunisia - 8 Giorni / 7 Notti",
+        "pt": "Circuito Tunísia - 8 Dias / 7 Noites"
+},
+      category: 'Tunisia',
+      country: 'Tunisia',
+      city: 'Tunis',
+      basePriceUsd: 1328,
+      durationJsonb: {
+        "ar": "8 أيام / 7 ليالي",
+        "en": "8 Days / 7 Nights",
+        "es": "8 Días / 7 Noches",
+        "it": "8 Giorni / 7 Notti",
+        "pt": "8 Dias / 7 Noites"
+},
+      minPaxJsonb: {
+        "ar": "فردان",
+        "en": "2 Pax",
+        "es": "2 Pax",
+        "it": "2 Pax",
+        "pt": "2 Pax"
+},
+      overviewJsonb: {
+        "ar": "انطلق في رحلة ساحرة عبر الزمن تجمع بين عبق التاريخ الروماني والإسلامي العريق وسحر الطبيعة الصحراوية الفريدة. يمنحك هذا البرنامج المتكامل فرصة استكشاف تونس الخضراء من عاصمتها النابضة بالحياة وصولاً إلى بوابات الصحراء الشاسعة، مع الاستمتاع بإقامة فاخرة وخدمات متكاملة تناسب الأفراد والمجموعات.",
+        "en": "Embark on an extraordinary 8-day journey that seamlessly blends ancient Roman grandeur, rich Islamic heritage, and the breathtaking beauty of the Sahara Desert. This curated program takes you from the vibrant capital of Tunis to the vast golden dunes of the south, offering a comprehensive and premium travel experience tailored for all groups.",
+        "es": "Embárquese en un viaje extraordinario de 8 días que combina a la perfección la grandeza romana antigua, el rico legado islámico y la belleza sobrecogedora del desierto del Sahara. Este programa seleccionado le llevará desde la vibrante capital de Túnez hasta las vastas dunas doradas del sur, ofreciendo una experiencia prémium diseñada para todo tipo de grupos.",
+        "it": "Intraprendete uno straordinario viaggio di 8 giorni che unisce la grandezza dell'antica Roma, la ricca eredità islamica e la bellezza mozzafiato del deserto del Sahara. Questo programma esclusivo vi porterà dalla vibrante capitale Tunisi fino alle vaste dune dorate del sud, offrendo un'esperienza di viaggio completa e premium ideale per ogni gruppo.",
+        "pt": "Embarque em uma jornada extraordinária de 8 dias que combina perfeitamente a grandiosidade da Roma Antiga, a rica herança islâmica e a beleza deslumbrante do deserto do Saara. Este programa exclusivo levará você desde a vibrante capital, Túnis, até as vastas dunas douradas do sul, oferecendo uma experiência de viagem premium ideal para todos os tipos de grupos."
+},
+      includedServicesJsonb: {
+        "ar": [
+                "تذاكر الطيران (تشمل حقيبة شحن 23 كجم + حقيبة يد كابينة 8 كجم)",
+                "الاستقبال والتوصيل من وإلى المطار",
+                "الجولات البرية طوال الـ 8 أيام بسيارة سياحية مريحة",
+                "مرشد سياحي محترف يتحدث اللغتين الإسبانية/القشتالية",
+                "الإقامة 7 ليالٍ في الفنادق المذكورة (4 و 5 نجوم)",
+                "7 فطور، 6 غداء، 6 عشاء",
+                "رسوم تذاكر دخول المعالم السياحية التالية: (قصر الجم، معالم القيروان، قرطاج، سبيطلة، دقة، ومتحف دار شريط في توزر)",
+                "تغطية الزيارات للمدن والقرى المدرجة بالبرنامج",
+                "تأمين السفر الأساسي"
+        ],
+        "en": [
+                "Flights with 23kg checked bag + 8kg cabin bag",
+                "Airport transfers",
+                "8-day tour in a comfortable tourist vehicle",
+                "Professional Spanish-speaking guide",
+                "7 nights accommodation in 4*/5* hotels",
+                "7 breakfasts, 6 lunches, 6 dinners",
+                "Entrance fees to monuments (El Jem, Kairouan, Carthage, Sbeitla, Dougga, Dar Chraiet)",
+                "Visits to mentioned towns",
+                "Basic travel insurance"
+        ],
+        "es": [
+                "Vuelos con maleta facturada de 23 kg + 1 de cabina de 8 kg",
+                "Asistencia y traslados",
+                "Circuito de 8 días en transporte turístico confortable",
+                "Guía profesional en castellano",
+                "Alojamiento de 7 noches en hoteles de 4* y 5*",
+                "7 desayunos, 6 almuerzos, 6 cenas",
+                "Entradas a los monumentos mencionados",
+                "Visitas guiadas",
+                "Seguro de inclusión"
+        ],
+        "it": [
+                "Voli inclusi con bagaglio da stiva da 23 kg + 1 bagaglio a mano da 8 kg",
+                "Assistenza e trasferimenti",
+                "Tour di 8 giorni in un veicolo turistico confortevole",
+                "Guida professionale in lingua spagnola",
+                "Sistemazione per 7 notti in hotel 4*/5*",
+                "7 colazioni, 6 pranzi, 6 cene",
+                "Ingressi ai monumenti menzionati",
+                "Visite guidate",
+                "Assicurazione base"
+        ],
+        "pt": [
+                "Voos incluídos com mala despachada de 23 kg + 1 mala de cabine de 8 kg",
+                "Assistência e translados",
+                "Circuito de 8 dias em transporte turístico confortável",
+                "Guia profissional em espanhol",
+                "Acomodação de 7 noites em hotéis de 4* e 5*",
+                "7 cafés da manhã, 6 almoços, 6 jantares",
+                "Ingressos para os monumentos mencionados",
+                "Visitas guiadas",
+                "Seguro de viagem incluído"
+        ]
+},
+      excludedServicesJsonb: {
+        "ar": [
+                "الإكراميات (Propinas)",
+                "المشروبات مع الوجبات",
+                "ضريبة الإقامة الفندقية (Tasa de estancia)"
+        ],
+        "en": [
+                "Tips",
+                "Drinks",
+                "Hotel city tax"
+        ],
+        "es": [
+                "Propinas",
+                "Bebidas",
+                "Tasa de estancia hotelera"
+        ],
+        "it": [
+                "Mance",
+                "Bevande",
+                "Tassa di soggiorno alberghiera"
+        ],
+        "pt": [
+                "Gorjetas",
+                "Bebidas",
+                "Taxa de estadia em hotéis"
+        ]
+},
+      itineraries: [
+        {
+                "dayLabel": "Day 1",
+                "titleJsonb": {
+                        "ar": "اليوم الأول: تونس العاصمة",
+                        "en": "DAY 1: TUNIS",
+                        "es": "DÍA 1: TÚNEZ",
+                        "it": "GIORNO 1: TUNISI",
+                        "pt": "DIA 1: TÚNIS"
+                },
+                "descriptionJsonb": {
+                        "ar": "الاستقبال في المطار والانتقال إلى فندق 4 نجوم. (المبيت في تونس).",
+                        "en": "Assistance and transfer to a 4* Hotel. Accommodation.",
+                        "es": "Asistencia y traslado al Hotel 4*. Alojamiento.",
+                        "it": "Assistenza e trasferimento all'Hotel 4*. Pernottamento.",
+                        "pt": "Assistência e translado para o Hotel 4*. Acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "لا يوجد وجبات",
+                        "en": "None",
+                        "es": "Ninguna",
+                        "it": "Nessuno",
+                        "pt": "Nenhuma"
+                },
+                "sortOrder": 0
+        },
+        {
+                "dayLabel": "Day 2",
+                "titleJsonb": {
+                        "ar": "اليوم الثاني: تونس - المدينة العتيقة - قرطاج - سيدي بوسعيد - الحمامات",
+                        "en": "DAY 2: TUNIS - MEDINA - CARTHAGE - SIDI BOU SAID - HAMMAMET",
+                        "es": "DÍA 2: TÚNEZ - MEDINA - CARTAGO - SIDI BOU SAID - HAMMAMET",
+                        "it": "GIORNO 2: TUNISI - MEDINA - CARTAGINE - SIDI BOU SAID - HAMMAMET",
+                        "pt": "DIA 2: TÚNIS - MEDINA - CARTAGO - SIDI BOU SAID - HAMMAMET"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: زيارة المدينة العتيقة (المصنفة يونسكو) والتجول في أسواقها الحرفية. ثم التوجه إلى قرطاج وزيارة حمامات أنطونيوس على البحر. الانتقال إلى قرية سيدي بوسعيد والتجول في شوارعها.",
+                        "en": "Activities: Departure to the Medina of Tunis (UNESCO World Heritage Site). Walk through the traditional guild-organized souks. Lunch. Departure to Carthage, ancient capital of the Carthaginian empire. Visit the Baths of Antoninus facing the Mediterranean Sea. Continue to the Moorish village of Sidi Bou Said for a walk. Departure to Hammamet. Arrival at 5* Hotel. Dinner and accommodation.",
+                        "es": "Actividades: Salida hacia la medina de Túnez (Patrimonio de la Humanidad por la UNESCO). Caminaremos por los zocos organizados de forma gremial. Almuerzo. Salida hacia Cartago, antigua capital del imperio cartaginés. Visita de las termas de Antonino frente al mar Mediterráneo. Continuación hacia el pueblo morisco de Sidi Bou Said y paseo por sus calles. Salida hacia Hammamet. Llegada al Hotel 5*. Cena y alojamiento.",
+                        "it": "Attività: Partenza per la Medina di Tunisi (Patrimonio dell'Umanità UNESCO). Passeggiata tra i souk tradizionali organizzati in corporazioni. Pranzo. Partenza per Cartagine, antica capitale dell'impero cartaginese. Visita alle Terme di Antonino di fronte al Mar Mediterraneo. Proseguimento per il villaggio moresco di Sidi Bou Said e passeggiata. Partenza per Hammamet. Arrivo in Hotel 5*. Cena e pernottamento.",
+                        "pt": "Atividades: Partida para a Medina de Túnis (Patrimônio Mundial da UNESCO). Caminhada pelos souks tradicionais organizados por corporações de ofício. Almoço. Partida para Cartago, antiga capital do império cartaginês. Visita às Termas de Antonino em frente ao Mar Mediterrâneo. Continuação para a vila mourisca de Sidi Bou Said e passeio pelas suas ruas. Partida para Hammamet. Chegada ao Hotel 5*. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 1
+        },
+        {
+                "dayLabel": "Day 3",
+                "titleJsonb": {
+                        "ar": "اليوم الثالث: الحمامات - تستور - دقة (Dougga) - الحمامات",
+                        "en": "DAY 3: HAMMAMET - TESTOUR - DOUGGA - HAMMAMET",
+                        "es": "DÍA 3: HAMMAMET - TESTOUR - DOUGGA - HAMMAMET",
+                        "it": "GIORNO 3: HAMMAMET - TESTOUR - DOUGGA - HAMMAMET",
+                        "pt": "DIA 3: HAMMAMET - TESTOUR - DOUGGA - HAMMAMET"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: زيارة بلدة 'تستور' الأندلسية، ثم التوجه إلى آثار 'دقة' الرومانية (المصنفة يونسكو) وزيارة المسرح، كنيسة النصر، الحمامات، والمقابر الرومانية (المرتبطة بتاريخ القديس أغسطينوس).",
+                        "en": "Activities: Departure to the Ruins of Thugga (modern-day Dougga). Stop in Testour to walk through this medieval village founded by Andalusian Moriscos in the 16th century. Continue to Dougga to visit the most important Roman ruins in Africa (UNESCO World Heritage). Visit the theater, the Church of Victoria, the baths, houses, and temples. Lunch and return to Hammamet. Arrival at 5* Hotel. Dinner and accommodation.",
+                        "es": "Actividades: Salida hacia las Ruinas de Thugga (la actual Dougga). Parada en Testur para pasear por este pueblo medieval fundado por los primeros mudéjares en el siglo XVI. Continuación hacia Dougga, donde visitaremos las ruinas más importantes de África (Patrimonio de la Humanidad). Visita del teatro, la iglesia de la Victoria, las termas, las casas y los templos. Almuerzo y regreso a Hammamet. Llegada al Hotel 5*. Cena y alojamiento.",
+                        "it": "Attività: Partenza per le Rovine di Thugga (l'attuale Dougga). Sosta a Testour per una passeggiata in questo villaggio medievale fondato dai moriscos andalusi nel XVI secolo. Proseguimento per Dougga, dove visiteremo le ruine romane più importanti d'Africa (Patrimonio UNESCO). Visita del teatro, della Chiesa della Vittoria, delle terme, delle case e dei templi. Pranzo e rientro a Hammamet. Arrivo in Hotel 5*. Cena e pernottamento.",
+                        "pt": "Atividades: Partida para as Ruínas de Thugga (atual Dougga). Parada em Testour para caminhar por esta vila medieval fundada pelos mouriscos andaluzes no século XVI. Continuação para Dougga, onde visitaremos as ruínas romanas mais importantes da África (Patrimônio Mundial). Visita ao teatro, à Igreja da Vitória, às termas, às casas e aos templos. Almoço e retorno para Hammamet. Chegada ao Hotel 5*. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 2
+        },
+        {
+                "dayLabel": "Day 4",
+                "titleJsonb": {
+                        "ar": "اليوم الرابع: الحمامات - الجم - مطماطة - دوز",
+                        "en": "DAY 4: HAMMAMET - EL JEM - MATMATA - DOUZ",
+                        "es": "DÍA 4: HAMMAMET - EL JEM - MATMATA - DOUZ",
+                        "it": "GIORNO 4: HAMMAMET - EL JEM - MATMATA - DOUZ",
+                        "pt": "DIA 4: HAMMAMET - EL JEM - MATMATA - DOUZ"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: زيارة قصر الجم (المسرح الروماني الثالث عالمياً). التحرك نحو 'مطماطة' لرؤية البيوت البربرية المحفورة تحت الأرض (موقع تصوير فيلم Star Wars). المرور ببلدة 'تامرزت' البانورامية. الوصول إلى 'دوز' (بوابة الصحراء) لعمل جولة على ركوب الجمال في الكثبان الرملية.",
+                        "en": "Activities: Departure to El Jem to visit the Roman amphitheater (3rd largest in the world). Continue to Matmata, the Berber stronghold in the Dahir mountains, famous for its unique underground Troglodyte houses (where Star Wars exterior scenes were filmed). Panoramic stop and lunch in Tamerzet. Continue to Douz, the gateway to the desert. Camel trekking excursion in the dunes. Arrival at 4* Hotel. Dinner and accommodation.",
+                        "es": "Actividades: Salida hacia El Jem, visita del anfiteatro romano (el tercero del mundo). Continuación hacia Matmata, bastión de los pueblos bereberes en la cadena de Dahir, con sus famosas casas trogloditas donde se rodó la Guerra de las Galaxias. Parada panorámica y almuerzo en Tamerzet. Continuación hacia Douz, la puerta del desierto. Excursión a lomo de dromedario en las dunas. Regreso al Hotel 4*. Cena y alojamiento.",
+                        "it": "Attività: Partenza per El Jem, visita dell'anfiteatro romano (il terzo più grande al mondo). Proseguimento per Matmata, l'ultimo bastione berbero sulle montagne del Dahir, famoso per le case troglodite sotterranee (set di Star Wars). Sosta panoramica e pranzo a Tamerzet. Proseguimento per Douz, la porta del deserto. Escursione a dorso di dromedario tra le dune di sabbia. Arrivo in Hotel 4*. Cena e pernottamento.",
+                        "pt": "Atividades: Partida para El Jem, visita ao anfiteatro romano (o terceiro maior do mundo). Continuação para Matmata, o último reduto dos povos berberes nas montanhas de Dahir, famoso por suas casas trogloditas subterrâneas (onde foram filmadas cenas de Star Wars). Parada panorâmica e almoço em Tamerzet. Continuação para Douz, a porta do deserto. Excursão a camelo nas dunas de areia. Chegada ao Hotel 4*. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 3
+        },
+        {
+                "dayLabel": "Day 5",
+                "titleJsonb": {
+                        "ar": "اليوم الخامس: دوز - شط الجريد - توزر",
+                        "en": "DAY 5: DOUZ - CHOTT EL JERID - TOZEUR",
+                        "es": "DÍA 5: DOUZ - CHOTT EL JERID - TOZEUR",
+                        "it": "DOUS - CHOTT EL JERID - TOZEUR",
+                        "pt": "DIA 5: DOUZ - CHOTT EL JERID - TOZEUR"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: عبور بحيرة الملح الجافة 'شط الجريد' بالسيارة ومشاهدة ظاهرة السراب وتغير ألوان المياه. الوصول إلى توزر وزيارة متحف 'دار شريط' ومتحف التمور.",
+                        "en": "Activities: Cross the Chott el Jerid salt lake by road, witnessing the shifting water colors and mirages. Continue to Tozeur. Arrival and check-in at 4* Hotel. Lunch. In the afternoon, visit the Dar Chraiet Museum and the Date Museum. Dinner and accommodation.",
+                        "es": "Actividades: Salida hacia el desierto cruzando por carretera el lago salado Chott el Jerid, observando los distintos colores de sus aguas y el espejismo. Continuación hacia Tozeur. Llegada y alojamiento en Hotel 4*. Almuerzo. Por la tarde, visita del museo de Dar Chraiet y el Museo de los Dátiles. Cena y alojamiento.",
+                        "it": "Attività: Partenza per il deserto attraversando il lago salato Chott el Jerid, ammirando i colori cangianti dell'acqua e i miraggi. Proseguimento per Tozeur. Arrivo e sistemazione in Hotel 4*. Pranzo. Nel pomeriggio, visita del Museo Dar Chraiet e del Museo dei Datteri. Cena e pernottamento.",
+                        "pt": "Atividades: Partida em direção ao deserto atravessando o lago salgado Chott el Jerid por estrada, observando as cores mutáveis da água e as miragens. Continuação para Tozeur. Chegada e acomodação em Hotel 4*. Almoço. À tarde, visita ao Museu Dar Chraiet e ao Museu das Tâmaras. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 4
+        },
+        {
+                "dayLabel": "Day 6",
+                "titleJsonb": {
+                        "ar": "اليوم السادس: توزر",
+                        "en": "DAY 6: TOZEUR",
+                        "es": "DÍA 6: TOZEUR",
+                        "it": "GIORNO 6: TOZEUR",
+                        "pt": "DIA 6: TOZEUR"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: جولة صباحية في المدينة القديمة وسوق توزر. فترة بعد الظهر حرة، مع إمكانية عمل (رحلة اختيارية بسيارات 4x4) إلى الواحات الجبلية (شبيكة وتمغزة) ومواقع تصوير الأفلام (The English Patient & Star Wars) في 'عنق الجمل'.",
+                        "en": "Activities: Morning visit to the old city and the Souk of Tozeur. Lunch at the hotel. Afternoon at leisure or optional 4x4 excursion to the mountain oases of Chebika, Tamerza, and the desert dunes of Ong Jmel (filming site of The English Patient and Star Wars). Dinner and accommodation at 4* Hotel.",
+                        "es": "Actividades: Por la mañana, visita de la ciudad antigua y el Souk de Tozeur. Almuerzo en el hotel. Por la tarde, posibilidad de realizar una excursión opcional en 4x4 a los oasis de montaña (Chebika, Tamerza) y a las pistas de ONG Jmel (El paciente inglés y La guerra de las galaxias). Regreso al Hotel 4*. Cena y alojamiento.",
+                        "it": "Attività: Mattinata dedicata alla visita della città vecchia e del Souk di Tozeur. Pranzo in hotel. Pomeriggio libero o escursione facoltativa in 4x4 alle oasi di montagna (Chebika, Tamerza) e alle dune di Ong Jmel (set di Il Paziente Inglese e Star Wars). Cena e pernottamento in Hotel 4*.",
+                        "pt": "Atividades: Pela manhã, visita à cidade antiga e ao Souk de Tozeur. Almoço no hotel. À tarde, possibilidade de realizar uma excursão opcional em 4x4 aos oásis de montanha (Chebika, Tamerza) e às pistas de Ong Jmel (cenário de O Paciente Inglês e Star Wars). Retorno ao Hotel 4*. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 5
+        },
+        {
+                "dayLabel": "Day 7",
+                "titleJsonb": {
+                        "ar": "اليوم السابع: توزر - القيروان - الحمامات",
+                        "en": "DAY 7: TOZEUR - KAIROUAN - HAMMAMET",
+                        "es": "DÍA 7: TOZEUR - KAIROUAN - HAMMAMET",
+                        "it": "GIORNO 7: TOZEUR - KAIROUAN - HAMMAMET",
+                        "pt": "DIA 7: TOZEUR - KAIROUAN - HAMMAMET"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: التوجه إلى القيروان وزيارة جامع عقبة بن نافع الكبير ومقام أبي زمعة البلوي (مقام الصحابي/الحلاق). جولة في المدينة العتيقة ثم الانتقال إلى الحمامات.",
+                        "en": "Activities: Departure to Kairouan. Visit the Great Mosque of Sidi Oqba and the Mausoleum of the Barber (Sidi Sahbi). Lunch. Walk through the ancient medina and departure to Hammamet. Arrival at 5* Hotel. Dinner and accommodation.",
+                        "es": "Actividades: Salida hacia Kairouan. Llegada y visita de la Gran Mezquita de Sidi Oqba y del mausoleo del barbero (Sidi Sahbi). Almuerzo. Paseo por su medina antigua y salida hacia Hammamet. Llegada al Hotel 5*. Cena y alojamiento.",
+                        "it": "Attività: Partenza per Kairouan. Visita della Grande Moschea di Sidi Oqba e del Mausoleo del Barbiere (Sidi Sahbi). Pranzo. Passeggiata nella medina antica e partenza per Hammamet. Arrivo in Hotel 5*. Cena e pernottamento.",
+                        "pt": "Atividades: Partida para Kairouan. Chegada e visita à Grande Mesquita de Sidi Oqba e ao Mausoléu do Barbeiro (Sidi Sahbi). Almoço. Passeio pela medina antiga e partida para Hammamet. Chegada ao Hotel 5*. Jantar e acomodação."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور + غداء + عشاء",
+                        "en": "Breakfast + Lunch + Dinner",
+                        "es": "Desayuno + Almuerzo + Cena",
+                        "it": "Colazione + Pranzo + Cena",
+                        "pt": "Café da manhã + Almoço + Jantar"
+                },
+                "sortOrder": 6
+        },
+        {
+                "dayLabel": "Day 8",
+                "titleJsonb": {
+                        "ar": "اليوم الثامن: الحمامات - تونس العاصمة",
+                        "en": "DAY 8: HAMMAMET - TUNIS",
+                        "es": "DÍA 8: HAMMAMET - TÚNEZ",
+                        "it": "GIORNO 8: HAMMAMET - TUNISI",
+                        "pt": "DIA 8: HAMMAMET - TÚNIS"
+                },
+                "descriptionJsonb": {
+                        "ar": "الأنشطة: وقت حر حتى موعد التحرك، ثم الانتقال إلى مطار تونس للمغادرة والعودة.",
+                        "en": "Activities: Free time until the scheduled transfer to Tunis airport for check-in and departure flight.",
+                        "es": "Actividades: Tiempo libre hasta la hora prevista, traslado al aeropuerto de Túnez para trámites de facturación y embarque.",
+                        "it": "Attività: Tempo libero fino al trasferimento programmato all'aeroporto di Tunisi per il volo di ritorno.",
+                        "pt": "Atividades: Tempo livre até o horário programado, translado para o aeroporto de Túnis para os procedimentos de check-in e embarque."
+                },
+                "mealsJsonb": {
+                        "ar": "فطور",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 7
+        }
+],
+      images: [
+        'https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1920&q=80'
+      ]
+    },
+{
       slug: 'lo-mejor-de-grecia-9d',
       code: 'gr-es-001',
       titleJsonb: {
