@@ -484,7 +484,6 @@ async function seedFallbackTours(): Promise<void> {
       ],
     },
     {
->>>>>>> 39ecdfb (feat(tours): add Morocco MRC-01 Spices of Morocco tour in 5 languages)
       slug: 'passion-of-turkey',
       titleJsonb: {
         en: 'Passion of Turkey',
