@@ -60,6 +60,7 @@ export class ToursService {
     const where: Prisma.TourWhereInput = {
       isActive: true,
       status: 'PUBLISHED',
+      deletedAt: null,
     };
     if (query.category) {
       where.category = { equals: query.category, mode: 'insensitive' };
