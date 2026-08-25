@@ -12269,6 +12269,14 @@
         "operationId": "AdminReviewsController_findAll",
         "parameters": [
           {
+            "name": "isPublished",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "status",
             "required": false,
             "in": "query",
@@ -13276,7 +13284,7 @@
           },
           "imageUrl": {
             "type": "string",
-            "description": "Image URL"
+            "description": "Image URL or path"
           },
           "isHero": {
             "type": "boolean",
