@@ -157,6 +157,7 @@ async function bootstrap(): Promise<void> {
       'Idempotency-Key',
       'X-CSRF-Token',
       'X-Guest-Token',
+      'X-Request-Id',
     ],
     maxAge: 86400,
   });
