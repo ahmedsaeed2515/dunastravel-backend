@@ -40,8 +40,8 @@ async function main() {
       }
     }
 
-    // Default base price
-    const basePriceUsd = 1500.00;
+    // Dynamic base price from program data
+    const basePriceUsd = Number(program.basePriceUsd ?? program.price ?? 1500.00);
 
     const tourData = {
       slug: program.slug || program.id.toLowerCase(),
