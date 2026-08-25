@@ -241,7 +241,7 @@ async function seedFallbackTours(): Promise<void> {
         it: '2 Pax',
         pt: '2 Pax',
       },
-            overviewJsonb: {
+      overviewJsonb: {
         ar: 'انغمس في روعة اليونان القديمة وسحر البحر إيجة في هذا المسار الرائع الممتد لتسعة أيام. من الأكروبوليس في أثينا إلى غروب الشمس الساحر في سانتوريني وميكونوس، مروراً بطبيعة ومأكولات جزيرة كريت الخلابة وتاريخها المينوي العريق، تدمج هذه الرحلة بين الثقافة الكلاسيكية وروعة البحر الأبيض المتوسط.',
         en: 'Immerse yourself in the splendor of Ancient Greece and the charm of the Aegean Sea on this spectacular nine-day itinerary. From the grand Acropolis of Athens to the vibrant sunsets in Santorini and Mykonos, each stop reveals a piece of paradise and culture. Crowned with authentic gastronomy and Minoan history in Crete, this journey combines classical culture with pure Mediterranean essence.',
         es: 'Sumérgete en el esplendor de la Antigua Grecia y el encanto del mar Egeo en este espectacular itinerario de nueve días. Desde la grandiosa Acrópolis de Atenas hasta los vibrantes atardeceres en Santorini y Mykonos, cada escala revela un pedazo de paraíso y cultura. Coronando la travesía con la auténtica gastronomía e historia minoica en Creta, este viaje combina cultura clásica y pura esencia mediterránea.',
@@ -249,58 +249,328 @@ async function seedFallbackTours(): Promise<void> {
         pt: 'Mergulhe no esplendor da Grécia Antiga e no encanto do Mar Egeu neste espetacular itinerário de nove dias. Da grandiosa Acrópole de Atenas aos vibrantes por do sol em Santorini e Mykonos, cada parada revela um pedaço do paraíso e da cultura. Coroando a viagem com a autêntica gastronomia e história minóica em Creta, esta viagem combina cultura clássica e pura essência mediterrânea.',
       },
       includedServicesJsonb: {
-        ar: [
-          'جولة موجهة في أثينا بالأكروبوليس ومعالم المدينة',
-          'تذاكر الفيري العادي والمقاعد المجهزة Pireo - Mykonos',
-          'تذاكر الفيري السريع Mykonos - Santorini و Santorini - Heraklion',
-          'يوم حر في ميكونوس للشواطئ والتسوق',
-          'مشاهدة غروب الشمس فوق كالديرة سانتوريني',
-          'إقامة 8 ليالٍ بالإفطار (2 في كل وجهة)',
-          'مساعد يتحدث الإسبانية عند الوصول لأثينا',
+        "ar": [
+                "ليلتان في أثينا، ليلتان في ميكونوس، ليلتان في سانتوريني وليلتان في كريت مع الإفطار",
+                "جولة سياحية في مدينة أثينا نصف يوم (باص مشترك) مع مرشد محترف يتحدث الإسبانية",
+                "جميع وسائل النقل",
+                "لقاء مع مساعد يتحدث الإسبانية في يوم الوصول للتوجيه السياحي",
+                "تذاكر العبّارة: بيرايوس – ميكونوس (عبّارة عادية بمقاعد مرقّمة)، وميكونوس – سانتوريني // سانتوريني – هيراكليون (عبّارة سريعة – الدرجة الاقتصادية)",
+                "تذاكر دخول المتاحف والمواقع الأثرية",
+                "جميع الرسوم وخدماتنا (باستثناء ضريبة الإقامة)"
         ],
-        en: [
-          'Guided tour of Athens including Acropolis',
-          'Regular ferry with reserved seats Pireo–Mykonos',
-          'Fast ferry Mykonos–Santorini and Santorini–Heraklion',
-          'Free day in Mykonos for beaches and shopping',
-          'Sunset over Santorini caldera from Fira & Oia',
-          '8 nights Bed & Breakfast (2 per destination)',
-          'Spanish-speaking assistant upon arrival in Athens',
+        "en": [
+                "Two nights accommodation in Athens, two in Mykonos, two in Santorini and two in Crete with breakfast",
+                "Half-day shared city tour of Athens with a professional Spanish-speaking guide",
+                "All transfers",
+                "Meet with a Spanish-speaking assistant on arrival day for travel orientation",
+                "Ferry tickets: Piraeus – Mykonos (regular ferry, numbered seats), Mykonos – Santorini // Santorini – Heraklion (high-speed ferry, economy class)",
+                "Entrance tickets to museums and archaeological sites",
+                "All taxes and our services (except city tax)"
         ],
-        es: [
-          'Visita guiada de Atenas con Acrópolis',
-          'Ferry regular Pireo–Mykonos',
-          'Ferry rápido Mykonos–Santorini y Santorini–Heraklion',
-          'Día libre en Mykonos',
-          'Atardecer en Santorini',
-          '8 noches en régimen de Bed & Breakfast',
-          'Asistente de habla hispana en Atenas',
+        "es": [
+                "Dos noches de alojamiento en Atenas, dos en Mykonos, dos en Santorini y dos en Creta con desayuno",
+                "Visita de la ciudad de Atenas regular de medio día con guía profesional de habla hispana",
+                "Todos los traslados",
+                "Encuentro con asistente de habla hispana al día de llegada por una orientación del viaje",
+                "Billetes de ferry Pireo – Mykonos con ferry regular (asientos numerados) y Mykonos – Santorini // Santorini – Heraklion con ferry rápido – clase económica",
+                "Las entradas a los museos y sitios arqueológicos",
+                "Todas las tasas y nuestros servicios (excepto el impuesto de estancia)"
         ],
-      },
+        "it": [
+                "Due notti di alloggio ad Atene, due a Mykonos, due a Santorini e due a Creta con colazione",
+                "Visita guidata di mezza giornata di Atene in pullman con guida professionale di lingua spagnola",
+                "Tutti i trasferimenti",
+                "Incontro con un assistente di lingua spagnola il giorno dell'arrivo per un orientamento sul viaggio",
+                "Biglietti di traghetto: Pireo – Mykonos con traghetto regolare (posti numerati) e Mykonos – Santorini // Santorini – Heraklion con traghetto veloce – classe economica",
+                "I biglietti d'ingresso ai musei e siti archeologici",
+                "Tutte le tasse e i nostri servizi (esclusa la tassa di soggiorno)"
+        ],
+        "pt": [
+                "Duas noites de hospedagem em Atenas, duas em Mykonos, duas em Santorini e duas em Creta com café da manhã",
+                "Visita de meio dia regular pela cidade de Atenas com guia profissional de língua espanhola",
+                "Todos os transfers",
+                "Encontro com assistente de língua espanhola no dia da chegada para orientação da viagem",
+                "Bilhetes de ferry: Pireu – Mykonos em ferry regular (assentos numerados) e Mykonos – Santorini // Santorini – Heráclion em ferry rápido – classe econômica",
+                "As entradas para museus e sítios arqueológicos",
+                "Todas as taxas e nossos serviços (exceto o imposto de estadia)"
+        ]
+},
       excludedServicesJsonb: {
-        ar: ['تأشيرات الدخول لليونان', 'إكراميات السفر والنقل الشخصي'],
-        en: ['Entry visas for Greece', 'Travel tips and personal transfers'],
-        es: ['Visados de entrada a Grecia', 'Propinas y traslados personales'],
-      },
+        "ar": [
+                "الوجبات غير المذكورة",
+                "المشروبات أثناء الوجبات المشمولة",
+                "المصروفات الشخصية",
+                "الإكراميات",
+                "خدمة حمل الأمتعة في الفنادق",
+                "أي شيء آخر غير مذكور صراحة في التضمينات"
+        ],
+        "en": [
+                "Meals not mentioned",
+                "Beverages during included meals",
+                "Personal expenses",
+                "Tips",
+                "Porters at hotels",
+                "Anything else not specifically mentioned in the inclusions"
+        ],
+        "es": [
+                "Las comidas que no sean mencionadas",
+                "Las bebidas durante las comidas incluidas",
+                "Gastos personales",
+                "Propinas",
+                "Maleteros a los hoteles",
+                "Cualquier otra cosa no mencionada específicamente en las inclusiones"
+        ],
+        "it": [
+                "I pasti non menzionati",
+                "Le bevande durante i pasti inclusi",
+                "Spese personali",
+                "Mance",
+                "Facchini negli hotel",
+                "Qualsiasi altra cosa non menzionata specificatamente nelle inclusioni"
+        ],
+        "pt": [
+                "As refeições não mencionadas",
+                "As bebidas durante as refeições incluídas",
+                "Gastos pessoais",
+                "Gorjetas",
+                "Carregadores de bagagem nos hotéis",
+                "Qualquer outra coisa não mencionada especificamente nas inclusões"
+        ]
+},
       itineraries: [
-        { dayLabel: 'Day 1', descriptionJsonb: { ar: 'الوصول إلى أثينا والنقل للفندق.', en: 'Arrival in Athens and transfer to hotel.', es: 'Llegada a Atenas y traslado al hotel.' }, mealsJsonb: { ar: 'غير مشمول', en: 'Not included', es: 'No incluye' }, sortOrder: 0 },
-        { dayLabel: 'Day 2', descriptionJsonb: { ar: 'جولة موجهة في أثينا والأكروبوليس.', en: 'Guided tour of Athens and Acropolis.', es: 'Visita guiada de Atenas y Acrópolis.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 1 },
-        { dayLabel: 'Day 3', descriptionJsonb: { ar: 'الفيري إلى ميكونوس والإقامة بالفندق.', en: 'Ferry to Mykonos and accommodation.', es: 'Ferry a Mykonos y alojamiento.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 2 },
-        { dayLabel: 'Day 4', descriptionJsonb: { ar: 'يوم حر في ميكونوس.', en: 'Free day in Mykonos.', es: 'Día libre en Mykonos.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 3 },
-        { dayLabel: 'Day 5', descriptionJsonb: { ar: 'الفيري السريع إلى سانتوريني ومشاهدة غروب الشمس.', en: 'Fast ferry to Santorini and sunset view.', es: 'Ferry rápido a Santorini y atardecer.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 4 },
-        { dayLabel: 'Day 6', descriptionJsonb: { ar: 'يوم حر في سانتوريني.', en: 'Free day in Santorini.', es: 'Día libre en Santorini.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 5 },
-        { dayLabel: 'Day 7', descriptionJsonb: { ar: 'الفيري السريع إلى كريت (إيراكليون).', en: 'Fast ferry to Crete (Heraklion).', es: 'Ferry rápido a Creta (Heraklion).' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 6 },
-        { dayLabel: 'Day 8', descriptionJsonb: { ar: 'استكشاف كريت وكنوسوس.', en: 'Exploring Crete and Knossos.', es: 'Exploración de Creta y Knossos.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 7 },
-        { dayLabel: 'Day 9', descriptionJsonb: { ar: 'الإفطار والمغادرة إلى المطار.', en: 'Breakfast and departure to airport.', es: 'Desayuno y traslado al aeropuerto.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 8 }
-      ],
+        {
+                "dayLabel": "Day 1",
+                "titleJsonb": {
+                        "ar": "الوصول / أثينا",
+                        "en": "Arrival / Athens",
+                        "es": "Llegada / Atenas",
+                        "it": "Arrivo / Atene",
+                        "pt": "Chegada / Atenas"
+                },
+                "descriptionJsonb": {
+                        "ar": "الوصول إلى المطار والالتقاء بمسؤول الاستقبال من الوكالة. النقل إلى الفندق. باقي اليوم حر. الإقامة.",
+                        "en": "Arrival at the airport and meet with the agency assistance. Transfer to the hotel. Rest of the day free. Accommodation.",
+                        "es": "Llegada al aeropuerto y encuentro con la asistencia de la agencia. Traslado al hotel. Resto del día libre. Alojamiento.",
+                        "it": "Arrivo in aeroporto e incontro con l'assistenza dell'agenzia. Trasferimento in hotel. Resto della giornata libero. Sistemazione.",
+                        "pt": "Chegada ao aeroporto e encontro com a assistência da agência. Transfer para o hotel. Resto do dia livre. Hospedagem."
+                },
+                "mealsJsonb": {
+                        "ar": "غير مشمول",
+                        "en": "Not included",
+                        "es": "Sin comidas",
+                        "it": "Non incluso",
+                        "pt": "Não incluído"
+                },
+                "sortOrder": 0
+        },
+        {
+                "dayLabel": "Day 2",
+                "titleJsonb": {
+                        "ar": "جولة في المدينة / أثينا",
+                        "en": "City Tour / Athens",
+                        "es": "Visita de la ciudad / Atenas",
+                        "it": "Visita della città / Atene",
+                        "pt": "Visita da cidade / Atenas"
+                },
+                "descriptionJsonb": {
+                        "ar": "إفطار وانطلاق بالحافلة لزيارة أشهر معالم أثينا. خلال الجولة نمر بالبرلمان مع نصب الجندي المجهول، ساحة سينتاغما، الثلاثية الكلاسيكية الجديدة، ساحة أومونيا، مبنى البرلمان الذي يعود للقرن 19، الكاتدرائية الكاثوليكية، معبد زيوس الروماني، قوس هادريان ونتوقف لالتقاط الصور في الملعب الأولمبي الشهير حيث أقيمت أول دورة ألعاب أولمبية حديثة في عام 1896. زيارة الأكروبوليس مع البروبيليا، معبد أثينا نايكي، البارثينون والإرخثيون. وقت حر لاستكشاف البلدة القديمة في بلاكا. الإقامة.",
+                        "en": "Breakfast and departure by coach to tour the most famous monuments of Athens. During the tour we pass by the Parliament with the monument of the Unknown Soldier, Syntagma Square, the neoclassical Trilogy, Omonia Square, the 19th-century Parliament building, the Catholic Cathedral, the Roman Temple of Zeus, Hadrian's Arch and stop for photos at the famous Olympic Stadium where the first modern Olympic Games were held in 1896. Visit of the Acropolis with the Propylaea, the Temple of Athena Nike, the Parthenon and the Erechtheion. Free time to explore the old quarter of Plaka. Accommodation.",
+                        "es": "Desayuno y salida en autocar para recorrer los monumentos más famosos de Atenas. Durante el recorrido pasamos por el Parlamento con el monumento del Soldado Desconocido, la plaza Sintagma, la Trilogía neoclásica, la plaza Omonia, el Parlamento del siglo 19, la catedral Católica, el templo romano de Zeus, el Arco de Adriano y paramos para sacar fotos al famoso estadio Olímpico donde se celebraron los primeros Juegos Olímpicos modernos en 1896. Visita de la Acrópolis con los Propileos, el templo de Atenea Nike, el Partenón y el Erecteón. Tiempo libre para explorar el casco antiguo de Plaka. Alojamiento.",
+                        "it": "Colazione e partenza in pullman per visitare i monumenti più famosi di Atene. Durante il percorso passiamo dal Parlamento con il monumento del Milite Ignoto, piazza Syntagma, la Trilogia neoclassica, piazza Omonia, il Palazzo del Parlamento del XIX secolo, la cattedrale Cattolica, il tempio romano di Zeus, l'Arco di Adriano e ci fermiamo per foto al famoso stadio Olimpico dove si sono svolti i primi Giochi Olimpici moderni nel 1896. Visita dell'Acropoli con i Propilei, il tempio di Atena Nike, il Partenone e l'Eretteo. Tempo libero per esplorare il centro storico di Plaka. Sistemazione.",
+                        "pt": "Café da manhã e saída de autocarro para percorrer os monumentos mais famosos de Atenas. Durante o percurso passamos pelo Parlamento com o monumento do Soldado Desconhecido, a praça Syntagma, a Trilogia neoclássica, a praça Omonia, o Parlamento do século XIX, a catedral Católica, o templo romano de Zeus, o Arco de Adriano e paramos para fotos no famoso estádio Olímpico onde se realizaram os primeiros Jogos Olímpicos modernos em 1896. Visita da Acrópole com os Propileus, o templo de Atena Niké, o Partenon e o Erecteion. Tempo livre para explorar o centro histórico de Plaka. Hospedagem."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 1
+        },
+        {
+                "dayLabel": "Day 3",
+                "titleJsonb": {
+                        "ar": "بيرايوس – ميكونوس / ميكونوس",
+                        "en": "Piraeus – Mykonos / Mykonos",
+                        "es": "Pireo – Mykonos / Mykonos",
+                        "it": "Il Pireo – Mykonos / Mykonos",
+                        "pt": "Pireu – Mykonos / Mykonos"
+                },
+                "descriptionJsonb": {
+                        "ar": "إفطار ونقل إلى ميناء بيرايوس للصعود على متن العبارة المتجهة إلى ميكونوس. عند الوصول إلى الجزيرة، النقل إلى الفندق وباقي اليوم حر. الإقامة.",
+                        "en": "Breakfast and transfer to the port of Piraeus to board the ferry bound for Mykonos. Upon arrival on the island, transfer to the hotel and rest of the day free. Accommodation.",
+                        "es": "Desayuno y traslado al puerto del Pireo para embarcar en el ferry con destino a Mykonos. A su llegada a la isla, traslado al hotel y resto del día libre. Alojamiento.",
+                        "it": "Colazione e trasferimento al porto del Pireo per imbarcarsi sul traghetto diretto a Mykonos. All'arrivo sull'isola, trasferimento in hotel e resto della giornata libero. Sistemazione.",
+                        "pt": "Café da manhã e transfer para o porto do Pireu para embarcar no ferry com destino a Mykonos. À sua chegada à ilha, transfer para o hotel e resto do dia livre. Hospedagem."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 2
+        },
+        {
+                "dayLabel": "Day 4",
+                "titleJsonb": {
+                        "ar": "يوم حر / ميكونوس",
+                        "en": "Free Day / Mykonos",
+                        "es": "Día libre / Mykonos",
+                        "it": "Giorno libero / Mykonos",
+                        "pt": "Dia livre / Mykonos"
+                },
+                "descriptionJsonb": {
+                        "ar": "يوم حر في جزيرة ميكونوس الشهيرة، نقطة الالتقاء الدولية لمحبي \"الجيت سيت\". استمتع بالشواطئ الرائعة والمتاجر المبهرة والحياة الليلية التي لا تضاهى. إفطار وإقامة في الفندق.",
+                        "en": "Free day on the famous island of Mykonos, the international meeting point of the \"jet set\". Enjoy the wonderful beaches, dazzling shops and incomparable nightlife. Breakfast and accommodation at the hotel.",
+                        "es": "Día libre en la famosa isla de Mykonos, el punto internacional del encuentro del \"jet set\". Disfrute las playas maravillosas, tiendas deslumbrantes y la incomparable vida nocturna. Desayuno y alojamiento en el hotel.",
+                        "it": "Giorno libero nella famosa isola di Mykonos, il punto d'incontro internazionale del \"jet set\". Godetevi le splendide spiagge, i negozi scintillanti e l'incomparabile vita notturna. Colazione e sistemazione in hotel.",
+                        "pt": "Dia livre na famosa ilha de Mykonos, o ponto de encontro internacional do \"jet set\". Desfrute das maravilhosas praias, lojas deslumbrantes e a incomparável vida noturna. Café da manhã e hospedagem no hotel."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 3
+        },
+        {
+                "dayLabel": "Day 5",
+                "titleJsonb": {
+                        "ar": "ميكونوس – سانتوريني / سانتوريني",
+                        "en": "Mykonos – Santorini / Santorini",
+                        "es": "Mykonos – Santorini / Santorini",
+                        "it": "Mykonos – Santorini / Santorini",
+                        "pt": "Mykonos – Santorini / Santorini"
+                },
+                "descriptionJsonb": {
+                        "ar": "إفطار وصباح حر حتى موعد النقل إلى ميناء ميكونوس للصعود على متن العبارة المتجهة إلى سانتوريني. عند الوصول إلى الجزيرة، النقل إلى الفندق وباقي اليوم حر. الإقامة.",
+                        "en": "Breakfast and free morning until the transfer time to the port of Mykonos to board the ferry bound for Santorini. Upon arrival on the island, transfer to the hotel and rest of the day free. Accommodation.",
+                        "es": "Desayuno y mañana libre hasta la hora de traslado al puerto de Mykonos para embarcar en el ferry con destino a Santorini. A su llegada a la isla, traslado al hotel y resto del día libre. Alojamiento.",
+                        "it": "Colazione e mattinata libera fino all'orario del trasferimento al porto di Mykonos per imbarcarsi sul traghetto diretto a Santorini. All'arrivo sull'isola, trasferimento in hotel e resto della giornata libero. Sistemazione.",
+                        "pt": "Café da manhã e manhã livre até a hora do transfer para o porto de Mykonos para embarcar no ferry com destino a Santorini. À sua chegada à ilha, transfer para o hotel e resto do dia livre. Hospedagem."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 4
+        },
+        {
+                "dayLabel": "Day 6",
+                "titleJsonb": {
+                        "ar": "يوم حر / سانتوريني",
+                        "en": "Free Day / Santorini",
+                        "es": "Día libre / Santorini",
+                        "it": "Giorno libero / Santorini",
+                        "pt": "Dia livre / Santorini"
+                },
+                "descriptionJsonb": {
+                        "ar": "يوم حر لاستكشاف جزيرة سانتوريني الساحرة. اكتشف فيرا وأويا مع الإطلالات الخلابة على البركان، واستمتع بواحدة من أفضل غروب الشمس في بحر إيجة. استكشف الشواطئ الفريدة ذات الرمال السوداء أو قم بجولة بحرية إلى جزر الكالديرا.",
+                        "en": "Free day to explore the magical island of Santorini. Discover Fira & Oia with the stunning views of the volcano, and enjoy one of the best sunsets in the Aegean Sea. Explore the unique black sand beaches or take a boat tour to the caldera islands.",
+                        "es": "Día libre para explorar la isla mágica de Santorini. Descubra Fira & Oia con las impresionantes vistas al volcán, y disfrute de uno de los mejores atardeceres en el mar Egeo. Explora las playas únicas de arena negra o tomar un tour en barco a las islas de la caldera.",
+                        "it": "Giorno libero per esplorare la magica isola di Santorini. Scoprite Fira e Oia con le spettacolari viste sul vulcano e godetevi uno dei migliori tramonti del Mar Egeo. Esplorate le uniche spiagge di sabbia nera o fate un giro in barca alle isole della caldera.",
+                        "pt": "Dia livre para explorar a mágica ilha de Santorini. Descubra Fira & Oia com as impressionantes vistas para o vulcão, e desfrute de um dos melhores pores do sol no Mar Egeu. Explore as praias únicas de areia preta ou faça um passeio de barco para as ilhas da caldeira."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 5
+        },
+        {
+                "dayLabel": "Day 7",
+                "titleJsonb": {
+                        "ar": "سانتوريني – هيراكليون / كريت",
+                        "en": "Santorini – Heraklion / Crete",
+                        "es": "Santorini – Heraklion / Creta",
+                        "it": "Santorini – Heraklion / Creta",
+                        "pt": "Santorini – Heráclion / Creta"
+                },
+                "descriptionJsonb": {
+                        "ar": "إفطار ونقل إلى ميناء سانتوريني للصعود على متن العبارة السريعة المتجهة إلى هيراكليون. عند الوصول إلى الجزيرة، النقل إلى الفندق وباقي اليوم حر. الإقامة.",
+                        "en": "Breakfast and transfer to the port of Santorini to board the high-speed ferry bound for Heraklion. Upon arrival on the island, transfer to the hotel and rest of the day free. Accommodation.",
+                        "es": "Desayuno y traslado al puerto de Santorini para embarcar en el ferry rápido con destino a Heraklion. A su llegada a la isla, traslado al hotel y resto del día libre. Alojamiento.",
+                        "it": "Colazione e trasferimento al porto di Santorini per imbarcarsi sul traghetto veloce diretto a Heraklion. All'arrivo sull'isola, trasferimento in hotel e resto della giornata libero. Sistemazione.",
+                        "pt": "Café da manhã e transfer para o porto de Santorini para embarcar no ferry rápido com destino a Heráclion. À sua chegada à ilha, transfer para o hotel e resto do dia livre. Hospedagem."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 6
+        },
+        {
+                "dayLabel": "Day 8",
+                "titleJsonb": {
+                        "ar": "يوم حر / كريت",
+                        "en": "Free Day / Crete",
+                        "es": "Día libre / Creta",
+                        "it": "Giorno libero / Creta",
+                        "pt": "Dia livre / Creta"
+                },
+                "descriptionJsonb": {
+                        "ar": "يوم حر لاستكشاف أكبر الجزر اليونانية. تأكد من تذوق الطعام الكريتي الفريد، واستكشاف الحضارة المينوية في كنوسوس، واكتشاف شواطئ إلوندا الجميلة، والاستمتاع برحلة بحرية إلى جزيرة سبينالونغا التاريخية.",
+                        "en": "Free day to explore the largest of the Greek islands. Be sure to try the unique Cretan food, explore the Minoan civilization at Knossos, discover the beautiful beaches of Elounda, and enjoy a boat trip to the historic Spinalonga.",
+                        "es": "Día libre para explorar el más grande de las islas griegas. Asegúrese de probar la comida cretense única, explorar la civilización minoica en Knossos, descubrir las hermosas playas de Elunda, y disfrutar de un paseo en barco a la histórica Spinalonga.",
+                        "it": "Giorno libero per esplorare la più grande delle isole greche. Assicuratevi di assaggiare l'unico cibo cretese, esplorare la civiltà minoica a Cnosso, scoprire le bellissime spiagge di Elounda e godervi un giro in barca alla storica Spinalonga.",
+                        "pt": "Dia livre para explorar a maior das ilhas gregas. Certifique-se de provar a comida cretense única, explorar a civilização minoica em Cnossos, descobrir as belas praias de Elounda e desfrutar de um passeio de barco para a histórica Spinalonga."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 7
+        },
+        {
+                "dayLabel": "Day 9",
+                "titleJsonb": {
+                        "ar": "المغادرة",
+                        "en": "Departure",
+                        "es": "Salida",
+                        "it": "Partenza",
+                        "pt": "Partida"
+                },
+                "descriptionJsonb": {
+                        "ar": "إفطار وصباح حر حتى موعد النقل إلى المطار لرحلة داخلية قصيرة، مرتبطة برحلة عودتك الدولية.",
+                        "en": "Breakfast and free morning until the transfer time to the airport for a short domestic flight, connecting with your international return flight.",
+                        "es": "Desayuno y mañana libre hasta la hora de traslado al aeropuerto para un vuelo doméstico corto, conectado con su vuelo de regreso internacional.",
+                        "it": "Colazione e mattinata libera fino all'orario del trasferimento in aeroporto per un breve volo domestico, in coincidenza con il vostro volo di ritorno internazionale.",
+                        "pt": "Café da manhã e manhã livre até a hora do transfer para o aeroporto para um curto voo doméstico, conectando com seu voo internacional de regresso."
+                },
+                "mealsJsonb": {
+                        "ar": "إفطار",
+                        "en": "Breakfast",
+                        "es": "Desayuno",
+                        "it": "Colazione",
+                        "pt": "Café da manhã"
+                },
+                "sortOrder": 8
+        }
+],
       images: [
         'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1920&q=80',
         'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&w=1920&q=80',
         'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1920&q=80',
         'https://images.unsplash.com/photo-1555993539-1732b0258235?auto=format&fit=crop&w=1920&q=80'
       ]
-    },
-    {
+    },{
       slug: 'mrc-01-spices-of-morocco',
       code: 'MRC-01',
       titleJsonb: {
