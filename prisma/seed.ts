@@ -215,6 +215,7 @@ async function seedFallbackTours(): Promise<void> {
   const fallbackTours = [
     {
       slug: 'mrc-01-spices-of-morocco',
+      code: 'MRC-01',
       titleJsonb: {
         ar: 'توابل المغرب',
         en: 'Spices of Morocco',
@@ -239,6 +240,52 @@ async function seedFallbackTours(): Promise<void> {
         es: '2 Pax',
         it: '2 Pax',
         pt: '2 Pax',
+      },
+      highlightsJsonb: {
+        ar: [
+          'زيارة مدينة مكناس الإمبراطورية',
+          'جولة كاملة في فاس العاصمة الدينية',
+          'زيارة الرباط والدار البيضاء ومراكش',
+          'ساحة جامع الفناء والأسوق التقليدية',
+          'عبور البحر الأبيض المتوسط بالعبارة',
+        ],
+        en: [
+          'Visit the imperial city of Meknes',
+          'Full tour of Fez, the religious capital',
+          'Visit Rabat, Casablanca & Marrakech',
+          'Jemaa el Fna square and traditional souks',
+          'Mediterranean crossing by ferry',
+        ],
+        es: [
+          'Visita a la ciudad imperial de Meknes',
+          'Recorrido completo por Fez, capital religiosa',
+          'Visita a Rabat, Casablanca y Marrakech',
+          'Plaza Jemaa el Fna y zocos tradicionales',
+          'Travesía del Mediterráneo en ferry',
+        ],
+        it: [
+          'Visita alla città imperiale di Meknes',
+          'Tour completo di Fez, capitale religiosa',
+          'Visita a Rabat, Casablanca e Marrakech',
+          'Piazza Jemaa el Fna e souk tradizionali',
+          'Attraversamento del Mediterraneo in traghetto',
+        ],
+        pt: [
+          'Visita à cidade imperial de Meknes',
+          'Visita completa a Fez, capital religiosa',
+          'Visita a Rabat, Casablanca e Marraquexe',
+          'Praça Jemaa el Fna e souks tradicionais',
+          'Travessia do Mediterrâneo de ferry',
+        ],
+      },
+      pricingJsonb: {
+        hotels: [
+          { ar: 'فندق 4 نجوم', en: '4 Star Hotel', es: 'Hotel 4 Estrellas', it: 'Hotel 4 Stelle', pt: 'Hotel 4 Estrelas' },
+        ],
+        winter: [{ dbl: 899, sgl: 350 }],
+        summer: [{ dbl: 799, sgl: 280 }],
+        winterDates: '01 Oct – 30 Apr',
+        summerDates: '01 May – 30 Sep',
       },
       overviewJsonb: {
         ar: 'رحلة 5 أيام لاكتشاف كنوز المغرب: من طنجة إلى مراكش مروراً بفاس والرباط والدار البيضاء. استمتع بالمدن الإمبراطورية والأسواق التقليدية والهندسة المعمارية المغربية الأصيلة.',
