@@ -6,13 +6,44 @@ import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto } from './dto/public-chat.dto';
 import { Response } from 'express';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class RecordFeedbackRequestDto {
+  @IsString()
+  @IsNotEmpty()
   conversationId!: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
   messageId?: string;
+
+  @IsInt()
+  @Min(-1)
+  @Max(1)
   rating!: number; // +1 or -1
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   comments?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
   locale?: string;
 }
 
