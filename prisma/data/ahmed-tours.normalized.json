@@ -6955,7 +6955,7 @@
       "it": "2 Notti / 3 Giorni"
     },
     "overviewJsonb": {
-      "ar": "أفضل برنامج توقف في دبي لمدة قصيرة. استمتع بجولة سفاري في الصحراء مع العشاء الشرقي والعروض الترفيهية، وأقم في فندق من فئتك المختارة.",
+      "ar": "أفضل برنامج توقف في دبي لمدة قصيرة. استمتع بجولة سفاري في ا��صحراء مع العشاء الشرقي والعروض الترفيهية، وأقم في فندق من فئتك المختارة.",
       "en": "The perfect short stopover program in Dubai. Enjoy a desert safari with oriental dinner and entertainment shows, staying at your chosen hotel category.",
       "es": "El programa de escala perfecto en Dubái. Disfruta de un safari por el desierto con cena oriental y espectáculos, alojándote en la categoría de hotel que elijas.",
       "pt": "O programa de escala perfeito no Dubai. Desfrute de um safari no deserto com jantar oriental e espetáculos, hospedando-se na categoria de hotel que escolher.",
@@ -7068,6 +7068,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -7076,10 +7077,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Neste local, onde chegam milhões de passageiros todos os anos, o nosso representante estará à sua espera. Transbordo (transfer) para o hotel escolhido e alojamento.",
           "it": "Arrivo all'Aeroporto Internazionale di Dubai. In questo luogo, dove arrivano milioni di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "الإفطار في الفندق ووقت حر في الصباح. في فترة بعد الظهر، حوالي الساعة 15:00، ننطلق بسيارات دفع رباعي حديثة نحو صحراء دبي. سيقودنا السائق (الذي يتحدث الإنجليزية) في هذه المغامرة بين الكثبان الرملية، للاستمتاع بالجولة التقليدية الأكثر شهرة. يمكن للسيدات ارتداء ملابس وفساتين ذات ألوان زاهية لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقصة البطن، رقصة التنورة، وعرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -7094,10 +7095,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "الإفطار في الفندق. بناءً على موعد رحلتكم الطيران، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الرحلة. نهاية الرحلة",
@@ -7112,11 +7113,80 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 2
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء / فورم 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha / Form 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha / Form 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha / Form 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha / Form 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 210,
+          "sgl": 99
+        },
+        {
+          "dbl": 220,
+          "sgl": 110
+        },
+        {
+          "dbl": 235,
+          "sgl": 125
+        },
+        {
+          "dbl": 280,
+          "sgl": 170
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 165,
+          "sgl": 65
+        },
+        {
+          "dbl": 175,
+          "sgl": 75
+        },
+        {
+          "dbl": 185,
+          "sgl": 85
+        },
+        {
+          "dbl": 210,
+          "sgl": 115
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    }
   },
   {
     "sourceId": "REG-23",
@@ -7244,6 +7314,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل آلاف المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -7252,10 +7323,10 @@
           "pt": "Chegada ao aeroporto internacional de Dubai. Neste local, onde chegam milhares de passageiros todos os anos, o nosso representante estará à sua espera. Transporte para o hotel escolhido e alojamento.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "الإفطار في الفندق. جولة نصف يوم. تشتهر دبي بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم ستتاح لنا الفرصة للتجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح، سنتمكن من الإعجاب بالشوارع الضيقة والبيوت العربية القديمة ذات أبراج الرياح (البراجيل). سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر عبر \"العبرة\" (قارب تقليدي الصنع) إلى سوق التوابل وسوق الذهب. سنضيع في الشوارع الصغيرة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة. في النهاية، العودة إلى الفندق. بعد الظهر وقت حر.",
@@ -7270,10 +7341,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "الإفطار في الفندق ووقت حر في الصباح. في فترة بعد الظهر، حوالي الساعة 15:00، ننطلق بسيارات دفع رباعي حديثة نحو صحراء دبي. سيقودنا السائق (الذي يتحدث الإنجليزية) في هذه المغامرة بين الكثبان الرملية، للاستمتاع بالجولة التقليدية الأكثر شهرة. يمكن للسيدات ارتداء ملابس وفساتين ذات ألوان زاهية لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقصة البطن، رقصة التنورة، وعرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -7288,10 +7359,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "الإفطار في الفندق. بناءً على موعد رحلتكم الطيران، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الرحلة. نهاية الرحلة",
@@ -7306,11 +7377,80 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 3
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 305,
+          "sgl": 150
+        },
+        {
+          "dbl": 325,
+          "sgl": 165
+        },
+        {
+          "dbl": 345,
+          "sgl": 189
+        },
+        {
+          "dbl": 420,
+          "sgl": 255
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 245,
+          "sgl": 98
+        },
+        {
+          "dbl": 255,
+          "sgl": 113
+        },
+        {
+          "dbl": 275,
+          "sgl": 128
+        },
+        {
+          "dbl": 305,
+          "sgl": 173
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    }
   },
   {
     "sourceId": "REG-24",
@@ -7453,6 +7593,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -7461,10 +7602,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Traslado ao hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. جولة نصف يوم. دبي مدينة مشهورة بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم سنحظى بفرصة التجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح سنتمكن من تأمل الشوارع الضيقة وبيوتها القديمة ذات الطراز العربي والمزودة بأبراج الرياح (البرجيل). سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر الخور على متن قارب \"العبرة\" التقليدي للوصول إلى سوق التوابل والذهب. سنضيع في الشوارع الضيقة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة. في النهاية، الانتقال إلى متحف المستقبل. افتتح متحف المستقبل للجمهور في فبراير 2022، ومنذ ذلك الحين يستقبل آلاف السياح يومياً. وقد وصفه صاحب السمو الشيخ محمد بن راشد بأنه \"أجمل مبنى في العالم\". يقع بجوار المركز المالي لدبي؛ في هذا المتحف يمكنك السفر عبر الزمن ورؤية كيف ستغير التكنولوجيا والتطور مستقبل المنطقة والعالم. استعد لتكون جزءاً من البعثات الفضائية، والحصول على وظيفة مستقبلية، والتفكير في صحتك ورفاهيتك، ومعرفة المزيد عن الذكاء الاصطناعي وغير ذلك الكثير. في النهاية، العودة إلى الفندق بمفردك.",
@@ -7479,10 +7620,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وصباح حر. في فترة بعد الظهر، في تمام الساعة 15:00 تقريباً، سننطلق بسيارات 4x4 حديثة إلى صحراء دبي. سيأخذنا سائقنا الذي يتحدث الإنجليزية في هذه المغامرة بين الكثبان الرملية؛ حيث سنستمتع بالجولة التقليدية الأكثر شهرة على الإطلاق. يمكن للسيدات ارتداء ملابس زاهية الألوان لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقص شرقي، عرض التنورة، وكذلك عرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -7497,10 +7638,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ويوم حر للزيارات الاختيارية أو الاستمتاع بالفندق. لدينا مجموعة متنوعة من الجولات التي يمكن إضافتها إلى برنامجك مثل زيارة إمارة أبوظبي، إمارة الشارقة، عشاء مع عرض النوافير، وغيرها (يرجى مراجعة وكالتك لمعرفة الأسعار والتوافر).",
@@ -7515,10 +7656,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة",
@@ -7533,11 +7674,80 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 399,
+          "sgl": 200
+        },
+        {
+          "dbl": 425,
+          "sgl": 220
+        },
+        {
+          "dbl": 455,
+          "sgl": 252
+        },
+        {
+          "dbl": 549,
+          "sgl": 340
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 315,
+          "sgl": 130
+        },
+        {
+          "dbl": 330,
+          "sgl": 150
+        },
+        {
+          "dbl": 360,
+          "sgl": 170
+        },
+        {
+          "dbl": 399,
+          "sgl": 230
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    }
   },
   {
     "sourceId": "REG-25",
@@ -7680,6 +7890,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -7688,10 +7899,10 @@
           "pt": "Chegada ao aeroporto internacional de Dubai. Neste local, onde chegam milhares de passageiros todos os anos, o nosso representante estará à sua espera. Transporte para o hotel escolhido e alojamento.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. جولة نصف يوم. دبي مدينة مشهورة بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم سنحظى بفرصة التجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح سنتمكن من تأمل الشوارع الضيقة وبيوتها القديمة ذات الطراز العربي والمزودة بأبراج الرياح. سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر الخور على متن قارب \"العبرة\" التقليدي للوصول إلى سوق التوابل والذهب. سنضيع في الشوارع الضيقة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة.",
@@ -7706,10 +7917,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار وجولة في أبوظبي. تأخذكم هذه الزيارة إلى عاصمة دولة الإمارات العربية المتحدة، والتي تقع على جزيرة متصلة بالبر الرئيسي بعدة جسور. تستغرق الرحلة إلى أبوظبي حوالي ساعة و30 دقيقة من دبي. في الطريق، سنمر عبر ميناء جبل علي، وهو أكبر ميناء اصطناعي في العالم. عند الوصول إلى العاصمة، ستكون محطتنا الأولى في أحد أكبر المساجد في العالم؛ مسجد الشيخ زايد الكبير وهو لوحة فنية معمارية حقيقية، ومفتوح للزوار من جميع أنحاء العالم ومختلف الأديان. بعد ذلك، سنقوم بجولة بانورامية نمر فيها بقصور العائلة الحاكمة في أبوظبي، ثم وقفة لالتقاط الصور أمام قصر الإمارات والقصر الرئاسي (من الخارج). نتابع جولاتنا على طول الكورنيش الجميل (الممشى البحري)؛ وسنتوقف في الجزيرة الثقافية في أبوظبي لالتقاط صور لمتحف اللوفر أبوظبي الذي تم افتتاحه عام 2018. وفي النهاية، سنمر بجزيرة ياس ونتوقف لالتقاط الصور في عالم فيراري (Ferrari World). العودة إلى دبي.",
@@ -7724,10 +7935,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وصباح حر. في تمام الساعة 15:00، سننطلق بسيارات 4x4 حديثة إلى صحراء دبي. سيأخذنا سائقنا الذي يتحدث الإنجليزية في هذه المغامرة بين الكثبان الرملية؛ حيث سنستمتع بالجولة التقليدية الأكثر شهرة على الإطلاق. يمكن للسيدات ارتداء ملابس زاهية الألوان لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقص شرقي، عرض التنورة، وكذلك عرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -7742,10 +7953,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ويوم حر في دبي للقيام بجولات اختيارية.",
@@ -7760,10 +7971,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       },
       {
+        "dayNumber": 6,
         "dayLabel": "Day 6",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة",
@@ -7778,11 +7989,80 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 5
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 510,
+          "sgl": 250
+        },
+        {
+          "dbl": 545,
+          "sgl": 275
+        },
+        {
+          "dbl": 580,
+          "sgl": 315
+        },
+        {
+          "dbl": 699,
+          "sgl": 425
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 409,
+          "sgl": 163
+        },
+        {
+          "dbl": 425,
+          "sgl": 188
+        },
+        {
+          "dbl": 480,
+          "sgl": 255
+        },
+        {
+          "dbl": 510,
+          "sgl": 288
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    }
   },
   {
     "sourceId": "REG-26",
@@ -7930,6 +8210,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -7938,10 +8219,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Traslado ao hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. جولة نصف يوم. دبي مدينة مشهورة بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم سنحظى بفرصة التجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح سنتمكن من تأمل الشوارع الضيقة وبيوتها القديمة ذات الطراز العربي والمزودة بأبراج الرياح. سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر الخور على متن قارب \"العبرة\" التقليدي للوصول إلى سوق التوابل والذهب. سنضيع في الشوارع الضيقة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة.",
@@ -7956,10 +8237,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار وتسجيل الخروج من الفندق. تأخذكم هذه الزيارة إلى عاصمة دولة الإمارات العربية المتحدة، والتي تقع على جزيرة متصلة بالبر الرئيسي بعدة جسور. تستغرق الرحلة إلى أبوظبي حوالي ساعة و30 دقيقة من دبي. في الطريق، سنمر عبر ميناء جبل علي، وهو أكبر ميناء اصطناعي في العالم. عند الوصول إلى العاصمة، ستكون محطتنا الأولى في أحد أكبر المساجد في العالم؛ مسجد الشيخ زايد الكبير وهو لوحة فنية معمارية حقيقية، ومفتوح للزوار من جميع أنحاء العالم ومختلف الأديان. بعد ذلك، سنقوم بجولة بانورامية نمر فيها بقصور العائلة الحاكمة في أبوظبي، ثم وقفة لالتقاط الصور أمام قصر الإمارات والقصر الرئاسي (من الخارج). نتابع جولاتنا على طول الكورنيش الجميل (الممشى البحري)؛ وسنتوقف في الجزيرة الثقافية في أبوظبي لالتقاط صور لمتحف اللوفر أبوظبي الذي تم افتتاحه عام 2018. وفي النهاية، سنمر بجزيرة ياس ونتوقف لالتقاط الصور في عالم فيراري (Ferrari World). الانتقال إلى الفندق في أبوظبي والإقامة.",
@@ -7974,10 +8255,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار ويوم حر للاستمتاع بالفندق و/أو القيام بزيارات اختيارية. تضم أبوظبي العديد من المعالم السياحية الرائعة؛ يرجى مراجعة وكالتك لمعرفة الخيارات المتاحة. يمكنك تناول الكابتشينو الذهبي الشهير في قصر الإمارات، أو الصعود إلى منصة المراقبة بـ 360 درجة في فندق كونراد في أبراج الاتحاد، أو دخول القصر الرئاسي الرائع (قصر الوطن)، أو قضاء اليوم في إحدى المدن الترفيهية: عالم فيراري، ياس ووتروورلد، أو عالم وارنر براذرز.",
@@ -7992,10 +8273,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق، وفي الوقت المحدد الانتقال إلى الفندق في دبي وتسجيل الوصول. في تمام الساعة 15:00، سننطلق بسيارات 4x4 حديثة إلى صحراء دبي. سيأخذنا سائقنا الذي يتحدث الإنجليزية في هذه المغامرة بين الكثبان الرملية؛ حيث سنستمتع بالجولة التقليدية الأكثر شهرة على الإطلاق. يمكن للسيدات ارتداء ملابس زاهية الألوان لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقص شرقي، عرض التنورة، وكذلك عرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -8010,10 +8291,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
+        "dayNumber": 6,
         "dayLabel": "Day 6",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة",
@@ -8028,11 +8309,50 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 5
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "دوسيت دي2 كينز / ترايب 5★ + هوليداي إن داون تاون 5★",
+          "en": "Dusit D2 Kenz / Tryp 5★ + Holiday Inn Downtown 5★",
+          "es": "Dusit D2 Kenz / Tryp 5★ + Holiday Inn Downtown 5★",
+          "pt": "Dusit D2 Kenz / Tryp 5★ + Holiday Inn Downtown 5★",
+          "it": "Dusit D2 Kenz / Tryp 5★ + Holiday Inn Downtown 5★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★ + ميلينيوم داون تاون 5★",
+          "en": "Elite Byblos / Media Rotana 5★ + Millennium Downtown 5★",
+          "es": "Elite Byblos / Media Rotana 5★ + Millennium Downtown 5★",
+          "pt": "Elite Byblos / Media Rotana 5★ + Millennium Downtown 5★",
+          "it": "Elite Byblos / Media Rotana 5★ + Millennium Downtown 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 635,
+          "sgl": 315
+        },
+        {
+          "dbl": 755,
+          "sgl": 425
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 515,
+          "sgl": 213
+        },
+        {
+          "dbl": 565,
+          "sgl": 288
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01MAY26 – 30SEP26 / 01MAY27 – 30SEP27"
+    }
   },
   {
     "sourceId": "REG-27",
@@ -8175,6 +8495,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -8183,10 +8504,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Traslado ao hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. جولة نصف يوم. دبي مدينة مشهورة بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم سنحظى بفرصة التجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح سنتمكن من تأمل الشوارع الضيقة وبيوتها القديمة ذات الطراز العربي والمزودة بأبراج الرياح. سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر الخور على متن قارب \"العبرة\" التقليدي للوصول إلى سوق التوابل والذهب. سنضيع في الشوارع الضيقة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة.",
@@ -8201,10 +8522,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وجولة في إمارة أبوظبي. تأخذكم هذه الزيارة إلى عاصمة دولة الإمارات العربية المتحدة، والتي تقع على جزيرة متصلة بالبر الرئيسي بعدة جسور. تستغرق الرحلة إلى أبوظبي حوالي ساعة و30 دقيقة من دبي. في الطريق، سنمر عبر ميناء جبل علي، وهو أكبر ميناء اصطناعي في العالم. عند الوصول إلى العاصمة، ستكون محطتنا الأولى في أحد أكبر المساجد في العالم؛ مسجد الشيخ زايد الكبير وهو لوحة فنية معمارية حقيقية، ومفتوح للزوار من جميع أنحاء العالم ومختلف الأديان. بعد ذلك، سنقوم بجولة بانورامية نمر فيها بقصور العائلة الحاكمة في أبوظبي، ثم وقفة لالتقاط الصور أمام قصر الإمارات والقصر الرئاسي (من الخارج). نتابع جولاتنا على طول الكورنيش الجميل (الممشى البحري)؛ وسنتوقف في الجزيرة الثقافية في أبوظبي لالتقاط صور لمتحف اللوفر أبوظبي الذي تم افتتاحه عام 2018. وفي النهاية، سنمر بجزيرة ياس ونتوقف لالتقاط الصور في عالم فيراري (Ferrari World). العودة إلى دبي.",
@@ -8219,10 +8540,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ووقت حر في الفندق. في تمام الساعة 15:00، سننطلق بسيارات 4x4 حديثة إلى صحراء دبي. سيأخذنا سائقنا الذي يتحدث الإنجليزية في هذه المغامرة بين الكثبان الرملية؛ حيث سنستمتع بالجولة التقليدية الأكثر شهرة على الإطلاق. يمكن للسيدات ارتداء ملابس زاهية الألوان لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقص شرقي، عرض التنورة، وكذلك عرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -8237,10 +8558,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وأيام حرة في دبي للقيام بزيارات وجولات اختيارية.",
@@ -8255,10 +8576,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       },
       {
+        "dayNumber": 6,
         "dayLabel": "Day 6",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وأيام حرة في دبي للقيام بزيارات وجولات اختيارية.",
@@ -8273,10 +8594,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 5
+        }
       },
       {
+        "dayNumber": 7,
         "dayLabel": "Day 7",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وأيام حرة في دبي للقيام بزيارات وجولات اختيارية.",
@@ -8291,10 +8612,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 6
+        }
       },
       {
+        "dayNumber": 8,
         "dayLabel": "Day 8",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة",
@@ -8309,11 +8630,80 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 610,
+          "sgl": 350
+        },
+        {
+          "dbl": 655,
+          "sgl": 385
+        },
+        {
+          "dbl": 705,
+          "sgl": 441
+        },
+        {
+          "dbl": 869,
+          "sgl": 595
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 465,
+          "sgl": 228
+        },
+        {
+          "dbl": 489,
+          "sgl": 263
+        },
+        {
+          "dbl": 535,
+          "sgl": 298
+        },
+        {
+          "dbl": 609,
+          "sgl": 403
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    }
   },
   {
     "sourceId": "REG-28",
@@ -8471,6 +8861,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -8479,10 +8870,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Traslado ao hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. جولة نصف يوم. دبي مدينة مشهورة بحداثتها، ولكن من المهم معرفة تاريخها. في هذا اليوم سنحظى بفرصة التجول في الجزء القديم من المدينة. محطتنا الأولى ستكون في منطقة البستكية؛ في هذا المتحف المفتوح سنتمكن من تأمل الشوارع الضيقة وبيوتها القديمة ذات الطراز العربي والمزودة بأبراج الرياح. سندخل أحد البيوت المفتوحة للجمهور لنتعلم قليلاً عن عادات وثقافة السكان المحليين. سنعبر الخور على متن قارب \"العبرة\" التقليدي للوصول إلى سوق التوابل والذهب. سنضيع في الشوارع الضيقة مستمتعين بالروائح والنكهات للعثور على التذكار المثالي. في محلات سوق الذهب، يمكن العثور على مجوهرات حقيقية من الذهب والبلاتين والفضة.",
@@ -8497,10 +8888,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار وجولة في إمارة أبوظبي. تأخذكم هذه الزيارة إلى عاصمة دولة الإمارات العربية المتحدة، والتي تقع على جزيرة متصلة بالبر الرئيسي بعدة جسور. تستغرق الرحلة إلى أبوظبي حوالي ساعة و30 دقيقة من دبي. في الطريق، سنمر عبر ميناء جبل علي، وهو أكبر ميناء اصطناعي في العالم. عند الوصول إلى العاصمة، ستكون محطتنا الأولى في أحد أكبر المساجد في العالم؛ مسجد الشيخ زايد الكبير وهو لوحة فنية معمارية حقيقية، ومفتوح للزوار من جميع أنحاء العالم ومختلف الأديان. بعد ذلك، سنقوم بجولة بانورامية نمر فيها بقصور العائلة الحاكمة في أبوظبي، ثم وقفة لالتقاط الصور أمام قصر الإمارات والقصر الرئاسي (من الخارج). نتابع جولاتنا على طول الكورنيش الجميل (الممشى البحري)؛ وسنتوقف في الجزيرة الثقافية في أبوظبي لالتقاط صور لمتحف اللوفر أبوظبي الذي تم افتتاحه عام 2018. وفي النهاية، سنمر بجزيرة ياس ونتوقف لالتقاط الصور في عالم فيراري (Ferrari World). العودة إلى دبي.",
@@ -8515,10 +8906,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ووقت حر في الفندق. في تمام الساعة 15:00، سننطلق بسيارات 4x4 حديثة إلى صحراء دبي. سيأخذنا سائقنا الذي يتحدث الإنجليزية في هذه المغامرة بين الكثبان الرملية؛ حيث سنستمتع بالجولة التقليدية الأكثر شهرة على الإطلاق. يمكن للسيدات ارتداء ملابس زاهية الألوان لالتقاط الصور عند غروب الشمس؛ كما يمكن التقاط أفضل الصور للأزواج والعائلات في هذا المكان. بعد غروب الشمس، يأخذنا السائق إلى المخيم حيث ينتظرنا بوفيه شرقي لذيذ ومتنوع. خلال العشاء، سنستمتع بعرض شرقي، رقص شرقي، عرض التنورة، وكذلك عرض النار. في نهاية العشاء، العودة إلى الفندق.",
@@ -8533,10 +8924,10 @@
           "es": "Desayuno + Cena",
           "pt": "Pequeno-almoço + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وزيارة الشارقة. تُعتبر الشارقة العاصمة الثقافية للعالم العربي. محطتنا الأولى ستكون في \"ميدان الثقافة\" لالتقاط صور للمباني الرمزية بالمدينة، بما في ذلك مجسم القرآن الكريم. سنقوم بزيارة متحف الحضارة الإسلامية. بعد ذلك، سنزور \"سوق العرصة\"، وهو أقدم سوق لؤلؤ لا يزال يعمل باللؤلؤ المستزرع، حيث يمكنك شراء التذكارات المتنوعة. كما سنتوقف في \"السوق المركزي\" (السوق الإسلامي)، المشهور بالحرف اليدوية. في نهاية الزيارة، العودة إلى الفندق.",
@@ -8551,10 +8942,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       },
       {
+        "dayNumber": 6,
         "dayLabel": "Day 6",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وزيارة إمارة الفجيرة. الفجيرة هي إحدى الإمارات الأقل شهرة للزوار ولكنها تستحق الزيارة بكل تأكيد. في طريقنا، سنمر بـ \"سوق الجمعة\" الشهير بأكشاك الحرف اليدوية والفخار والسجاد المحلي. سنزور مسجد الشيخ زايد الجديد في الفجيرة، وهو ثاني أكبر مسجد في الدولة. وبالقرب من وسط مدينة الفجيرة سنتمكن من رؤية قلعتها المجددة. سنتناول الغداء في أحد المنتجعات في المنطقة وسيكون لدينا وقت للسباحة في المياه الكريستالية النقية. في النهاية، العودة إلى دبي.",
@@ -8569,10 +8960,10 @@
           "es": "Desayuno + Almuerzo",
           "pt": "Pequeno-almoço + Almoço",
           "it": "Colazione + Pranzo"
-        },
-        "sortOrder": 5
+        }
       },
       {
+        "dayNumber": 7,
         "dayLabel": "Day 7",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ويوم حر في دبي للقيام بزيارات وجولات اختيارية.",
@@ -8587,10 +8978,10 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 6
+        }
       },
       {
+        "dayNumber": 8,
         "dayLabel": "Day 8",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة",
@@ -8605,11 +8996,333 @@
           "es": "Desayuno",
           "pt": "Pequeno-almoço",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس بر دبي 3★",
+          "en": "Ibis Style / Citymax Bur Dubai 3★",
+          "es": "Ibis Style / Citymax Bur Dubai 3★",
+          "pt": "Ibis Style / Citymax Bur Dubai 3★",
+          "it": "Ibis Style / Citymax Bur Dubai 3★"
+        },
+        {
+          "ar": "سيجنيتشر البرشاء / أوركيد 4★",
+          "en": "Signature al Barsha / Orchid 4★",
+          "es": "Signature al Barsha / Orchid 4★",
+          "pt": "Signature al Barsha / Orchid 4★",
+          "it": "Signature al Barsha / Orchid 4★"
+        },
+        {
+          "ar": "ترايب باي ويندام / ميلينيوم البرشاء 4★",
+          "en": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "es": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "pt": "Tryp by Wyndham / Millennium al Barsha 4★",
+          "it": "Tryp by Wyndham / Millennium al Barsha 4★"
+        },
+        {
+          "ar": "إيليت بيبلوس / ميديا روتانا 5★",
+          "en": "Elite Byblos / Media Rotana 5★",
+          "es": "Elite Byblos / Media Rotana 5★",
+          "pt": "Elite Byblos / Media Rotana 5★",
+          "it": "Elite Byblos / Media Rotana 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 940,
+          "sgl": 350
+        },
+        {
+          "dbl": 989,
+          "sgl": 385
+        },
+        {
+          "dbl": 1039,
+          "sgl": 441
+        },
+        {
+          "dbl": 1205,
+          "sgl": 595
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 799,
+          "sgl": 228
+        },
+        {
+          "dbl": 820,
+          "sgl": 263
+        },
+        {
+          "dbl": 869,
+          "sgl": 298
+        },
+        {
+          "dbl": 940,
+          "sgl": 403
+        }
+      ],
+      "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
+      "summerDates": "01 May – 30 Sep"
+    },
+    "extraNightPricesJsonb": {
+      "hotels": [
+        {
+          "ar": "إيبيس ستايل / سيتي ماكس 3★",
+          "en": "Ibis Style / Citymax 3★",
+          "es": "Ibis Style / Citymax 3★",
+          "pt": "Ibis Style / Citymax 3★",
+          "it": "Ibis Style / Citymax 3★"
+        },
+        {
+          "ar": "سيجنيتشر / أوركيد البرشاء 4★",
+          "en": "Signature / Orchid al Barsha 4★",
+          "es": "Signature / Orchid al Barsha 4★",
+          "pt": "Signature / Orchid al Barsha 4★",
+          "it": "Signature / Orchid al Barsha 4★"
+        },
+        {
+          "ar": "ميلينيوم البرشاء / ترايب 4★",
+          "en": "Millennium al Barsha / Tryp 4★",
+          "es": "Millennium al Barsha / Tryp 4★",
+          "pt": "Millennium al Barsha / Tryp 4★",
+          "it": "Millennium al Barsha / Tryp 4★"
+        },
+        {
+          "ar": "ميديا روتانا / إيليت بيبلوس 5★",
+          "en": "Media Rotana / Elite Byblos 5★",
+          "es": "Media Rotana / Elite Byblos 5★",
+          "pt": "Media Rotana / Elite Byblos 5★",
+          "it": "Media Rotana / Elite Byblos 5★"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 50,
+          "sgl": 100
+        },
+        {
+          "dbl": 55,
+          "sgl": 110
+        },
+        {
+          "dbl": 65,
+          "sgl": 125
+        },
+        {
+          "dbl": 90,
+          "sgl": 170
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 35,
+          "sgl": 65
+        },
+        {
+          "dbl": 40,
+          "sgl": 75
+        },
+        {
+          "dbl": 45,
+          "sgl": 85
+        },
+        {
+          "dbl": 60,
+          "sgl": 115
+        }
+      ],
+      "other": [
+        {
+          "dbl": 50,
+          "sgl": 100
+        },
+        {
+          "dbl": 55,
+          "sgl": 110
+        },
+        {
+          "dbl": 65,
+          "sgl": 130
+        },
+        {
+          "dbl": 90,
+          "sgl": 170
+        }
+      ],
+      "summerDates": "01MAY – 30SEP (For 2026 & 2027)"
+    },
+    "exhibitionSurchargesJsonb": {
+      "dubai": [
+        {
+          "event": {
+            "ar": "GULFOOD",
+            "en": "GULFOOD",
+            "es": "GULFOOD",
+            "pt": "GULFOOD",
+            "it": "GULFOOD"
+          },
+          "dates": {
+            "ar": "26-31 يناير 2026",
+            "en": "26-31 JAN 2026",
+            "es": "26-31ENE2026",
+            "pt": "26-31JAN2026",
+            "it": "26-31GEN2026"
+          },
+          "3star": {
+            "dbl": 30,
+            "sgl": 60
+          },
+          "4star": {
+            "dbl": 50,
+            "sgl": 100
+          },
+          "5star": {
+            "dbl": 65,
+            "sgl": 130
+          }
+        },
+        {
+          "event": {
+            "ar": "ARAB HEALTH",
+            "en": "ARAB HEALTH",
+            "es": "ARAB HEALTH",
+            "pt": "ARAB HEALTH",
+            "it": "ARAB HEALTH"
+          },
+          "dates": {
+            "ar": "10-13 فبراير 2026",
+            "en": "10-13 FEB 2026",
+            "es": "10-13FEB2026",
+            "pt": "10-13FEV2026",
+            "it": "10-13FEB2026"
+          },
+          "3star": {
+            "dbl": 30,
+            "sgl": 60
+          },
+          "4star": {
+            "dbl": 50,
+            "sgl": 100
+          },
+          "5star": {
+            "dbl": 65,
+            "sgl": 130
+          }
+        },
+        {
+          "event": {
+            "ar": "GITEX",
+            "en": "GITEX",
+            "es": "GITEX",
+            "pt": "GITEX",
+            "it": "GITEX"
+          },
+          "dates": {
+            "ar": "06-12 ديسمبر 2026",
+            "en": "06-12 DEC 2026",
+            "es": "06-12DEC2026",
+            "pt": "06-12DEZ2026",
+            "it": "06-12DIC2026"
+          },
+          "3star": {
+            "dbl": 30,
+            "sgl": 60
+          },
+          "4star": {
+            "dbl": 50,
+            "sgl": 100
+          },
+          "5star": {
+            "dbl": 65,
+            "sgl": 130
+          }
+        },
+        {
+          "event": {
+            "ar": "DUBAI AIRSHOW",
+            "en": "DUBAI AIRSHOW",
+            "es": "DUBAI AIRSHOW",
+            "pt": "DUBAI AIRSHOW",
+            "it": "DUBAI AIRSHOW"
+          },
+          "dates": {
+            "ar": "07-11 ديسمبر 2026",
+            "en": "07-11 DEC 2026",
+            "es": "07-11DEC2026",
+            "pt": "07-11DEZ2026",
+            "it": "07-11DIC2026"
+          },
+          "3star": {
+            "dbl": 30,
+            "sgl": 60
+          },
+          "4star": {
+            "dbl": 50,
+            "sgl": 100
+          },
+          "5star": {
+            "dbl": 65,
+            "sgl": 130
+          }
+        }
+      ],
+      "abuDhabi": [
+        {
+          "event": {
+            "ar": "ADIPEC",
+            "en": "ADIPEC",
+            "es": "ADIPEC",
+            "pt": "ADIPEC",
+            "it": "ADIPEC"
+          },
+          "dates": {
+            "ar": "02-07 نوفمبر 2026",
+            "en": "02-07 NOV 2026",
+            "es": "02-07NOV2026",
+            "pt": "02-07NOV2026",
+            "it": "02-07NOV2026"
+          },
+          "4star": {
+            "dbl": 140,
+            "sgl": 280
+          },
+          "5star": {
+            "dbl": 250,
+            "sgl": 480
+          }
+        },
+        {
+          "event": {
+            "ar": "F1 ABU DHABI",
+            "en": "F1 ABU DHABI",
+            "es": "F1 ABU DHABI",
+            "pt": "F1 ABU DHABI",
+            "it": "F1 ABU DHABI"
+          },
+          "dates": {
+            "ar": "03-08 ديسمبر 2026",
+            "en": "03-08 DEC 2026",
+            "es": "03-08DEC2026",
+            "pt": "03-08DEZ2026",
+            "it": "03-08DIC2026"
+          },
+          "4star": {
+            "dbl": 140,
+            "sgl": 280
+          },
+          "5star": {
+            "dbl": 250,
+            "sgl": 480
+          }
+        }
+      ]
+    }
   },
   {
     "sourceId": "HM001",
@@ -8747,6 +9460,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -8755,10 +9469,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Transfer para o hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وجولة في مدينة دبي. خلال هذه الجولة سنزور دبي مارينا بناطحات السحاب الشاهقة وأعلى برج ملتوي في العالم. سنتوقف في جزيرة نخلة جميرا الاصطناعية لالتقاط بعض الصور لفندق أتلانتس، ثم زيارة سوق مدينة جميرا المصمم على طراز الأسواق العربية القديمة مع قنوات مائية مستوحاة من مدينة البندقية. وقفة لالتقاط الصور أمام فندق برج العرب الشهير الذي يعد رمزاً لمدينة دبي. لقطة تذكارية لبرج خليفة ودبي مول، أكبر مركز تجاري في العالم. في النهاية، العودة إلى الفندق.",
@@ -8773,10 +9487,10 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ووقت حر خلال الفترة الصباحية. في فترة بعد الظهر، الانطلاق للقيام برحلة السفاري الصحراوية. اكتشف الحياة في الصحراء بطريقة مختلفة؛ تعرف على النظام البيئي الفريد واكتشف كيف عاش البدو في انسجام مع الحيوانات والنباتات الصحراوية. شاهد عرض الصقور الرائع وتأمل منظر غروب الشمس الساحر فوق الكثبان الرملية. لاحقاً، ستصل إلى مخيم بدوي أصيل لتكتشف التراث الثقافي المحلي الغني عبر عروض حية. استمتع بتناول عشاء مميز تحت النجوم. (الانتقال من الفندق إلى الصحراء يتم بسيارات عادية، وتُستخدم سيارات الجيب الكلاسيكية فقط داخل محمية دبي الصحراوية، الجولة مع سائق يتحدث الإنجليزية وبتنقلات مشتركة).",
@@ -8791,10 +9505,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق، يوم حر للاستمتاع بالمسبح الخاص بالفندق و/أو القيام بزيارات وجولات اختيارية.",
@@ -8809,10 +9523,10 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك الجوية، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة. ملاحظة هامة: سيتم ترتيب جدول الزيارات وفقاً ليوم الوصول إلى دبي.",
@@ -8827,11 +9541,35 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "باراماونت ميدتاون دبي أو ما يماثله",
+          "en": "Paramount Midtown Dubai or similar",
+          "es": "Paramount Midtown Dubai o similar",
+          "pt": "Paramount Midtown Dubai ou similar",
+          "it": "Paramount Midtown Dubai o similare"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 860,
+          "sgl": 430
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 750,
+          "sgl": 375
+        }
+      ],
+      "winterDates": "04JAN26 - 30APR26 / 01OCT26 - 26DEC26",
+      "summerDates": "04JAN27 - 30APR27 / 01OCT27 - 26DEC27"
+    }
   },
   {
     "sourceId": "HM002",
@@ -8974,6 +9712,7 @@
     ],
     "itineraries": [
       {
+        "dayNumber": 1,
         "dayLabel": "Day 1",
         "descriptionJsonb": {
           "ar": "الوصول إلى مطار دبي الدولي. سيكون ممثلنا في انتظاركم في هذا المطار الذي يستقبل ملايين المسافرين سنوياً. الانتقال إلى الفندق المختار والإقامة.",
@@ -8982,10 +9721,10 @@
           "pt": "Chegada ao Aeroporto Internacional de Dubai. Nosso representante estará esperando por você neste local, onde chegam milhares de passageiros todos os anos. Transfer para o hotel escolhido e hospedagem.",
           "it": "Arrivo all'aeroporto internazionale di Dubai. In questo luogo, dove arrivano migliaia di passeggeri ogni anno, il nostro rappresentante vi starà aspettando. Trasferimento all'hotel scelto e sistemazione."
         },
-        "mealsJsonb": {},
-        "sortOrder": 0
+        "mealsJsonb": null
       },
       {
+        "dayNumber": 2,
         "dayLabel": "Day 2",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق وجولة في مدينة دبي. خلال هذه الجولة سنزور دبي مارينا بناطحات السحاب الشاهقة وأعلى برج ملتوي في العالم. سنتوقف في جزيرة نخلة جميرا الاصطناعية لالتقاط بعض الصور لفندق أتلانتس، ثم زيارة سوق مدينة جميرا المصمم على طراز الأسواق العربية القديمة مع قنوات مائية مستوحاة من مدينة البندقية. وقفة لالتقاط الصور أمام فندق برج العرب الشهير الذي يعد رمزاً لمدينة دبي. لقطة تذكارية لبرج خليفة ودبي مول، أكبر مركز تجاري في العالم. في النهاية، العودة إلى الفندق.",
@@ -9000,10 +9739,10 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 1
+        }
       },
       {
+        "dayNumber": 3,
         "dayLabel": "Day 3",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق ووقت حر خلال الفترة الصباحية. في فترة بعد الظهر، الانطلاق للقيام برحلة السفاري الصحراوية. اكتشف الحياة في الصحراء بطريقة مختلفة؛ تعرف على النظام البيئي الفريد واكتشف كيف عاش البدو في انسجام مع الحيوانات والنباتات الصحراوية. شاهد عرض الصقور الرائع وتأمل منظر غروب الشمس الساحر فوق الكثبان الرملية. لاحقاً، ستصل إلى مخيم بدوي أصيل لتكتشف التراث الثقافي المحلي الغني عبر عروض حية. استمتع بتناول عشاء مميز تحت النجوم. (الانتقال من الفندق إلى الصحراء يتم بسيارات عادية، وتُستخدم سيارات الجيب الكلاسيكية فقط داخل محمية دبي الصحراوية، الجولة مع سائق يتحدث الإنجليزية وبتنقلات مشتركة).",
@@ -9018,10 +9757,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
+        "dayNumber": 4,
         "dayLabel": "Day 4",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق، يوم حر للاستمتاع بالمسبح الخاص بالفندق و/أو القيام بزيارات وجولات اختيارية. في المساء، موعدكم مع عشاء فاخر مكون من 3 أطباق في مطعم المنتهى بفندق برج العرب. سيمر سائقنا ليأخذكم إلى فندق الـ 7 نجوم الوحيد في العالم. بعد الانتهاء من العشاء، العودة إلى الفندق.",
@@ -9036,10 +9775,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
+        "dayNumber": 5,
         "dayLabel": "Day 5",
         "descriptionJsonb": {
           "ar": "إفطار في الفندق. وفقاً لموعد رحلتك الجوية، سنغادر الفندق قبل 3 ساعات ونصف من موعد إقلاع الطائرة. نهاية الرحلة. ملاحظة هامة: سيتم ترتيب جدول الزيارات وفقاً ليوم الوصول إلى دبي.",
@@ -9054,11 +9793,35 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       }
     ],
-    "images": []
+    "images": [],
+    "pricingJsonb": {
+      "hotels": [
+        {
+          "ar": "باراماونت ميدتاون دبي أو ما يماثله",
+          "en": "Paramount Midtown Dubai or similar",
+          "es": "Paramount Midtown Dubai o similar",
+          "pt": "Paramount Midtown Dubai ou similar",
+          "it": "Paramount Midtown Dubai o similare"
+        }
+      ],
+      "winter": [
+        {
+          "dbl": 1209,
+          "sgl": 605
+        }
+      ],
+      "summer": [
+        {
+          "dbl": 1099,
+          "sgl": 550
+        }
+      ],
+      "winterDates": "04JAN26 - 30APR26 / 01OCT26 - 26DEC26",
+      "summerDates": "04JAN27 - 30APR27 / 01OCT27 - 26DEC27"
+    }
   },
   {
     "sourceId": "REG-05",
