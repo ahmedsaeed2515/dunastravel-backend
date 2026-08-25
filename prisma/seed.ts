@@ -218,10 +218,10 @@ async function seedFallbackTours(): Promise<void> {
       code: 'tunisia-8d-7n-tour',
       titleJsonb: {
         "ar": "برنامج تونس الخضراء المتميز",
-        "en": "Tunisia Tour - 8 Days / 7 Nights",
-        "es": "Circuito Túnez - 8 Días / 7 Noches",
-        "it": "Tour Tunisia - 8 Giorni / 7 Notti",
-        "pt": "Circuito Tunísia - 8 Dias / 7 Noites"
+        "en": "Premium Green Tunisia Tour - 8 Days / 7 Nights",
+        "es": "Circuito Túnez Verde Premium - 8 Días / 7 Noches",
+        "it": "Tour Tunisia Verde Premium - 8 Giorni / 7 Notti",
+        "pt": "Circuito Tunísia Verde Premium - 8 Dias / 7 Noites"
 },
       category: 'Tunisia',
       country: 'Tunisia',
@@ -243,10 +243,10 @@ async function seedFallbackTours(): Promise<void> {
 },
       overviewJsonb: {
         "ar": "انطلق في رحلة ساحرة عبر الزمن تجمع بين عبق التاريخ الروماني والإسلامي العريق وسحر الطبيعة الصحراوية الفريدة. يمنحك هذا البرنامج المتكامل فرصة استكشاف تونس الخضراء من عاصمتها النابضة بالحياة وصولاً إلى بوابات الصحراء الشاسعة، مع الاستمتاع بإقامة فاخرة وخدمات متكاملة تناسب الأفراد والمجموعات.",
-        "en": "Embark on an extraordinary 8-day journey that seamlessly blends ancient Roman grandeur, rich Islamic heritage, and the breathtaking beauty of the Sahara Desert. This curated program takes you from the vibrant capital of Tunis to the vast golden dunes of the south, offering a comprehensive and premium travel experience tailored for all groups.",
+        "en": "Embark on an extraordinary 8-day journey combining ancient Roman splendor, rich Islamic heritage, and the breathtaking beauty of the Sahara Desert. This curated program takes you from the vibrant capital of Tunis to the vast golden dunes of the south, offering a premium experience designed for all travel groups.",
         "es": "Embárquese en un viaje extraordinario de 8 días que combina a la perfección la grandeza romana antigua, el rico legado islámico y la belleza sobrecogedora del desierto del Sahara. Este programa seleccionado le llevará desde la vibrante capital de Túnez hasta las vastas dunas doradas del sur, ofreciendo una experiencia prémium diseñada para todo tipo de grupos.",
-        "it": "Intraprendete uno straordinario viaggio di 8 giorni che unisce la grandezza dell'antica Roma, la ricca eredità islamica e la bellezza mozzafiato del deserto del Sahara. Questo programma esclusivo vi porterà dalla vibrante capitale Tunisi fino alle vaste dune dorate del sud, offrendo un'esperienza di viaggio completa e premium ideale per ogni gruppo.",
-        "pt": "Embarque em uma jornada extraordinária de 8 dias que combina perfeitamente a grandiosidade da Roma Antiga, a rica herança islâmica e a beleza deslumbrante do deserto do Saara. Este programa exclusivo levará você desde a vibrante capital, Túnis, até as vastas dunas douradas do sul, oferecendo uma experiência de viagem premium ideal para todos os tipos de grupos."
+        "it": "Imbarcatevi in un viaggio straordinario di 8 giorni che unisce perfettamente l'antica grandezza romana, il ricco patrimonio islamico e la straordinaria bellezza del deserto del Sahara. Questo programma curato vi condurrà dalla vivace capitale Tunisi fino alle vaste dune dorate del sud, offrendo un'esperienza premium pensata per ogni tipo di gruppo.",
+        "pt": "Embarque em uma viagem extraordinária de 8 dias que combina perfeitamente a grandeza romana antiga, a rica herança islâmica e a beleza deslumbrante do deserto do Saara. Este programa selecionado levará você da vibrante capital de Túnis às vastas dunas douradas do sul, oferecendo uma experiência premium projetada para todos os tipos de grupos."
 },
       includedServicesJsonb: {
         "ar": [
@@ -540,8 +540,7 @@ async function seedFallbackTours(): Promise<void> {
         'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1920&q=80',
         'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1920&q=80'
       ]
-    },
-{
+    },{
       slug: 'lo-mejor-de-grecia-9d',
       code: 'gr-es-001',
       titleJsonb: {
