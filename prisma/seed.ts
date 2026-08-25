@@ -213,6 +213,125 @@ async function seedFallbackTours(): Promise<void> {
 
   const fallbackTours = [
     {
+      slug: 'cairo-express-4d',
+      titleJsonb: {
+        pt: 'Cairo Express',
+        ar: 'القاهرة اكسبرس',
+        en: 'Cairo Express',
+        es: 'Cairo Express',
+        it: 'Cairo Express',
+      },
+      category: 'egypt',
+      country: 'egypt',
+      city: 'Cairo',
+      basePriceUsd: 450,
+      durationJsonb: {
+        pt: '4 Dias / 3 Noites',
+        ar: '4 أيام / 3 ليالٍ',
+        en: '4 Days / 3 Nights',
+        es: '4 Días / 3 Noches',
+        it: '4 Giorni / 3 Notti',
+      },
+      overviewJsonb: {
+        pt: 'Roteiro intenso de quatro dias explorando o coração do Egito Antigo. Visite as Pirâmides de Giza, a Esfinge, Memphis, Sakkara, o Grand Egyptian Museum, a Mesquita de Alabastro e o vibrante Mercado Khan El Khalili. Pacote completo com traslados, hospedagem e visto inclusos.',
+        ar: 'برنامج مكثف لمدة أربعة أيام لاستكشاف قلب مصر القديمة. زيارة أهرامات الجيزة، أبو الهول، ممفيس، سقارة، المتحف المصري الكبير، مسجد الألباستر، وسوق خان الخليلي النابض بالحياة. باقة كاملة تشمل التوصيلات، الإقامة، والتأشيرة.',
+        en: 'An intense 4-day itinerary exploring the heart of Ancient Egypt. Visit the Pyramids of Giza, the Sphinx, Memphis, Saqqara, the Grand Egyptian Museum, the Alabaster Mosque, and the vibrant Khan El Khalili market. Complete package with transfers, accommodation, and visa included.',
+        es: 'Un itinerario intenso de 4 días explorando el corazón del Antiguo Egipto. Visita las Pirámides de Guiza, la Esfinge, Menfis, Saqqara, el Gran Museo Egipcio, la Mezquita de Alabastro y el vibrante Mercado Khan El Khalili.',
+        it: 'Un intenso itinerario di 4 giorni alla scoperta del cuore dell\'Antico Egitto. Visita le Piramidi di Giza, la Sfinge, Menfi, Saqqara, il Grand Egyptian Museum, la Moschea di Alabastro e il mercato di Khan El Khalili.',
+      },
+      includedServicesJsonb: {
+        pt: [
+          '03 noites de hospedagem no Cairo em hotel de categoria escolhida com café da manhã e taxas',
+          'Traslados: Aeroporto / Hotel / Aeroporto em serviço regular.',
+          'Assistência no Aeroporto conforme roteiro',
+          'Passeio no Cairo às Pirâmides e Esfinge, Memphis e Sakkara, Mastabas e Pirâmide de Teti',
+          'Passeio e entrada ao Grand Egyptian Museum, Mesquita, Bairro Copta e Mercado Khan El Khalili',
+        ],
+        ar: [
+          'إقامة لمدة 03 ليالٍ في القاهرة بالفندق المختار مع الإفطار والضرائب',
+          'الانتقالات: المطار / الفندق / المطار بشركات خدمة منتظمة',
+          'المساعدة بالمطار حسب خطة السير',
+          'جولة القاهرة إلى الأهرامات وأبو الهول، ممفيس وسقارة، المصاطب وهرم تيتي',
+          'جولة ودخول المتحف المصري الكبير، المسجد، الحي القبطي، وسوق خان الخليلي',
+        ],
+        en: [
+          '03 nights accommodation in Cairo in chosen hotel category with breakfast and taxes',
+          'Transfers: Airport / Hotel / Airport in regular service',
+          'Airport assistance as per itinerary',
+          'Cairo tour to Pyramids & Sphinx, Memphis & Saqqara, Mastabas and Pyramid of Teti',
+          'Tour and entry to Grand Egyptian Museum, Mosque, Coptic Quarter and Khan El Khalili Market',
+        ],
+      },
+      excludedServicesJsonb: {
+        pt: [
+          'Todas as bebidas durante o almoço e jantar nos passeios não estão inclusas',
+          'Gorjetas aos maleteiros e carregadores obrigatórias',
+          'Visto obrigatório 35$ pp, um representante lhe aguardando no desembarque para lhe entregar o visto e lhe auxiliar na imigração',
+        ],
+        ar: [
+          'جميع المشروبات أثناء وجبتي الغداء والعشاء في الجولات غير شاملة',
+          'إكراميات حاملي الحقائب والشيالين إجبارية',
+          'التأشيرة الإجبارية 35$ للشخص، ممثل بانتظارك عند الوصول لتسليم التأشيرة والمساعدة في الجوازات',
+        ],
+        en: [
+          'All beverages during lunches and dinners on tours are not included',
+          'Mandatory porterage and tips',
+          'Mandatory entry visa $35 per person, representative awaiting upon arrival to assist with visa and immigration',
+        ],
+      },
+      itineraries: [
+        {
+          dayLabel: 'Day 1',
+          descriptionJsonb: {
+            pt: 'Chegada no Aeroporto Internacional do Cairo. Traslado para o Hotel. Conforme o horário de chegada é possível oferecer algum passeio opcional.',
+            ar: 'الوصول إلى مطار القاهرة الدولي والنقل إلى الفندق. حسب وقت الوصول، يمكن تقديم بعض الجولات الاختيارية.',
+            en: 'Arrival at Cairo International Airport and transfer to Hotel. Optional tours available depending on arrival time.',
+            es: 'Llegada al Aeropuerto Internacional del Cairo y traslado al Hotel.',
+            it: 'Arrivo all\'Aeroporto Internazionale del Cairo e trasferimento in Hotel.',
+          },
+          sortOrder: 0,
+        },
+        {
+          dayLabel: 'Day 2',
+          descriptionJsonb: {
+            pt: 'Pirâmides, Esfinge, Fábrica de Papiros, Memphis e Sakkara. Café da manhã no hotel e saída para visita às pirâmides de Giza: Quéops, Quefren e Miquerinos. Mirante das Pirâmides, Esfinge, Memphis, Pirâmide de Djoser, almoço em restaurante local, mastabas, Pirâmide de Teti e fábrica de papiros. Retorno ao hotel.',
+            ar: 'الأهرامات، أبو الهول، مصنع البردي، ممفيس وسقارة. الإفطار بالفندق والانطلاق لزيارة أهرامات الجيزة: خوفو، خفرع، ومنقرع. البانوراما، زيارة أبو الهول، ممفيس وسقارة، هرم زوسر، الغداء بمطعم محلي، المصاطب، هرم تيتي، ومصنع البردي. العودة للفندق.',
+            en: 'Pyramids, Sphinx, Papyrus Factory, Memphis and Saqqara. Breakfast at hotel and departure to visit Giza Pyramids: Khufu, Khafre, and Menkaure. Panoramic view, Sphinx visit, Memphis, Djoser Step Pyramid, local restaurant lunch, Mastabas, Teti Pyramid, and papyrus factory stop.',
+            es: 'Pirámides de Guiza, Esfinge, Fábrica de Papiros, Menfis y Saqqara. Almuerzo incluido.',
+            it: 'Piramidi di Giza, Sfinge, Fabbrica di Papiri, Menfi e Saqqara. Pranzo incluso.',
+          },
+          sortOrder: 1,
+        },
+        {
+          dayLabel: 'Day 3',
+          descriptionJsonb: {
+            pt: 'Novo Museu (GEM), Mesquita de Alabastro, Mercado Khan El Khalili. Café da manhã no hotel e saída para a visita ao Novo Museu, Mesquita de Alabastro e Cidadela de Saladino, passeio a pé pelo Bairro Copta e ao mercado Khan El Khalili. Almoço em restaurante local. Retorno para o hotel.',
+            ar: 'المتحف الجديد (GEM)، مسجد الألباستر، سوق خان الخليلي. الإفطار بالفندق والانطلاق لزيارة المتحف الجديد، مسجد الألباستر، قلعة صلاح الدين، جولة سير في الحي القبطي، وسوق خان الخليلي. الغداء بمطعم محلي، ثم العودة للفندق.',
+            en: 'Grand Egyptian Museum (GEM), Alabaster Mosque, Khan El Khalili Market. Breakfast at hotel and departure to visit Grand Egyptian Museum, Alabaster Mosque, Citadel of Saladin, walking tour in Coptic Quarter and Khan El Khalili market. Lunch at local restaurant.',
+            es: 'Gran Museo Egipcio (GEM), Mezquita de Alabastro, Mercado Khan El Khalili.',
+            it: 'Grand Egyptian Museum (GEM), Moschea di Alabastro, Mercato Khan El Khalili.',
+          },
+          sortOrder: 2,
+        },
+        {
+          dayLabel: 'Day 4',
+          descriptionJsonb: {
+            pt: 'Cairo / Aeroporto. Café da manhã no hotel e saída ao Aeroporto para voo internacional de retorno ao seu país de origem. Fim de nossos serviços.',
+            ar: 'القاهرة / المطار. الإفطار بالفندق ثم الخروج للمطار لاستقلال رحلة الطيران الدولية للعودة للوطن. نهاية خدماتنا.',
+            en: 'Cairo / Airport. Breakfast at hotel and transfer to Airport for international departure flight. End of our services.',
+            es: 'El Cairo / Aeropuerto. Traslado al aeropuerto para el vuelo de regreso.',
+            it: 'Il Cairo / Aeroporto. Trasferimento in aeroporto per il volo di retorno.',
+          },
+          sortOrder: 3,
+        },
+      ],
+      images: [
+        'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?q=80&w=1200',
+        'https://images.unsplash.com/photo-1572252821143-035a0f6700c2?q=80&w=1200',
+        'https://images.unsplash.com/photo-1539650116574-75c0c6d73c0e?q=80&w=1200',
+      ],
+    },
+    {
       slug: 'passion-of-turkey',
       titleJsonb: {
         en: 'Passion of Turkey',
