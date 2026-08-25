@@ -5469,10 +5469,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 615,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -5481,14 +5481,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-15",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -5502,11 +5501,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى البحر الميت، والنزول إلى ما يقرب من 400 متر تحت مستوى سطح البحر، حيث يمكننا الاستمتاع بالسباحة. بعد انتهاء الزيارة، العودة إلى عمان، وقت حر بعد الظهر. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to the Dead Sea, descending to nearly 400 meters below sea level, where we can enjoy a swim. After the visit, return to Amman, free afternoon. Dinner and accommodation at the hotel.",
@@ -5520,11 +5518,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -5538,11 +5535,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -5556,11 +5552,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. العودة إلى عمان. بقية اليوم حر في الفندق. العشاء والإقامة.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Return to Amman. Rest of the day free at the hotel. Dinner and accommodation.",
@@ -5574,11 +5569,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
-        "dayLabel": "Day 6",
+        "day": "6",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم حر في عمان. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Free day in Amman. Dinner and accommodation at the hotel.",
@@ -5592,11 +5586,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 5
+        }
       },
       {
-        "dayLabel": "Day 7",
+        "day": "7",
         "descriptionJsonb": {
           "ar": "سنقوم بجولة في عمان، تشمل القلعة، والمتحف الأثري، والمسرح الروماني. بعد ذلك، سنزور جرش أو \"جراسا\"، المدينة اليونانية الرومانية التي كانت جزءاً من حلف المدن العشر، والمعروفة باسم \"بومبي الشرق\" لأهميتها وحالتها المذهلة من الحفظ. يمكننا الإعجاب من بين أشياء أخرى بـ: قوس هادريان، وميدان سباق الخيل، والمسرح، والأغورا أو السوق مع أروقته الكاملة، والشارع المستقيم \"الكاردو ماكسيموس\"، ومعبد زيوس ومعبد أرتميس. ثم سنزور قلعة عجلون، وهي حصن بُني عام 1185 وأعيد بناؤه لاحقاً في القرن الثالث عشر من قبل المماليك بعد تدميره من قبل المغول. إنها قلعة من العصر الصليبي، تقع على قمة الجبل وتتمتع بإطلالة جميلة. العودة إلى عمان. العشاء والإقامة.",
           "en": "Next, we will take a tour of Amman, which includes the Citadel, the Archaeological Museum, and the Roman Theater. Afterwards, we will visit Jerash or \"Gerasa\", a Greco-Roman city that was part of the Decapolis and is known as the \"Pompeii of the East\" for its importance and magnificent state of preservation. Among other things, we can admire: Hadrian's Arch, the Hippodrome, the Theater, the Agora or forum with its complete colonnade, the Cardo Maximus, the Temple of Zeus, and the Temple of Artemis. Then we will visit Ajlun Castle, a fortress built in 1185 and later rebuilt in the 13th century by the Mamluks after its destruction by the Mongols. It is a castle from the Crusader period, located high on the mountain, offering a beautiful view. Return to Amman. Dinner and accommodation.",
@@ -5610,11 +5603,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 6
+        }
       },
       {
-        "dayLabel": "Day 8",
+        "day": "8",
         "descriptionJsonb": {
           "ar": "الإفطار والانتقال إلى المطار. مغادرة على رحلة العودة إلى مدينة المنشأ. الوصول ونهاية الرحلة.",
           "en": "Breakfast and transfer to the airport. Departure on a return flight to the city of origin. Arrival and end of the trip.",
@@ -5628,11 +5620,50 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://www.urtrips.net/wp-content/uploads/2019/02/Archaeological-Sites-In-Jordan-1.jpg"
+    ],
+    "code": "REG-15",
+    "highlightsJsonb": {
+      "ar": [
+        "زيارة البحر الميت والسباحة في مياهه فائقة الملوحة",
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك",
+        "جولة في عمان وجرش وقلعة عجلون"
+      ],
+      "en": [
+        "Visit to the Dead Sea and swim in its hypersaline waters",
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Tour of Madaba, Mount Nebo and Shobak Castle",
+        "Sightseeing in Amman, Jerash and Ajlun Castle"
+      ],
+      "es": [
+        "Visita al Mar Muerto y baño en sus aguas hipersalinas",
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak",
+        "Tour por Amman, Jerash y el Castillo de Ajlun"
+      ],
+      "pt": [
+        "Visita ao Mar Morto e banho nas suas águas hipersalinas",
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak",
+        "City tour em Amã, Jerash e Castelo de Ajlun"
+      ],
+      "it": [
+        "Visita al Mar Morto e bagno nelle sue acque ipersaline",
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak",
+        "Tour di Amman, Jerash e Castello di Ajlun"
+      ]
+    }
   },
   {
     "sourceId": "REG-16",
@@ -5669,10 +5700,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 670,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -5681,14 +5712,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-16",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -5702,11 +5732,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى البحر الميت، والنزول إلى ما يقرب من 400 متر تحت مستوى سطح البحر، حيث يمكننا الاستمتاع بالسباحة. بعد انتهاء الزيارة، العودة إلى عمان، وقت حر بعد الظهر. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to the Dead Sea, descending to nearly 400 meters below sea level, where we can enjoy a swim. After the visit, return to Amman, free afternoon. Dinner and accommodation at the hotel.",
@@ -5720,11 +5749,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -5738,11 +5766,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -5756,11 +5783,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. ثم الانتقال إلى وادي رم. بقية اليوم حر. العشاء والإقامة في المخيم.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Then transfer to Wadi Rum. Rest of the day free. Dinner and accommodation at the camp.",
@@ -5774,11 +5800,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
-        "dayLabel": "Day 6",
+        "day": "6",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى عمان. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to Amman. Dinner and accommodation at the hotel.",
@@ -5792,11 +5817,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 5
+        }
       },
       {
-        "dayLabel": "Day 7",
+        "day": "7",
         "descriptionJsonb": {
           "ar": "سنقوم بجولة في عمان، تشمل القلعة، والمتحف الأثري، والمسرح الروماني. بعد ذلك، سنزور جرش أو \"جراسا\"، المدينة اليونانية الرومانية التي كانت جزءاً من حلف المدن العشر، والمعروفة باسم \"بومبي الشرق\" لأهميتها وحالتها المذهلة من الحفظ. يمكننا الإعجاب من بين أشياء أخرى بـ: قوس هادريان، وميدان سباق الخيل، والمسرح، والأغورا أو السوق مع أروقته الكاملة، والشارع المستقيم \"الكاردو ماكسيموس\"، ومعبد زيوس ومعبد أرتميس. ثم سنزور قلعة عجلون، وهي حصن بُني عام 1185 وأعيد بناؤه لاحقاً في القرن الثالث عشر من قبل المماليك بعد تدميره من قبل المغول. إنها قلعة من العصر الصليبي، تقع على قمة الجبل وتتمتع بإطلالة جميلة. العودة إلى عمان. العشاء والإقامة.",
           "en": "Next, we will take a tour of Amman, which includes the Citadel, the Archaeological Museum, and the Roman Theater. Afterwards, we will visit Jerash or \"Gerasa\", a Greco-Roman city that was part of the Decapolis and is known as the \"Pompeii of the East\" for its importance and magnificent state of preservation. Among other things, we can admire: Hadrian's Arch, the Hippodrome, the Theater, the Agora or forum with its complete colonnade, the Cardo Maximus, the Temple of Zeus, and the Temple of Artemis. Then we will visit Ajlun Castle, a fortress built in 1185 and later rebuilt in the 13th century by the Mamluks after its destruction by the Mongols. It is a castle from the Crusader period, located high on the mountain, offering a beautiful view. Return to Amman. Dinner and accommodation.",
@@ -5810,11 +5834,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 6
+        }
       },
       {
-        "dayLabel": "Day 8",
+        "day": "8",
         "descriptionJsonb": {
           "ar": "الإفطار والانتقال إلى المطار. مغادرة على رحلة العودة إلى مدينة المنشأ. الوصول ونهاية الرحلة.",
           "en": "Breakfast and transfer to the airport. Departure on a return flight to the city of origin. Arrival and end of the trip.",
@@ -5828,11 +5851,55 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://cdn.alweb.com/thumbs/jordanencyclopedia/article/fit710x532/%D8%A3%D9%83%D8%A8%D8%B1-%D9%88%D8%A7%D8%AF%D9%8A-%D9%81%D9%8A-%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%86.jpg"
+    ],
+    "code": "REG-16",
+    "highlightsJsonb": {
+      "ar": [
+        "زيارة البحر الميت والسباحة في مياهه فائقة الملوحة",
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "المبيت في مخيم بدوي في وادي رم",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك",
+        "جولة في عمان وجرش وقلعة عجلون"
+      ],
+      "en": [
+        "Visit to the Dead Sea and swim in its hypersaline waters",
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Overnight stay in a Bedouin camp in Wadi Rum",
+        "Tour of Madaba, Mount Nebo and Shobak Castle",
+        "Sightseeing in Amman, Jerash and Ajlun Castle"
+      ],
+      "es": [
+        "Visita al Mar Muerto y baño en sus aguas hipersalinas",
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Pernocta en campamento beduino en Wadi Rum",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak",
+        "Tour por Amman, Jerash y el Castillo de Ajlun"
+      ],
+      "pt": [
+        "Visita ao Mar Morto e banho nas suas águas hipersalinas",
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Pernoite em acampamento beduíno em Wadi Rum",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak",
+        "City tour em Amã, Jerash e Castelo de Ajlun"
+      ],
+      "it": [
+        "Visita al Mar Morto e bagno nelle sue acque ipersaline",
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Pernottamento in accampamento beduino a Wadi Rum",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak",
+        "Tour di Amman, Jerash e Castello di Ajlun"
+      ]
+    }
   },
   {
     "sourceId": "REG-17",
@@ -5869,10 +5936,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 705,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -5881,14 +5948,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-17",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -5902,11 +5968,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى البحر الميت، والنزول إلى ما يقرب من 400 متر تحت مستوى سطح البحر، حيث يمكننا الاستمتاع بالسباحة. الانتقال إلى الفندق، وقت حر بعد الظهر. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to the Dead Sea, descending to nearly 400 meters below sea level, where we can enjoy a swim. Transfer to your hotel, free afternoon. Dinner and accommodation at the hotel.",
@@ -5920,11 +5985,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -5938,11 +6002,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -5956,11 +6019,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. العشاء والإقامة في المخيم.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Dinner and accommodation at the camp.",
@@ -5974,11 +6036,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
-        "dayLabel": "Day 6",
+        "day": "6",
         "descriptionJsonb": {
           "ar": "الإفطار. الانتقال إلى عمان. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Transfer to Amman. Dinner and accommodation at the hotel.",
@@ -5992,11 +6053,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 5
+        }
       },
       {
-        "dayLabel": "Day 7",
+        "day": "7",
         "descriptionJsonb": {
           "ar": "سنقوم بجولة في عمان، تشمل القلعة، والمتحف الأثري، والمسرح الروماني. بعد ذلك، سنزور جرش أو \"جراسا\"، المدينة اليونانية الرومانية التي كانت جزءاً من حلف المدن العشر، والمعروفة باسم \"بومبي الشرق\" لأهميتها وحالتها المذهلة من الحفظ. يمكننا الإعجاب من بين أشياء أخرى بـ: قوس هادريان، وميدان سباق الخيل، والمسرح، والأغورا أو السوق مع أروقته الكاملة، والشارع المستقيم \"الكاردو ماكسيموس\"، ومعبد زيوس ومعبد أرتميس. ثم سنزور قلعة عجلون، وهي حصن بُني عام 1185 وأعيد بناؤه لاحقاً في القرن الثالث عشر من قبل المماليك بعد تدميره من قبل المغول. إنها قلعة من العصر الصليبي، تقع على قمة الجبل وتتمتع بإطلالة جميلة. العودة إلى عمان. العشاء والإقامة.",
           "en": "Next, we will take a tour of Amman, which includes the Citadel, the Archaeological Museum, and the Roman Theater. Afterwards, we will visit Jerash or \"Gerasa\", a Greco-Roman city that was part of the Decapolis and is known as the \"Pompeii of the East\" for its importance and magnificent state of preservation. Among other things, we can admire: Hadrian's Arch, the Hippodrome, the Theater, the Agora or forum with its complete colonnade, the Cardo Maximus, the Temple of Zeus, and the Temple of Artemis. Then we will visit Ajlun Castle, a fortress built in 1185 and later rebuilt in the 13th century by the Mamluks after its destruction by the Mongols. It is a castle from the Crusader period, located high on the mountain, offering a beautiful view. Return to Amman. Dinner and accommodation.",
@@ -6010,11 +6070,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 6
+        }
       },
       {
-        "dayLabel": "Day 8",
+        "day": "8",
         "descriptionJsonb": {
           "ar": "الإفطار والانتقال إلى المطار. مغادرة على رحلة العودة إلى مدينة المنشأ. الوصول ونهاية الرحلة.",
           "en": "Breakfast and transfer to the airport. Departure on a return flight to the city of origin. Arrival and end of the trip.",
@@ -6028,11 +6087,55 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://as2.ftcdn.net/v2/jpg/01/67/01/83/1000_F_167018309_n4U66E0FtjpdX5HpidLKSNetfnbayUib.jpg"
+    ],
+    "code": "REG-17",
+    "highlightsJsonb": {
+      "ar": [
+        "زيارة البحر الميت والسباحة في مياهه فائقة الملوحة",
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "المبيت في مخيم بدوي في وادي رم",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك",
+        "جولة في عمان وجرش وقلعة عجلون"
+      ],
+      "en": [
+        "Visit to the Dead Sea and swim in its hypersaline waters",
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Overnight stay in a Bedouin camp in Wadi Rum",
+        "Tour of Madaba, Mount Nebo and Shobak Castle",
+        "Sightseeing in Amman, Jerash and Ajlun Castle"
+      ],
+      "es": [
+        "Visita al Mar Muerto y baño en sus aguas hipersalinas",
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Pernocta en campamento beduino en Wadi Rum",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak",
+        "Tour por Amman, Jerash y el Castillo de Ajlun"
+      ],
+      "pt": [
+        "Visita ao Mar Morto e banho nas suas águas hipersalinas",
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Pernoite em acampamento beduíno em Wadi Rum",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak",
+        "City tour em Amã, Jerash e Castelo de Ajlun"
+      ],
+      "it": [
+        "Visita al Mar Morto e bagno nelle sue acque ipersaline",
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Pernottamento in accampamento beduino a Wadi Rum",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak",
+        "Tour di Amman, Jerash e Castello di Ajlun"
+      ]
+    }
   },
   {
     "sourceId": "REG-18",
@@ -6069,10 +6172,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 685,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -6081,14 +6184,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-18",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -6102,11 +6204,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى البحر الميت، والنزول إلى ما يقرب من 400 متر تحت مستوى سطح البحر، حيث يمكننا الاستمتاع بالسباحة. الانتقال إلى الفندق، وقت حر بعد الظهر. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to the Dead Sea, descending to nearly 400 meters below sea level, where we can enjoy a swim. Transfer to your hotel, free afternoon. Dinner and accommodation at the hotel.",
@@ -6120,11 +6221,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -6138,11 +6238,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -6156,11 +6255,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. ثم الانتقال إلى العقبة. بقية اليوم حر في الفندق. العشاء والإقامة.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Then transfer to Aqaba. Rest of the day free at the hotel. Dinner and accommodation.",
@@ -6174,11 +6272,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
-        "dayLabel": "Day 6",
+        "day": "6",
         "descriptionJsonb": {
           "ar": "الإفطار. صباح حر، ثم الانتقال إلى عمان. الوصول إلى الفندق. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Free morning, then transfer to Amman. Arrival at your hotel. Dinner and accommodation at the hotel.",
@@ -6192,11 +6289,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 5
+        }
       },
       {
-        "dayLabel": "Day 7",
+        "day": "7",
         "descriptionJsonb": {
           "ar": "سنقوم بجولة في عمان، تشمل القلعة، والمتحف الأثري، والمسرح الروماني. بعد ذلك، سنزور جرش أو \"جراسا\"، المدينة اليونانية الرومانية التي كانت جزءاً من حلف المدن العشر، والمعروفة باسم \"بومبي الشرق\" لأهميتها وحالتها المذهلة من الحفظ. يمكننا الإعجاب من بين أشياء أخرى بـ: قوس هادريان، وميدان سباق الخيل، والمسرح، والأغورا أو السوق مع أروقته الكاملة، والشارع المستقيم \"الكاردو ماكسيموس\"، ومعبد زيوس ومعبد أرتميس. ثم سنزور قلعة عجلون، وهي حصن بُني عام 1185 وأعيد بناؤه لاحقاً في القرن الثالث عشر من قبل المماليك بعد تدميره من قبل المغول. إنها قلعة من العصر الصليبي، تقع على قمة الجبل وتتمتع بإطلالة جميلة. العودة إلى عمان. العشاء والإقامة.",
           "en": "Next, we will take a tour of Amman, which includes the Citadel, the Archaeological Museum, and the Roman Theater. Afterwards, we will visit Jerash or \"Gerasa\", a Greco-Roman city that was part of the Decapolis and is known as the \"Pompeii of the East\" for its importance and magnificent state of preservation. Among other things, we can admire: Hadrian's Arch, the Hippodrome, the Theater, the Agora or forum with its complete colonnade, the Cardo Maximus, the Temple of Zeus, and the Temple of Artemis. Then we will visit Ajlun Castle, a fortress built in 1185 and later rebuilt in the 13th century by the Mamluks after its destruction by the Mongols. It is a castle from the Crusader period, located high on the mountain, offering a beautiful view. Return to Amman. Dinner and accommodation.",
@@ -6210,11 +6306,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 6
+        }
       },
       {
-        "dayLabel": "Day 8",
+        "day": "8",
         "descriptionJsonb": {
           "ar": "الإفطار والانتقال إلى المطار. مغادرة على رحلة العودة إلى مدينة المنشأ. الوصول ونهاية الرحلة.",
           "en": "Breakfast and transfer to the airport. Departure on a return flight to the city of origin. Arrival and end of the trip.",
@@ -6228,11 +6323,55 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://thf.bing.com/th/id/R.163b5da11482baa539001f4a45596dcf?rik=4f9diCHlS0FjAQ&pid=ImgRaw&r=0"
+    ],
+    "code": "REG-18",
+    "highlightsJsonb": {
+      "ar": [
+        "زيارة البحر الميت والسباحة في مياهه فائقة الملوحة",
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "زيارة العقبة على البحر الأحمر",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك",
+        "جولة في عمان وجرش وقلعة عجلون"
+      ],
+      "en": [
+        "Visit to the Dead Sea and swim in its hypersaline waters",
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Visit to Aqaba on the Red Sea",
+        "Tour of Madaba, Mount Nebo and Shobak Castle",
+        "Sightseeing in Amman, Jerash and Ajlun Castle"
+      ],
+      "es": [
+        "Visita al Mar Muerto y baño en sus aguas hipersalinas",
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Visita a Aqaba en el Mar Rojo",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak",
+        "Tour por Amman, Jerash y el Castillo de Ajlun"
+      ],
+      "pt": [
+        "Visita ao Mar Morto e banho nas suas águas hipersalinas",
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Visita a Aqaba no Mar Vermelho",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak",
+        "City tour em Amã, Jerash e Castelo de Ajlun"
+      ],
+      "it": [
+        "Visita al Mar Morto e bagno nelle sue acque ipersaline",
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Visita ad Aqaba sul Mar Rosso",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak",
+        "Tour di Amman, Jerash e Castello di Ajlun"
+      ]
+    }
   },
   {
     "sourceId": "REG-19",
@@ -6269,10 +6408,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 665,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -6281,14 +6420,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-19",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -6302,11 +6440,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار. التوجه إلى البحر الميت، والنزول إلى ما يقرب من 400 متر تحت مستوى سطح البحر، حيث يمكننا الاستمتاع بالسباحة. بعد انتهاء الزيارة، العودة إلى عمان، وقت حر بعد الظهر. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Departure to the Dead Sea, descending to nearly 400 meters below sea level, where we can enjoy a swim. After the visit, return to Amman, free afternoon. Dinner and accommodation at the hotel.",
@@ -6320,11 +6457,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -6338,11 +6474,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -6356,11 +6491,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. ثم الانتقال إلى العقبة. بقية اليوم حر في الفندق. العشاء والإقامة.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Then transfer to Aqaba. Rest of the day free at the hotel. Dinner and accommodation.",
@@ -6374,11 +6508,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 4
+        }
       },
       {
-        "dayLabel": "Day 6",
+        "day": "6",
         "descriptionJsonb": {
           "ar": "الإفطار. صباح حر، ثم الانتقال إلى عمان. الوصول إلى الفندق. العشاء والإقامة في الفندق.",
           "en": "Breakfast. Free morning, then transfer to Amman. Arrival at your hotel. Dinner and accommodation at the hotel.",
@@ -6392,11 +6525,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 5
+        }
       },
       {
-        "dayLabel": "Day 7",
+        "day": "7",
         "descriptionJsonb": {
           "ar": "سنقوم بجولة في عمان، تشمل القلعة، والمتحف الأثري، والمسرح الروماني. بعد ذلك، سنزور جرش أو \"جراسا\"، المدينة اليونانية الرومانية التي كانت جزءاً من حلف المدن العشر، والمعروفة باسم \"بومبي الشرق\" لأهميتها وحالتها المذهلة من الحفظ. يمكننا الإعجاب من بين أشياء أخرى بـ: قوس هادريان، وميدان سباق الخيل، والمسرح، والأغورا أو السوق مع أروقته الكاملة، والشارع المستقيم \"الكاردو ماكسيموس\"، ومعبد زيوس ومعبد أرتميس. ثم سنزور قلعة عجلون، وهي حصن بُني عام 1185 وأعيد بناؤه لاحقاً في القرن الثالث عشر من قبل المماليك بعد تدميره من قبل المغول. إنها قلعة من العصر الصليبي، تقع على قمة الجبل وتتمتع بإطلالة جميلة. العودة إلى عمان. العشاء والإقامة.",
           "en": "Next, we will take a tour of Amman, which includes the Citadel, the Archaeological Museum, and the Roman Theater. Afterwards, we will visit Jerash or \"Gerasa\", a Greco-Roman city that was part of the Decapolis and is known as the \"Pompeii of the East\" for its importance and magnificent state of preservation. Among other things, we can admire: Hadrian's Arch, the Hippodrome, the Theater, the Agora or forum with its complete colonnade, the Cardo Maximus, the Temple of Zeus, and the Temple of Artemis. Then we will visit Ajlun Castle, a fortress built in 1185 and later rebuilt in the 13th century by the Mamluks after its destruction by the Mongols. It is a castle from the Crusader period, located high on the mountain, offering a beautiful view. Return to Amman. Dinner and accommodation.",
@@ -6410,11 +6542,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 6
+        }
       },
       {
-        "dayLabel": "Day 8",
+        "day": "8",
         "descriptionJsonb": {
           "ar": "الإفطار والانتقال إلى المطار. مغادرة على رحلة العودة إلى مدينة المنشأ. الوصول ونهاية الرحلة.",
           "en": "Breakfast and transfer to the airport. Departure on a return flight to the city of origin. Arrival and end of the trip.",
@@ -6428,15 +6559,59 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 7
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://i.pinimg.com/originals/ea/82/aa/ea82aa3795de28e223cefe6e8cd72ed4.jpg"
+    ],
+    "code": "REG-19",
+    "highlightsJsonb": {
+      "ar": [
+        "زيارة البحر الميت والسباحة في مياهه فائقة الملوحة",
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "وقت حر في العقبة، البحر الأحمر",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك",
+        "جولة في عمان وجرش وقلعة عجلون"
+      ],
+      "en": [
+        "Visit to the Dead Sea and swim in its hypersaline waters",
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Free time in Aqaba, Red Sea",
+        "Tour of Madaba, Mount Nebo and Shobak Castle",
+        "Sightseeing in Amman, Jerash and Ajlun Castle"
+      ],
+      "es": [
+        "Visita al Mar Muerto y baño en sus aguas hipersalinas",
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Tiempo libre en Aqaba, Mar Rojo",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak",
+        "Tour por Amman, Jerash y el Castillo de Ajlun"
+      ],
+      "pt": [
+        "Visita ao Mar Morto e banho nas suas águas hipersalinas",
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Tempo livre em Aqaba, Mar Vermelho",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak",
+        "City tour em Amã, Jerash e Castelo de Ajlun"
+      ],
+      "it": [
+        "Visita al Mar Morto e bagno nelle sue acque ipersaline",
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Tempo libero ad Aqaba, Mar Rosso",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak",
+        "Tour di Amman, Jerash e Castello di Ajlun"
+      ]
+    }
   },
   {
     "sourceId": "REG-20",
-    "slug": "reg-20-jordan-extension-5-days",
+    "slug": "reg-20-jordan-extension---5-days",
     "titleJsonb": {
       "ar": "امتداد الأردن - 5 أيام",
       "en": "Jordan Extension - 5 Days",
@@ -6469,10 +6644,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 470,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -6481,14 +6656,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-20",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -6502,11 +6676,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -6520,11 +6693,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -6538,11 +6710,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. العشاء والإقامة في المخيم.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. Dinner and accommodation at the camp.",
@@ -6556,11 +6727,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 3
+        }
       },
       {
-        "dayLabel": "Day 5",
+        "day": "5",
         "descriptionJsonb": {
           "ar": "الإفطار. في الوقت المحدد، الانتقال إلى معبر اللنبي على الجانب الأردني ونهاية الخدمات.",
           "en": "Breakfast. At the scheduled time, transfer to the Allenby border crossing on the Jordanian side and end of services.",
@@ -6574,15 +6744,49 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 4
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://www.opreismetco.nl/wp-content/uploads/2023/05/Citadel-van-Amman-min-585x390.jpg"
+    ],
+    "code": "REG-20",
+    "highlightsJsonb": {
+      "ar": [
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "المبيت في مخيم بدوي في وادي رم",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك"
+      ],
+      "en": [
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Overnight stay in a Bedouin camp in Wadi Rum",
+        "Tour of Madaba, Mount Nebo and Shobak Castle"
+      ],
+      "es": [
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Pernocta en campamento beduino en Wadi Rum",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak"
+      ],
+      "pt": [
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Pernoite em acampamento beduíno em Wadi Rum",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak"
+      ],
+      "it": [
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Pernottamento in accampamento beduino a Wadi Rum",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak"
+      ]
+    }
   },
   {
     "sourceId": "REG-21",
-    "slug": "reg-21-jordan-extension-4-days",
+    "slug": "reg-21-jordan-extension---4-days",
     "titleJsonb": {
       "ar": "امتداد الأردن - 4 أيام",
       "en": "Jordan Extension - 4 Days",
@@ -6615,10 +6819,10 @@
     "excludedServicesJsonb": {},
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": null,
+    "basePriceUsd": 430,
     "currency": "USD",
-    "status": "DRAFT",
-    "isActive": false,
+    "status": "PUBLISHED",
+    "isActive": true,
     "languages": [
       "ar",
       "en",
@@ -6627,14 +6831,13 @@
       "it"
     ],
     "tags": [
-      "ahmed-source",
-      "raw-program",
-      "reg-21",
-      "jordan"
+      "jordan",
+      "luxury",
+      "tour"
     ],
     "itineraries": [
       {
-        "dayLabel": "Day 1",
+        "day": "1",
         "descriptionJsonb": {
           "ar": "مغادرة على رحلة منتظمة إلى عمان. الوصول والانتقال إلى الفندق حسب الفئة المختارة. العشاء (بشرط أن يكون الوصول إلى الفندق قبل الساعة 9 مساءً). الإقامة.",
           "en": "Departure on a regular flight to Amman. Arrival and transfer to the hotel of chosen category. Dinner (provided arrival at the hotel is before 9:00 PM). Accommodation.",
@@ -6648,11 +6851,10 @@
           "es": "Cena",
           "pt": "Jantar",
           "it": "Cena"
-        },
-        "sortOrder": 0
+        }
       },
       {
-        "dayLabel": "Day 2",
+        "day": "2",
         "descriptionJsonb": {
           "ar": "الإفطار والتوجه إلى مادبا. الوصول وزيارة كنيسة القديس جورج، بأعجوبتها الفسيفسائية الشهيرة التي تمثل جميع الأراضي التوراتية، حيث توجد أول خريطة فسيفسائية لفلسطين. الاستمرار إلى جبل نيبو، الذي شاهد منه موسى الأرض الموعودة التي لم يصل إليها أبداً. ثم التوجه إلى قلعة الشوبك، الذكرى المنعزلة للمجد القديم للصليبيين. الاستمرار إلى البتراء. الوصول إلى البتراء. العشاء والإقامة في الفندق.",
           "en": "Breakfast and departure to Madaba. Arrival and visit of St. George's Church, with its famous mosaic depicting all the biblical territories, where the first mosaic map of Palestine is found. Continue to Mount Nebo, from whose summit Moses saw the promised land, which he would never reach. Continue to Shobak Castle, a solitary reminder of the ancient glory of the Crusaders. Continue to Petra. Arrival in Petra. Dinner and accommodation at the hotel.",
@@ -6666,11 +6868,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 1
+        }
       },
       {
-        "dayLabel": "Day 3",
+        "day": "3",
         "descriptionJsonb": {
           "ar": "الإفطار. يوم مخصص بالكامل لزيارة البتراء، المعروفة باسم \"المدينة الوردية\"، حيث أسس الأنباط عاصمة إمبراطوريتهم منذ أكثر من 2000 عام على مدى 500 عام، ونحتوا معابد وقبوراً رائعة في الجبال الوردية واستخدموا أنظمة زراعية متطورة وتوصيل المياه. تبدأ الجولة من قبر المسلات، ثم المرور عبر السيق، وهو مضيق يزيد طوله عن كيلومتر واحد، وفي نهايته يظهر الخزنة، وهو قبر ضخم مزين بأعمدة ومنحوتات من الأناقة والجمال غير المسبوقين. الاستمرار إلى شارع الواجهات والمسرح، ثم الاقتراب من 850 درجة التي ستأخذنا إلى الدير المهيب \"الدير\". بعد الانتهاء، العودة إلى الفندق. العشاء والإقامة.",
           "en": "Breakfast. Full day dedicated to visiting Petra, known as the \"Rose City\", where more than 2,000 years ago the Nabataeans established the capital of their empire for over 500 years, carving admirable temples and tombs into the rose-colored mountains and using advanced agricultural and water distribution systems. The tour begins at the Tomb of the Obelisks, continuing through the Siq, a canyon over 1 km long, at the end of which the Treasury is revealed, a colossal tomb decorated with columns and sculptures of unparalleled refinement and beauty. Continue to the Street of Facades and the theater, then approach the 850 steps that will take us to the imposing Monastery \"El Deir\". After the visit, return to the hotel. Dinner and accommodation.",
@@ -6684,11 +6885,10 @@
           "es": "Desayuno + Cena",
           "pt": "Café da manhã + Jantar",
           "it": "Colazione + Cena"
-        },
-        "sortOrder": 2
+        }
       },
       {
-        "dayLabel": "Day 4",
+        "day": "4",
         "descriptionJsonb": {
           "ar": "الإفطار. رحلة إلى صحراء وادي رم وجولة بسيارات الدفع الرباعي. سنغوص في الرمال الوردية لهذه الصحراء، التي تتمتع بسحر خاص بفضل الكتل الجرانيتية التي شكلتها الطبيعة بأشكال بديعة. في الوقت المحدد، الانتقال إلى معبر اللنبي على الجانب الأردني / المطار ونهاية الخدمات. (الأسعار للفرد في غرفة مزدوجة \"حد أدنى 2 شخص\") الموسم المرتفع 2026.05.31-01.03 / 2026.11.30-01.09 / 2027.01.04-2026.12.24 1/ الأردن الكلاسيكي \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t630.00\t715.00\t970.00\t1060.00 رسوم إضافية غرفة مفردة\t230.00\t290.00\t420.00\t485.00 2/ الأردن مع الصحراء \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t695.00\t770.00\t1005.00\t1080.00 رسوم إضافية غرفة مفردة\t220.00\t275.00\t410.00\t475.00 3/ الأردن مع الصحراء والبحر الميت\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t740.00\t790.00\t1030.00\t1100.00 رسوم إضافية غرفة مفردة\t220.00\t275.00\t410.00\t475.00 4/ الأردن الكامل\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t715.00\t790.00\t1020.00\t1135.00 رسوم إضافية غرفة مفردة\t230.00\t290.00\t420.00\t485.00 5/ الأردن البحر الأحمر\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t665.00\t780.00\t1005.00\t1120.00 رسوم إضافية غرفة مفردة\t230.00\t290.00\t420.00\t485.00 6/ تمديد الأردن (5 أيام – 4 ليالي)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t$ 470\t$ 520\t$ 670\t$ 695 رسوم إضافية غرفة مفردة\t$ 150\t$ 180\t$ 270\t$ 305 7/ تمديد الأردن (4 أيام – 3 ليالي)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t$ 430\t$ 495\t$ 640\t$ 650 رسوم إضافية غرفة مفردة\t $ 125\t$ 160\t$ 230\t$ 275 رسوم إضافية للمخيم الفاخر في وادي رم \"SUN CITY, MEMORIES AICHA أو ما شابه\"\tللشخص / دولار أمريكي للشخص في غرفة مزدوجة\t55.00 للشخص في غرفة مفردة\t95.00 (الأسعار للفرد في غرفة مزدوجة \"حد أدنى 2 شخص\") الموسم المنخفض 2026.08.31-01.06 – 2026.12.23-01.12 – 2027.02.28-05.01 1/ الأردن الكلاسيكي \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t615.00\t670.00\t880.00\t985.00 رسوم إضافية غرفة مفردة\t230.00\t285.00\t420.00\t485.00 2/ الأردن مع الصحراء \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t670.00\t735.00\t910.00\t985.00 رسوم إضافية غرفة مفردة\t220.00\t275.00\t410.00\t475.00 3/ الأردن مع الصحراء والبحر الميت\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t705.00\t745.00\t940.00\t995.00 رسوم إضافية غرفة مفردة\t220.00\t275.00\t410.00\t475.00 4/ الأردن الكامل\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t685.00\t730.00\t935.00\t1015.00 رسوم إضافية غرفة مفردة\t230.00\t290.00\t420.00\t485.00 5/ الأردن البحر الأحمر\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t655.00\t730.00\t925.00\t1015.00 رسوم إضافية غرفة مفردة\t230.00\t290.00\t420.00\t485.00 6/ تمديد الأردن (5 أيام – 4 ليالي)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t460.00\t500.00\t600.00\t605.00 رسوم إضافية غرفة مفردة\t150.00\t185.00\t270.00\t305.00 7/ تمديد الأردن (4 أيام – 3 ليالي)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L حد أدنى 2 شخص / سعر الفرد\t420.00\t475.00\t560.00\t580.00 رسوم إضافية غرفة مفردة\t125.00\t155.00\t230.00\t275.00 رسوم إضافية للمخيم الفاخر في وادي رم \"SUN CITY, MEMORIES AICHA أو ما شابه\"\tللشخص / دولار أمريكي للشخص في غرفة مزدوجة\t55.00 للشخص في غرفة مفردة\t95.00 قائمة الفنادق المستخدمة أو ما شابهها المدينة / الفئة\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L عمان SPARR HOTEL/ MESK HOTEL أو ما شابه MENA TYCHE HOTEL / DAYS INN HOTEL أو ما شابه BRISTOL HOTEL أو ما شابه ROTANA AMMAN HOTEL أو ما شابه البتراء\tLA MAISON HOTEL / PETRA CORNER HOTEL أو ما شابه\tPETRA PANORAMA / PETRA CANYON / P HOTEL أو ما شابه\tHAYAT ZAMAN/ OLD VILLAGE RESORT HOTEL/ أو ما شابه\tHAYAT ZAMAN/ OLD VILLAGE RESORT HOTEL/ أو ما شابه وادي رم\tMAGIC LUXURY CAMP / RUM OASIS CAMP /SULTANA CAMP / MAZAYEN CAMP أو ما شابه العقبة MY HOTEL أو ما شابه CITY TOWER HOTEL أو ما شابه ORYX HOTEL أو DOUBLE TREE BY HILTON GRAND TALA BAY أو ما شابه البحر الميت RAMADA RESORT أو GRAND EAST HOTEL HOLIDAY INN RESORT أو ما شابه CROWN PLAZA RESORT أو HILTON يشمل\tلا يشمل ✓إقامة بنظام نصف إقامة في الفنادق المختارة. (إلا إذا كان الوصول بعد الساعة 9 مساءً) ✓الانتقالات بحافلة سياحية حديثة ✓الزيارات وتذاكر الدخول إلى المواقع المذكورة في البرنامج. ✓الخيول في البتراء (البقشيش غير شامل). ✓مرشد ناطق بالإسبانية خلال الزيارات (4 أيام). ✓رحلة لمدة ساعتين بسيارات الدفع الرباعي في وادي رم. ✗تأشيرة الأردن. ✗المشروبات. ✗وجبات الغداء. ✗البقشيش (الحمالون، المرشد، السائق، والمطاعم) تقريباً لبرامج 8 أيام 25 يورو للشخص، وللتمديدات 15 يورو للشخص. ✗الإضافات وأي نفقات شخصية ✗التأمينات الشخصية (سرقة، مرض، فقدان، أضرار شخصية، إلخ.) ✗ضرائب المغادرة (عند المغادرة عبر الحدود البرية، دفع 15 دولاراً للشخص \"قابلة للتغيير\") ✗تذاكر الطيران. ✗أي خدمات إضافية غير مذكورة في البرنامج.",
           "en": "Breakfast. Excursion to the Wadi Rum desert and 4x4 vehicle ride. We will venture into the pink sands of this desert, which has a special charm provided by the granite rock formations that nature has shaped into whimsical forms. At the scheduled time, transfer to the Allenby border crossing on the Jordanian side / Airport and end of services. (PRICES ARE PER PERSON IN DOUBLE ROOM \"MINIMUM 2 PAX\") HIGH SEASON 01.03-31.05.2026 / 01.09-30.11.2026 / 24.12.2026-04.01.2027 1/ CLASSIC JORDANIA \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t630.00\t715.00\t970.00\t1060.00 SINGLE ROOM SUPPLEMENT\t230.00\t290.00\t420.00\t485.00 2/ JORDANIA WITH DESERT \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t695.00\t770.00\t1005.00\t1080.00 SINGLE ROOM SUPPLEMENT\t220.00\t275.00\t410.00\t475.00 3/ JORDANIA WITH DESERT AND DEAD SEA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t740.00\t790.00\t1030.00\t1100.00 SINGLE ROOM SUPPLEMENT\t220.00\t275.00\t410.00\t475.00 4/ COMPLETE JORDANIA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t715.00\t790.00\t1020.00\t1135.00 SINGLE ROOM SUPPLEMENT\t230.00\t290.00\t420.00\t485.00 5/ JORDANIA RED SEA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t665.00\t780.00\t1005.00\t1120.00 SINGLE ROOM SUPPLEMENT\t230.00\t290.00\t420.00\t485.00 6/ JORDANIA EXTENSION (5 DAYS – 4 NIGHTS)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t$ 470\t$ 520\t$ 670\t$ 695 SINGLE ROOM SUPPLEMENT\t$ 150\t$ 180\t$ 270\t$ 305 7/ JORDANIA EXTENSION (4 DAYS – 3 NIGHTS)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t$ 430\t$ 495\t$ 640\t$ 650 SINGLE ROOM SUPPLEMENT\t $ 125\t$ 160\t$ 230\t$ 275 SUPERIOR CAMP SUPPLEMENT IN WADI RUM \"SUN CITY, MEMORIES AICHA OR SIMILAR\"\tPER PERSON / US DOLLARS PER PERSON IN DOUBLE\t55.00 PER PERSON IN SINGLE\t95.00 (PRICES ARE PER PERSON IN DOUBLE ROOM \"MINIMUM 2 PAX\") LOW SEASON 01.06-31.08.2026 – 01.12-23.12.2026 – 05.01-28.02.2027 1/ CLASSIC JORDANIA \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t615.00\t670.00\t880.00\t985.00 SINGLE ROOM SUPPLEMENT\t230.00\t285.00\t420.00\t485.00 2/ JORDANIA WITH DESERT \tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t670.00\t735.00\t910.00\t985.00 SINGLE ROOM SUPPLEMENT\t220.00\t275.00\t410.00\t475.00 3/ JORDANIA WITH DESERT AND DEAD SEA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t705.00\t745.00\t940.00\t995.00 SINGLE ROOM SUPPLEMENT\t220.00\t275.00\t410.00\t475.00 4/ COMPLETE JORDANIA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t685.00\t730.00\t935.00\t1015.00 SINGLE ROOM SUPPLEMENT\t230.00\t290.00\t420.00\t485.00 5/ JORDANIA RED SEA\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t655.00\t730.00\t925.00\t1015.00 SINGLE ROOM SUPPLEMENT\t230.00\t290.00\t420.00\t485.00 6/ JORDANIA EXTENSION (5 DAYS – 4 NIGHTS)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t460.00\t500.00\t600.00\t605.00 SINGLE ROOM SUPPLEMENT\t150.00\t185.00\t270.00\t305.00 7/ JORDANIA EXTENSION (4 DAYS – 3 NIGHTS)\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L MINIMUM 2 PAX / PRICE PER PERSON\t420.00\t475.00\t560.00\t580.00 SINGLE ROOM SUPPLEMENT\t125.00\t155.00\t230.00\t275.00 SUPERIOR CAMP SUPPLEMENT IN WADI RUM \"SUN CITY, MEMORIES AICHA OR SIMILAR\"\tPER PERSON / US DOLLARS PER PERSON IN DOUBLE\t55.00 PER PERSON IN SINGLE\t95.00 LIST OF HOTELS USED OR SIMILAR CITY /CATEGORY\tCAT. A /3*\tCAT. B /4*\tCAT. C /5*\tCAT. D /5*L Amman SPARR HOTEL/ MESK HOTEL OR SIMILAR MENA TYCHE HOTEL / DAYS INN HOTEL OR SIMILAR BRISTOL HOTEL OR SIMILAR ROTANA AMMAN HOTEL OR SIMILAR Petra\tLA MAISON HOTEL / PETRA CORNER HOTEL OR SIMILAR\tPETRA PANORAMA / PETRA CANYON / P HOTEL OR SIMILAR\tHAYAT ZAMAN/ OLD VILLAGE RESORT HOTEL/ OR SIMILAR\tHAYAT ZAMAN/ OLD VILLAGE RESORT HOTEL/ OR SIMILAR Wadi Rum\tMAGIC LUXURY CAMP / RUM OASIS CAMP /SULTANA CAMP / MAZAYEN CAMP OR SIMILAR Aqaba MY HOTEL OR SIMILAR CITY TOWER HOTEL OR SIMILAR ORYX HOTEL OR DOUBLE TREE BY HILTON GRAND TALA BAY OR SIMILAR Dead Sea RAMADA RESORT OR GRAND EAST HOTEL HOLIDAY INN RESORT OR SIMILAR CROWN PLAZA RESORT OR HILTON INCLUDES\tNOT INCLUDED ✓Half-board accommodation at selected hotels. (Except if arrival is after 9:00 PM) ✓Transfers in modern tourist bus ✓Visits and Entrance fees to sites mentioned in the program. ✓Horses in Petra (tip not included). ✓Spanish-speaking guide during visits (4 days). ✓2-hour 4x4 vehicle excursion in Wadi Rum. ✗Jordanian Visa. ✗Drinks. ✗Lunches. ✗Tips (Porters, Guide, driver, and restaurants) approx. for 8-day programs €25.00 per person, and for extensions €15.00 per person. ✗Extras and any personal expenses ✗Personal insurance (theft, illness, loss, personal injury, etc.) ✗Departure taxes (when departure is by land border, $15 per person \"subject to exchange rate\") ✗Flights. ✗Any additional service not mentioned in the program.",
@@ -6702,11 +6902,40 @@
           "es": "Desayuno",
           "pt": "Café da manhã",
           "it": "Colazione"
-        },
-        "sortOrder": 3
+        }
       }
     ],
-    "images": []
+    "images": [
+      "https://png.pngtree.com/thumb_back/fh260/background/20220313/pngtree-ruins-at-amman-jordan-moyen-minaret-asia-photo-image_365536.jpg"
+    ],
+    "code": "REG-21",
+    "highlightsJsonb": {
+      "ar": [
+        "اكتشاف البتراء، المدينة الوردية النبطية",
+        "رحلة بدفع رباعي في صحراء وادي رم",
+        "جولة في مادبا وجبل نيبو وقلعة الشوبك"
+      ],
+      "en": [
+        "Discovery of Petra, the rose-red Nabataean city",
+        "4x4 excursion through the Wadi Rum desert",
+        "Tour of Madaba, Mount Nebo and Shobak Castle"
+      ],
+      "es": [
+        "Descubrimiento de Petra, la ciudad rosa nabatea",
+        "Excursión en 4x4 por el desierto de Wadi Rum",
+        "Recorrido por Madaba, Monte Nebo y el Castillo de Shobak"
+      ],
+      "pt": [
+        "Descoberta de Petra, a cidade rosa nabateia",
+        "Excursão de 4x4 pelo deserto de Wadi Rum",
+        "Visita a Madaba, Monte Nebo e Castelo de Shobak"
+      ],
+      "it": [
+        "Scoperta di Petra, la città rosa nabatea",
+        "Escursione in 4x4 nel deserto del Wadi Rum",
+        "Visita di Madaba, Monte Nebo e Castello di Shobak"
+      ]
+    }
   },
   {
     "sourceId": "REG-22",
