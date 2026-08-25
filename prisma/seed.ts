@@ -213,6 +213,93 @@ async function seedFallbackTours(): Promise<void> {
   console.log('📌 Seeding fallback sample tours...');
 
   const fallbackTours = [
+{
+      slug: 'lo-mejor-de-grecia-9d',
+      code: 'gr-es-001',
+      titleJsonb: {
+        ar: 'الأفضل في اليونان – 09 أيام',
+        en: 'Lo Mejor de Grecia – 09 Days',
+        es: 'Lo Mejor de Grecia – 09 Días',
+        it: 'Lo Mejor de Grecia – 09 Giorni',
+        pt: 'Lo Mejor de Grecia – 09 Dias',
+      },
+      category: 'Greece',
+      country: 'Greece',
+      city: 'Athens',
+      basePriceUsd: 1490,
+      durationJsonb: {
+        ar: '09 أيام / 08 ليالٍ',
+        en: '09 Days / 08 Nights',
+        es: '09 Días / 08 Noches',
+        it: '09 Giorni / 08 Notti',
+        pt: '09 Dias / 08 Noites',
+      },
+      minPaxJsonb: {
+        ar: 'فردان',
+        en: '2 Pax',
+        es: '2 Pax',
+        it: '2 Pax',
+        pt: '2 Pax',
+      },
+      overviewJsonb: {
+        ar: 'انغمس في روعة اليونان القديمة وسحر البحر إيجة في هذا المسار الرائع الممتد لتسعة أيام. من الأكروبوليس في أثينا إلى غروب الشمس الساحر في سانتوريني وميكونوس، مروراً بطبيعة ومأكولات جزيرة كريت الخلابة.',
+        en: 'Immerse yourself in the splendor of Ancient Greece and the charm of the Aegean Sea on this spectacular nine-day itinerary. From the grand Acropolis of Athens to the vibrant sunsets in Santorini and Mykonos, to authentic Cretan culture.',
+        es: 'Sumérgete en el esplendor de la Antigua Grecia y el encanto del mar Egeo en este espectacular itinerario de nueve días. Desde la grandiosa Acrópolis de Atenas hasta los vibrantes atardeceres en Santorini y Mykonos, cada escala revela un pedazo de paraíso y cultura.',
+        it: "Immergiti nello splendore dell'Antica Grecia e nel fascino del Mar Egeo in questo spettacolare itinerario di nove giorni.",
+        pt: 'Mergulhe no esplendor da Grécia Antiga e no encanto do Mar Egeu neste espetacular itinerário de nove dias.',
+      },
+      includedServicesJsonb: {
+        ar: [
+          'جولة موجهة في أثينا بالأكروبوليس ومعالم المدينة',
+          'تذاكر الفيري العادي والمقاعد المجهزة Pireo - Mykonos',
+          'تذاكر الفيري السريع Mykonos - Santorini و Santorini - Heraklion',
+          'يوم حر في ميكونوس للشواطئ والتسوق',
+          'مشاهدة غروب الشمس فوق كالديرة سانتوريني',
+          'إقامة 8 ليالٍ بالإفطار (2 في كل وجهة)',
+          'مساعد يتحدث الإسبانية عند الوصول لأثينا',
+        ],
+        en: [
+          'Guided tour of Athens including Acropolis',
+          'Regular ferry with reserved seats Pireo–Mykonos',
+          'Fast ferry Mykonos–Santorini and Santorini–Heraklion',
+          'Free day in Mykonos for beaches and shopping',
+          'Sunset over Santorini caldera from Fira & Oia',
+          '8 nights Bed & Breakfast (2 per destination)',
+          'Spanish-speaking assistant upon arrival in Athens',
+        ],
+        es: [
+          'Visita guiada de Atenas con Acrópolis',
+          'Ferry regular Pireo–Mykonos',
+          'Ferry rápido Mykonos–Santorini y Santorini–Heraklion',
+          'Día libre en Mykonos',
+          'Atardecer en Santorini',
+          '8 noches en régimen de Bed & Breakfast',
+          'Asistente de habla hispana en Atenas',
+        ],
+      },
+      excludedServicesJsonb: {
+        ar: ['تأشيرات الدخول لليونان', 'إكراميات السفر والنقل الشخصي'],
+        en: ['Entry visas for Greece', 'Travel tips and personal transfers'],
+        es: ['Visados de entrada a Grecia', 'Propinas y traslados personales'],
+      },
+      itineraries: [
+        { dayLabel: 'Day 1', descriptionJsonb: { ar: 'الوصول إلى أثينا والنقل للفندق.', en: 'Arrival in Athens and transfer to hotel.', es: 'Llegada a Atenas y traslado al hotel.' }, mealsJsonb: { ar: 'غير مشمول', en: 'Not included', es: 'No incluye' }, sortOrder: 0 },
+        { dayLabel: 'Day 2', descriptionJsonb: { ar: 'جولة موجهة في أثينا والأكروبوليس.', en: 'Guided tour of Athens and Acropolis.', es: 'Visita guiada de Atenas y Acrópolis.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 1 },
+        { dayLabel: 'Day 3', descriptionJsonb: { ar: 'الفيري إلى ميكونوس والإقامة بالفندق.', en: 'Ferry to Mykonos and accommodation.', es: 'Ferry a Mykonos y alojamiento.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 2 },
+        { dayLabel: 'Day 4', descriptionJsonb: { ar: 'يوم حر في ميكونوس.', en: 'Free day in Mykonos.', es: 'Día libre en Mykonos.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 3 },
+        { dayLabel: 'Day 5', descriptionJsonb: { ar: 'الفيري السريع إلى سانتوريني ومشاهدة غروب الشمس.', en: 'Fast ferry to Santorini and sunset view.', es: 'Ferry rápido a Santorini y atardecer.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 4 },
+        { dayLabel: 'Day 6', descriptionJsonb: { ar: 'يوم حر في سانتوريني.', en: 'Free day in Santorini.', es: 'Día libre en Santorini.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 5 },
+        { dayLabel: 'Day 7', descriptionJsonb: { ar: 'الفيري السريع إلى كريت (إيراكليون).', en: 'Fast ferry to Crete (Heraklion).', es: 'Ferry rápido a Creta (Heraklion).' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 6 },
+        { dayLabel: 'Day 8', descriptionJsonb: { ar: 'استكشاف كريت وكنوسوس.', en: 'Exploring Crete and Knossos.', es: 'Exploración de Creta y Knossos.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 7 },
+        { dayLabel: 'Day 9', descriptionJsonb: { ar: 'الإفطار والمغادرة إلى المطار.', en: 'Breakfast and departure to airport.', es: 'Desayuno y traslado al aeropuerto.' }, mealsJsonb: { ar: 'إفطار', en: 'Breakfast', es: 'Desayuno' }, sortOrder: 8 }
+      ],
+      images: [
+        'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1555993539-1732b0258235?auto=format&fit=crop&w=1920&q=80'
+      ]
+    },
     {
       slug: 'mrc-01-spices-of-morocco',
       code: 'MRC-01',
