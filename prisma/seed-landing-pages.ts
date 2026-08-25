@@ -399,8 +399,8 @@ async function main() {
     const category = tour.category ? tour.category.toLowerCase() : '';
     const slug = tour.slug.toLowerCase();
 
-    const targetSlugs: string[] = [];
-    if (country.includes('egypt') || country.includes('مصر')) targetSlugs.push('egypt');
+    // Egypt landing page should remain with 0 tours attached
+    // if (country.includes('egypt') || country.includes('مصر')) targetSlugs.push('egypt');
     if (country.includes('turkey') || country.includes('تركيا') || country.includes('turquia')) targetSlugs.push('turkey');
     if (country.includes('jordan') || country.includes('الأردن') || country.includes('jordania')) targetSlugs.push('jordan');
     if (country.includes('morocco') || country.includes('المغرب') || country.includes('marruecos')) targetSlugs.push('morocco');
