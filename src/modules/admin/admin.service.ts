@@ -1930,6 +1930,41 @@ export class AdminService {
       },
     });
 
+    // Auto-link newly created tour to corresponding destination landing page if one exists
+    try {
+      const targetCountry = (tour.country || tour.category || '').toLowerCase();
+      const destinationLp = await this.prisma.tourLandingPage.findFirst({
+        where: {
+          slug: targetCountry,
+          type: 'DESTINATION',
+          status: 'PUBLISHED',
+          isActive: true,
+        },
+      });
+      if (destinationLp) {
+        const existingCount = await this.prisma.tourLandingPageTour.count({
+          where: { landingPageId: destinationLp.id },
+        });
+        await this.prisma.tourLandingPageTour.upsert({
+          where: {
+            landingPageId_tourId: {
+              landingPageId: destinationLp.id,
+              tourId: tour.id,
+            },
+          },
+          update: {},
+          create: {
+            landingPageId: destinationLp.id,
+            tourId: tour.id,
+            sortOrder: existingCount + 1,
+            isVisible: true,
+          },
+        });
+      }
+    } catch (autoLinkErr) {
+      this.logger.warn(`Failed to auto-link tour ${tour.slug}: ${autoLinkErr}`);
+    }
+
     await this.invalidateTourCache(tour.slug);
     return { success: true, slug: tour.slug };
   }
