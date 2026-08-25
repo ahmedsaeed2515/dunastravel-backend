@@ -218,10 +218,10 @@ async function seedFallbackTours(): Promise<void> {
       code: 'gr-es-001',
       titleJsonb: {
         ar: 'الأفضل في اليونان – 09 أيام',
-        en: 'Lo Mejor de Grecia – 09 Days',
+        en: 'Best of Greece – 09 Days',
         es: 'Lo Mejor de Grecia – 09 Días',
-        it: 'Lo Mejor de Grecia – 09 Giorni',
-        pt: 'Lo Mejor de Grecia – 09 Dias',
+        it: 'Il Meglio della Grecia – 09 Giorni',
+        pt: 'O Melhor da Grécia – 09 Dias',
       },
       category: 'Greece',
       country: 'Greece',
