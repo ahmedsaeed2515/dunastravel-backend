@@ -84,6 +84,9 @@ function tourData(tour: NormalizedTour, existing?: ExistingTourContent) {
     currency: tour.currency,
     languages: tour.languages,
     tags: tour.tags,
+    // Re-importing the canonical catalog must restore soft-deleted records;
+    // publication status still controls public visibility.
+    deletedAt: null,
     ...(knownPrice ? { basePriceUsd: effectivePrice! } : {}),
     ...(!knownPrice && existing?.basePriceUsd.gt(0)
       ? {}

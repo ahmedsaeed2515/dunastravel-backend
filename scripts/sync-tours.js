@@ -10,7 +10,10 @@ console.log(`Mode: ${dryRun ? 'DRY-RUN (No DB modifications)' : 'REAL-RUN (Updat
 const locales = ['en', 'ar', 'es', 'pt', 'it'];
 const localeData = {};
 locales.forEach(loc => {
-  const file = path.join(__dirname, `../../frontend/src/i18n/locales/${loc}.json`);
+  let file = path.join(__dirname, `../../dunastravel-frontend/src/i18n/locales/${loc}.json`);
+  if (!fs.existsSync(file)) {
+    file = path.join(__dirname, `../../frontend/src/i18n/locales/${loc}.json`);
+  }
   if (!fs.existsSync(file)) {
     console.error(`ERROR: Locale file missing at ${file}`);
     process.exit(1);
@@ -51,6 +54,13 @@ const titleFallbacks = {
     ar: 'مصر ودبي 13 يوم',
     pt: 'Egito e Dubai 13 Dias',
     it: 'Egitto e Dubai 13 Dias'
+  },
+  'mrc-01-spices-of-morocco': {
+    en: 'Spices of Morocco',
+    es: 'Especias de Marruecos',
+    ar: 'توابل المغرب',
+    pt: 'Especiarias de Marrocos',
+    it: 'Spezie del Marocco'
   },
   'spices-of-egypt-and-morocco': {
     en: 'Spices of Egypt & Morocco 14 Days',
@@ -140,11 +150,17 @@ function resolveArrayField(slug, fieldName, rawArr) {
 }
 
 // 1. Load programs.json
-const programsFile = path.join(__dirname, '../../frontend/src/data/programs.json');
-const programs = JSON.parse(fs.readFileSync(programsFile, 'utf8')).programs || [];
+let programsFile = path.join(__dirname, '../../dunastravel-frontend/src/data/programs.json');
+if (!fs.existsSync(programsFile)) {
+  programsFile = path.join(__dirname, '../../frontend/src/data/programs.json');
+}
+const programs = fs.existsSync(programsFile) ? (JSON.parse(fs.readFileSync(programsFile, 'utf8')).programs || []) : [];
 
 // 2. Load turkeyTours.js
-const turkeyFile = path.join(__dirname, '../../frontend/src/data/turkeyTours.js');
+let turkeyFile = path.join(__dirname, '../../dunastravel-frontend/src/data/turkeyTours.js');
+if (!fs.existsSync(turkeyFile)) {
+  turkeyFile = path.join(__dirname, '../../frontend/src/data/turkeyTours.js');
+}
 let turkeyTours = [];
 if (fs.existsSync(turkeyFile)) {
   const turkeyText = fs.readFileSync(turkeyFile, 'utf8');
@@ -153,6 +169,19 @@ if (fs.existsSync(turkeyFile)) {
     turkeyTours = JSON.parse(turkeyClean);
   } catch (e) {
     console.warn('Warning: Failed to parse turkeyTours.js:', e.message);
+  }
+}
+
+// 3. Load moroccoTours.js
+let moroccoFile = path.join(__dirname, '../../dunastravel-frontend/src/data/moroccoTours.js');
+let moroccoTours = [];
+if (fs.existsSync(moroccoFile)) {
+  const moroccoText = fs.readFileSync(moroccoFile, 'utf8');
+  const moroccoClean = moroccoText.replace(/export\s+const\s+moroccoTours\s*=\s*/, '').replace(/;\s*$/, '');
+  try {
+    moroccoTours = new Function('return ' + moroccoClean)();
+  } catch (e) {
+    console.warn('Warning: Failed to parse moroccoTours.js:', e.message);
   }
 }
 
@@ -165,13 +194,20 @@ turkeyTours.forEach(t => {
     tourMap.set(t.slug, { ...t, sourceFile: 'turkeyTours.js' });
   }
 });
+moroccoTours.forEach(t => {
+  if (!tourMap.has(t.slug)) {
+    tourMap.set(t.slug, { ...t, sourceFile: 'moroccoTours.js' });
+  }
+});
 
 const allDiscoveredTours = Array.from(tourMap.values());
 
 async function sync() {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const useSsl = dbUrl.includes('sslmode=require') || dbUrl.includes('render.com') || dbUrl.includes('supabase') || dbUrl.includes('neon') || dbUrl.includes('cockroach');
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    connectionString: dbUrl,
+    ssl: useSsl ? { rejectUnauthorized: false } : false
   });
 
   try {

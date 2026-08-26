@@ -348,9 +348,9 @@ const LANDING_PAGES = [
     descriptionJsonb: {
       en: 'Let us craft the most romantic chapter of your life. From timeless pyramids to romantic Nile cruises and Red Sea resorts.',
       ar: 'دعنا نصنع أجمل فصول حياتك الرومانسية من الأهرامات إلى رحلات النيل وبحر الجمال.',
-      es: 'Déjanos diseñar el capítulo más romántico de tu vida.',
-      pt: 'Deixe-nos criar o capítulo mais romântico da sua vida.',
-      it: 'Lasciati creare il capitolo più romantico della tua vita.',
+      es: 'Déjanos diseñar el capítulo más romántico de tu vida. Desde pirámides atemporales hasta cruceros románticos por el Nilo y resorts del Mar Rojo.',
+      pt: 'Deixe-nos criar o capítulo mais romântico da sua vida. Das pirâmides intemporais aos cruzeiros românticos no Nilo e resorts no Mar Vermelho.',
+      it: 'Lasciati creare il capitolo più romantico della tua vita. Dalle piramidi senza tempo alle crociere romantiche sul Nilo e ai resort del Mar Rosso.',
     },
     heroImageUrl: 'https://hl-tourism.com/media/typecms/Honeymoon_Planning_Guide_2025_Complete_Resource.webp',
     status: 'PUBLISHED',

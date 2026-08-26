@@ -40,22 +40,27 @@ async function main() {
       }
     }
 
-    // Default base price
-    const basePriceUsd = 1500.00;
+    // Dynamic base price from program data
+    const basePriceUsd = Number(program.basePriceUsd ?? program.price ?? 1500.00);
 
     const tourData = {
       slug: program.slug || program.id.toLowerCase(),
-      titleJsonb: program.name || {},
-      category: 'CULTURAL',
+      titleJsonb: program.titleJsonb || program.name || {},
+      category: program.category || 'CULTURAL',
       basePriceUsd,
-      durationJsonb: program.duration || {},
-      overviewJsonb,
-      minPaxJsonb: program.minPax || {},
+      durationJsonb: program.durationJsonb || program.duration || {},
+      overviewJsonb: program.overviewJsonb || overviewJsonb || {},
+      minPaxJsonb: program.minPaxJsonb || program.minPax || {},
+      includedServicesJsonb: program.includedServicesJsonb || program.includes || {},
+      excludedServicesJsonb: program.excludedServicesJsonb || program.excludes || {},
+      pricingJsonb: program.pricingJsonb || program.pricing || null,
+      extraNightPricesJsonb: program.extraNightPricesJsonb || program.extraNightPrices || null,
+      exhibitionSurchargesJsonb: program.exhibitionSurchargesJsonb || program.exhibitionSurcharges || null,
       isActive: true,
       capacity: 30,
-      country: 'Turkey',
+      country: program.country || 'Dubai',
       currency: 'USD',
-      transportationJsonb: program.transportOptions || {},
+      transportationJsonb: program.transportationJsonb || program.transportOptions || {},
       status: 'PUBLISHED',
       isFeatured: true,
     };
