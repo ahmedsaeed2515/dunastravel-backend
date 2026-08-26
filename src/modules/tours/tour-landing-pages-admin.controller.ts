@@ -55,7 +55,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Post()
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new tour landing page' })
   async create(
     @Body() dto: CreateTourLandingPageDto,
@@ -65,7 +65,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch('reorder')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Reorder landing page interfaces' })
   async reorderInterfaces(
     @Body() body: ReorderLandingPagesDto,
@@ -75,7 +75,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Update a tour landing page details, media, translations or SEO',
   })
@@ -88,7 +88,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/publish')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Publish a tour landing page' })
   async publish(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -98,7 +98,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/unpublish')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Unpublish a tour landing page (set to DRAFT)' })
   async unpublish(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -108,7 +108,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/activate')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Activate a tour landing page' })
   async activate(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -118,7 +118,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/deactivate')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Deactivate a tour landing page' })
   async deactivate(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -128,7 +128,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/archive')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Archive a tour landing page' })
   async archive(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -138,7 +138,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Delete(':idOrSlug')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Safely soft delete a tour landing page' })
   async softDelete(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -148,7 +148,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Post(':idOrSlug/tours')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Attach existing tours to a landing page interface',
   })
@@ -161,7 +161,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/tours/reorder')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Reorder tours inside a landing page interface' })
   async reorderToursInInterface(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
@@ -172,7 +172,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Patch(':idOrSlug/tours/:tourId')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary:
       'Update tour relation properties (sort order, featured, visible, custom badge)',
@@ -187,7 +187,7 @@ export class TourLandingPagesAdminController {
   }
 
   @Delete(':idOrSlug/tours/:tourId')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary:
       'Remove a tour from a landing page interface without deleting global tour record',
