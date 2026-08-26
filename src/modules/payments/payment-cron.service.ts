@@ -64,7 +64,7 @@ export class PaymentCronService {
               isRefund: false,
               createdAt: { lt: thresholdDate },
             },
-            data: { status: 'EXPIRED' },
+            data: { status: 'EXPIRED', expiresAt: new Date() },
           });
           if (paymentClaim.count !== 1) return false;
 
@@ -73,54 +73,17 @@ export class PaymentCronService {
             include: { promotionRedemption: true },
           });
           if (booking) {
-            const bookingClaim = await tx.booking.updateMany({
-              where: { id: booking.id, status: 'PENDING' },
+            // Expiring an online checkout only expires that attempt. The
+            // booking and its existing availability reservation remain valid
+            // for an explicit retry or cancellation; payment expiry is not a
+            // customer cancellation.
+            await tx.bookingActivityLog.create({
               data: {
-                status: 'CANCELLED',
-                cancellationReason:
-                  'Payment expired automatically after 30 minutes of inactivity',
+                bookingId: booking.id,
+                action: 'PAYMENT_EXPIRED',
+                details: { paymentId: paymentData.id },
               },
             });
-
-            if (bookingClaim.count === 1 && booking.availabilityId) {
-              const totalPassengers = booking.adults + booking.children;
-              await tx.$executeRaw`
-                UPDATE tour_availability
-                SET remaining_seats = LEAST(
-                      total_capacity,
-                      remaining_seats + ${totalPassengers}
-                    ),
-                    status = 'AVAILABLE',
-                    updated_at = NOW()
-                WHERE id = ${booking.availabilityId}
-              `;
-            }
-
-            if (
-              bookingClaim.count === 1 &&
-              booking.promotionRedemption &&
-              booking.promotionRedemption.status === 'ACTIVE'
-            ) {
-              const redemptionClaim =
-                await tx.promotionRedemption.updateMany({
-                where: {
-                  id: booking.promotionRedemption.id,
-                  status: 'ACTIVE',
-                },
-                data: {
-                  status: 'REVERSED',
-                  reversedAt: new Date(),
-                },
-              });
-              if (redemptionClaim.count === 1) {
-                await tx.$executeRaw`
-                  UPDATE promotions
-                  SET current_uses = GREATEST(0, current_uses - 1),
-                      updated_at = NOW()
-                  WHERE id = ${booking.promotionRedemption.promotionId}
-                `;
-              }
-            }
           }
           return true;
         });

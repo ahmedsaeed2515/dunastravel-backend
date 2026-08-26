@@ -5,6 +5,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsBoolean,
+  IsNumber,
   Max,
   MaxLength,
   Min,
@@ -45,4 +47,49 @@ export class AssignTransportationDriverDto {
   @IsString()
   @MaxLength(100)
   vehicleType?: string;
+}
+
+export class CreateTransportationServiceDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  serviceType!: string;
+
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  basePriceUsd!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateTransportationServiceDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  serviceType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  basePriceUsd?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-08-26T18:11:22.197Z",
+  "sourceCatalogCount": 56,
+  "importedCanonicalTours": 56,
+  "totalDatabaseTours": 62,
+  "canonicalItineraryRows": 467,
+  "canonicalMediaRows": 23,
+  "destinationRelations": 56,
+  "publicNonAhmedTours": 0,
+  "fieldMismatchCount": 0,
+  "fieldMismatches": []
+}

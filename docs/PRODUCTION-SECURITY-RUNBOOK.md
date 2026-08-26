@@ -24,8 +24,13 @@ TRUST_PROXY_HOPS=1
 # External Services
 DATABASE_URL=postgresql://user:password@pg-host:5432/dunastravel?sslmode=require
 REDIS_URL=rediss://:redis_password@redis-host:6379/0
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+# GetPayIn credentials must be supplied only after its official merchant
+# documentation is reviewed. Never put them in frontend variables.
+GETPAYIN_API_BASE_URL=
+GETPAYIN_API_KEY=
+GETPAYIN_WEBHOOK_SECRET=
+GETPAYIN_MERCHANT_ID=
+GETPAYIN_CONTRACT_VERSION=
 ```
 
 ---

@@ -96,23 +96,23 @@ enum InAppNotificationPriority {
 }
 
 model InAppNotification {
-  id               String                    @id @default(uuid())
-  userId           String                    @map("user_id")
-  category         InAppNotificationCategory @default(SYSTEM)
-  priority         InAppNotificationPriority @default(NORMAL)
-  title            String                    @db.VarChar(255)
-  message          String                    @db.Text
-  targetApp        String                    @default("ADMIN") @map("target_app") @db.VarChar(50)
-  entityType       String?                   @map("entity_type") @db.VarChar(100)
-  entityId         String?                   @map("entity_id") @db.VarChar(255)
-  deepLink         String?                   @map("deep_link") @db.VarChar(500)
-  metadata         Json?
-  isRead           Boolean                   @default(false) @map("is_read")
-  readAt           DateTime?                 @map("read_at")
-  createdAt        DateTime                  @default(now()) @map("created_at")
-  updatedAt        DateTime                  @updatedAt @map("updated_at")
+  id         String                    @id @default(uuid())
+  userId     String                    @map("user_id")
+  category   InAppNotificationCategory @default(SYSTEM)
+  priority   InAppNotificationPriority @default(NORMAL)
+  title      String                    @db.VarChar(255)
+  message    String                    @db.Text
+  targetApp  String                    @default("ADMIN") @map("target_app") @db.VarChar(50)
+  entityType String?                   @map("entity_type") @db.VarChar(100)
+  entityId   String?                   @map("entity_id") @db.VarChar(255)
+  deepLink   String?                   @map("deep_link") @db.VarChar(500)
+  metadata   Json?
+  isRead     Boolean                   @default(false) @map("is_read")
+  readAt     DateTime?                 @map("read_at")
+  createdAt  DateTime                  @default(now()) @map("created_at")
+  updatedAt  DateTime                  @updatedAt @map("updated_at")
 
-  user             User                      @relation("UserInAppNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserInAppNotifications", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead, createdAt])
   @@index([userId, category])
@@ -171,14 +171,14 @@ model CustomerNote {
 }
 
 model CustomerDocument {
-  id           String   @id @default(uuid())
-  customerId   String   @map("customer_id")
-  mediaAssetId String   @map("media_asset_id")
-  documentType String   @default("OTHER") @map("document_type") @db.VarChar(50)
-  title        String   @db.VarChar(255)
-  uploadedBy   String?  @map("uploaded_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-  customer     User     @relation("CustomerDocuments", fields: [customerId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  customerId   String     @map("customer_id")
+  mediaAssetId String     @map("media_asset_id")
+  documentType String     @default("OTHER") @map("document_type") @db.VarChar(50)
+  title        String     @db.VarChar(255)
+  uploadedBy   String?    @map("uploaded_by")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  customer     User       @relation("CustomerDocuments", fields: [customerId], references: [id], onDelete: Cascade)
   mediaAsset   MediaAsset @relation("CustomerDocumentMedia", fields: [mediaAssetId], references: [id], onDelete: Restrict)
 
   @@unique([mediaAssetId], map: "customer_documents_media_asset_id_key")
@@ -204,6 +204,14 @@ model Tour {
   id                      String                @id @default(uuid())
   slug                    String                @unique @db.VarChar(255)
   titleJsonb              Json                  @map("title_jsonb")
+  subtitleJsonb           Json?                 @map("subtitle_jsonb")
+  highlightsJsonb         Json?                 @map("highlights_jsonb")
+  departureInfoJsonb      Json?                 @map("departure_info_jsonb")
+  sourceCodeJsonb         Json?                 @map("source_code_jsonb")
+  sourceCatalogId         String?               @unique @map("source_catalog_id") @db.VarChar(100)
+  market                  String?               @db.VarChar(100)
+  sourceRating            Decimal?              @map("source_rating") @db.Decimal(3, 2)
+  sourceReviewCount       Int?                  @map("source_review_count")
   category                String?               @db.VarChar(100)
   basePriceUsd            Decimal               @map("base_price_usd") @db.Decimal(10, 2)
   durationJsonb           Json?                 @map("duration_jsonb")
@@ -253,6 +261,7 @@ model Tour {
   @@index([status])
   @@index([isFeatured])
   @@index([deletedAt])
+  @@index([sourceCatalogId])
   @@index([status, isActive, deletedAt, category])
   @@index([status, isActive, deletedAt, country])
   @@index([status, isActive, deletedAt, city])
@@ -537,24 +546,24 @@ model ContactSubmission {
 }
 
 model MediaAsset {
-  id           String          @id @default(uuid())
-  publicId     String          @unique @map("public_id") @db.VarChar(255)
-  url          String
-  secureUrl    String          @map("secure_url")
-  providerName String          @map("provider_name") @db.VarChar(100)
-  format       String          @db.VarChar(20)
-  mimeType     String          @map("mime_type") @db.VarChar(100)
-  bytes        Int
-  width        Int?
-  height       Int?
-  entityType   MediaEntityType @map("entity_type")
-  entityId     String?         @map("entity_id") @db.VarChar(50)
-  provenance   MediaProvenance
-  altText      String?         @map("alt_text") @db.VarChar(255)
-  uploadedBy   String?         @map("uploaded_by")
-  deletedAt    DateTime?       @map("deleted_at")
-  createdAt    DateTime        @default(now()) @map("created_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
+  id                String             @id @default(uuid())
+  publicId          String             @unique @map("public_id") @db.VarChar(255)
+  url               String
+  secureUrl         String             @map("secure_url")
+  providerName      String             @map("provider_name") @db.VarChar(100)
+  format            String             @db.VarChar(20)
+  mimeType          String             @map("mime_type") @db.VarChar(100)
+  bytes             Int
+  width             Int?
+  height            Int?
+  entityType        MediaEntityType    @map("entity_type")
+  entityId          String?            @map("entity_id") @db.VarChar(50)
+  provenance        MediaProvenance
+  altText           String?            @map("alt_text") @db.VarChar(255)
+  uploadedBy        String?            @map("uploaded_by")
+  deletedAt         DateTime?          @map("deleted_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
   customerDocument  CustomerDocument?  @relation("CustomerDocumentMedia")
   bookingAttachment BookingAttachment? @relation("BookingAttachmentMedia")
 
@@ -565,24 +574,44 @@ model MediaAsset {
 }
 
 model Payment {
-  id            String         @id @default(uuid())
-  bookingId     String         @map("booking_id")
-  amount        Decimal        @db.Decimal(10, 2)
-  currency      String         @default("USD") @db.VarChar(10)
-  method        String         @db.VarChar(100)
-  transactionId String?        @map("transaction_id") @db.VarChar(255)
+  id                  String         @id @default(uuid())
+  bookingId           String         @map("booking_id")
+  /// Gateway name for new attempts. Nullable to preserve legacy financial history.
+  provider            String?        @db.VarChar(50)
+  providerEnvironment String?        @map("provider_environment") @db.VarChar(20)
+  merchantReference   String?        @map("merchant_reference") @db.VarChar(255)
+  providerPaymentId   String?        @map("provider_payment_id") @db.VarChar(255)
+  attemptNumber       Int?           @map("attempt_number")
+  idempotencyKey      String?        @unique @map("idempotency_key") @db.VarChar(100)
+  amount              Decimal        @db.Decimal(10, 2)
+  currency            String         @default("USD") @db.VarChar(10)
+  method              String         @db.VarChar(100)
+  transactionId       String?        @map("transaction_id") @db.VarChar(255)
   /// Checkout URL returned by the gateway. Stored so we can replay it on duplicate initiation
   /// without creating a second provider session. Null for admin-added payments.
-  sessionUrl    String?        @map("session_url")
-  status        PaymentStatus  @default(PENDING)
-  isRefund      Boolean        @default(false) @map("is_refund")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  booking       Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  invoices      Invoice[]
-  refunds       RefundRecord[]
+  sessionUrl          String?        @map("session_url")
+  status              PaymentStatus  @default(PENDING)
+  providerStatus      String?        @map("provider_status") @db.VarChar(100)
+  providerStatusRaw   String?        @map("provider_status_raw") @db.Text
+  isRefund            Boolean        @default(false) @map("is_refund")
+  paidAt              DateTime?      @map("paid_at")
+  failedAt            DateTime?      @map("failed_at")
+  cancelledAt         DateTime?      @map("cancelled_at")
+  refundedAt          DateTime?      @map("refunded_at")
+  failureCode         String?        @map("failure_code") @db.VarChar(100)
+  failureMessage      String?        @map("failure_message") @db.Text
+  metadata            Json?
+  expiresAt           DateTime?      @map("expires_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  booking             Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoices            Invoice[]
+  refunds             RefundRecord[]
 
+  @@unique([bookingId, attemptNumber])
   @@index([bookingId])
+  @@index([provider, merchantReference])
+  @@index([provider, providerPaymentId])
   @@index([status, createdAt])
   // Note: A partial unique index (bookingId WHERE status='PENDING') is enforced via raw SQL
   // in the accompanying migration: idx_payments_one_pending_per_booking
@@ -645,12 +674,12 @@ model BookingNote {
 }
 
 model BookingAttachment {
-  id           String   @id @default(uuid())
-  bookingId    String   @map("booking_id")
-  mediaAssetId String   @map("media_asset_id")
-  uploadedBy   String?  @map("uploaded_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  bookingId    String     @map("booking_id")
+  mediaAssetId String     @map("media_asset_id")
+  uploadedBy   String?    @map("uploaded_by")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  booking      Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   mediaAsset   MediaAsset @relation("BookingAttachmentMedia", fields: [mediaAssetId], references: [id], onDelete: Restrict)
 
   @@unique([mediaAssetId], map: "booking_attachments_media_asset_id_key")
@@ -685,10 +714,10 @@ model WalletTransaction {
   createdAt     DateTime                @default(now()) @map("created_at")
   wallet        Wallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
+  @@unique([walletId, referenceType, referenceId], map: "wallet_transactions_business_reference_key")
   @@index([walletId])
   @@index([referenceType, referenceId])
   @@index([walletId, createdAt])
-  @@unique([walletId, referenceType, referenceId], map: "wallet_transactions_business_reference_key")
   @@map("wallet_transactions")
 }
 
@@ -885,14 +914,14 @@ model Promotion {
 }
 
 model CmsBlock {
-  id            String   @id @default(uuid())
-  key           String   @unique @db.VarChar(100)
+  id            String         @id @default(uuid())
+  key           String         @unique @db.VarChar(100)
   content       Json
   status        CmsBlockStatus @default(DRAFT)
-  version       Int      @default(1)
-  lastUpdatedBy String?  @map("last_updated_by")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  version       Int            @default(1)
+  lastUpdatedBy String?        @map("last_updated_by")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
 
   @@map("cms_blocks")
 }
@@ -969,29 +998,29 @@ model TourLandingPageTour {
 }
 
 model Hotel {
-  id                    String      @id @default(uuid())
-  slug                  String      @unique @db.VarChar(100)
-  nameJsonb             Json        @map("name_jsonb")
-  descriptionJsonb      Json?       @map("description_jsonb")
-  destinationSlug       String      @map("destination_slug") @db.VarChar(100)
-  city                  String      @db.VarChar(100)
-  stars                 Int
-  rating                Decimal?    @db.Decimal(3, 2)
-  currency              String      @default("USD") @db.VarChar(10)
-  addressJsonb          Json?       @map("address_jsonb")
-  phone                 String?     @db.VarChar(50)
-  email                 String?     @db.VarChar(255)
-  website               String?     @db.VarChar(2048)
-  amenitiesJsonb        Json?       @map("amenities_jsonb")
-  policiesJsonb         Json?       @map("policies_jsonb")
-  heroMediaId           String?     @map("hero_media_id") @db.VarChar(50)
-  status                String      @default("DRAFT") @db.VarChar(50)
-  isActive              Boolean     @default(false) @map("is_active")
-  sortOrder             Int         @default(0) @map("sort_order")
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
-  deletedAt             DateTime?   @map("deleted_at")
-  rooms                 HotelRoom[]
+  id               String      @id @default(uuid())
+  slug             String      @unique @db.VarChar(100)
+  nameJsonb        Json        @map("name_jsonb")
+  descriptionJsonb Json?       @map("description_jsonb")
+  destinationSlug  String      @map("destination_slug") @db.VarChar(100)
+  city             String      @db.VarChar(100)
+  stars            Int
+  rating           Decimal?    @db.Decimal(3, 2)
+  currency         String      @default("USD") @db.VarChar(10)
+  addressJsonb     Json?       @map("address_jsonb")
+  phone            String?     @db.VarChar(50)
+  email            String?     @db.VarChar(255)
+  website          String?     @db.VarChar(2048)
+  amenitiesJsonb   Json?       @map("amenities_jsonb")
+  policiesJsonb    Json?       @map("policies_jsonb")
+  heroMediaId      String?     @map("hero_media_id") @db.VarChar(50)
+  status           String      @default("DRAFT") @db.VarChar(50)
+  isActive         Boolean     @default(false) @map("is_active")
+  sortOrder        Int         @default(0) @map("sort_order")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  deletedAt        DateTime?   @map("deleted_at")
+  rooms            HotelRoom[]
 
   @@index([destinationSlug, status, isActive, deletedAt])
   @@index([city])
@@ -1000,22 +1029,22 @@ model Hotel {
 }
 
 model HotelRoom {
-  id                    String   @id @default(uuid())
-  hotelId               String   @map("hotel_id")
-  slug                  String   @db.VarChar(100)
-  nameJsonb             Json     @map("name_jsonb")
-  descriptionJsonb      Json?    @map("description_jsonb")
-  ratePerNight          Decimal  @map("rate_per_night") @db.Decimal(10, 2)
-  currency              String   @default("USD") @db.VarChar(10)
-  mealPlanJsonb         Json?    @map("meal_plan_jsonb")
-  maxOccupancy          Int      @map("max_occupancy")
-  inventory             Int      @default(0)
-  isActive              Boolean  @default(false) @map("is_active")
-  sortOrder             Int      @default(0) @map("sort_order")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  deletedAt             DateTime? @map("deleted_at")
-  hotel                 Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid())
+  hotelId          String    @map("hotel_id")
+  slug             String    @db.VarChar(100)
+  nameJsonb        Json      @map("name_jsonb")
+  descriptionJsonb Json?     @map("description_jsonb")
+  ratePerNight     Decimal   @map("rate_per_night") @db.Decimal(10, 2)
+  currency         String    @default("USD") @db.VarChar(10)
+  mealPlanJsonb    Json?     @map("meal_plan_jsonb")
+  maxOccupancy     Int       @map("max_occupancy")
+  inventory        Int       @default(0)
+  isActive         Boolean   @default(false) @map("is_active")
+  sortOrder        Int       @default(0) @map("sort_order")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  hotel            Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   @@unique([hotelId, slug])
   @@index([hotelId, isActive, deletedAt])
@@ -1111,9 +1140,9 @@ model TransportationBooking {
   service TransportationService @relation(fields: [serviceId], references: [id])
   user    User?                 @relation(fields: [userId], references: [id])
 
+  @@unique([userId, idempotencyKey], map: "transportation_bookings_user_idempotency_key")
   @@index([userId])
   @@index([status])
-  @@unique([userId, idempotencyKey], map: "transportation_bookings_user_idempotency_key")
   @@map("transportation_bookings")
 }
 
@@ -1255,71 +1284,71 @@ enum InvoiceStatus {
 }
 
 model AiConfig {
-  id                    String   @id @default(uuid())
-  provider              String   @default("anthropic") @db.VarChar(50)
-  model                 String   @default("claude-3-5-sonnet-20241022") @db.VarChar(100)
-  isEnabled             Boolean  @default(true) @map("is_enabled")
-  isPublicEnabled       Boolean  @default(true) @map("is_public_enabled")
-  encryptedApiKey       String?  @map("encrypted_api_key")
-  temperature           Float    @default(0.7)
-  maxTokens             Int      @default(1024) @map("max_tokens")
-  requestTimeoutMs      Int      @default(15000) @map("request_timeout_ms")
-  retryCount            Int      @default(2) @map("retry_count")
-  defaultLanguage       String   @default("en") @map("default_language") @db.VarChar(10)
-  supportedLanguages    String[] @default(["en", "ar", "es", "pt", "it"]) @map("supported_languages")
-  systemInstructions    String   @db.Text @map("system_instructions")
-  salesPersonality      String?  @db.Text @map("sales_personality")
-  toneOfVoice           String?  @db.VarChar(100) @map("tone_of_voice")
-  safetyInstructions    String?  @db.Text @map("safety_instructions")
-  fallbackMessage       String   @db.Text @map("fallback_message")
-  escalationMessage     String   @db.Text @map("escalation_message")
-  welcomeMessages       Json?    @map("welcome_messages")
-  suggestedQuestions    Json?    @map("suggested_questions")
-  leadCaptureRules      Json?    @map("lead_capture_rules")
-  humanHandoffRules     Json?    @map("human_handoff_rules")
-  knowledgeSettings     Json?    @map("knowledge_settings")
-  tourSettings          Json?    @map("tour_settings")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  provider           String   @default("anthropic") @db.VarChar(50)
+  model              String   @default("claude-3-5-sonnet-20241022") @db.VarChar(100)
+  isEnabled          Boolean  @default(true) @map("is_enabled")
+  isPublicEnabled    Boolean  @default(true) @map("is_public_enabled")
+  encryptedApiKey    String?  @map("encrypted_api_key")
+  temperature        Float    @default(0.7)
+  maxTokens          Int      @default(1024) @map("max_tokens")
+  requestTimeoutMs   Int      @default(15000) @map("request_timeout_ms")
+  retryCount         Int      @default(2) @map("retry_count")
+  defaultLanguage    String   @default("en") @map("default_language") @db.VarChar(10)
+  supportedLanguages String[] @default(["en", "ar", "es", "pt", "it"]) @map("supported_languages")
+  systemInstructions String   @map("system_instructions") @db.Text
+  salesPersonality   String?  @map("sales_personality") @db.Text
+  toneOfVoice        String?  @map("tone_of_voice") @db.VarChar(100)
+  safetyInstructions String?  @map("safety_instructions") @db.Text
+  fallbackMessage    String   @map("fallback_message") @db.Text
+  escalationMessage  String   @map("escalation_message") @db.Text
+  welcomeMessages    Json?    @map("welcome_messages")
+  suggestedQuestions Json?    @map("suggested_questions")
+  leadCaptureRules   Json?    @map("lead_capture_rules")
+  humanHandoffRules  Json?    @map("human_handoff_rules")
+  knowledgeSettings  Json?    @map("knowledge_settings")
+  tourSettings       Json?    @map("tour_settings")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("ai_configs")
 }
 
 model ChatConversation {
-  id                   String             @id @default(uuid())
-  publicSessionId      String             @unique @map("public_session_id") @db.VarChar(100)
-  userId               String?            @map("user_id")
-  customerId           String?            @map("customer_id")
-  locale               String             @default("en") @db.VarChar(10)
-  channel              String             @default("web") @db.VarChar(50)
-  status               ConversationStatus @default(ACTIVE)
-  assignedStaffId      String?            @map("assigned_staff_id")
-  visitorName          String?            @map("visitor_name") @db.VarChar(255)
-  visitorEmail         String?            @map("visitor_email") @db.VarChar(255)
-  visitorPhone         String?            @map("visitor_phone") @db.VarChar(50)
-  visitorNationality   String?            @map("visitor_nationality") @db.VarChar(100)
-  travelPreferences    Json?              @map("travel_preferences")
-  budgetRange          String?            @map("budget_range") @db.VarChar(100)
-  paxCount             Int?               @map("pax_count")
-  childrenCount        Int?               @map("children_count")
-  preferredDestinations String[]          @default([]) @map("preferred_destinations")
-  travelDates          String?            @map("travel_dates") @db.VarChar(100)
-  tripDuration         String?            @map("trip_duration") @db.VarChar(50)
-  summary              String?            @db.Text
-  leadScore            Int                @default(0) @map("lead_score")
-  leadStatus           ChatLeadStatus     @default(NEW) @map("lead_status")
-  consentGiven         Boolean            @default(false) @map("consent_given")
-  utmSource            String?            @map("utm_source") @db.VarChar(100)
-  utmMedium            String?            @map("utm_medium") @db.VarChar(100)
-  utmCampaign          String?            @map("utm_campaign") @db.VarChar(100)
-  referrer             String?            @db.VarChar(500)
-  currentPage          String?            @map("current_page") @db.VarChar(500)
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
-  closedAt             DateTime?          @map("closed_at")
-  handedOffAt          DateTime?          @map("handed_off_at")
-  messages             ChatMessage[]
-  feedbacks            ChatFeedback[]
+  id                    String             @id @default(uuid())
+  publicSessionId       String             @unique @map("public_session_id") @db.VarChar(100)
+  userId                String?            @map("user_id")
+  customerId            String?            @map("customer_id")
+  locale                String             @default("en") @db.VarChar(10)
+  channel               String             @default("web") @db.VarChar(50)
+  status                ConversationStatus @default(ACTIVE)
+  assignedStaffId       String?            @map("assigned_staff_id")
+  visitorName           String?            @map("visitor_name") @db.VarChar(255)
+  visitorEmail          String?            @map("visitor_email") @db.VarChar(255)
+  visitorPhone          String?            @map("visitor_phone") @db.VarChar(50)
+  visitorNationality    String?            @map("visitor_nationality") @db.VarChar(100)
+  travelPreferences     Json?              @map("travel_preferences")
+  budgetRange           String?            @map("budget_range") @db.VarChar(100)
+  paxCount              Int?               @map("pax_count")
+  childrenCount         Int?               @map("children_count")
+  preferredDestinations String[]           @default([]) @map("preferred_destinations")
+  travelDates           String?            @map("travel_dates") @db.VarChar(100)
+  tripDuration          String?            @map("trip_duration") @db.VarChar(50)
+  summary               String?            @db.Text
+  leadScore             Int                @default(0) @map("lead_score")
+  leadStatus            ChatLeadStatus     @default(NEW) @map("lead_status")
+  consentGiven          Boolean            @default(false) @map("consent_given")
+  utmSource             String?            @map("utm_source") @db.VarChar(100)
+  utmMedium             String?            @map("utm_medium") @db.VarChar(100)
+  utmCampaign           String?            @map("utm_campaign") @db.VarChar(100)
+  referrer              String?            @db.VarChar(500)
+  currentPage           String?            @map("current_page") @db.VarChar(500)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  closedAt              DateTime?          @map("closed_at")
+  handedOffAt           DateTime?          @map("handed_off_at")
+  messages              ChatMessage[]
+  feedbacks             ChatFeedback[]
 
   @@index([status])
   @@index([leadStatus])
@@ -1333,7 +1362,7 @@ model ChatMessage {
   id                      String           @id @default(uuid())
   conversationId          String           @map("conversation_id")
   role                    ChatMessageRole  @default(user)
-  textContent             String           @db.Text @map("text_content")
+  textContent             String           @map("text_content") @db.Text
   structuredContent       Json?            @map("structured_content")
   locale                  String           @default("en") @db.VarChar(10)
   provider                String?          @db.VarChar(50)
@@ -1378,9 +1407,9 @@ model AiPromptVersion {
   id            String    @id @default(uuid())
   versionNumber Int       @map("version_number")
   name          String    @db.VarChar(100)
-  systemPrompt  String    @db.Text @map("system_prompt")
+  systemPrompt  String    @map("system_prompt") @db.Text
   status        String    @default("DRAFT") @db.VarChar(20)
-  changeNote    String?   @db.VarChar(500) @map("change_note")
+  changeNote    String?   @map("change_note") @db.VarChar(500)
   createdById   String?   @map("created_by_id")
   publishedById String?   @map("published_by_id")
   publishedAt   DateTime? @map("published_at")
@@ -1494,4 +1523,3 @@ enum KnowledgeStatus {
   PUBLISHED
   ARCHIVED
 }
-

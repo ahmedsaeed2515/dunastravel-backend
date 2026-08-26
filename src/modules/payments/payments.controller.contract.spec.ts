@@ -84,7 +84,7 @@ describe('PaymentsController (HTTP Contract)', () => {
   describe('POST /api/payments/initiate', () => {
     it('should return sessionUrl, URL, provider transaction and internal payment IDs', async () => {
       initiatePaymentMock.mockResolvedValue({
-        url: 'https://checkout.stripe.com/test-session',
+        url: 'https://hosted.getpayin.example/test-session',
         transactionId: 'cs_test_123',
         paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
@@ -98,8 +98,8 @@ describe('PaymentsController (HTTP Contract)', () => {
       expect(response.status).toBe(201);
       const resBody = response.body as { data: Record<string, string> };
       expect(resBody.data).toEqual({
-        sessionUrl: 'https://checkout.stripe.com/test-session',
-        url: 'https://checkout.stripe.com/test-session',
+        sessionUrl: 'https://hosted.getpayin.example/test-session',
+        url: 'https://hosted.getpayin.example/test-session',
         transactionId: 'cs_test_123',
         paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
@@ -141,7 +141,7 @@ describe('PaymentsController (HTTP Contract)', () => {
       const response = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
-        .post('/api/payments/webhook/generic')
+        .post('/api/payments/webhook/getpayin')
         .send({ eventId: 'evt_1', status: 'COMPLETED' });
 
       expect(response.status).toBe(200);

@@ -1,0 +1,872 @@
+{
+  "mode": "dry-run",
+  "sourceDirectory": "D:\\@@project\\LUXURY-PROJECT\\dunas-travel2026.com\\src\\data\\داتا احمد",
+  "catalogCount": 56,
+  "publishedCount": 22,
+  "draftCount": 34,
+  "created": [],
+  "updated": [
+    "cairo-express-4d",
+    "cairo-express-alexandria-5d",
+    "egito-classico-8d",
+    "egito-classico-ii-9d",
+    "egito-historico-10d",
+    "cairo-cruzeiro-sharm-11d",
+    "grande-ramses-10d",
+    "tesouros-egipto-9d",
+    "complete-egypt-8d",
+    "lo-mejor-de-grecia-9d",
+    "tunisia-8-days-desert-sea",
+    "estrellas-medio-oriente-19d",
+    "cairo-and-athens-11-days",
+    "essences-of-egypt-and-turkey-15-days",
+    "marvels-of-dubai-and-turkey-14-days",
+    "stars-of-the-middle-east-16-days",
+    "treasures-of-egypt-and-tunisia-16-days",
+    "egypt-and-dubai-13-days",
+    "spices-of-egypt-and-morocco",
+    "jewels-of-egypt-and-jordan-11-days",
+    "journey-of-the-holy-family-10-days",
+    "hurghada-escape",
+    "sharm-el-sheikh-escape",
+    "reg-01-legendary-turkey",
+    "reg-04-legendary-cappadocia",
+    "ist-01-best-of-istanbul",
+    "reg-03-passion-of-turkey",
+    "reg-15-classic-jordan",
+    "reg-16-jordan-with-desert",
+    "reg-17-jordan-with-desert-and-dead-sea",
+    "reg-18-complete-jordan",
+    "reg-19-jordan-red-sea",
+    "reg-20-jordan-extension-5-days",
+    "reg-21-jordan-extension-4-days",
+    "reg-22-stop-over-dubai",
+    "reg-23-dubai-and-its-history",
+    "reg-24-dubai-city-of-the-future",
+    "reg-25-dubai-and-abu-dhabi",
+    "reg-26-dubai-with-overnight-in-abu-dhabi",
+    "reg-27-one-week-in-dubai",
+    "reg-28-the-complete-emirates",
+    "hm001-honeymoon-in-dubai",
+    "hm002-honeymoon-in-dubai-with-dinner-at-burj-al-arab",
+    "reg-05-admirable-turkey",
+    "reg-06-heart-of-turkey",
+    "reg-07-turkish-riviera",
+    "reg-08-stop-over",
+    "reg-09-turkey-without-rush",
+    "reg-10-turkish-riviera-with-fethiye",
+    "reg-11-antalya",
+    "reg-12-beautiful-turkey",
+    "reg-05-b-admirable-turkey-winter",
+    "reg-13-extension-7-churches",
+    "reg-14-secret-of-the-temple",
+    "reg-29-sharm-el-sheikh",
+    "mrc-01-spices-of-morocco"
+  ],
+  "unchangedExistingBookings": 51,
+  "availabilitySlotsCreated": 0,
+  "destinationRelationsSynced": 0,
+  "destinationLandingPagesCreated": [
+    "tunisia"
+  ],
+  "tours": [
+    {
+      "sourceId": "eg-br-001",
+      "slug": "cairo-express-4d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 4,
+      "mediaCount": 1,
+      "priceUsd": 890,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-002",
+      "slug": "cairo-express-alexandria-5d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 1,
+      "priceUsd": 1050,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-003",
+      "slug": "egito-classico-8d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 1,
+      "priceUsd": 2190,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-004",
+      "slug": "egito-classico-ii-9d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 9,
+      "mediaCount": 1,
+      "priceUsd": 2490,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-005",
+      "slug": "egito-historico-10d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 10,
+      "mediaCount": 1,
+      "priceUsd": 2790,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-006",
+      "slug": "cairo-cruzeiro-sharm-11d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 11,
+      "mediaCount": 1,
+      "priceUsd": 3090,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-007",
+      "slug": "grande-ramses-10d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 10,
+      "mediaCount": 1,
+      "priceUsd": 3390,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-br-008",
+      "slug": "tesouros-egipto-9d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 9,
+      "mediaCount": 1,
+      "priceUsd": 2890,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "eg-completo-001",
+      "slug": "complete-egypt-8d",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 1,
+      "priceUsd": 2890,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "gr-es-001",
+      "slug": "lo-mejor-de-grecia-9d",
+      "action": "updated",
+      "destination": "greece",
+      "translationCount": 1,
+      "itineraryCount": 9,
+      "mediaCount": 4,
+      "priceUsd": 1490,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "tunisia-8d-7n-tour",
+      "slug": "tunisia-8-days-desert-sea",
+      "action": "updated",
+      "destination": "tunisia",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 1,
+      "priceUsd": 1328,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-001",
+      "slug": "estrellas-medio-oriente-19d",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 19,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-002",
+      "slug": "cairo-and-athens-11-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 11,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-003",
+      "slug": "essences-of-egypt-and-turkey-15-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 15,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-004",
+      "slug": "marvels-of-dubai-and-turkey-14-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 14,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-005",
+      "slug": "stars-of-the-middle-east-16-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 16,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-006",
+      "slug": "treasures-of-egypt-and-tunisia-16-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 15,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-007",
+      "slug": "egypt-and-dubai-13-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 5,
+      "itineraryCount": 26,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-008",
+      "slug": "spices-of-egypt-and-morocco",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 1,
+      "itineraryCount": 12,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "mct-009",
+      "slug": "jewels-of-egypt-and-jordan-11-days",
+      "action": "updated",
+      "destination": "multi-country",
+      "translationCount": 1,
+      "itineraryCount": 11,
+      "mediaCount": 1,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "ahmed-group-10",
+      "slug": "journey-of-the-holy-family-10-days",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 0,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "ahmed-group-18",
+      "slug": "hurghada-escape",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 0,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "ahmed-group-19",
+      "slug": "sharm-el-sheikh-escape",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 0,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-01",
+      "slug": "reg-01-legendary-turkey",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 11,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-04",
+      "slug": "reg-04-legendary-cappadocia",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "IST-01",
+      "slug": "ist-01-best-of-istanbul",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 4,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-03",
+      "slug": "reg-03-passion-of-turkey",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-15",
+      "slug": "reg-15-classic-jordan",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-16",
+      "slug": "reg-16-jordan-with-desert",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-17",
+      "slug": "reg-17-jordan-with-desert-and-dead-sea",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-18",
+      "slug": "reg-18-complete-jordan",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-19",
+      "slug": "reg-19-jordan-red-sea",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-20",
+      "slug": "reg-20-jordan-extension-5-days",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-21",
+      "slug": "reg-21-jordan-extension-4-days",
+      "action": "updated",
+      "destination": "jordan",
+      "translationCount": 5,
+      "itineraryCount": 4,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-22",
+      "slug": "reg-22-stop-over-dubai",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 3,
+      "mediaCount": 0,
+      "priceUsd": 165,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-23",
+      "slug": "reg-23-dubai-and-its-history",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 4,
+      "mediaCount": 0,
+      "priceUsd": 245,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-24",
+      "slug": "reg-24-dubai-city-of-the-future",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": 315,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-25",
+      "slug": "reg-25-dubai-and-abu-dhabi",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 6,
+      "mediaCount": 0,
+      "priceUsd": 409,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-26",
+      "slug": "reg-26-dubai-with-overnight-in-abu-dhabi",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 6,
+      "mediaCount": 0,
+      "priceUsd": 515,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-27",
+      "slug": "reg-27-one-week-in-dubai",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": 465,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-28",
+      "slug": "reg-28-the-complete-emirates",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 8,
+      "mediaCount": 0,
+      "priceUsd": 799,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "HM001",
+      "slug": "hm001-honeymoon-in-dubai",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": 750,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "HM002",
+      "slug": "hm002-honeymoon-in-dubai-with-dinner-at-burj-al-arab",
+      "action": "updated",
+      "destination": "dubai",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": 1099,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-05",
+      "slug": "reg-05-admirable-turkey",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 10,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-06",
+      "slug": "reg-06-heart-of-turkey",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 7,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-07",
+      "slug": "reg-07-turkish-riviera",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 12,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-08",
+      "slug": "reg-08-stop-over",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 3,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-09",
+      "slug": "reg-09-turkey-without-rush",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 9,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-10",
+      "slug": "reg-10-turkish-riviera-with-fethiye",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 13,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-11",
+      "slug": "reg-11-antalya",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 10,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-12",
+      "slug": "reg-12-beautiful-turkey",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 9,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-05-B",
+      "slug": "reg-05-b-admirable-turkey-winter",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 10,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-13",
+      "slug": "reg-13-extension-7-churches",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 3,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-14",
+      "slug": "reg-14-secret-of-the-temple",
+      "action": "updated",
+      "destination": "turkey",
+      "translationCount": 5,
+      "itineraryCount": 11,
+      "mediaCount": 0,
+      "priceUsd": null,
+      "currency": "USD",
+      "warnings": [
+        "No source base price; imported as DRAFT."
+      ],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "REG-29",
+      "slug": "reg-29-sharm-el-sheikh",
+      "action": "updated",
+      "destination": "egypt",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": 600,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    },
+    {
+      "sourceId": "MRC-01",
+      "slug": "mrc-01-spices-of-morocco",
+      "action": "updated",
+      "destination": "morocco",
+      "translationCount": 5,
+      "itineraryCount": 5,
+      "mediaCount": 0,
+      "priceUsd": 799,
+      "currency": "USD",
+      "warnings": [],
+      "fieldMismatchCount": 0
+    }
+  ],
+  "errors": [],
+  "generatedAt": "2026-08-26T17:37:36.964Z"
+}

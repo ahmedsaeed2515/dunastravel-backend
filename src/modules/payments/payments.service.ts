@@ -181,6 +181,9 @@ export class PaymentsService {
     }
 
     const paymentId = crypto.randomUUID();
+    const attemptNumber =
+      (await this.prisma.payment.count({ where: { bookingId } })) + 1;
+    const checkoutIdempotencyKey = `checkout:${paymentId}`;
     const frontendUrl = this.configService
       .getOrThrow<string>('frontendUrl')
       .replace(/\/$/, '');
@@ -196,15 +199,15 @@ export class PaymentsService {
         referenceCode: booking.referenceCode,
         amount: money.toDecimal(),
         currency: money.currency,
-        successUrl: `${frontendUrl}/booking/success?payment_id=${paymentId}&booking_id=${booking.id}`,
-        cancelUrl: `${frontendUrl}/booking/cancel?payment_id=${paymentId}&booking_id=${booking.id}`,
+        successUrl: `${frontendUrl}/payment/return?payment_id=${paymentId}`,
+        cancelUrl: `${frontendUrl}/payment/cancel?payment_id=${paymentId}`,
         webhookUrl: `${publicApiUrl}/api/payments/webhook/getpayin`,
         customer: {
           fullName: booking.billingInfo.fullName,
           email: booking.billingInfo.email,
           phone: booking.billingInfo.phone,
         },
-        idempotencyKey: `checkout:${paymentId}`,
+        idempotencyKey: checkoutIdempotencyKey,
       });
     } catch (error: unknown) {
       const msg =
@@ -230,12 +233,20 @@ export class PaymentsService {
         data: {
           id: paymentId,
           bookingId: booking.id,
+          provider: this.paymentGateway.getProviderName(),
+          providerEnvironment: this.paymentGateway.getReadiness().mode,
+          merchantReference: booking.referenceCode,
+          providerPaymentId: session.transactionId,
+          attemptNumber,
+          idempotencyKey: checkoutIdempotencyKey,
           amount: money.toDecimal(),
           currency: money.currency,
           method: this.paymentGateway.getProviderName(),
           transactionId: session.transactionId,
           sessionUrl: session.url,
           status: paymentEntity.status,
+          providerStatus: 'PENDING',
+          expiresAt: new Date(Date.now() + PaymentsService.SESSION_TTL_MS),
         },
       });
 
@@ -523,7 +534,11 @@ export class PaymentsService {
     entity.markFailed();
     await tx.payment.update({
       where: { id: payment.id },
-      data: { status: entity.status },
+      data: {
+        status: entity.status,
+        providerStatus: 'FAILED',
+        failedAt: new Date(),
+      },
     });
     await tx.bookingActivityLog.create({
       data: {
@@ -602,7 +617,11 @@ export class PaymentsService {
 
     const payment = await tx.payment.update({
       where: { id: existingPayment.id },
-      data: { status: paymentEntity.status },
+      data: {
+        status: paymentEntity.status,
+        providerStatus: 'COMPLETED',
+        paidAt: new Date(),
+      },
     });
 
     const allCapturedPayments = await tx.payment.findMany({
@@ -619,8 +638,10 @@ export class PaymentsService {
         'Captured payments exceed the booking total',
       );
     }
+    // A verified payment confirms a booking; it never means the travel has
+    // been completed. Payment status remains on the Payment record.
     const newStatus = totalCaptured.equals(booking.totalAmountUsd)
-      ? 'PAID'
+      ? 'CONFIRMED'
       : 'PARTIALLY_PAID';
 
     await tx.booking.update({
@@ -635,7 +656,7 @@ export class PaymentsService {
       await tx.invoice.update({
         where: { id: booking.invoice.id },
         data: {
-          status: newStatus === 'PAID' ? 'PAID' : 'SENT',
+          status: newStatus === 'CONFIRMED' ? 'PAID' : 'SENT',
           paymentId: payment.id,
         },
       });
@@ -742,7 +763,7 @@ export class PaymentsService {
         (refundRecord.status === 'PENDING' || refundRecord.status === 'FAILED'),
       );
     if (
-      existingPayment.booking.status !== 'PAID' ||
+      existingPayment.booking.status !== 'CONFIRMED' ||
       !existingPayment.amount.equals(existingPayment.booking.totalAmountUsd) ||
       !existingPayment.amount.equals(existingPayment.booking.paidAmountUsd) ||
       (isRefundRecovery
@@ -903,6 +924,7 @@ export class PaymentsService {
           data: {
             status: 'REFUNDED',
             isRefund: true,
+            refundedAt: new Date(),
           },
         });
         if (finalized.count !== 1) {
@@ -911,14 +933,8 @@ export class PaymentsService {
           );
         }
 
-        await tx.booking.update({
-          where: { id: existingPayment.bookingId },
-          data: {
-            status: 'REFUNDED',
-            paidAmountUsd: 0,
-            cancellationReason: safeReason || 'Payment refunded by super admin',
-          },
-        });
+        // A financial refund does not itself cancel a tour booking or release
+        // inventory. Those are separate, explicit business operations.
 
         const invoice = existingPayment.invoices[0];
         if (invoice) {
@@ -955,21 +971,6 @@ export class PaymentsService {
             },
             data: { currentUses: { decrement: 1 } },
           });
-        }
-
-        if (existingPayment.booking.availabilityId) {
-          const totalPassengers =
-            existingPayment.booking.adults + existingPayment.booking.children;
-          await tx.$executeRaw`
-            UPDATE tour_availabilities
-            SET remaining_seats = LEAST(
-                  total_capacity,
-                  remaining_seats + ${totalPassengers}
-                ),
-                status = 'AVAILABLE',
-                updated_at = NOW()
-            WHERE id = ${existingPayment.booking.availabilityId}
-          `;
         }
 
         await tx.auditLog.create({

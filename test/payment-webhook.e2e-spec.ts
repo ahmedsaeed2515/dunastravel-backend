@@ -32,7 +32,7 @@ describe('Payments Webhook (e2e)', () => {
     }
 
     mockGatewayPort = {
-      getProviderName: () => 'GENERIC',
+      getProviderName: () => 'GETPAYIN',
       verifyAndParseWebhook: jest.fn(),
     };
 
@@ -104,13 +104,13 @@ describe('Payments Webhook (e2e)', () => {
       .catch(() => {});
   });
 
-  it('/payments/webhook/stripe (POST) - invalid signature', async () => {
+  it('/payments/webhook/getpayin (POST) rejects an invalid signature', async () => {
     (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockRejectedValue(
       new Error('Invalid signature'),
     );
 
     const response = await request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ type: 'checkout.session.completed' });
 
     // The adapter might throw an error. In NestJS unhandled errors are 500,
@@ -132,7 +132,7 @@ describe('Payments Webhook (e2e)', () => {
     const spy = jest.spyOn(eventEmitter, 'emit');
 
     const res = await request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ id: eventId });
 
     expect(res.status).toBe(200);
@@ -146,7 +146,7 @@ describe('Payments Webhook (e2e)', () => {
     const booking = await prisma.booking.findUnique({
       where: { id: testBookingId },
     });
-    expect(booking?.status).toBe('PAID');
+    expect(booking?.status).toBe('CONFIRMED');
     expect(booking?.paidAmountUsd?.toString()).toBe('100');
 
     const payment = await prisma.payment.findFirst({
@@ -173,7 +173,7 @@ describe('Payments Webhook (e2e)', () => {
 
     // First call
     const res1 = await request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ id: eventId });
     if (res1.status !== 200) console.log('res1.body:', res1.body);
     expect(res1.status).toBe(200);
@@ -181,7 +181,7 @@ describe('Payments Webhook (e2e)', () => {
 
     // Second call
     const res2 = await request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ id: eventId });
     expect(res2.status).toBe(200);
     // Should NOT emit event again
@@ -203,10 +203,10 @@ describe('Payments Webhook (e2e)', () => {
 
     // Fire concurrently
     const req1 = request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ id: eventId });
     const req2 = request(app.getHttpServer())
-      .post('/payments/webhook/generic')
+      .post('/payments/webhook/getpayin')
       .send({ id: eventId });
 
     const [res1, res2] = await Promise.all([req1, req2]);

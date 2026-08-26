@@ -9,6 +9,10 @@ import { TransportationBookingStatus } from '@prisma/client';
 import { paginate, getPaginationParams } from '../../../common/utils';
 import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util';
 import { AuthenticatedUser } from '../../../common/types';
+import {
+  CreateTransportationServiceDto,
+  UpdateTransportationServiceDto,
+} from './dto/admin-transportation.dto';
 
 @Injectable()
 export class AdminTransportationService {
@@ -23,6 +27,91 @@ export class AdminTransportationService {
       ...safe
     } = booking;
     return safe;
+  }
+
+  async findAllServices() {
+    return this.prisma.transportationService.findMany({
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async createService(
+    dto: CreateTransportationServiceDto,
+    actor?: AuthenticatedUser,
+  ) {
+    const service = await this.prisma.transportationService.create({
+      data: {
+        name: sanitizePlainText(dto.name).slice(0, 255),
+        serviceType: sanitizePlainText(dto.serviceType).slice(0, 50),
+        basePriceUsd: dto.basePriceUsd,
+        isActive: dto.isActive ?? true,
+      },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: actor?.id || null,
+        actorRole: actor?.role || null,
+        action: 'TRANSPORTATION_SERVICE_CREATED',
+        entityType: 'TRANSPORTATION_SERVICE',
+        entityId: service.id,
+      },
+    });
+    return service;
+  }
+
+  async updateService(
+    id: string,
+    dto: UpdateTransportationServiceDto,
+    actor?: AuthenticatedUser,
+  ) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('Transportation service not found');
+    const service = await this.prisma.transportationService.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined
+          ? { name: sanitizePlainText(dto.name).slice(0, 255) }
+          : {}),
+        ...(dto.serviceType !== undefined
+          ? { serviceType: sanitizePlainText(dto.serviceType).slice(0, 50) }
+          : {}),
+        ...(dto.basePriceUsd !== undefined ? { basePriceUsd: dto.basePriceUsd } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: actor?.id || null,
+        actorRole: actor?.role || null,
+        action: 'TRANSPORTATION_SERVICE_UPDATED',
+        entityType: 'TRANSPORTATION_SERVICE',
+        entityId: id,
+      },
+    });
+    return service;
+  }
+
+  async deactivateService(id: string, actor?: AuthenticatedUser) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('Transportation service not found');
+    const service = await this.prisma.transportationService.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: actor?.id || null,
+        actorRole: actor?.role || null,
+        action: 'TRANSPORTATION_SERVICE_DEACTIVATED',
+        entityType: 'TRANSPORTATION_SERVICE',
+        entityId: id,
+      },
+    });
+    return service;
   }
 
   async findAll(

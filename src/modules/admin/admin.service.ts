@@ -20,7 +20,6 @@ import {
 import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
-import { AddPaymentDto } from './dto/add-payment.dto';
 import { AddBookingNoteDto } from './dto/add-booking-note.dto';
 import { AddBookingAttachmentDto } from './dto/add-booking-attachment.dto';
 import { ListInquiriesQueryDto } from './dto/list-inquiries-query.dto';
@@ -52,7 +51,6 @@ import {
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { sanitizeCsvField } from '../../common/utils/sanitize.util';
-import { isComplimentaryTourCountry } from '../../common/domain/tour-pricing-policy';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
@@ -447,140 +445,6 @@ export class AdminService {
       dto.status,
       { id: adminUserId, role: isAgent ? 'AGENT' : 'ADMIN' },
       dto.reason,
-    );
-  }
-
-  async addPayment(
-    referenceCode: string,
-    dto: AddPaymentDto,
-    adminUserId: string,
-  ) {
-    const amount = new Prisma.Decimal(dto.amount);
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existing = await tx.payment.findFirst({
-          where: { transactionId: dto.transactionId },
-          select: {
-            id: true,
-            bookingId: true,
-            amount: true,
-            currency: true,
-            method: true,
-            transactionId: true,
-            status: true,
-            createdAt: true,
-          },
-        });
-        const booking = await tx.booking.findFirst({
-          where: { referenceCode, deletedAt: null },
-          select: {
-            id: true,
-            status: true,
-            totalAmountUsd: true,
-          },
-        });
-        if (!booking) throw new NotFoundException('Booking not found');
-
-        if (existing) {
-          if (
-            existing.bookingId === booking.id &&
-            existing.amount.equals(amount) &&
-            existing.currency === dto.currency &&
-            existing.method === dto.method &&
-            existing.status === 'CAPTURED'
-          ) {
-            return existing;
-          }
-          throw new ConflictException('Transaction reference was already used');
-        }
-        if (['CANCELLED', 'REFUNDED', 'ARCHIVED'].includes(booking.status)) {
-          throw new BadRequestException(
-            'Payments cannot be added to this booking',
-          );
-        }
-
-        const captured = await tx.payment.aggregate({
-          where: {
-            bookingId: booking.id,
-            status: 'CAPTURED',
-            isRefund: false,
-          },
-          _sum: { amount: true },
-        });
-        const currentPaid = captured._sum.amount ?? new Prisma.Decimal(0);
-        const newPaid = currentPaid.plus(amount);
-        if (newPaid.gt(booking.totalAmountUsd)) {
-          throw new BadRequestException(
-            'Payment exceeds the outstanding booking balance',
-          );
-        }
-        const nextStatus = newPaid.equals(booking.totalAmountUsd)
-          ? 'PAID'
-          : 'PARTIALLY_PAID';
-
-        const payment = await tx.payment.create({
-          data: {
-            bookingId: booking.id,
-            amount,
-            currency: dto.currency,
-            method: dto.method,
-            transactionId: dto.transactionId,
-            status: 'CAPTURED',
-            isRefund: false,
-          },
-          select: {
-            id: true,
-            bookingId: true,
-            amount: true,
-            currency: true,
-            method: true,
-            transactionId: true,
-            status: true,
-            createdAt: true,
-          },
-        });
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: {
-            paidAmountUsd: newPaid,
-            status: nextStatus,
-          },
-        });
-        await tx.invoice.updateMany({
-          where: { bookingId: booking.id },
-          data: { status: nextStatus === 'PAID' ? 'PAID' : 'SENT', paymentId: payment.id },
-        });
-        await tx.bookingActivityLog.create({
-          data: {
-            bookingId: booking.id,
-            userId: adminUserId,
-            action: 'MANUAL_PAYMENT_CAPTURED',
-            details: {
-              paymentId: payment.id,
-              amount: amount.toString(),
-              currency: dto.currency,
-              method: dto.method,
-            },
-          },
-        });
-        await tx.auditLog.create({
-          data: {
-            actorId: adminUserId,
-            actorRole: 'SUPER_ADMIN',
-            action: 'MANUAL_PAYMENT_CAPTURED',
-            entityType: 'PAYMENT',
-            entityId: payment.id,
-            metadata: {
-              bookingId: booking.id,
-              amount: amount.toString(),
-              currency: dto.currency,
-              method: dto.method,
-            },
-          },
-        });
-        return payment;
-      },
-      { isolationLevel: 'Serializable' },
     );
   }
 
@@ -2096,6 +1960,9 @@ export class AdminService {
     if (data.descriptionJsonb && !data.overviewJsonb) {
       result.overviewJsonb = data.descriptionJsonb;
     }
+    if (data.highlightJsonb && !data.highlightsJsonb) {
+      result.highlightsJsonb = data.highlightJsonb;
+    }
     if (data.inclusionJsonb && !data.includedServicesJsonb) {
       result.includedServicesJsonb = data.inclusionJsonb;
     }
@@ -2141,20 +2008,18 @@ export class AdminService {
       result.languages = [...new Set(data.languages)];
     }
 
-    // Egypt tours are a complimentary catalog product. Enforce the rule at
-    // the write boundary so dashboard edits cannot restore a non-zero price.
-    if (isComplimentaryTourCountry(effectiveCountry)) {
-      result.basePriceUsd = 0;
-    }
-
     const plainJsonFields = [
       'titleJsonb',
+      'subtitleJsonb',
       'durationJsonb',
       'minPaxJsonb',
       'pickupLocationsJsonb',
     ] as const;
     const richJsonFields = [
       'overviewJsonb',
+      'highlightsJsonb',
+      'departureInfoJsonb',
+      'sourceCodeJsonb',
       'includedServicesJsonb',
       'excludedServicesJsonb',
       'hotelInfoJsonb',
@@ -2193,7 +2058,6 @@ export class AdminService {
       'minParticipants',
       'maxParticipants',
       'remainingSeats',
-      'subtitleJsonb',
       'descriptionJsonb',
       'highlightJsonb',
       'inclusionJsonb',
@@ -2471,6 +2335,78 @@ export class AdminService {
     }
 
     return { success: true };
+  }
+
+  async publishTour(slug: string, adminUserId: string) {
+    return this.transitionTourLifecycle(slug, 'PUBLISHED', adminUserId);
+  }
+
+  async unpublishTour(slug: string, adminUserId: string) {
+    return this.transitionTourLifecycle(slug, 'DRAFT', adminUserId);
+  }
+
+  async archiveTour(slug: string, adminUserId: string) {
+    return this.transitionTourLifecycle(slug, 'ARCHIVED', adminUserId);
+  }
+
+  async unarchiveTour(slug: string, adminUserId: string) {
+    return this.transitionTourLifecycle(slug, 'DRAFT', adminUserId, true);
+  }
+
+  /**
+   * Lifecycle transitions are kept server-side. ARCHIVED is reversible and
+   * distinct from soft deletion; restoring either state always produces a
+   * draft so an administrator must explicitly publish it again.
+   */
+  private async transitionTourLifecycle(
+    slug: string,
+    targetStatus: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+    adminUserId: string,
+    restoreDeleted = false,
+  ) {
+    const tour = await this.prisma.tour.findUnique({ where: { slug } });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    if (tour.deletedAt && !restoreDeleted) {
+      throw new BadRequestException('Restore the soft-deleted tour before changing its lifecycle');
+    }
+    if (targetStatus === 'PUBLISHED') {
+      const title = tour.titleJsonb as Record<string, unknown>;
+      if (typeof title?.en !== 'string' || !title.en.trim()) {
+        throw new BadRequestException('A tour requires an English title before it can be published');
+      }
+      if (tour.basePriceUsd.lte(0)) {
+        throw new BadRequestException('A tour requires a positive base price before it can be published');
+      }
+    }
+
+    const isPublic = targetStatus === 'PUBLISHED';
+    const updated = await this.prisma.tour.update({
+      where: { id: tour.id },
+      data: {
+        status: targetStatus,
+        isActive: isPublic,
+        ...(restoreDeleted ? { deletedAt: null } : {}),
+        activityLogs: {
+          create: {
+            userId: adminUserId,
+            action: `TOUR_${targetStatus}${restoreDeleted ? '_RESTORED' : ''}`,
+            details: {
+              previousStatus: tour.status,
+              targetStatus,
+              restoredFromSoftDelete: restoreDeleted,
+            },
+          },
+        },
+      },
+    });
+    await this.invalidateTourCache(slug);
+    return {
+      success: true,
+      slug: updated.slug,
+      status: updated.status,
+      isActive: updated.isActive,
+    };
   }
 
   async suspendUser(userId: string, reason: string, adminUserId: string) {

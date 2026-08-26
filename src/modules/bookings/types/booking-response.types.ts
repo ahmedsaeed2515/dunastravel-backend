@@ -47,5 +47,7 @@ export interface BookingSummaryResponse {
   children: number;
   infants: number;
   totalAmountUsd: string;
+  paymentStatus: string | null;
+  paymentAttemptId: string | null;
   createdAt: string;
 }

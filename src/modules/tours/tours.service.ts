@@ -32,6 +32,22 @@ type TourWithPresentation = Prisma.TourGetPayload<{
   include: { itineraries: true; images: true };
 }>;
 
+function extractStructuredI18n(value: unknown, lang: string): unknown {
+  if (Array.isArray(value)) return value.map((item) => extractStructuredI18n(item, lang));
+  if (!value || typeof value !== 'object') return value;
+  const record = value as Record<string, unknown>;
+  const localized = record[lang] ?? record.en;
+  if (
+    localized !== undefined &&
+    Object.keys(record).every((key) => ['ar', 'en', 'es', 'pt', 'it'].includes(key))
+  ) {
+    return localized;
+  }
+  return Object.fromEntries(
+    Object.entries(record).map(([key, child]) => [key, extractStructuredI18n(child, lang)]),
+  );
+}
+
 @Injectable()
 export class ToursService {
   private readonly logger = new Logger(ToursService.name);
@@ -228,23 +244,40 @@ export class ToursService {
       id: tour.id,
       slug: tour.slug,
       title: extractI18n(tour.titleJsonb, lang),
+      subtitle: tour.subtitleJsonb ? extractI18n(tour.subtitleJsonb, lang) || null : null,
       category: tour.category,
       basePriceUsd: new Prisma.Decimal(tour.basePriceUsd).toFixed(2),
       currency: tour.currency,
 
       duration: extractI18n(tour.durationJsonb, lang),
       overview: extractI18n(tour.overviewJsonb, lang),
+      highlights: extractI18nList(tour.highlightsJsonb, lang),
+      departureInfo: tour.departureInfoJsonb
+        ? extractI18n(tour.departureInfoJsonb, lang) || null
+        : null,
+      sourceCode: tour.sourceCodeJsonb
+        ? extractI18n(tour.sourceCodeJsonb, lang) || null
+        : null,
+      market: tour.market,
+      sourceRating: tour.sourceRating
+        ? new Prisma.Decimal(tour.sourceRating).toFixed(2)
+        : null,
+      sourceReviewCount: tour.sourceReviewCount,
       cancellationPolicy: tour.cancellationPolicyJsonb
         ? extractI18n(tour.cancellationPolicyJsonb, lang)
         : null,
       includedServices: extractI18nList(tour.includedServicesJsonb, lang),
       excludedServices: extractI18nList(tour.excludedServicesJsonb, lang),
       hotelInfo: tour.hotelInfoJsonb
-        ? extractI18n(tour.hotelInfoJsonb, lang)
+        ? extractStructuredI18n(tour.hotelInfoJsonb, lang)
         : null,
       seasonPricing: tour.seasonPricingJsonb
-        ? extractI18n(tour.seasonPricingJsonb, lang)
+        ? extractStructuredI18n(tour.seasonPricingJsonb, lang)
         : null,
+      transportation: tour.transportationJsonb
+        ? extractStructuredI18n(tour.transportationJsonb, lang)
+        : null,
+      terms: tour.termsJsonb ? extractStructuredI18n(tour.termsJsonb, lang) : null,
       tags: tour.tags,
       difficultyLevel: tour.difficultyLevel,
       meetingPoint: tour.meetingPoint,

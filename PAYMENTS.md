@@ -4,12 +4,11 @@ The payments module handles checkout initiation, webhook processing, refund hand
 
 ## Architecture & Integration
 
-The module is decoupled from the underlying payment provider (e.g., Stripe, Paymob) using the **Ports and Adapters** (Hexagonal) architecture.
-
-To integrate a new provider:
-1. Create a new adapter (e.g., `src/modules/payments/adapters/paymob.adapter.ts`).
-2. Implement the `IPaymentGatewayPort` interface.
-3. Update `payments.module.ts` to inject your new adapter into the `IPaymentGatewayPort` token.
+The module uses a Ports and Adapters boundary, but **GetPayIn is the only
+supported online provider**. The boundary isolates provider HTTP and webhook
+details from booking business logic; it is not a provider selector. The
+GetPayIn adapter remains fail-closed until the official Direct API contract is
+stored under `docs/vendor/getpayin/`.
 
 ## Payment Entity State Machine
 
@@ -39,5 +38,5 @@ If two identical webhooks arrive simultaneously, exactly one will commit and the
 
 ## Payment Webhook Testing
 
-Payment webhooks are processed at `POST /payments/webhook/:gateway`.
+Payment webhooks are processed at `POST /payments/webhook/getpayin`.
 The system validates signatures and records transactions idempotently in the `ProcessedWebhookEvent` table.

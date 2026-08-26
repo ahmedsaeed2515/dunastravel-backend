@@ -168,7 +168,7 @@ export const envValidationSchema = Joi.object({
   // Payments remain fail-closed unless an explicitly selected provider has a
   // complete, reviewed merchant contract.
   PAYMENT_PROVIDER: Joi.string()
-    .valid('DISABLED', 'GENERIC', 'GETPAYIN')
+    .valid('DISABLED', 'GETPAYIN')
     .default('DISABLED'),
   PUBLIC_API_URL: Joi.string()
     .uri({ scheme: ['https'] })

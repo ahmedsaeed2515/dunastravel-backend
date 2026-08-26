@@ -56,10 +56,10 @@ export class AdminReportsService {
 
     const truncSql =
       trunc === 'day'
-        ? Prisma.sql`DATE_TRUNC('day', b."created_at")`
+        ? Prisma.sql`DATE_TRUNC('day', p."paid_at")`
         : trunc === 'week'
-          ? Prisma.sql`DATE_TRUNC('week', b."created_at")`
-          : Prisma.sql`DATE_TRUNC('month', b."created_at")`;
+          ? Prisma.sql`DATE_TRUNC('week', p."paid_at")`
+          : Prisma.sql`DATE_TRUNC('month', p."paid_at")`;
 
     const rows = await this.prisma.$queryRaw<
       Array<{
@@ -102,10 +102,10 @@ export class AdminReportsService {
 
     const truncSql =
       trunc === 'day'
-        ? Prisma.sql`DATE_TRUNC('day', b."created_at")`
-        : trunc === 'week'
-          ? Prisma.sql`DATE_TRUNC('week', b."created_at")`
-          : Prisma.sql`DATE_TRUNC('month', b."created_at")`;
+        ? Prisma.sql`DATE_TRUNC('day', p."paid_at")`
+      : trunc === 'week'
+          ? Prisma.sql`DATE_TRUNC('week', p."paid_at")`
+          : Prisma.sql`DATE_TRUNC('month', p."paid_at")`;
 
     const rows = await this.prisma.$queryRaw<
       Array<{
@@ -117,14 +117,19 @@ export class AdminReportsService {
     >(Prisma.sql`
       SELECT
         ${truncSql} AS "period",
-        COALESCE(SUM(b."total_amount_usd"), 0) AS "grossRevenue",
-        COALESCE(SUM(b."paid_amount_usd"), 0) AS "collectedRevenue",
-        COUNT(*) AS "bookingsCount"
-      FROM "bookings" b
-      WHERE b."created_at" >= ${from}
-        AND b."created_at" <= ${to}
-        AND b."deleted_at" IS NULL
-        AND b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
+        COALESCE(SUM(p."amount"), 0) AS "grossRevenue",
+        COALESCE(SUM(p."amount"), 0) - COALESCE((
+          SELECT SUM(r."amount")
+          FROM "refund_records" r
+          WHERE r.status::text = 'COMPLETED'
+            AND DATE_TRUNC(${trunc}, r."created_at") = ${truncSql}
+        ), 0) AS "collectedRevenue",
+        COUNT(DISTINCT p."booking_id") AS "bookingsCount"
+      FROM "payments" p
+      WHERE p."paid_at" >= ${from}
+        AND p."paid_at" <= ${to}
+        AND p."is_refund" = false
+        AND p.status::text IN ('CAPTURED', 'REFUND_PENDING', 'REFUNDED')
       GROUP BY 1
       ORDER BY 1 ASC
     `);

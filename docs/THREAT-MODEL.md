@@ -11,7 +11,7 @@ Status: Active Reference Document
 |---|---|---|---|
 | Customer PII (Passports, Emergency Contacts, Addresses) | Application Server / DB Layer | **HIGH (PII)** | Encrypted using AES-256-GCM at rest (`field-encryption.util.ts`). Keyed blind indexes (HMAC-SHA256) used for exact lookups without decrypting entire table. |
 | Authentication Credentials & Session Secrets | DB / Redis / Memory | **CRITICAL** | Bcrypt password hashes, hashed refresh tokens (`SHA-256`), hashed password reset/verification tokens, `sessionVersion` increments on privilege change. |
-| Financial & Payment Ledger Data | Payments Engine / Stripe Integration | **CRITICAL (Financial)** | Ledger entries, transaction IDs, payment capture/refund status, immutable invoices. Checked with strict double-submit idempotency & database unique constraints. |
+| Financial & Payment Ledger Data | Payments Engine / GetPayIn boundary | **CRITICAL (Financial)** | Ledger entries, transaction IDs, payment capture/refund status, immutable invoices. Checked with strict double-submit idempotency & database unique constraints. |
 | Administrative Controls & Privileged APIs | Internal API (`/admin/*`) | **CRITICAL (Privileged)** | Restricted to `ADMIN` and `SUPER_ADMIN` roles via `RolesGuard` and explicit in-service authorization checks. Last `SUPER_ADMIN` protected against deletion/suspension. |
 | Customer Media & Documents | Cloud Storage (Cloudinary/S3) | **HIGH** | Public tour media vs Private customer documents (IDs, Vouchers). Verification of MIME type, magic bytes, dimensions, and strict entity-bound upload authorization. |
 
@@ -51,7 +51,7 @@ Status: Active Reference Document
 - **Threat**: Attacker guesses or iterates booking UUIDs / reference codes to view foreign PII or invoices.
 - **Controls**: Guest bookings require constant-time HMAC-SHA256 `guestToken` verification. Authenticated bookings require `userId === ownerId` inside `BookingsService.findByReferenceCode()`.
 
-### T-03: Webhook Spoofing & Replay (Stripe / Payment Providers)
+### T-03: Webhook Spoofing & Replay (GetPayIn)
 - **Threat**: Attacker sends forged raw payment webhook requests to force booking status to `PAID`.
 - **Controls**: Raw body signature verification using provider secrets before JSON parsing; atomic idempotent event insertion in DB (`payment_webhook_events`); payment amount and currency verified against DB invoice snapshot.
 

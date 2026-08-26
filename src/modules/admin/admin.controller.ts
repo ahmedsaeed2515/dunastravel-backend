@@ -35,7 +35,6 @@ import { CreateBookingDto } from '../bookings/dto/create-booking.dto';
 import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
-import { AddPaymentDto } from './dto/add-payment.dto';
 import { AddBookingNoteDto } from './dto/add-booking-note.dto';
 import { AddBookingAttachmentDto } from './dto/add-booking-attachment.dto';
 import { UpsertPassengersDto } from './dto/upsert-passengers.dto';
@@ -301,20 +300,6 @@ export class AdminController {
     return this.adminService.assignBooking(referenceCode, dto, user.id);
   }
 
-  @Post('bookings/:referenceCode/payments')
-  @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Add a payment to a booking.' })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiBody({ type: AddPaymentDto })
-  @ApiOkResponse({ description: 'Payment added successfully' })
-  async addPayment(
-    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
-    @Body() dto: AddPaymentDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.adminService.addPayment(referenceCode, dto, user.id);
-  }
-
   @Post('bookings/:referenceCode/notes')
   @ApiOperation({ summary: 'Add an internal note to a booking.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
@@ -508,6 +493,42 @@ export class AdminController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.updateTour(slug, dto, user.id);
+  }
+
+  @Post('tours/:slug/publish')
+  @ApiOperation({ summary: 'Publish a complete tour and make it public.' })
+  async publishTour(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.publishTour(slug, user.id);
+  }
+
+  @Post('tours/:slug/unpublish')
+  @ApiOperation({ summary: 'Return a public tour to draft without deleting it.' })
+  async unpublishTour(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.unpublishTour(slug, user.id);
+  }
+
+  @Post('tours/:slug/archive')
+  @ApiOperation({ summary: 'Archive a tour while preserving bookings and history.' })
+  async archiveTour(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.archiveTour(slug, user.id);
+  }
+
+  @Post('tours/:slug/unarchive')
+  @ApiOperation({ summary: 'Restore an archived/deleted tour as a non-public draft.' })
+  async unarchiveTour(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.unarchiveTour(slug, user.id);
   }
 
   @Delete('tours/:slug')

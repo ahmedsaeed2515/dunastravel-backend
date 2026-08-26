@@ -295,4 +295,56 @@ export class HotelsService {
     ]);
     return { success: true, message: `Hotel '${id}' deleted.` };
   }
+
+  async publishAdmin(id: string) {
+    const hotel = await this.findOneAdmin(id);
+    const publishableRoom = hotel.rooms.some(
+      (room) => room.isActive && room.inventory > 0 && room.ratePerNight >= 0,
+    );
+    if (!publishableRoom) {
+      throw new BadRequestException(
+        'A published hotel requires at least one active room with inventory',
+      );
+    }
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { status: 'PUBLISHED', isActive: true },
+    });
+  }
+
+  async unpublishAdmin(id: string) {
+    await this.findOneAdmin(id);
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { status: 'DRAFT', isActive: false },
+    });
+  }
+
+  async archiveAdmin(id: string) {
+    await this.findOneAdmin(id);
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { status: 'ARCHIVED', isActive: false },
+    });
+  }
+
+  async unarchiveAdmin(id: string) {
+    await this.findOneAdmin(id);
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { status: 'DRAFT', isActive: false },
+    });
+  }
+
+  async restoreAdmin(id: string) {
+    const hotel = await this.prisma.hotel.findUnique({ where: { id } });
+    if (!hotel) throw new NotFoundException(`Hotel '${id}' not found`);
+    if (!hotel.deletedAt) {
+      throw new BadRequestException(`Hotel '${id}' is not deleted`);
+    }
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { deletedAt: null, status: 'DRAFT', isActive: false },
+    });
+  }
 }

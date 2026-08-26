@@ -21,4 +21,6 @@ The following security controls cannot be verified or executed solely by code pa
 
 ## 3. Key Custody & Cloud Security
 - [ ] **AWS KMS / Vault Key Custody**: Store `PII_ENCRYPTION_KEY` and `JWT_SECRET` in a dedicated Key Management System (AWS KMS / HashiCorp Vault).
-- [ ] **Stripe Webhook Secret Verification**: Ensure `STRIPE_WEBHOOK_SECRET` is set and signature verification fails closed in Production.
+- [ ] **GetPayIn webhook verification**: After receiving the official Direct
+  API contract, configure its documented signature mechanism and prove that
+  invalid signatures fail closed in production.

@@ -109,12 +109,23 @@ export class AdminFinanceService {
       bookingReferenceCode: item.booking.referenceCode,
       amount: item.amount.toFixed(2),
       currency: item.currency,
+      provider: item.provider ?? item.method,
+      providerEnvironment: item.providerEnvironment,
+      merchantReference: item.merchantReference,
+      providerPaymentId: item.providerPaymentId,
+      attemptNumber: item.attemptNumber,
       method: item.method,
       transactionId: item.transactionId,
       status: item.status,
       isRefund: item.isRefund,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      paidAt: item.paidAt,
+      failedAt: item.failedAt,
+      cancelledAt: item.cancelledAt,
+      refundedAt: item.refundedAt,
+      failureCode: item.failureCode,
+      failureMessage: item.failureMessage,
       bookingStatus: item.booking.status,
       bookingTotalAmountUsd: item.booking.totalAmountUsd.toFixed(2),
       bookingPaidAmountUsd: item.booking.paidAmountUsd.toFixed(2),
@@ -152,12 +163,23 @@ export class AdminFinanceService {
       bookingId: payment.bookingId,
       amount: payment.amount.toFixed(2),
       currency: payment.currency,
+      provider: payment.provider ?? payment.method,
+      providerEnvironment: payment.providerEnvironment,
+      merchantReference: payment.merchantReference,
+      providerPaymentId: payment.providerPaymentId,
+      attemptNumber: payment.attemptNumber,
       method: payment.method,
       transactionId: payment.transactionId,
       status: payment.status,
       isRefund: payment.isRefund,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
+      paidAt: payment.paidAt,
+      failedAt: payment.failedAt,
+      cancelledAt: payment.cancelledAt,
+      refundedAt: payment.refundedAt,
+      failureCode: payment.failureCode,
+      failureMessage: payment.failureMessage,
       booking: {
         id: payment.booking.id,
         referenceCode: payment.booking.referenceCode,
@@ -186,6 +208,47 @@ export class AdminFinanceService {
         reason: r.reason,
         createdAt: r.createdAt,
       })),
+    };
+  }
+
+  async getReconciliationSummary() {
+    const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
+    const [statusGroups, stalePendingCount, pendingRefundCount, missingReferenceCount] =
+      await Promise.all([
+        this.prisma.payment.groupBy({
+          by: ['status'],
+          where: { isRefund: false },
+          _count: { _all: true },
+        }),
+        this.prisma.payment.count({
+          where: {
+            isRefund: false,
+            status: { in: ['PENDING', 'AUTHORIZED'] },
+            createdAt: { lt: staleBefore },
+          },
+        }),
+        this.prisma.refundRecord.count({ where: { status: 'PENDING' } }),
+        this.prisma.payment.count({
+          where: {
+            isRefund: false,
+            provider: 'GETPAYIN',
+            OR: [
+              { merchantReference: null },
+              { providerPaymentId: null },
+              { transactionId: null },
+            ],
+          },
+        }),
+      ]);
+
+    return {
+      statusCounts: Object.fromEntries(
+        statusGroups.map((group) => [group.status, group._count._all]),
+      ),
+      stalePendingCount,
+      pendingRefundCount,
+      missingReferenceCount,
+      generatedAt: new Date().toISOString(),
     };
   }
 

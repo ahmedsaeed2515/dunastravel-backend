@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
-import { GenericPaymentGatewayAdapter } from './adapters/generic-gateway.adapter';
 import { GetPayInGatewayAdapter } from './adapters/getpayin-gateway.adapter';
 import { DisabledPaymentGatewayAdapter } from './adapters/disabled-gateway.adapter';
 import { PaymentCronService } from './payment-cron.service';
@@ -14,20 +13,17 @@ import { ConfigService } from '@nestjs/config';
   controllers: [PaymentsController],
   providers: [
     PaymentsService,
-    GenericPaymentGatewayAdapter,
     GetPayInGatewayAdapter,
     DisabledPaymentGatewayAdapter,
     {
       provide: IPaymentGatewayPort,
       inject: [
         ConfigService,
-        GenericPaymentGatewayAdapter,
         GetPayInGatewayAdapter,
         DisabledPaymentGatewayAdapter,
       ],
       useFactory: (
         config: ConfigService,
-        generic: GenericPaymentGatewayAdapter,
         getPayIn: GetPayInGatewayAdapter,
         disabled: DisabledPaymentGatewayAdapter,
       ) => {
@@ -36,9 +32,6 @@ import { ConfigService } from '@nestjs/config';
           .trim()
           .toUpperCase();
         if (provider === 'GETPAYIN') return getPayIn;
-        if (provider === 'GENERIC' && config.get('nodeEnv') !== 'production') {
-          return generic;
-        }
         return disabled;
       },
     },
