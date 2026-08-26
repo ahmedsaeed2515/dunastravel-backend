@@ -848,6 +848,11 @@ export class BookingsService {
         tour: { select: { titleJsonb: true, slug: true } },
         invoice: { select: { invoiceNumber: true } },
         billingInfo: { select: { email: true } },
+        payments: {
+          select: { id: true, status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -896,6 +901,8 @@ export class BookingsService {
       children: booking.children,
       infants: booking.infants,
       totalAmountUsd: booking.totalAmountUsd.toString(),
+      paymentStatus: booking.payments[0]?.status ?? null,
+      paymentAttemptId: booking.payments[0]?.id ?? null,
       createdAt: booking.createdAt.toISOString(),
     };
   }
@@ -916,6 +923,12 @@ export class BookingsService {
         include: {
           tour: { select: { titleJsonb: true, slug: true } },
           invoice: { select: { invoiceNumber: true } },
+          payments: {
+            where: { isRefund: false },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { id: true, status: true },
+          },
         },
       }),
     ]);
@@ -935,6 +948,8 @@ export class BookingsService {
       children: b.children,
       infants: b.infants,
       totalAmountUsd: b.totalAmountUsd.toString(),
+      paymentStatus: b.payments[0]?.status ?? null,
+      paymentAttemptId: b.payments[0]?.id ?? null,
       createdAt: b.createdAt.toISOString(),
     }));
 

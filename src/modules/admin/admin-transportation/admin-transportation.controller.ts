@@ -1,6 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
+  Put,
+  Delete,
   Param,
   Patch,
   Body,
@@ -22,6 +25,8 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   AdminTransportationQueryDto,
   AssignTransportationDriverDto,
+  CreateTransportationServiceDto,
+  UpdateTransportationServiceDto,
   UpdateTransportationStatusDto,
 } from './dto/admin-transportation.dto';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
@@ -36,6 +41,40 @@ export class AdminTransportationController {
   constructor(
     private readonly transportationService: AdminTransportationService,
   ) {}
+
+  @Get('services')
+  @ApiOperation({ summary: 'List transportation services for administration' })
+  async findAllServices() {
+    return this.transportationService.findAllServices();
+  }
+
+  @Post('services')
+  @ApiOperation({ summary: 'Create a transportation service' })
+  async createService(
+    @Body() dto: CreateTransportationServiceDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.transportationService.createService(dto, actor);
+  }
+
+  @Put('services/:id')
+  @ApiOperation({ summary: 'Update a transportation service' })
+  async updateService(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTransportationServiceDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.transportationService.updateService(id, dto, actor);
+  }
+
+  @Delete('services/:id')
+  @ApiOperation({ summary: 'Deactivate a transportation service' })
+  async deactivateService(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.transportationService.deactivateService(id, actor);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List all transportation bookings' })

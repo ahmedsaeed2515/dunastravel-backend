@@ -115,7 +115,7 @@ describe('Environment Validation Schema', () => {
 
     const invalid = envValidationSchema.validate({
       NODE_ENV: 'development',
-      PAYMENT_PROVIDER: 'STRIPE_GUESS',
+      PAYMENT_PROVIDER: 'UNSUPPORTED_PROVIDER',
     });
     expect(invalid.error).toBeDefined();
   });

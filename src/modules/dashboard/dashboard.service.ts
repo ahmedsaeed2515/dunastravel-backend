@@ -107,11 +107,13 @@ export class DashboardService {
           paidAmountUsd: true,
         },
       }),
-      // Payments in current period (only CAPTURED or non-refunded paid)
+      // Gross collected payments. A refunded payment retains its financial
+      // history, so CAPTURED, REFUND_PENDING, and REFUNDED all contribute to
+      // gross; completed RefundRecord rows are subtracted separately for net.
       this.prisma.payment.aggregate({
         where: {
-          createdAt: { gte: from, lte: to },
-          status: 'CAPTURED',
+          paidAt: { gte: from, lte: to },
+          status: { in: ['CAPTURED', 'REFUND_PENDING', 'REFUNDED'] },
           isRefund: false,
           ...(query.tourSlug && {
             booking: { tour: { slug: query.tourSlug } },
@@ -122,8 +124,8 @@ export class DashboardService {
       // Payments in previous period
       this.prisma.payment.aggregate({
         where: {
-          createdAt: { gte: prevFrom, lte: prevTo },
-          status: 'CAPTURED',
+          paidAt: { gte: prevFrom, lte: prevTo },
+          status: { in: ['CAPTURED', 'REFUND_PENDING', 'REFUNDED'] },
           isRefund: false,
           ...(query.tourSlug && {
             booking: { tour: { slug: query.tourSlug } },
@@ -190,43 +192,10 @@ export class DashboardService {
     ]);
 
     // Financial Computations
-    const revenueStatuses = new Set([
-      'CONFIRMED',
-      'PAID',
-      'COMPLETED',
-      'PARTIALLY_PAID',
-    ]);
-    const grossRevenue = currentBookingGroups
-      .filter((group) => revenueStatuses.has(group.status))
-      .reduce(
-        (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
-        0,
-      );
-
-    const prevGrossRevenue = previousBookingGroups
-      .filter((group) => revenueStatuses.has(group.status))
-      .reduce(
-        (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
-        0,
-      );
-
-    const totalPaidInBookings = currentBookingGroups.reduce(
-      (sum, group) => sum + Number(group._sum.paidAmountUsd || 0),
-      0,
-    );
-    const capturedFromPayments =
-      Number(paymentsCurrent._sum.amount || 0) -
-      Number(refundsCurrent._sum.amount || 0);
-    const collectedPayments = Math.max(capturedFromPayments, totalPaidInBookings);
-
-    const prevTotalPaidInBookings = previousBookingGroups.reduce(
-      (sum, group) => sum + Number(group._sum.paidAmountUsd || 0),
-      0,
-    );
-    const prevCapturedFromPayments =
-      Number(paymentsPrev._sum.amount || 0) -
-      Number(refundsPrev._sum.amount || 0);
-    const prevCollectedPayments = Math.max(prevCapturedFromPayments, prevTotalPaidInBookings);
+    const grossRevenue = Number(paymentsCurrent._sum.amount || 0);
+    const prevGrossRevenue = Number(paymentsPrev._sum.amount || 0);
+    const collectedPayments = grossRevenue - Number(refundsCurrent._sum.amount || 0);
+    const prevCollectedPayments = prevGrossRevenue - Number(refundsPrev._sum.amount || 0);
 
     const outstandingStatuses = new Set([
       'CONFIRMED',

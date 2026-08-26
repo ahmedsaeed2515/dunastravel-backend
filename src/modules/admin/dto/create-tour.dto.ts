@@ -377,6 +377,42 @@ export class CreateTourDto {
   @IsObject()
   subtitleJsonb?: Record<string, any>;
 
+  @ApiPropertyOptional({ description: 'Multilingual tour highlights' })
+  @IsOptional()
+  @IsObject()
+  highlightsJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Multilingual departure information' })
+  @IsOptional()
+  @IsObject()
+  departureInfoJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Multilingual source program code' })
+  @IsOptional()
+  @IsObject()
+  sourceCodeJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Source market label' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  market?: string;
+
+  @ApiPropertyOptional({ description: 'Published source rating' })
+  @IsOptional()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(5)
+  @Type(() => Number)
+  sourceRating?: number;
+
+  @ApiPropertyOptional({ description: 'Published source review count' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sourceReviewCount?: number;
+
   @ApiPropertyOptional({ description: 'Description JSONB' })
   @IsOptional()
   @IsObject()

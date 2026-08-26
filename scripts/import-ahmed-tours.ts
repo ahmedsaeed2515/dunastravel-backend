@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { isComplimentaryTourCountry } from '../src/common/domain/tour-pricing-policy';
 import {
+  destinationSlugForCountry,
   loadAhmedCatalog,
   NormalizedTour,
   validateCatalog,
@@ -20,6 +20,21 @@ interface ImportReport {
   updated: string[];
   unchangedExistingBookings: number;
   availabilitySlotsCreated: number;
+  destinationRelationsSynced: number;
+  destinationLandingPagesCreated: string[];
+  tours: Array<{
+    sourceId: string;
+    slug: string;
+    action: 'created' | 'updated';
+    destination: string;
+    translationCount: number;
+    itineraryCount: number;
+    mediaCount: number;
+    priceUsd: number | null;
+    currency: string;
+    warnings: string[];
+    fieldMismatchCount: number;
+  }>;
   errors: Array<{ slug: string; message: string }>;
   generatedAt: string;
 }
@@ -36,61 +51,44 @@ function json(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
-interface ExistingTourContent {
-  basePriceUsd: Prisma.Decimal;
-  titleJsonb: unknown;
-  durationJsonb: unknown;
-  overviewJsonb: unknown;
-  minPaxJsonb: unknown;
-  includedServicesJsonb: unknown;
-  excludedServicesJsonb: unknown;
-}
-
-function mergeLocalized(
-  existing: unknown,
-  incoming: unknown,
-): Prisma.InputJsonValue {
-  const existingRecord =
-    existing && typeof existing === 'object' && !Array.isArray(existing)
-      ? (existing as Record<string, unknown>)
-      : {};
-  const incomingRecord =
-    incoming && typeof incoming === 'object' && !Array.isArray(incoming)
-      ? (incoming as Record<string, unknown>)
-      : {};
-  return json({ ...existingRecord, ...incomingRecord });
-}
-
-function tourData(tour: NormalizedTour, existing?: ExistingTourContent) {
-  const effectivePrice = isComplimentaryTourCountry(tour.country)
-    ? new Prisma.Decimal(0)
-    : tour.basePriceUsd;
-  const knownPrice = effectivePrice !== null;
+/** The Ahmed catalog is authoritative during this import: never merge stale DB content. */
+function tourData(tour: NormalizedTour) {
+  const effectivePrice = new Prisma.Decimal(tour.basePriceUsd ?? 0);
   return {
-    titleJsonb: mergeLocalized(existing?.titleJsonb, tour.titleJsonb),
-    durationJsonb: mergeLocalized(existing?.durationJsonb, tour.durationJsonb),
-    overviewJsonb: mergeLocalized(existing?.overviewJsonb, tour.overviewJsonb),
-    minPaxJsonb: mergeLocalized(existing?.minPaxJsonb, tour.minPaxJsonb),
-    includedServicesJsonb: mergeLocalized(
-      existing?.includedServicesJsonb,
-      tour.includedServicesJsonb,
-    ),
-    excludedServicesJsonb: mergeLocalized(
-      existing?.excludedServicesJsonb,
-      tour.excludedServicesJsonb,
-    ),
+    sourceCatalogId: tour.sourceId,
+    sourceCodeJsonb: json(tour.sourceCodeJsonb),
+    titleJsonb: json(tour.titleJsonb),
+    subtitleJsonb: json(tour.subtitleJsonb),
+    highlightsJsonb: json(tour.highlightsJsonb),
+    departureInfoJsonb: json(tour.departureInfoJsonb),
+    market: tour.market,
+    sourceRating:
+      tour.sourceRating === null ? null : new Prisma.Decimal(tour.sourceRating),
+    sourceReviewCount: tour.sourceReviewCount,
+    durationJsonb: json(tour.durationJsonb),
+    overviewJsonb: json(tour.overviewJsonb),
+    minPaxJsonb: json(tour.minPaxJsonb),
+    includedServicesJsonb: json(tour.includedServicesJsonb),
+    excludedServicesJsonb: json(tour.excludedServicesJsonb),
     category: tour.category,
     country: tour.country,
     currency: tour.currency,
     languages: tour.languages,
     tags: tour.tags,
+    hotelInfoJsonb: tour.hotelInfoJsonb ? json(tour.hotelInfoJsonb) : Prisma.JsonNull,
+    seasonPricingJsonb: tour.seasonPricingJsonb
+      ? json(tour.seasonPricingJsonb)
+      : Prisma.JsonNull,
+    transportationJsonb: tour.transportationJsonb
+      ? json(tour.transportationJsonb)
+      : Prisma.JsonNull,
+    termsJsonb: tour.termsJsonb ? json(tour.termsJsonb) : Prisma.JsonNull,
+    basePriceUsd: effectivePrice,
+    status: tour.status,
+    isActive: tour.isActive,
     // Re-importing the canonical catalog must restore soft-deleted records;
     // publication status still controls public visibility.
     deletedAt: null,
-    ...(knownPrice ? { basePriceUsd: effectivePrice! } : {}),
-    ...(!knownPrice && existing?.basePriceUsd.gt(0)
-      ? {}
-      : { status: tour.status, isActive: tour.isActive }),
   };
 }
 
@@ -99,24 +97,120 @@ async function replaceChildren(
   tourId: string,
   tour: NormalizedTour,
 ): Promise<void> {
+  await prisma.tourItinerary.deleteMany({ where: { tourId } });
   if (tour.itineraries.length > 0) {
-    await prisma.tourItinerary.deleteMany({ where: { tourId } });
     await prisma.tourItinerary.createMany({
       data: tour.itineraries.map((day) => ({
         tourId,
         dayLabel: day.dayLabel.slice(0, 50),
         descriptionJsonb: json(day.descriptionJsonb),
         mealsJsonb: day.mealsJsonb ? json(day.mealsJsonb) : Prisma.JsonNull,
+        activitiesJsonb: day.activitiesJsonb
+          ? json(day.activitiesJsonb)
+          : Prisma.JsonNull,
+        hotelsJsonb: day.hotelsJsonb ? json(day.hotelsJsonb) : Prisma.JsonNull,
+        transportationJsonb: day.transportationJsonb
+          ? json(day.transportationJsonb)
+          : Prisma.JsonNull,
+        notesJsonb: day.notesJsonb ? json(day.notesJsonb) : Prisma.JsonNull,
         sortOrder: day.sortOrder,
       })),
     });
   }
+  await prisma.tourImage.deleteMany({ where: { tourId } });
   if (tour.images.length > 0) {
-    await prisma.tourImage.deleteMany({ where: { tourId } });
     await prisma.tourImage.createMany({
       data: tour.images.map((image) => ({ tourId, ...image })),
     });
   }
+}
+
+function destinationSlugFor(tour: NormalizedTour): string {
+  const destinationSlug = destinationSlugForCountry(tour.country);
+  if (!destinationSlug) {
+    throw new Error(`No canonical destination mapping for country '${tour.country}'`);
+  }
+  return destinationSlug;
+}
+
+const DESTINATION_TITLES: Record<string, Record<string, string>> = {
+  egypt: { en: 'Egypt', ar: 'مصر', es: 'Egipto', pt: 'Egito', it: 'Egitto' },
+  turkey: { en: 'Turkey', ar: 'تركيا', es: 'Turquía', pt: 'Turquia', it: 'Turchia' },
+  jordan: { en: 'Jordan', ar: 'الأردن', es: 'Jordania', pt: 'Jordânia', it: 'Giordania' },
+  morocco: { en: 'Morocco', ar: 'المغرب', es: 'Marruecos', pt: 'Marrocos', it: 'Marocco' },
+  greece: { en: 'Greece', ar: 'اليونان', es: 'Grecia', pt: 'Grécia', it: 'Grecia' },
+  tunisia: { en: 'Tunisia', ar: 'تونس', es: 'Túnez', pt: 'Tunísia', it: 'Tunisia' },
+  dubai: { en: 'Dubai', ar: 'دبي', es: 'Dubái', pt: 'Dubai', it: 'Dubai' },
+  'multi-country': {
+    en: 'Multi-Country Tours',
+    ar: 'رحلات متعددة الدول',
+    es: 'Circuitos Multipaís',
+    pt: 'Circuitos Multipaíses',
+    it: 'Tour Multipaese',
+  },
+};
+
+async function ensureDestinationLandingPages(
+  prisma: PrismaService,
+  catalog: NormalizedTour[],
+  execute: boolean,
+): Promise<string[]> {
+  const requiredSlugs = [...new Set(catalog.map(destinationSlugFor))];
+  const existing = await prisma.tourLandingPage.findMany({
+    where: { slug: { in: requiredSlugs }, type: 'DESTINATION', deletedAt: null },
+    select: { slug: true },
+  });
+  const existingSlugs = new Set(existing.map((page) => page.slug));
+  const missing = requiredSlugs.filter((slug) => !existingSlugs.has(slug));
+  for (const slug of missing) {
+    const titleJsonb = DESTINATION_TITLES[slug];
+    if (!titleJsonb) throw new Error(`No source-backed title is available for destination '${slug}'`);
+    if (execute) {
+      await prisma.tourLandingPage.create({
+        data: {
+          slug,
+          type: 'DESTINATION',
+          titleJsonb: json(titleJsonb),
+          status: 'PUBLISHED',
+          isActive: true,
+        },
+      });
+    }
+  }
+  return missing;
+}
+
+/**
+ * TourLandingPage is the established Destination aggregate. Replace its
+ * destination links on import, while keeping separately-managed theme links.
+ */
+async function syncDestinationRelation(
+  prisma: Prisma.TransactionClient,
+  tourId: string,
+  tour: NormalizedTour,
+): Promise<void> {
+  const destinationSlug = destinationSlugFor(tour);
+  const destination = await prisma.tourLandingPage.findFirst({
+    where: { slug: destinationSlug, type: 'DESTINATION', deletedAt: null },
+    select: { id: true },
+  });
+  if (!destination) {
+    throw new Error(
+      `Canonical destination landing page '${destinationSlug}' is missing. Seed destinations before importing tours.`,
+    );
+  }
+  await prisma.tourLandingPageTour.deleteMany({
+    where: { tourId, landingPage: { type: 'DESTINATION' } },
+  });
+  await prisma.tourLandingPageTour.create({
+    data: {
+      landingPageId: destination.id,
+      tourId,
+      sortOrder: 0,
+      isFeatured: false,
+      isVisible: true,
+    },
+  });
 }
 
 async function createAvailability(
@@ -216,15 +310,38 @@ async function main(): Promise<void> {
       0,
     ),
     availabilitySlotsCreated: 0,
+    destinationRelationsSynced: 0,
+    destinationLandingPagesCreated: [],
+    tours: [],
     errors: [],
     generatedAt: new Date().toISOString(),
   };
 
+  report.destinationLandingPagesCreated = await ensureDestinationLandingPages(
+    prisma,
+    catalog,
+    execute,
+  );
+
   const activeTourIds: string[] = [];
   for (const tour of catalog) {
     const current = existingBySlug.get(tour.slug);
+    const reportTour = {
+      sourceId: tour.sourceId,
+      slug: tour.slug,
+      action: current ? ('updated' as const) : ('created' as const),
+      destination: destinationSlugFor(tour),
+      translationCount: tour.languages.length,
+      itineraryCount: tour.itineraries.length,
+      mediaCount: tour.images.length,
+      priceUsd: tour.basePriceUsd,
+      currency: tour.currency,
+      warnings: tour.basePriceUsd === null ? ['No source base price; imported as DRAFT.'] : [],
+      fieldMismatchCount: 0,
+    };
     if (!execute) {
       (current ? report.updated : report.created).push(tour.slug);
+      report.tours.push(reportTour);
       continue;
     }
     try {
@@ -232,22 +349,29 @@ async function main(): Promise<void> {
         if (current) {
           const updated = await tx.tour.update({
             where: { slug: tour.slug },
-            data: tourData(tour, current),
+            data: tourData(tour),
           });
           await replaceChildren(tx, updated.id, tour);
+          await syncDestinationRelation(tx, updated.id, tour);
           return updated;
         }
         const created = await tx.tour.create({
           data: {
             slug: tour.slug,
-            basePriceUsd: tour.basePriceUsd ?? 0,
             ...tourData(tour),
           },
         });
         await replaceChildren(tx, created.id, tour);
+        await syncDestinationRelation(tx, created.id, tour);
         return created;
+      }, {
+        maxWait: 15_000,
+        timeout: 45_000,
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       });
       (current ? report.updated : report.created).push(tour.slug);
+      report.tours.push(reportTour);
+      report.destinationRelationsSynced++;
       if (saved.status === 'PUBLISHED' && saved.isActive) {
         activeTourIds.push(saved.id);
       }

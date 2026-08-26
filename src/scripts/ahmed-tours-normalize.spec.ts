@@ -51,8 +51,15 @@ describe('Ahmed tour normalization', () => {
   it('rejects duplicate normalized slugs', () => {
     const tour = {
       sourceId: 'source-1',
+      sourceCodeJsonb: {},
       slug: 'valid-slug',
       titleJsonb: { en: 'Title' },
+      subtitleJsonb: {},
+      highlightsJsonb: {},
+      departureInfoJsonb: {},
+      market: null,
+      sourceRating: null,
+      sourceReviewCount: null,
       durationJsonb: {},
       overviewJsonb: {},
       minPaxJsonb: {},
@@ -66,6 +73,10 @@ describe('Ahmed tour normalization', () => {
       isActive: false,
       languages: ['en' as const],
       tags: [],
+      hotelInfoJsonb: null,
+      seasonPricingJsonb: null,
+      transportationJsonb: null,
+      termsJsonb: null,
       itineraries: [],
       images: [],
     };

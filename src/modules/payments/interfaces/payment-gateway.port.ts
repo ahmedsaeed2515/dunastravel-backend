@@ -64,7 +64,7 @@ export interface IPaymentGatewayPort {
   verifyAndParseWebhook(req: Request, rawBody: Buffer): Promise<WebhookPayload>;
 
   /**
-   * Identifies the name of the provider (e.g. 'GENERIC_GATEWAY').
+   * Identifies the provider. The only supported online provider is GETPAYIN.
    */
   getProviderName(): string;
 

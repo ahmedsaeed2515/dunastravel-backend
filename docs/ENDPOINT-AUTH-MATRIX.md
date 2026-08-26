@@ -12,7 +12,7 @@ Last Updated: 2026-07-26
 | `POST` | `/api/bookings` | `BookingsController.create` | Yes | Optional Bearer / Guest Token | Public / User | N/A (Creates Booking) | Enabled | Strict + Idempotency | Financial / PII |
 | `GET` | `/api/bookings/:ref` | `BookingsController.findByRef` | Yes | Bearer / Guest Token Header | User / Guest | `userId === owner` OR valid `guestToken` | Skip | Normal | PII / Financial |
 | `POST` | `/api/payments/checkout` | `PaymentsController.checkout` | Yes | Bearer / Guest Token | User / Guest | `userId === owner` OR valid `guestToken` | Enabled | Strict | Financial |
-| `POST` | `/api/payments/webhook/stripe` | `PaymentsController.webhook` | Yes | Raw Signature Verification | Webhook Provider | Provider Event Idempotency | `@SkipCsrf()` | Webhook Limit | Financial / Webhook |
+| `POST` | `/api/payments/webhook/getpayin` | `PaymentsController.webhook` | Yes | Raw signature verification (contract required) | GetPayIn | Provider event idempotency | `@SkipCsrf()` | Webhook Limit | Financial / Webhook |
 | `GET` | `/api/admin/bookings` | `AdminController.listBookings` | No | Bearer / Cookie | `ADMIN`, `AGENT` | Agent scoped to assigned bookings only | Enabled | Admin Rate Limit | Internal PII |
 | `POST` | `/api/admin/agents` | `AgentsController.create` | No | Bearer | `SUPER_ADMIN` | `SUPER_ADMIN` Only | Enabled | Admin Limit | Privileged Auth |
 | `PATCH` | `/api/admin/agents/:id` | `AgentsController.update` | No | Bearer | `SUPER_ADMIN` | `SUPER_ADMIN` Only | Enabled | Admin Limit | Privileged Auth |

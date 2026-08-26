@@ -6,6 +6,22 @@ export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export type LocalizedText = Partial<Record<SupportedLocale, string>>;
 export type LocalizedList = Partial<Record<SupportedLocale, string[]>>;
 
+/** Existing destination landing-page identities used by the runtime catalog. */
+export const DESTINATION_SLUG_BY_COUNTRY: Record<string, string> = {
+  egypt: 'egypt',
+  turkey: 'turkey',
+  jordan: 'jordan',
+  morocco: 'morocco',
+  greece: 'greece',
+  tunisia: 'tunisia',
+  'united arab emirates': 'dubai',
+  'multi-country': 'multi-country',
+};
+
+export function destinationSlugForCountry(country: string): string | undefined {
+  return DESTINATION_SLUG_BY_COUNTRY[country.trim().toLowerCase()];
+}
+
 interface AhmedTour {
   id: string;
   slug: string;
@@ -27,6 +43,7 @@ interface SourceTour {
   language?: string;
   market?: string;
   type?: string;
+  subtitle?: string | LocalizedText;
   duration?: string | LocalizedText;
   destination?: string;
   title?: string | LocalizedText;
@@ -34,6 +51,10 @@ interface SourceTour {
   overview?: string | LocalizedText;
   description?: string | LocalizedText;
   price?: number;
+  rating?: number;
+  reviewCount?: number;
+  departures?: string | LocalizedText;
+  code?: string | LocalizedText;
   images?: string[];
   highlights?: string[] | LocalizedList | string | LocalizedText;
   included?: string[] | LocalizedList;
@@ -42,6 +63,17 @@ interface SourceTour {
   excludes?: string[] | LocalizedList;
   minPax?: string | LocalizedText;
   pricing?: unknown;
+  pricingTiers?: unknown;
+  optionalExcursionsPricing?: unknown;
+  extraNightPrices?: unknown;
+  exhibitionSurcharges?: unknown;
+  accommodation?: unknown;
+  hotels?: unknown;
+  hotelCategory?: unknown;
+  selectedHotels?: unknown;
+  excursions?: unknown;
+  route?: unknown;
+  transportOptions?: string | LocalizedText;
   days?: SourceItineraryDay[];
   itinerary?: SourceItineraryDay[];
 }
@@ -51,6 +83,10 @@ interface SourceItineraryDay {
   title?: string | LocalizedText;
   description?: string | LocalizedText;
   meals?: string | LocalizedText;
+  activities?: string[] | LocalizedList | string | LocalizedText;
+  hotels?: string[] | LocalizedList | string | LocalizedText;
+  transportation?: string[] | LocalizedList | string | LocalizedText;
+  notes?: string | LocalizedText;
 }
 
 interface CombinedSource {
@@ -65,6 +101,10 @@ export interface NormalizedItineraryDay {
   dayLabel: string;
   descriptionJsonb: LocalizedText;
   mealsJsonb?: LocalizedText;
+  activitiesJsonb?: LocalizedList;
+  hotelsJsonb?: LocalizedList;
+  transportationJsonb?: LocalizedList;
+  notesJsonb?: LocalizedText;
   sortOrder: number;
 }
 
@@ -77,8 +117,15 @@ export interface NormalizedTourImage {
 
 export interface NormalizedTour {
   sourceId: string;
+  sourceCodeJsonb: LocalizedText;
   slug: string;
   titleJsonb: LocalizedText;
+  subtitleJsonb: LocalizedText;
+  highlightsJsonb: LocalizedList;
+  departureInfoJsonb: LocalizedText;
+  market: string | null;
+  sourceRating: number | null;
+  sourceReviewCount: number | null;
   durationJsonb: LocalizedText;
   overviewJsonb: LocalizedText;
   minPaxJsonb: LocalizedText;
@@ -92,6 +139,10 @@ export interface NormalizedTour {
   isActive: boolean;
   languages: SupportedLocale[];
   tags: string[];
+  hotelInfoJsonb: Record<string, unknown> | null;
+  seasonPricingJsonb: Record<string, unknown> | null;
+  transportationJsonb: Record<string, unknown> | null;
+  termsJsonb: Record<string, unknown> | null;
   itineraries: NormalizedItineraryDay[];
   images: NormalizedTourImage[];
 }
@@ -310,8 +361,79 @@ function sourceItinerary(days: SourceItineraryDay[] | undefined): NormalizedItin
       asLocalizedText(day.description),
     ),
     mealsJsonb: asLocalizedText(day.meals),
+    activitiesJsonb: asLocalizedList(day.activities),
+    hotelsJsonb: asLocalizedList(day.hotels),
+    transportationJsonb: asLocalizedList(day.transportation),
+    notesJsonb: asLocalizedText(day.notes),
     sortOrder: index,
   }));
+}
+
+interface TunisiaTranslation {
+  title?: string;
+  subtitle?: string;
+  overview?: string;
+  highlights?: string[];
+  itinerary?: Array<{ day?: number; title?: string; description?: string; meals?: string }>;
+  hotels?: { list?: string[] };
+  inclusions?: { items?: string[] };
+  exclusions?: { items?: string[] };
+  excursions?: { items?: string[] };
+}
+
+interface TunisiaSource {
+  tourId?: string;
+  baseRoute?: string;
+  image?: string;
+  pricing?: unknown;
+  optionalExcursionsPricing?: unknown;
+  translations?: Partial<Record<SupportedLocale, TunisiaTranslation>>;
+}
+
+function structuredData(
+  values: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const populated = Object.entries(values).filter(([, value]) => {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    return true;
+  });
+  return populated.length > 0 ? Object.fromEntries(populated) : null;
+}
+
+function sourcePresentation(tour: SourceTour, sourceLocale: SupportedLocale) {
+  return {
+    sourceCodeJsonb: asLocalizedText(tour.code, sourceLocale),
+    subtitleJsonb: asLocalizedText(tour.subtitle, sourceLocale),
+    highlightsJsonb: asLocalizedList(tour.highlights, sourceLocale),
+    departureInfoJsonb: asLocalizedText(tour.departures, sourceLocale),
+    market: typeof tour.market === 'string' && tour.market.trim() ? tour.market.trim() : null,
+    sourceRating:
+      typeof tour.rating === 'number' && Number.isFinite(tour.rating) ? tour.rating : null,
+    sourceReviewCount:
+      typeof tour.reviewCount === 'number' && Number.isInteger(tour.reviewCount)
+        ? tour.reviewCount
+        : null,
+    hotelInfoJsonb: structuredData({
+      accommodation: tour.accommodation,
+      hotels: tour.hotels,
+      hotelCategory: tour.hotelCategory,
+      selectedHotels: tour.selectedHotels,
+    }),
+    seasonPricingJsonb: structuredData({
+      pricing: tour.pricing,
+      pricingTiers: tour.pricingTiers,
+      optionalExcursionsPricing: tour.optionalExcursionsPricing,
+      extraNightPrices: tour.extraNightPrices,
+      exhibitionSurcharges: tour.exhibitionSurcharges,
+    }),
+    transportationJsonb: structuredData({
+      route: tour.route,
+      transportOptions: asLocalizedText(tour.transportOptions, sourceLocale),
+    }),
+    termsJsonb: structuredData({ excursions: tour.excursions }),
+  };
 }
 
 function localesFrom(...values: Array<LocalizedText | LocalizedList>): SupportedLocale[] {
@@ -406,8 +528,14 @@ function normalizeCuratedTour(
   const groupedItinerary = groupItinerary(group);
   const basePriceUsd = deriveBasePrice(tour);
   const country = destination === 'multiCountry' ? 'Multi-Country' : destination;
+  const presentation = sourcePresentation(tour, sourceLocale);
+  presentation.highlightsJsonb = mergeList(
+    presentation.highlightsJsonb,
+    groupList(group, (record) => record.highlights),
+  );
   return {
     sourceId: String(tour.id ?? tour.slug),
+    ...presentation,
     slug: String(tour.slug),
     titleJsonb,
     durationJsonb,
@@ -444,6 +572,7 @@ function normalizeRawProgram(program: SourceTour): NormalizedTour {
   const country = inferRawCountry(program);
   return {
     sourceId,
+    ...sourcePresentation(program, 'en'),
     slug,
     titleJsonb,
     durationJsonb,
@@ -475,6 +604,13 @@ function normalizeAhmedOnly(
   const excludedServicesJsonb = groupList(group, (record) => record.excluded);
   return {
     sourceId: `ahmed-group-${config.index + 1}`,
+    sourceCodeJsonb: {},
+    subtitleJsonb: {},
+    highlightsJsonb: groupList(group, (record) => record.highlights),
+    departureInfoJsonb: {},
+    market: null,
+    sourceRating: null,
+    sourceReviewCount: null,
     slug: config.slug,
     titleJsonb,
     durationJsonb,
@@ -490,6 +626,10 @@ function normalizeAhmedOnly(
     isActive: false,
     languages: localesFrom(titleJsonb, overviewJsonb),
     tags: ['ahmed-source', 'ahmed-only', config.category.toLowerCase()],
+    hotelInfoJsonb: null,
+    seasonPricingJsonb: null,
+    transportationJsonb: null,
+    termsJsonb: null,
     itineraries: groupItinerary(group),
     images: [],
   };
@@ -509,7 +649,57 @@ export function validateCatalog(catalog: NormalizedTour[]): void {
     if (tour.basePriceUsd !== null && tour.basePriceUsd <= 0) {
       throw new Error(`Invalid price: ${tour.slug}`);
     }
+    if (!destinationSlugForCountry(tour.country)) {
+      throw new Error(`Missing destination mapping: ${tour.slug} (${tour.country})`);
+    }
   }
+}
+
+/** Resolve the structured Tunisia source rather than persisting its UI lookup keys. */
+function enrichTunisiaTour(tour: SourceTour, source: TunisiaSource | undefined): SourceTour {
+  if (!source || source.tourId !== tour.id || !source.translations) return tour;
+  const translations = Object.entries(source.translations).filter(
+    ([locale]) => SUPPORTED_LOCALES.includes(locale as SupportedLocale),
+  ) as Array<[SupportedLocale, TunisiaTranslation]>;
+  const text = (selector: (entry: TunisiaTranslation) => string | undefined): LocalizedText =>
+    Object.fromEntries(translations.flatMap(([locale, entry]) => {
+      const value = selector(entry)?.trim();
+      return value ? [[locale, value]] : [];
+    })) as LocalizedText;
+  const list = (selector: (entry: TunisiaTranslation) => string[] | undefined): LocalizedList =>
+    Object.fromEntries(translations.flatMap(([locale, entry]) => {
+      const value = cleanList(selector(entry) ?? []);
+      return value.length > 0 ? [[locale, value]] : [];
+    })) as LocalizedList;
+  const maxDays = Math.max(
+    0,
+    ...translations.map(([, entry]) => entry.itinerary?.length ?? 0),
+  );
+  const itinerary = Array.from({ length: maxDays }, (_, index) => ({
+    day: index + 1,
+    title: text((entry) => entry.itinerary?.[index]?.title),
+    description: text((entry) => entry.itinerary?.[index]?.description),
+    meals: text((entry) => entry.itinerary?.[index]?.meals),
+  }));
+  const sourcePricing = source.pricing as { categories?: unknown } | undefined;
+  return {
+    ...tour,
+    title: text((entry) => entry.title),
+    subtitle: text((entry) => entry.subtitle),
+    overview: text((entry) => entry.overview),
+    highlights: list((entry) => entry.highlights),
+    included: list((entry) => entry.inclusions?.items),
+    excluded: list((entry) => entry.exclusions?.items),
+    hotels: list((entry) => entry.hotels?.list),
+    excursions: list((entry) => entry.excursions?.items),
+    itinerary,
+    images: source.image ? [source.image] : tour.images,
+    route: source.baseRoute ?? tour.route,
+    pricing: source.pricing ?? tour.pricing,
+    pricingTiers: sourcePricing?.categories ?? tour.pricingTiers,
+    optionalExcursionsPricing:
+      source.optionalExcursionsPricing ?? tour.optionalExcursionsPricing,
+  };
 }
 
 export function loadAhmedCatalog(sourceDirectory: string): NormalizedTour[] {
@@ -526,7 +716,11 @@ export function loadAhmedCatalog(sourceDirectory: string): NormalizedTour[] {
     (filePath) => path.basename(filePath) === 'programs.json',
   );
   const ahmedPath = path.join(sourceDirectory, 'ahmedData.tsx');
+  const tunisiaPath = files.find(
+    (filePath) => path.basename(filePath) === 'tunisia-tour-data.json',
+  );
   const combined = readJson<CombinedSource>(combinedPath);
+  const tunisia = tunisiaPath ? readJson<TunisiaSource>(tunisiaPath) : undefined;
   const rawPrograms = readJson<{ programs: SourceTour[] }>(programsPath).programs;
   const groups = groupAhmedTranslations(parseAhmedData(ahmedPath));
   if (groups.length !== 19) {
@@ -537,7 +731,7 @@ export function loadAhmedCatalog(sourceDirectory: string): NormalizedTour[] {
     ([destination, bucket]) =>
       (bucket.tours ?? []).map((tour) =>
         normalizeCuratedTour(
-          tour,
+          enrichTunisiaTour(tour, tunisia),
           destination,
           groups[CURATED_AHMED_GROUP_BY_SLUG[String(tour.slug)]],
         ),

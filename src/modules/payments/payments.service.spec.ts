@@ -44,6 +44,7 @@ describe('PaymentsService', () => {
               findUnique: jest.fn(),
               findFirst: jest.fn(),
               findMany: jest.fn(),
+              count: jest.fn().mockResolvedValue(0),
               create: jest.fn(),
               update: jest.fn(),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -87,12 +88,12 @@ describe('PaymentsService', () => {
             verifyAndParseWebhook: jest.fn(),
             refund: jest.fn(),
             expireSession: jest.fn(),
-            getProviderName: jest.fn().mockReturnValue('GENERIC_GATEWAY'),
+            getProviderName: jest.fn().mockReturnValue('GETPAYIN'),
             getReadiness: jest.fn().mockReturnValue({
-              provider: 'GENERIC_GATEWAY',
-              enabled: true,
-              configured: true,
-              mode: 'local',
+              provider: 'GETPAYIN',
+              enabled: false,
+              configured: false,
+              mode: 'sandbox',
               supportedCurrencies: ['USD'],
               missingConfiguration: [],
             }),
@@ -161,13 +162,13 @@ describe('PaymentsService', () => {
       jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
         transactionId: 'session-123',
-        url: 'https://checkout.stripe.com/123',
+        url: 'https://hosted.getpayin.example/123',
       });
       jest.spyOn(prisma.payment, 'create').mockResolvedValue({} as never);
 
       const result = await service.initiatePayment('bkg-123', 'usr-123');
 
-      expect(result.url).toBe('https://checkout.stripe.com/123');
+      expect(result.url).toBe('https://hosted.getpayin.example/123');
       expect(gatewayMock.createSession).toHaveBeenCalledWith(
         expect.objectContaining({
           bookingId: 'bkg-123',
@@ -175,9 +176,9 @@ describe('PaymentsService', () => {
           amount: 100,
           currency: 'USD',
           successUrl: expect.stringMatching(
-            /^https:\/\/www\.dunastravel\.com\/booking\/success\?payment_id=[0-9a-f-]+&booking_id=bkg-123$/,
+            /^https:\/\/www\.dunastravel\.com\/payment\/return\?payment_id=[0-9a-f-]+$/,
           ),
-          cancelUrl: expect.stringContaining('/booking/cancel?payment_id='),
+          cancelUrl: expect.stringContaining('/payment/cancel?payment_id='),
           webhookUrl: 'https://api.example.test/api/payments/webhook/getpayin',
         }),
       );
@@ -219,7 +220,7 @@ describe('PaymentsService', () => {
       jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
         transactionId: 'session-guest',
-        url: 'https://checkout.stripe.com/guest',
+        url: 'https://hosted.getpayin.example/guest',
       });
       jest.spyOn(prisma.payment, 'create').mockResolvedValue({} as never);
 
@@ -229,7 +230,7 @@ describe('PaymentsService', () => {
         rawToken,
       );
 
-      expect(result.url).toBe('https://checkout.stripe.com/guest');
+      expect(result.url).toBe('https://hosted.getpayin.example/guest');
     });
 
     it('should throw NotFoundException (404) for foreign user initiation without leaking existence', async () => {
@@ -247,7 +248,7 @@ describe('PaymentsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should expire orphan Stripe session when P2002 race condition occurs', async () => {
+    it('expires an orphan hosted-checkout session when a concurrent request wins', async () => {
       const mockRaceBooking = {
         id: 'bkg-race',
         status: 'PENDING',
@@ -275,13 +276,13 @@ describe('PaymentsService', () => {
         .spyOn(prisma.payment, 'findFirst')
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({
-          sessionUrl: 'https://checkout.stripe.com/winning',
+          sessionUrl: 'https://hosted.getpayin.example/winning',
           transactionId: 'session-winning',
         } as never);
 
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
         transactionId: 'session-losing',
-        url: 'https://checkout.stripe.com/losing',
+        url: 'https://hosted.getpayin.example/losing',
       });
 
       const p2002Err = new Error('Unique constraint failed') as {
@@ -295,7 +296,7 @@ describe('PaymentsService', () => {
       expect((gatewayMock.expireSession as jest.Mock).mock.calls).toEqual([
         ['session-losing'],
       ]);
-      expect(result.url).toBe('https://checkout.stripe.com/winning');
+      expect(result.url).toBe('https://hosted.getpayin.example/winning');
     });
   });
 
@@ -304,7 +305,7 @@ describe('PaymentsService', () => {
       const reqMock = { headers: {} } as unknown as import('express').Request;
 
       await expect(
-        service.handleWebhook('GETPAYIN', reqMock, Buffer.from('{}')),
+        service.handleWebhook('UNSUPPORTED_PROVIDER', reqMock, Buffer.from('{}')),
       ).rejects.toThrow(NotFoundException);
       expect(gatewayMock.verifyAndParseWebhook).not.toHaveBeenCalled();
     });
@@ -327,7 +328,7 @@ describe('PaymentsService', () => {
         bookingId: 'bkg-123',
         amount: new Prisma.Decimal(100),
         currency: 'USD',
-        method: 'GENERIC_GATEWAY',
+        method: 'GETPAYIN',
         transactionId: 'provider-payment-1',
         status: 'PENDING',
         isRefund: false,
@@ -336,7 +337,7 @@ describe('PaymentsService', () => {
 
       await expect(
         service.handleWebhook(
-          'GENERIC_GATEWAY',
+          'GETPAYIN',
           { headers: {} } as unknown as import('express').Request,
           Buffer.from('{}'),
         ),
@@ -344,7 +345,10 @@ describe('PaymentsService', () => {
 
       expect(prisma.payment.update).toHaveBeenCalledWith({
         where: { id: 'payment-1' },
-        data: { status: 'FAILED' },
+        data: expect.objectContaining({
+          status: 'FAILED',
+          failedAt: expect.any(Date),
+        }),
       });
       expect(prisma.booking.update).not.toHaveBeenCalled();
     });
@@ -372,7 +376,7 @@ describe('PaymentsService', () => {
         id: 'pmt-123',
         amount: new Prisma.Decimal(100),
         currency: 'USD',
-        method: 'STRIPE',
+        method: 'GETPAYIN',
         transactionId: 'session-123',
         status: 'PENDING',
         createdAt: new Date(),
@@ -381,7 +385,7 @@ describe('PaymentsService', () => {
 
       const reqMock = { headers: {} } as unknown as import('express').Request;
       await expect(
-        service.handleWebhook('GENERIC_GATEWAY', reqMock, Buffer.from('')),
+        service.handleWebhook('GETPAYIN', reqMock, Buffer.from('')),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -402,7 +406,7 @@ describe('PaymentsService', () => {
 
       const reqMock = { headers: {} } as unknown as import('express').Request;
       const result = await service.handleWebhook(
-        'GENERIC_GATEWAY',
+        'GETPAYIN',
         reqMock,
         Buffer.from(''),
       );
@@ -439,13 +443,13 @@ describe('PaymentsService', () => {
         id: 'payment-123',
         amount: new Prisma.Decimal(100),
         currency: 'USD',
-        method: 'STRIPE',
+        method: 'GETPAYIN',
         transactionId: 'tx-123',
         status: 'CAPTURED',
         bookingId: 'bkg-123',
         booking: {
           id: 'bkg-123',
-          status: 'PAID',
+          status: 'CONFIRMED',
           totalAmountUsd: new Prisma.Decimal(100),
           paidAmountUsd: new Prisma.Decimal(100),
           adults: 1,
@@ -467,7 +471,7 @@ describe('PaymentsService', () => {
       } as never);
       jest
         .spyOn(gatewayMock, 'refund')
-        .mockResolvedValue({ refundId: 'rf-stripe-123' });
+        .mockResolvedValue({ refundId: 'rf-getpayin-123' });
 
       const result = await service.refundPayment(
         'payment-123',

@@ -40,6 +40,12 @@ export class AdminFinanceController {
     return this.adminFinanceService.getPaymentDetail(id);
   }
 
+  @Get('reconciliation')
+  @ApiOperation({ summary: 'Get canonical payment reconciliation indicators' })
+  async getReconciliationSummary() {
+    return this.adminFinanceService.getReconciliationSummary();
+  }
+
   @Post('refunds')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Issue an idempotent full payment refund' })

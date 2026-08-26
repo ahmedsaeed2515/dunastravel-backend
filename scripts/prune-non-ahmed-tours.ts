@@ -50,6 +50,9 @@ async function main(): Promise<void> {
           itineraries: true,
           images: true,
           reviews: true,
+          favorites: true,
+          activityLogs: true,
+          journeyRoutes: true,
         },
       },
     },
@@ -69,32 +72,65 @@ async function main(): Promise<void> {
     return;
   }
 
-  const linkedBookings = nonSourceTours.reduce(
-    (total, tour) => total + tour._count.bookings,
-    0,
+  const protectedTours = nonSourceTours.filter((tour) =>
+    tour._count.bookings > 0 ||
+    tour._count.reviews > 0 ||
+    tour._count.favorites > 0 ||
+    tour._count.activityLogs > 0 ||
+    tour._count.journeyRoutes > 0,
   );
-  if (linkedBookings > 0) {
-    throw new Error(
-      `Refusing to delete ${nonSourceTours.length} tours because they have ${linkedBookings} linked bookings. Reassign or explicitly remove those bookings first.`,
-    );
-  }
-
-  const ids = nonSourceTours.map((tour) => tour.id);
-  const deleted = await prisma.$transaction(
+  const deletableTours = nonSourceTours.filter(
+    (tour) => !protectedTours.some((protectedTour) => protectedTour.id === tour.id),
+  );
+  const processed = await prisma.$transaction(
     async (tx) => {
-      const deletion = await tx.tour.deleteMany({ where: { id: { in: ids } } });
-      const remaining = await tx.tour.count();
-      if (remaining !== sourceSlugs.length) {
+      const archived = protectedTours.length
+        ? await tx.tour.updateMany({
+            where: { id: { in: protectedTours.map((tour) => tour.id) } },
+            data: { status: 'ARCHIVED', isActive: false },
+          })
+        : { count: 0 };
+      const deletion = deletableTours.length
+        ? await tx.tour.deleteMany({ where: { id: { in: deletableTours.map((tour) => tour.id) } } })
+        : { count: 0 };
+      const publicLegacyCount = await tx.tour.count({
+        where: {
+          slug: { notIn: sourceSlugs },
+          status: 'PUBLISHED',
+          isActive: true,
+          deletedAt: null,
+        },
+      });
+      if (publicLegacyCount !== 0) {
         throw new Error(
-          `Post-delete invariant failed: expected ${sourceSlugs.length} tours, found ${remaining}.`,
+          `Post-prune invariant failed: expected zero public legacy tours, found ${publicLegacyCount}.`,
         );
       }
-      return { deleted: deletion.count, remaining };
+      return {
+        deleted: deletion.count,
+        archivedForHistory: archived.count,
+        remaining: await tx.tour.count(),
+        publicLegacyCount,
+      };
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
 
-  console.log(JSON.stringify({ success: true, ...deleted }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        success: true,
+        ...processed,
+        deletedSlugs: deletableTours.map((tour) => tour.slug),
+        archivedForHistory: protectedTours.map((tour) => ({
+          slug: tour.slug,
+          dependencies: tour._count,
+        })),
+      },
+      null,
+      2,
+    ),
+  );
   await prisma.onModuleDestroy();
 }
 

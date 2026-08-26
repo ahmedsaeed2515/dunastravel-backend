@@ -163,23 +163,23 @@ export class TourKnowledgeIngestionService {
         translations: {
           en: {
             title: '[Policy] Official Payment Methods, Deposits & Cancellation Policy',
-            content: 'Payment Methods: Visa, MasterCard, American Express, Bank Wire Transfer, and secure online PayPal. Payment Terms: 30% deposit required upon booking confirmation; remaining 70% balance due 30 days before departure. Cancellation Policy: >60 days before departure: 100% refund (minus non-refundable booking fees); 30 to 60 days before departure: 50% cancellation fee; within 30 days of departure: 100% non-refundable. Comprehensive travel insurance is strongly recommended.',
+            content: 'Online card payments are processed only through GetPayIn hosted checkout. Payment availability and applicable payment terms are shown in the server-calculated booking summary before checkout. Cancellation and refund decisions are handled separately from payment processing.',
           },
           ar: {
             title: '[سياسة] طرق الدفع المعتمدة، شروط الإيداع، وسياسة الإلغاء والاسترداد',
-            content: 'طرق الدفع المعتمدة: بطاقات الائتمان الدولية (فيزا / ماستركارد / أمريكان إكسبريس)، التحويل البنكي المباشر، وباي بال (PayPal). شروط السداد: إيداع دفعة مقدمة 30% لتأكيد حجز البرنامج المخصص، ويستحق سداد المبلغ المتبقي (70%) قبل 30 يوماً من تاريخ السفر. سياسة الإلغاء والاسترداد: قبل أكثر من 60 يوماً من السفر: استرداد كامل المبلغ (100%) مطروحاً منه رسوم الحجز الإدارية؛ من 30 إلى 60 يوماً قبل السفر: تطبق رسوم إلغاء 50%؛ خلال 30 يوماً أو أقل: المبلغ غير قابل للاسترداد (رسوم إلغاء 100%). تنصح الشركة دائماً بالحصول على وثيقة تأمين سفر شاملة.',
+            content: 'تتم معالجة مدفوعات البطاقات عبر الإنترنت حصراً من خلال صفحة الدفع المستضافة لدى GetPayIn. تظهر إتاحة الدفع وأي شروط سداد قابلة للتطبيق في ملخص الحجز المحسوب على الخادم قبل الدفع. تُدار قرارات الإلغاء والاسترداد بصورة منفصلة عن معالجة الدفع.',
           },
           es: {
             title: '[Política] Métodos de Pago, Depósitos y Política de Cancelación',
-            content: 'Métodos de pago: Visa, MasterCard, American Express, transferencia bancaria y PayPal seguro. Condiciones: depósito del 30% al confirmar la reserva; saldo restante del 70% 30 días antes de la salida. Política de cancelación: más de 60 días antes de la salida: reembolso del 100% (menos gastos no reembolsables); 30 a 60 días antes: 50% de gastos de cancelación; menos de 30 días: 100% no reembolsable.',
+            content: 'Los pagos con tarjeta en línea se procesan únicamente mediante el checkout alojado de GetPayIn. La disponibilidad del pago y las condiciones aplicables se muestran en el resumen de la reserva calculado por el servidor antes del checkout. La cancelación y el reembolso se gestionan por separado.',
           },
           pt: {
             title: '[Política] Métodos de Pagamento, Depósitos e Política de Cancelamento',
-            content: 'Métodos de pagamento: Visa, MasterCard, American Express, transferência bancária e PayPal. Condições: sinal de 30% na confirmação; saldo restante de 70% até 30 dias antes do embarque. Cancelamento: mais de 60 dias antes da partida: reembolso de 100% (menos taxas não reembolsáveis); de 30 a 60 dias antes: taxa de cancelamento de 50%; menos de 30 dias: 100% não reembolsável.',
+            content: 'Os pagamentos online com cartão são processados apenas pelo checkout hospedado da GetPayIn. A disponibilidade e as condições aplicáveis aparecem no resumo da reserva calculado no servidor antes do checkout. Cancelamento e reembolso são tratados separadamente.',
           },
           it: {
             title: '[Politica] Metodi di Pagamento, Acconti e Politica di Cancellazione',
-            content: 'Metodi di pagamento: Visa, MasterCard, American Express, bonifico bancario e PayPal. Condizioni: acconto del 30% alla conferma; saldo del 70% 30 giorni prima della partenza. Politica di cancellazione: oltre 60 giorni prima della partenza: rimborso del 100% (meno spese non rimborsabili); da 30 a 60 giorni prima: penale del 50%; entro 30 giorni: non rimborsabile (penale del 100%).',
+            content: 'I pagamenti online con carta sono elaborati soltanto tramite il checkout ospitato di GetPayIn. Disponibilità e condizioni applicabili sono mostrate nel riepilogo della prenotazione calcolato dal server prima del checkout. Cancellazione e rimborso sono gestiti separatamente.',
           },
         },
       },
