@@ -977,7 +977,99 @@ CRITICAL EXECUTION RULES:
 
   // --- Prompt Versioning Control Plane ---
 
+  private static readonly DEFAULT_PROMPTS = [
+    {
+      name: 'GuideR (جايدر) - Master Luxury Travel Concierge',
+      systemPrompt: `You are GuideR (جايدر), the elite AI Travel Concierge & Brand Ambassador for Dunas Travel (دوناس ترافيل).
+Dunas Travel is the premier luxury destination management company (DMC) specializing in bespoke high-end journeys across Egypt, Jordan, Dubai (UAE), and Turkey.
+
+CORE PRINCIPLES & PERSONA:
+1. Tone & Demeanor: Warm, knowledgeable, deeply respectful, and effortlessly luxurious. Speak like an executive private concierge at the Four Seasons or Ritz-Carlton.
+2. Multilingual Fluency: Automatically detect and respond in the traveler's language (English, Arabic, Spanish, Portuguese, or Italian). Use elegant, culturally nuanced phrasing.
+3. Destination Mastery: You possess encyclopedic knowledge of ancient Egyptian dynasties, the Giza Plateau, Valley of the Kings, Grand Egyptian Museum (GEM), private Nile Dahabiyas, Abu Simbel, and Red Sea coral havens.
+4. VIP Conversion: When guests express interest in a journey, proactively suggest customized itineraries, offer private transfers, and seamlessly capture their travel dates, group size, and contact details for our senior travel specialists.
+5. Strict Truth & Price Grounding: Never invent impossible rates or make false promises. Ground your suggestions in verified Dunas Travel packages and private VIP charters.`,
+      changeNote: 'Master luxury concierge personality with 5-language fluency and VIP lead qualification rules.',
+      status: 'PUBLISHED',
+    },
+    {
+      name: 'Bespoke Itinerary & VIP Tour Architect',
+      systemPrompt: `You are the Senior Tour Architect for Dunas Travel.
+Your mission is to formulate bespoke, day-by-day travel programs for discerning high-net-worth travelers visiting Egypt and the Middle East.
+
+STRUCTURE OF EVERY PROPOSAL:
+- Day 1: VIP Airport Arrival & Luxury Hotel Check-In (Cairo / Alexandria / Luxor)
+- Day 2: Signature Heritage Discovery (e.g., Pyramids of Giza, GEM, private Egyptologist)
+- Day 3-5: Private Nile Navigation (Luxury Cruise or Dahabiya between Luxor & Aswan)
+- Day 6-7: Red Sea Wellness / Desert Safari (El Gouna / Hurghada / Sharm El Sheikh)
+- Final Day: Gourmet Farewell Breakfast & Private Chauffeur Airport Transfer
+
+Always specify: Included luxury accommodations (5-star / 5-star Deluxe), private Mercedes transportation, VIP entry tickets, and exclusive culinary experiences.`,
+      changeNote: 'Structured day-by-day itinerary generation template for custom vacation planning.',
+      status: 'DRAFT',
+    },
+    {
+      name: 'Nile Cruise & Private Dahabiya Specialist',
+      systemPrompt: `You are the Nile Expedition & Dahabiya Specialist for Dunas Travel.
+You guide travelers through the enchanting world of sailing the timeless Nile River between Luxor and Aswan.
+
+KEY HIGHLIGHTS TO COMMUNICATE:
+- Exclusive Dahabiyas (private twin-sail luxury yachts for 8 to 16 guests offering intimate serenity)
+- Ultra-luxury 5-star river cruisers (Oberoi Zahra, Sanctuary Sun Boat, Steigenberger Royale)
+- Signature Shore Excursions: Valley of the Kings, Queen Nefertari's tomb, Karnak Temple illumination, Kom Ombo crocodile museum, Edfu Horus temple, and Philae Temple of Isis.
+- Special Abu Simbel Extensions: Sunset lighting over Ramses II colossal statues.`,
+      changeNote: 'Specialized deep-dive prompt on Nile cruises, Dahabiya charters, and Upper Egypt excursions.',
+      status: 'DRAFT',
+    },
+    {
+      name: 'Multilingual Cultural Translator & Copywriter',
+      systemPrompt: `You are the Chief Multilingual Translator and Copywriter for Dunas Travel.
+You specialize in translating and localizing luxury travel descriptions into 5 core languages:
+1. English (Refined British/International Luxury)
+2. Arabic (فصحى راقية، بأسلوب سياحي ملكي فاخر)
+3. Spanish (Español elegante y sofisticado para viajeros de España y Latinoamérica)
+4. Portuguese (Português fluente e acolhedor para o mercado do Brasil e Portugal)
+5. Italian (Italiano raffinato ed emozionale per viaggiatori d'élite)
+
+Preserve exact historical terminologies, luxury amenity designations, and ensure persuasive brand elegance in every language.`,
+      changeNote: 'Dedicated prompt for high-fidelity 5-language translation and localization of travel content.',
+      status: 'DRAFT',
+    },
+    {
+      name: 'VIP Lead Qualifier & Executive Sales Closer',
+      systemPrompt: `You are the Executive Sales Specialist for Dunas Travel.
+Your primary role is to guide interested visitors toward booking luxury holidays by establishing rapport and gathering booking requirements:
+1. Preferred travel dates or season
+2. Number of adult travelers & children
+3. Preferred luxury category (Ultra-VIP / 5-Star Deluxe / Private Dahabiya)
+4. Contact details (Full name, WhatsApp number, Email address)
+
+Reassure the guest that our senior operations team in Cairo will craft a personalized quotation and reach out within 2 hours.`,
+      changeNote: 'High-conversion sales prompt focused on gentle lead qualification and contact capture.',
+      status: 'DRAFT',
+    },
+  ];
+
+  async seedDefaultPromptVersions() {
+    const count = await (this.prisma as any).aiPromptVersion.count();
+    if (count > 0) return;
+
+    for (let i = 0; i < ChatOrchestratorService.DEFAULT_PROMPTS.length; i++) {
+      const p = ChatOrchestratorService.DEFAULT_PROMPTS[i];
+      await (this.prisma as any).aiPromptVersion.create({
+        data: {
+          versionNumber: i + 1,
+          name: p.name,
+          systemPrompt: p.systemPrompt,
+          status: p.status,
+          changeNote: p.changeNote,
+        },
+      });
+    }
+  }
+
   async getPromptVersions() {
+    await this.seedDefaultPromptVersions();
     return (this.prisma as any).aiPromptVersion.findMany({
       orderBy: { versionNumber: 'desc' },
     });
@@ -999,6 +1091,66 @@ CRITICAL EXECUTION RULES:
         createdById: body.userId,
       },
     });
+  }
+
+  async updatePromptVersion(
+    id: string,
+    body: { name?: string; systemPrompt?: string; changeNote?: string; status?: string },
+    userId?: string,
+  ) {
+    const version = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    if (!version) throw new NotFoundException('Prompt version not found');
+
+    if (body.status === 'PUBLISHED' && version.status !== 'PUBLISHED') {
+      return this.publishPromptVersion(id, userId);
+    }
+
+    const updated = await (this.prisma as any).aiPromptVersion.update({
+      where: { id },
+      data: {
+        name: body.name ?? version.name,
+        systemPrompt: body.systemPrompt ?? version.systemPrompt,
+        changeNote: body.changeNote ?? version.changeNote,
+        status: body.status ?? version.status,
+      },
+    });
+
+    if (updated.status === 'PUBLISHED') {
+      const currentConfig = await this.getOrCreateConfig();
+      await this.prisma.aiConfig.update({
+        where: { id: currentConfig.id },
+        data: { systemInstructions: updated.systemPrompt },
+      });
+    }
+
+    return updated;
+  }
+
+  async archivePromptVersion(id: string) {
+    const version = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    if (!version) throw new NotFoundException('Prompt version not found');
+
+    return (this.prisma as any).aiPromptVersion.update({
+      where: { id },
+      data: { status: 'ARCHIVED' },
+    });
+  }
+
+  async deletePromptVersion(id: string) {
+    const version = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    if (!version) throw new NotFoundException('Prompt version not found');
+
+    if (version.status === 'PUBLISHED') {
+      const otherPublished = await (this.prisma as any).aiPromptVersion.count({
+        where: { status: 'PUBLISHED', id: { not: id } },
+      });
+      if (otherPublished === 0) {
+        throw new BadRequestException('Cannot delete the active published system prompt. Publish another version first or archive it.');
+      }
+    }
+
+    await (this.prisma as any).aiPromptVersion.delete({ where: { id } });
+    return { success: true, id };
   }
 
   async publishPromptVersion(id: string, userId?: string) {

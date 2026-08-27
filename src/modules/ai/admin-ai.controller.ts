@@ -136,6 +136,13 @@ export class AdminAiController {
     return this.chatOrchestrator.getPromptVersions();
   }
 
+  @Post('prompts/seed-defaults')
+  @ApiOperation({ summary: 'Seed curated luxury prompt templates' })
+  async seedDefaultPrompts() {
+    await this.chatOrchestrator.seedDefaultPromptVersions();
+    return this.chatOrchestrator.getPromptVersions();
+  }
+
   @Post('prompts')
   @ApiOperation({ summary: 'Create a new draft prompt version' })
   async createPromptDraft(
@@ -146,6 +153,28 @@ export class AdminAiController {
       ...body,
       userId: user?.id,
     });
+  }
+
+  @Put('prompts/:id')
+  @ApiOperation({ summary: 'Update an existing prompt version (name, content, notes, status)' })
+  async updatePromptVersion(
+    @Param('id') id: string,
+    @Body() body: { name?: string; systemPrompt?: string; changeNote?: string; status?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.chatOrchestrator.updatePromptVersion(id, body, user?.id);
+  }
+
+  @Delete('prompts/:id')
+  @ApiOperation({ summary: 'Delete a prompt version' })
+  async deletePromptVersion(@Param('id') id: string) {
+    return this.chatOrchestrator.deletePromptVersion(id);
+  }
+
+  @Post('prompts/:id/archive')
+  @ApiOperation({ summary: 'Archive a prompt version so it is disabled/inactive' })
+  async archivePromptVersion(@Param('id') id: string) {
+    return this.chatOrchestrator.archivePromptVersion(id);
   }
 
   @Post('prompts/:id/publish')
