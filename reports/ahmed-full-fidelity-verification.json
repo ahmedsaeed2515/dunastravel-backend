@@ -1,71 +1,171 @@
 {
-  "generatedAt": "2026-08-27T08:32:51.916Z",
+  "generatedAt": "2026-08-27T10:14:31.612Z",
   "sourceCatalogCount": 56,
   "importedCanonicalTours": 56,
   "totalDatabaseTours": 62,
-  "canonicalItineraryRows": 467,
-  "canonicalMediaRows": 55,
-  "destinationRelations": 56,
+  "canonicalItineraryRows": 485,
+  "canonicalMediaRows": 59,
+  "destinationRelations": 57,
   "publicNonAhmedTours": 0,
-  "fieldMismatchCount": 809,
+  "fieldMismatchCount": 1200,
   "fieldMismatches": [
     {
       "slug": "cairo-express-4d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "cairo-express-alexandria-5d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "egito-classico-8d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "egito-classico-ii-9d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "egito-historico-10d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "cairo-cruzeiro-sharm-11d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "grande-ramses-10d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "tesouros-egipto-9d",
       "fields": [
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "complete-egypt-8d",
       "fields": [
+        "highlightsJsonb",
+        "excludedServicesJsonb",
+        "category",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "lo-mejor-de-grecia-9d",
       "fields": [
+        "titleJsonb",
+        "highlightsJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
         "images.0",
         "images.1",
         "images.2",
@@ -75,78 +175,297 @@
     {
       "slug": "tunisia-8-days-desert-sea",
       "fields": [
+        "durationJsonb",
         "images.0"
       ]
     },
     {
       "slug": "estrellas-medio-oriente-19d",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
+        "itinerary.14.descriptionJsonb",
+        "itinerary.15.descriptionJsonb",
+        "itinerary.16.descriptionJsonb",
+        "itinerary.17.descriptionJsonb",
+        "itinerary.18.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "cairo-and-athens-11-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "essences-of-egypt-and-turkey-15-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
+        "itinerary.14.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "marvels-of-dubai-and-turkey-14-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "stars-of-the-middle-east-16-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
+        "itinerary.14.descriptionJsonb",
+        "itinerary.15.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "treasures-of-egypt-and-tunisia-16-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
+        "itinerary.14.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "egypt-and-dubai-13-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
+        "itinerary.12.descriptionJsonb",
+        "itinerary.13.descriptionJsonb",
+        "itinerary.14.descriptionJsonb",
+        "itinerary.15.descriptionJsonb",
+        "itinerary.16.descriptionJsonb",
+        "itinerary.17.descriptionJsonb",
+        "itinerary.18.descriptionJsonb",
+        "itinerary.19.descriptionJsonb",
+        "itinerary.20.descriptionJsonb",
+        "itinerary.21.descriptionJsonb",
+        "itinerary.22.descriptionJsonb",
+        "itinerary.23.descriptionJsonb",
+        "itinerary.24.descriptionJsonb",
+        "itinerary.25.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "spices-of-egypt-and-morocco",
       "fields": [
+        "titleJsonb",
+        "highlightsJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
+        "itinerary.11.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "jewels-of-egypt-and-jordan-11-days",
       "fields": [
+        "titleJsonb",
+        "highlightsJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.0.descriptionJsonb",
+        "itinerary.1.descriptionJsonb",
+        "itinerary.2.descriptionJsonb",
+        "itinerary.3.descriptionJsonb",
+        "itinerary.4.descriptionJsonb",
+        "itinerary.5.descriptionJsonb",
+        "itinerary.6.descriptionJsonb",
+        "itinerary.7.descriptionJsonb",
+        "itinerary.8.descriptionJsonb",
+        "itinerary.9.descriptionJsonb",
+        "itinerary.10.descriptionJsonb",
         "images.0"
       ]
     },
     {
       "slug": "journey-of-the-holy-family-10-days",
       "fields": [
+        "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.count",
         "images.count"
       ]
     },
     {
       "slug": "hurghada-escape",
       "fields": [
+        "highlightsJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.count",
         "images.count"
       ]
     },
     {
       "slug": "sharm-el-sheikh-escape",
       "fields": [
+        "highlightsJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "itinerary.count",
         "images.count"
       ]
     },
@@ -154,6 +473,8 @@
       "slug": "reg-01-legendary-turkey",
       "fields": [
         "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -222,91 +543,8 @@
       "slug": "reg-04-legendary-cappadocia",
       "fields": [
         "sourceCodeJsonb",
-        "transportationJsonb",
-        "category",
-        "basePriceUsd",
-        "status",
-        "isActive",
-        "languages",
-        "itinerary.0.activitiesJsonb",
-        "itinerary.0.hotelsJsonb",
-        "itinerary.0.transportationJsonb",
-        "itinerary.0.notesJsonb",
-        "itinerary.0.sortOrder",
-        "itinerary.1.activitiesJsonb",
-        "itinerary.1.hotelsJsonb",
-        "itinerary.1.transportationJsonb",
-        "itinerary.1.notesJsonb",
-        "itinerary.1.sortOrder",
-        "itinerary.2.activitiesJsonb",
-        "itinerary.2.hotelsJsonb",
-        "itinerary.2.transportationJsonb",
-        "itinerary.2.notesJsonb",
-        "itinerary.2.sortOrder",
-        "itinerary.3.activitiesJsonb",
-        "itinerary.3.hotelsJsonb",
-        "itinerary.3.transportationJsonb",
-        "itinerary.3.notesJsonb",
-        "itinerary.3.sortOrder",
-        "itinerary.4.activitiesJsonb",
-        "itinerary.4.hotelsJsonb",
-        "itinerary.4.transportationJsonb",
-        "itinerary.4.notesJsonb",
-        "itinerary.4.sortOrder",
-        "itinerary.5.activitiesJsonb",
-        "itinerary.5.hotelsJsonb",
-        "itinerary.5.transportationJsonb",
-        "itinerary.5.notesJsonb",
-        "itinerary.5.sortOrder",
-        "itinerary.6.activitiesJsonb",
-        "itinerary.6.hotelsJsonb",
-        "itinerary.6.transportationJsonb",
-        "itinerary.6.notesJsonb",
-        "itinerary.6.sortOrder",
-        "itinerary.7.activitiesJsonb",
-        "itinerary.7.hotelsJsonb",
-        "itinerary.7.transportationJsonb",
-        "itinerary.7.notesJsonb",
-        "itinerary.7.sortOrder"
-      ]
-    },
-    {
-      "slug": "ist-01-best-of-istanbul",
-      "fields": [
-        "sourceCodeJsonb",
-        "transportationJsonb",
-        "category",
-        "basePriceUsd",
-        "status",
-        "isActive",
-        "languages",
-        "itinerary.0.activitiesJsonb",
-        "itinerary.0.hotelsJsonb",
-        "itinerary.0.transportationJsonb",
-        "itinerary.0.notesJsonb",
-        "itinerary.0.sortOrder",
-        "itinerary.1.activitiesJsonb",
-        "itinerary.1.hotelsJsonb",
-        "itinerary.1.transportationJsonb",
-        "itinerary.1.notesJsonb",
-        "itinerary.1.sortOrder",
-        "itinerary.2.activitiesJsonb",
-        "itinerary.2.hotelsJsonb",
-        "itinerary.2.transportationJsonb",
-        "itinerary.2.notesJsonb",
-        "itinerary.2.sortOrder",
-        "itinerary.3.activitiesJsonb",
-        "itinerary.3.hotelsJsonb",
-        "itinerary.3.transportationJsonb",
-        "itinerary.3.notesJsonb",
-        "itinerary.3.sortOrder",
-        "images.count"
-      ]
-    },
-    {
-      "slug": "reg-03-passion-of-turkey",
-      "fields": [
-        "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -357,26 +595,169 @@
       ]
     },
     {
+      "slug": "ist-01-best-of-istanbul",
+      "fields": [
+        "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-03-passion-of-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-15-classic-jordan",
+      "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "images.count"
+      ]
+    },
+    {
       "slug": "reg-16-jordan-with-desert",
       "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
         "images.count"
       ]
     },
     {
       "slug": "reg-17-jordan-with-desert-and-dead-sea",
       "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-18-complete-jordan",
+      "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
         "images.count"
       ]
     },
     {
       "slug": "reg-19-jordan-red-sea",
       "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-20-jordan-extension-5-days",
+      "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
         "images.count"
       ]
     },
     {
       "slug": "reg-21-jordan-extension-4-days",
       "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "basePriceUsd",
+        "status",
+        "isActive",
         "images.count"
       ]
     },
@@ -438,6 +819,8 @@
       "slug": "reg-05-admirable-turkey",
       "fields": [
         "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -501,6 +884,8 @@
       "slug": "reg-06-heart-of-turkey",
       "fields": [
         "sourceCodeJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -550,6 +935,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -624,6 +1011,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -653,6 +1042,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -712,6 +1103,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -791,6 +1184,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -855,6 +1250,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -914,6 +1311,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -978,6 +1377,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -1007,6 +1408,8 @@
       "fields": [
         "sourceCodeJsonb",
         "highlightsJsonb",
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
         "transportationJsonb",
         "category",
         "basePriceUsd",
@@ -1074,6 +1477,9 @@
     {
       "slug": "reg-29-sharm-el-sheikh",
       "fields": [
+        "includedServicesJsonb",
+        "excludedServicesJsonb",
+        "itinerary.4.descriptionJsonb",
         "images.count"
       ]
     },

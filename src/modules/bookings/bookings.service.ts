@@ -901,8 +901,8 @@ export class BookingsService {
       children: booking.children,
       infants: booking.infants,
       totalAmountUsd: booking.totalAmountUsd.toString(),
-      paymentStatus: booking.payments[0]?.status ?? null,
-      paymentAttemptId: booking.payments[0]?.id ?? null,
+      paymentStatus: (booking.payments ?? [])[0]?.status ?? null,
+      paymentAttemptId: (booking.payments ?? [])[0]?.id ?? null,
       createdAt: booking.createdAt.toISOString(),
     };
   }
@@ -948,8 +948,8 @@ export class BookingsService {
       children: b.children,
       infants: b.infants,
       totalAmountUsd: b.totalAmountUsd.toString(),
-      paymentStatus: b.payments[0]?.status ?? null,
-      paymentAttemptId: b.payments[0]?.id ?? null,
+      paymentStatus: (b.payments ?? [])[0]?.status ?? null,
+      paymentAttemptId: (b.payments ?? [])[0]?.id ?? null,
       createdAt: b.createdAt.toISOString(),
     }));
 
