@@ -5,18 +5,14 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
-  ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
@@ -31,11 +27,11 @@ export class ReviewsController {
   @Get('tours/:tourId/reviews')
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Get published reviews for a tour' })
+  @ApiOperation({ summary: 'Get published reviews for a tour by ID or Slug' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async findTourReviews(
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @Query() query: ReviewQueryDto,
   ) {
     return this.reviewsService.findTourReviewsPublic(
@@ -46,17 +42,17 @@ export class ReviewsController {
   }
 
   @Post('tours/:tourId/reviews')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
-    summary: 'Submit a verified customer review for a completed tour',
+    summary: 'Submit a customer or guest review for a tour (pending moderation)',
   })
   async createReview(
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @Body() dto: CreateReviewDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.reviewsService.createCustomerReview(tourId, user.id, dto);
+    return this.reviewsService.createCustomerReview(tourId, user || null, dto);
   }
 }
+

@@ -1022,7 +1022,7 @@ KEY HIGHLIGHTS TO COMMUNICATE:
       status: 'DRAFT',
     },
     {
-      name: 'Multilingual Cultural Translator & Copywriter',
+      name: 'Multilingual Cultural Translator & Copywriter (5 Languages)',
       systemPrompt: `You are the Chief Multilingual Translator and Copywriter for Dunas Travel.
 You specialize in translating and localizing luxury travel descriptions into 5 core languages:
 1. English (Refined British/International Luxury)

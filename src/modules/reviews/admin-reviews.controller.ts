@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Put,
   Post,
   Delete,
   Param,
@@ -17,6 +18,11 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
+import {
+  CreateReviewDto,
+  AdminCreateReviewDto,
+  AdminUpdateReviewDto,
+} from './dto/create-review.dto';
 import {
   UpdateReviewStatusDto,
   AdminReplyReviewDto,
@@ -43,6 +49,8 @@ export class AdminReviewsController {
   @ApiQuery({ name: 'tourId', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'isPublished', required: false, type: Boolean })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'rating', required: false, type: Number })
   async findAll(
     @Query() query: AdminReviewQueryDto,
   ) {
@@ -52,7 +60,28 @@ export class AdminReviewsController {
       query.tourId,
       query.status,
       query.isPublished,
+      query.search,
+      query.rating,
     );
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new customer review or testimonial manually' })
+  async create(
+    @Body() dto: AdminCreateReviewDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reviewsService.createAdminReview(dto, user);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Edit review content, rating, reviewer name, or status' })
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdminUpdateReviewDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reviewsService.updateAdminReview(id, dto, user);
   }
 
   @Patch(':id/status')
@@ -68,7 +97,7 @@ export class AdminReviewsController {
   }
 
   @Post(':id/reply')
-  @ApiOperation({ summary: 'Add official admin reply to a review' })
+  @ApiOperation({ summary: 'Add or edit official admin reply to a review' })
   async reply(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdminReplyReviewDto,
@@ -86,3 +115,4 @@ export class AdminReviewsController {
     return this.reviewsService.softDeleteAdmin(id, user);
   }
 }
+

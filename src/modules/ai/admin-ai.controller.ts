@@ -139,7 +139,7 @@ export class AdminAiController {
   @Post('prompts/seed-defaults')
   @ApiOperation({ summary: 'Seed curated luxury prompt templates' })
   async seedDefaultPrompts() {
-    await this.chatOrchestrator.seedDefaultPromptVersions();
+    await this.chatOrchestrator.seedDefaultPromptVersions(true);
     return this.chatOrchestrator.getPromptVersions();
   }
 

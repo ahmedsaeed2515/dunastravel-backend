@@ -1,17 +1,28 @@
-import { IsIn, IsOptional, IsUUID, IsBoolean } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsIn, IsOptional, IsString, IsBoolean, IsInt, Min, Max } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class ReviewQueryDto extends PaginationQueryDto {}
 
 export class AdminReviewQueryDto extends PaginationQueryDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
   tourId?: string;
 
   @IsOptional()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
   status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -22,3 +33,4 @@ export class AdminReviewQueryDto extends PaginationQueryDto {
   })
   isPublished?: boolean;
 }
+
