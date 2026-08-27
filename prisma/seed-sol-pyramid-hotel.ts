@@ -3,7 +3,7 @@
 const prisma = new PrismaClient();
 
 async function seedSolPyramidHotel() {
-  console.log('Seeding Sol Pyramid Hotel & Rooms into backend database...');
+  console.log('Seeding Sol Pyramid Hotel & Rooms into backend database with 5 languages...');
 
   try {
     const hotel = await prisma.hotel.upsert({
@@ -17,8 +17,11 @@ async function seedSolPyramidHotel() {
           it: 'Hotel Sol Pyramid',
         },
         descriptionJsonb: {
-          en: "Solpyramid Hotel is a modern 3-star establishment built in 2025, designed for travellers who want to explore Egypt's greatest sights.",
-          ar: 'فندق سول بيراميد هو منشأة حديثة فئة 3 نجوم تم إنشاؤها في عام 2025، مصممة للمسافرين الذين يرغبون في استكشاف أعظم معالم مصر.',
+          en: "Solpyramid Hotel is a modern 3-star establishment designed for travellers who want to explore Egypt's major sights.",
+          ar: "فندق سول بيراميد هو منشأة حديثة فئة 3 نجوم صممت للمسافرين الراغبين في استكشاف معالم مصر الرئيسية.",
+          es: "El Hotel Solpyramid es un moderno establecimiento de 3 estrellas diseñado para viajeros que desean explorar los principales lugares de interés de Egipto.",
+          it: "L'Hotel Solpyramid è una moderna struttura a 3 stelle progettata per i viaggiatori che desiderano esplorare le principali attrazioni dell'Egitto.",
+          pt: "O Hotel Solpyramid é um estabelecimento moderno de 3 estrelas projetado para viajantes que desejam explorar as principais atrações do Egito.",
         },
         destinationSlug: 'egypt',
         city: 'Giza',
@@ -66,8 +69,11 @@ async function seedSolPyramidHotel() {
           it: 'Hotel Sol Pyramid',
         },
         descriptionJsonb: {
-          en: "Solpyramid Hotel is a modern 3-star establishment built in 2025, designed for travellers who want to explore Egypt's greatest sights.",
-          ar: 'فندق سول بيراميد هو منشأة حديثة فئة 3 نجوم تم إنشاؤها في عام 2025، مصممة للمسافرين الذين يرغبون في استكشاف أعظم معالم مصر.',
+          en: "Solpyramid Hotel is a modern 3-star establishment designed for travellers who want to explore Egypt's major sights.",
+          ar: "فندق سول بيراميد هو منشأة حديثة فئة 3 نجوم صممت للمسافرين الراغبين في استكشاف معالم مصر الرئيسية.",
+          es: "El Hotel Solpyramid es un moderno establecimiento de 3 estrellas diseñado para viajeros que desean explorar los principales lugares de interés de Egipto.",
+          it: "L'Hotel Solpyramid è una moderna struttura a 3 stelle progettata per i viaggiatori che desiderano esplorare le principali attrazioni dell'Egitto.",
+          pt: "O Hotel Solpyramid é um estabelecimento moderno de 3 estrelas projetado para viajantes que desejam explorar as principais atrações do Egito.",
         },
         destinationSlug: 'egypt',
         city: 'Giza',
@@ -122,6 +128,9 @@ async function seedSolPyramidHotel() {
         descriptionJsonb: {
           en: 'Elegant double room with Pyramids view and 1 King Bed.',
           ar: 'غرفة دبل أنيقة بإطلالة مباشرة على الأهرامات وسرير ملكي.',
+          es: 'Elegante habitación doble con vistas a las Pirámides y 1 cama King.',
+          it: 'Elegante camera doppia con vista sulle Piramidi e 1 letto King.',
+          pt: 'Elegante quarto duplo com vista para as Pirâmides e 1 cama King.',
         },
         ratePerNight: 85.0,
         maxOccupancy: 2,
@@ -139,6 +148,9 @@ async function seedSolPyramidHotel() {
         descriptionJsonb: {
           en: 'Comfortable twin room with double/twin beds and standard view.',
           ar: 'غرفة توين مريحة بأسرة مزدوجة وإطلالة قياسية.',
+          es: 'Cómoda habitación twin con camas dobles/twin y vista estándar.',
+          it: 'Accogliente camera twin con letti doppi/twin e vista standard.',
+          pt: 'Confortável quarto twin com camas duplas/twin e vista padrão.',
         },
         ratePerNight: 85.0,
         maxOccupancy: 2,
@@ -156,6 +168,9 @@ async function seedSolPyramidHotel() {
         descriptionJsonb: {
           en: 'Spacious triple room ideal for families or groups of 3 guests.',
           ar: 'غرفة ثلاثية واسعة مثالية للعائلات أو المجموعات حتى 3 ضيوف.',
+          es: 'Amplia habitación triple ideal para familias o grupos de 3 huéspedes.',
+          it: 'Spaziosa camera tripla ideale per famiglie o gruppi di 3 ospiti.',
+          pt: 'Espaçoso quarto triplo ideal para famílias ou grupos de 3 hóspedes.',
         },
         ratePerNight: 110.0,
         maxOccupancy: 3,
@@ -201,7 +216,13 @@ async function seedSolPyramidHotel() {
       rating: 5.0,
       pricePerNight: 85,
       image: 'https://www.solpyramid-egypt.com/wp-content/uploads/2022/08/Hotel.jpg',
-      description: "Solpyramid Hotel is a modern 3-star establishment designed for travellers who want to explore Egypt's major sights.",
+      description: {
+        en: "Solpyramid Hotel is a modern 3-star establishment designed for travellers who want to explore Egypt's major sights.",
+        ar: "فندق سول بيراميد هو منشأة حديثة فئة 3 نجوم صممت للمسافرين الراغبين في استكشاف معالم مصر الرئيسية.",
+        es: "El Hotel Solpyramid es un moderno establecimiento de 3 estrellas diseñado para viajeros que desean explorar los principales lugares de interés de Egipto.",
+        it: "L'Hotel Solpyramid è una moderna struttura a 3 stelle progettata per i viaggiatori che desiderano esplorare le principali attrazioni dell'Egitto.",
+        pt: "O Hotel Solpyramid é um estabelecimento moderno de 3 estrelas projetado para viajantes que desejam explorar as principais atrações do Egito.",
+      },
       amenities: [
         'Free Wi-Fi',
         'Air conditioning',
@@ -227,7 +248,7 @@ async function seedSolPyramidHotel() {
         where: { key: 'hotels_catalog' },
         data: { content: updatedList },
       });
-      console.log('Updated CMS Block: hotels_catalog with Sol Pyramid Hotel');
+      console.log('Updated CMS Block: hotels_catalog with multilingual Sol Pyramid Hotel');
     } else {
       await prisma.cmsBlock.upsert({
         where: { key: 'hotels_catalog' },
@@ -237,10 +258,10 @@ async function seedSolPyramidHotel() {
           content: [solPyramidCmsItem],
         },
       });
-      console.log('Created CMS Block: hotels_catalog with Sol Pyramid Hotel');
+      console.log('Created CMS Block: hotels_catalog with multilingual Sol Pyramid Hotel');
     }
 
-    console.log('Sol Pyramid Hotel backend seed finished successfully!');
+    console.log('Sol Pyramid Hotel 5-language backend seed finished successfully!');
   } catch (err) {
     console.error('Error seeding Sol Pyramid Hotel:', err);
   } finally {
