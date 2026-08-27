@@ -1111,51 +1111,6 @@
         ]
       }
     },
-    "/api/admin/bookings/{referenceCode}/payments": {
-      "post": {
-        "operationId": "AdminController_addPayment",
-        "parameters": [
-          {
-            "name": "referenceCode",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddPaymentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Payment added successfully"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden: Requires ADMIN role"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Add a payment to a booking.",
-        "tags": [
-          "Admin"
-        ]
-      }
-    },
     "/api/admin/bookings/{referenceCode}/notes": {
       "post": {
         "operationId": "AdminController_addBookingNote",
@@ -2131,6 +2086,146 @@
         ]
       }
     },
+    "/api/admin/tours/{slug}/publish": {
+      "post": {
+        "operationId": "AdminController_publishTour",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a complete tour and make it public.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/tours/{slug}/unpublish": {
+      "post": {
+        "operationId": "AdminController_unpublishTour",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return a public tour to draft without deleting it.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/tours/{slug}/archive": {
+      "post": {
+        "operationId": "AdminController_archiveTour",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a tour while preserving bookings and history.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/tours/{slug}/unarchive": {
+      "post": {
+        "operationId": "AdminController_unarchiveTour",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore an archived/deleted tour as a non-public draft.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/tours/{slug}/images": {
       "post": {
         "operationId": "AdminController_addTourImage",
@@ -2461,6 +2556,120 @@
         "summary": "Remove an itinerary day from a tour.",
         "tags": [
           "Admin"
+        ]
+      }
+    },
+    "/api/admin/transportation/services": {
+      "get": {
+        "operationId": "AdminTransportationController_findAllServices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List transportation services for administration",
+        "tags": [
+          "admin-transportation"
+        ]
+      },
+      "post": {
+        "operationId": "AdminTransportationController_createService",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportationServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a transportation service",
+        "tags": [
+          "admin-transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/services/{id}": {
+      "put": {
+        "operationId": "AdminTransportationController_updateService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportationServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a transportation service",
+        "tags": [
+          "admin-transportation"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminTransportationController_deactivateService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a transportation service",
+        "tags": [
+          "admin-transportation"
         ]
       }
     },
@@ -5809,6 +6018,26 @@
           }
         ],
         "summary": "Get one payment by UUID",
+        "tags": [
+          "Admin - Finance"
+        ]
+      }
+    },
+    "/api/admin/finance/reconciliation": {
+      "get": {
+        "operationId": "AdminFinanceController_getReconciliationSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get canonical payment reconciliation indicators",
         "tags": [
           "Admin - Finance"
         ]
@@ -12838,6 +13067,151 @@
           "admin-hotels"
         ]
       }
+    },
+    "/api/admin/hotels/{id}/publish": {
+      "post": {
+        "operationId": "AdminHotelsController_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a hotel with at least one active room",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/unpublish": {
+      "post": {
+        "operationId": "AdminHotelsController_unpublish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return a hotel to draft and hide it from the public catalog",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/archive": {
+      "post": {
+        "operationId": "AdminHotelsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a hotel without deleting its rooms",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/unarchive": {
+      "post": {
+        "operationId": "AdminHotelsController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore an archived hotel to draft",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/restore": {
+      "post": {
+        "operationId": "AdminHotelsController_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a soft-deleted hotel as a draft",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
     }
   },
   "info": {
@@ -13135,32 +13509,6 @@
             "description": "Admin User ID to assign the booking to. Pass null to unassign."
           }
         }
-      },
-      "AddPaymentDto": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string",
-            "default": "USD"
-          },
-          "method": {
-            "type": "string",
-            "description": "Payment method (e.g. Credit Card, Wire Transfer)"
-          },
-          "transactionId": {
-            "type": "string",
-            "description": "Unique external receipt/reference used for safe retries"
-          }
-        },
-        "required": [
-          "amount",
-          "currency",
-          "method",
-          "transactionId"
-        ]
       },
       "AddBookingNoteDto": {
         "type": "object",
@@ -13474,6 +13822,30 @@
             "type": "object",
             "description": "Subtitle JSONB"
           },
+          "highlightsJsonb": {
+            "type": "object",
+            "description": "Multilingual tour highlights"
+          },
+          "departureInfoJsonb": {
+            "type": "object",
+            "description": "Multilingual departure information"
+          },
+          "sourceCodeJsonb": {
+            "type": "object",
+            "description": "Multilingual source program code"
+          },
+          "market": {
+            "type": "string",
+            "description": "Source market label"
+          },
+          "sourceRating": {
+            "type": "number",
+            "description": "Published source rating"
+          },
+          "sourceReviewCount": {
+            "type": "number",
+            "description": "Published source review count"
+          },
           "descriptionJsonb": {
             "type": "object",
             "description": "Description JSONB"
@@ -13716,6 +14088,30 @@
             "type": "object",
             "description": "Subtitle JSONB"
           },
+          "highlightsJsonb": {
+            "type": "object",
+            "description": "Multilingual tour highlights"
+          },
+          "departureInfoJsonb": {
+            "type": "object",
+            "description": "Multilingual departure information"
+          },
+          "sourceCodeJsonb": {
+            "type": "object",
+            "description": "Multilingual source program code"
+          },
+          "market": {
+            "type": "string",
+            "description": "Source market label"
+          },
+          "sourceRating": {
+            "type": "number",
+            "description": "Published source rating"
+          },
+          "sourceReviewCount": {
+            "type": "number",
+            "description": "Published source review count"
+          },
           "descriptionJsonb": {
             "type": "object",
             "description": "Description JSONB"
@@ -13864,6 +14260,14 @@
             "description": "Sort order for display"
           }
         }
+      },
+      "CreateTransportationServiceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateTransportationServiceDto": {
+        "type": "object",
+        "properties": {}
       },
       "UpdateTransportationStatusDto": {
         "type": "object",

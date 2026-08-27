@@ -198,6 +198,26 @@ function walkFiles(directory: string): string[] {
   });
 }
 
+/** Resolve the checked-in source without relying on an encoding-corrupted path. */
+export function resolveAhmedSourceDirectory(
+  dataDirectory = path.resolve(process.cwd(), '..', 'dunas-travel2026.com', 'src', 'data'),
+): string {
+  if (!fs.existsSync(dataDirectory)) {
+    throw new Error(`Ahmed data root does not exist: ${dataDirectory}`);
+  }
+  const candidates = fs.readdirSync(dataDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(dataDirectory, entry.name))
+    .filter((candidate) =>
+      fs.existsSync(path.join(candidate, 'ahmedData.tsx')) &&
+      fs.existsSync(path.join(candidate, 'البيانات_الكاملة_المجمعة.json')),
+    );
+  if (candidates.length !== 1) {
+    throw new Error(`Expected exactly one Ahmed source directory below ${dataDirectory}, found ${candidates.length}`);
+  }
+  return candidates[0];
+}
+
 function findLargestFile(
   files: string[],
   predicate: (filePath: string) => boolean,

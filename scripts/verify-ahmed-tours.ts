@@ -6,6 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import {
   destinationSlugForCountry,
   loadAhmedCatalog,
+  resolveAhmedSourceDirectory,
   NormalizedTour,
   validateCatalog,
 } from './ahmed-tours/normalize';
@@ -41,8 +42,7 @@ function expectedPrice(tour: NormalizedTour): string {
 
 async function main(): Promise<void> {
   const sourceDirectory = path.resolve(
-    argValue('source') ??
-      path.join(process.cwd(), '..', 'dunas-travel2026.com', 'src', 'data', 'داتا احمد'),
+    argValue('source') ?? resolveAhmedSourceDirectory(),
   );
   const outputPath = path.resolve(
     argValue('output') ?? path.join(process.cwd(), 'reports', 'ahmed-full-fidelity-verification.json'),

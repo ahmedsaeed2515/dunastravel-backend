@@ -1,0 +1,29 @@
+{
+  "sourceTours": 56,
+  "sourceImageRefs": 23,
+  "sourceImagesMatched": 20,
+  "activeTourImageRows": 55,
+  "activeCanonicalMediaAssets": 51,
+  "duplicateImagesWithinTour": [],
+  "nonCloudinaryActiveTourImages": [],
+  "missingSourceImages": [
+    {
+      "slug": "estrellas-medio-oriente-19d",
+      "sourceUrl": "https://theglobetrottingdetective.com/wp-content/uploads/2022/03/best-places-in-the-middle-east-traveling-the-middle-east-cappadocia-turkey.jpg",
+      "message": "The operation was aborted due to timeout"
+    },
+    {
+      "slug": "spices-of-egypt-and-morocco",
+      "sourceUrl": "https://th.bing.com/th/id/R.58564825c2c22ad5062b00d620ed4397?rik=XgQR%2bu8MUj6NHA&pid=ImgRaw&r=0",
+      "message": "fetch failed"
+    },
+    {
+      "slug": "jewels-of-egypt-and-jordan-11-days",
+      "sourceUrl": "https://th.bing.com/th/id/R.d4c411bd75b827b087396502b4144fe6?rik=3VllwT9EP1BvFA&pid=ImgRaw&r=0",
+      "message": "The operation was aborted due to timeout"
+    }
+  ],
+  "activeDestinationHeroesWithoutCloudinary": [],
+  "passed": false,
+  "generatedAt": "2026-08-27T08:31:35.064Z"
+}

@@ -113,7 +113,7 @@ async function seedSolPyramidHotel() {
       },
     });
 
-    console.log(Upserted Hotel: \ (\));
+    console.log(`Upserted Hotel: ${hotel.id}`);
 
     const rooms = [
       {
@@ -203,7 +203,7 @@ async function seedSolPyramidHotel() {
           isActive: roomData.isActive,
         },
       });
-      console.log(Upserted Room: \ (\$\/night));
+      console.log(`Upserted Room: ${room.id} ($${room.ratePerNight}/night)`);
     }
 
     const solPyramidCmsItem = {
@@ -246,16 +246,16 @@ async function seedSolPyramidHotel() {
 
       await prisma.cmsBlock.update({
         where: { key: 'hotels_catalog' },
-        data: { content: updatedList },
+        data: { content: updatedList as unknown as import('@prisma/client').Prisma.InputJsonValue },
       });
       console.log('Updated CMS Block: hotels_catalog with multilingual Sol Pyramid Hotel');
     } else {
       await prisma.cmsBlock.upsert({
         where: { key: 'hotels_catalog' },
-        update: { content: [solPyramidCmsItem] },
+        update: { content: [solPyramidCmsItem] as unknown as import('@prisma/client').Prisma.InputJsonValue },
         create: {
           key: 'hotels_catalog',
-          content: [solPyramidCmsItem],
+          content: [solPyramidCmsItem] as unknown as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
       console.log('Created CMS Block: hotels_catalog with multilingual Sol Pyramid Hotel');
@@ -265,7 +265,7 @@ async function seedSolPyramidHotel() {
   } catch (err) {
     console.error('Error seeding Sol Pyramid Hotel:', err);
   } finally {
-    await prisma.();
+    await prisma.$disconnect();
   }
 }
 

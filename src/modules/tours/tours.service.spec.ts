@@ -87,6 +87,46 @@ describe('ToursService', () => {
       );
       expect(result.data).toHaveLength(1);
     });
+
+    it('filters Dubai by its canonical destination relation, not its country label', async () => {
+      jest.spyOn(prisma.tour, 'count').mockResolvedValue(0);
+      const findManySpy = jest.spyOn(prisma.tour, 'findMany').mockResolvedValue([] as any);
+
+      await service.findAll({ lang: 'en', destination: 'United Arab Emirates', page: 1, limit: 10 });
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            landingPages: {
+              some: {
+                isVisible: true,
+                landingPage: expect.objectContaining({ slug: 'dubai', type: 'DESTINATION' }),
+              },
+            },
+          }),
+        }),
+      );
+      expect(findManySpy.mock.calls[0]?.[0]).toEqual(
+        expect.objectContaining({
+          where: expect.not.objectContaining({ country: expect.anything() }),
+        }),
+      );
+    });
+
+    it('keeps country filtering separate from canonical destination filtering', async () => {
+      jest.spyOn(prisma.tour, 'count').mockResolvedValue(0);
+      const findManySpy = jest.spyOn(prisma.tour, 'findMany').mockResolvedValue([] as any);
+
+      await service.findAll({ lang: 'en', country: 'United Arab Emirates', page: 1, limit: 10 });
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            country: { equals: 'United Arab Emirates', mode: 'insensitive' },
+          }),
+        }),
+      );
+    });
   });
 
   describe('findBySlug', () => {

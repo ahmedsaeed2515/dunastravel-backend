@@ -48,6 +48,36 @@ function extractStructuredI18n(value: unknown, lang: string): unknown {
   );
 }
 
+const DESTINATION_SLUG_ALIASES: Record<string, string> = {
+  'united-arab-emirates': 'dubai',
+  uae: 'dubai',
+  'u-a-e': 'dubai',
+  egipto: 'egypt',
+  egito: 'egypt',
+  turquia: 'turkey',
+  turkiye: 'turkey',
+  jordania: 'jordan',
+  'multi-country': 'multi-country',
+  multicountry: 'multi-country',
+};
+
+/**
+ * Public destination filters address canonical landing-page slugs.  Country
+ * labels are presentation data (for example, Dubai tours are stored under
+ * "United Arab Emirates") and must not decide which destination owns a tour.
+ */
+export function canonicalDestinationSlug(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return DESTINATION_SLUG_ALIASES[normalized] ?? normalized;
+}
+
 @Injectable()
 export class ToursService {
   private readonly logger = new Logger(ToursService.name);
@@ -81,9 +111,22 @@ export class ToursService {
     if (query.category) {
       where.category = { equals: query.category, mode: 'insensitive' };
     }
-    const targetCountry = query.destination || query.country;
-    if (targetCountry) {
-      where.country = { equals: targetCountry, mode: 'insensitive' };
+    if (query.destination) {
+      where.landingPages = {
+        some: {
+          isVisible: true,
+          landingPage: {
+            slug: canonicalDestinationSlug(query.destination),
+            type: 'DESTINATION',
+            status: 'PUBLISHED',
+            isActive: true,
+            deletedAt: null,
+          },
+        },
+      };
+    }
+    if (query.country) {
+      where.country = { equals: query.country, mode: 'insensitive' };
     }
     if (query.city) {
       where.city = { equals: query.city, mode: 'insensitive' };
@@ -130,9 +173,8 @@ export class ToursService {
           country: true,
           languages: true,
           images: {
-            where: { isHero: true },
             take: 1,
-            orderBy: { sortOrder: 'asc' },
+            orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
             select: { imageUrl: true },
           },
         },

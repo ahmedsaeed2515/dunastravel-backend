@@ -6,6 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import {
   destinationSlugForCountry,
   loadAhmedCatalog,
+  resolveAhmedSourceDirectory,
   NormalizedTour,
   validateCatalog,
 } from './ahmed-tours/normalize';
@@ -92,6 +93,67 @@ function tourData(tour: NormalizedTour) {
   };
 }
 
+export function canonicalImageUrl(value: string): string {
+  const trimmed = value.trim();
+  try {
+    const url = new URL(trimmed);
+    url.hash = '';
+    url.hostname = url.hostname.toLowerCase();
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(utm_|fbclid$|gclid$|dclid$|msclkid$)/i.test(key)) {
+        url.searchParams.delete(key);
+      }
+    }
+    url.pathname = url.pathname.replace(/\/+$/, '') || '/';
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
+ * Preserve existing media and append only source URLs that are not already
+ * represented. TourImage has no MediaAsset/content-hash relation, so URL
+ * canonicalization is the strongest deduplication key the schema supports.
+ */
+export async function syncTourImages(
+  prisma: Prisma.TransactionClient,
+  tourId: string,
+  sourceImages: NormalizedTour['images'],
+): Promise<void> {
+  const existing = await prisma.tourImage.findMany({
+    where: { tourId },
+    select: { imageUrl: true, isHero: true, sortOrder: true },
+  });
+  const knownUrls = new Set(existing.map((image) => canonicalImageUrl(image.imageUrl)));
+  const uniqueSourceImages = sourceImages.filter((image, index, images) => {
+    const canonicalUrl = canonicalImageUrl(image.imageUrl);
+    return Boolean(canonicalUrl) && images.findIndex(
+      (candidate) => canonicalImageUrl(candidate.imageUrl) === canonicalUrl,
+    ) === index;
+  });
+  const additions = uniqueSourceImages.filter(
+    (image) => !knownUrls.has(canonicalImageUrl(image.imageUrl)),
+  );
+
+  if (additions.length === 0) return;
+
+  const nextSortOrder = existing.reduce(
+    (maximum, image) => Math.max(maximum, image.sortOrder),
+    -1,
+  ) + 1;
+  const hasHero = existing.some((image) => image.isHero);
+  await prisma.tourImage.createMany({
+    data: additions.map((image, index) => ({
+      tourId,
+      imageUrl: image.imageUrl.trim(),
+      altText: image.altText || null,
+      isHero: !hasHero && index === 0 && image.isHero,
+      sortOrder: nextSortOrder + index,
+    })),
+  });
+}
+
 async function replaceChildren(
   prisma: Prisma.TransactionClient,
   tourId: string,
@@ -117,12 +179,7 @@ async function replaceChildren(
       })),
     });
   }
-  await prisma.tourImage.deleteMany({ where: { tourId } });
-  if (tour.images.length > 0) {
-    await prisma.tourImage.createMany({
-      data: tour.images.map((image) => ({ tourId, ...image })),
-    });
-  }
+  await syncTourImages(prisma, tourId, tour.images);
 }
 
 function destinationSlugFor(tour: NormalizedTour): string {
@@ -241,18 +298,10 @@ async function createAvailability(
   return result.count;
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const execute = process.argv.includes('--execute');
   const sourceDirectory = path.resolve(
-    argValue('source') ??
-      path.join(
-        process.cwd(),
-        '..',
-        'dunas-travel2026.com',
-        'src',
-        'data',
-        'داتا احمد',
-      ),
+    argValue('source') ?? resolveAhmedSourceDirectory(),
   );
   const availabilityDays = Math.max(
     0,
@@ -399,7 +448,9 @@ async function main(): Promise<void> {
   process.exit(report.errors.length > 0 ? 1 : 0);
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

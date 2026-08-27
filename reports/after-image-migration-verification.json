@@ -1,0 +1,1087 @@
+{
+  "generatedAt": "2026-08-27T07:20:56.721Z",
+  "sourceCatalogCount": 56,
+  "importedCanonicalTours": 56,
+  "totalDatabaseTours": 62,
+  "canonicalItineraryRows": 467,
+  "canonicalMediaRows": 55,
+  "destinationRelations": 56,
+  "publicNonAhmedTours": 0,
+  "fieldMismatchCount": 809,
+  "fieldMismatches": [
+    {
+      "slug": "cairo-express-4d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "cairo-express-alexandria-5d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "egito-classico-8d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "egito-classico-ii-9d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "egito-historico-10d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "cairo-cruzeiro-sharm-11d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "grande-ramses-10d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "tesouros-egipto-9d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "complete-egypt-8d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "lo-mejor-de-grecia-9d",
+      "fields": [
+        "images.0",
+        "images.1",
+        "images.2",
+        "images.3"
+      ]
+    },
+    {
+      "slug": "tunisia-8-days-desert-sea",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "estrellas-medio-oriente-19d",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "cairo-and-athens-11-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "essences-of-egypt-and-turkey-15-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "marvels-of-dubai-and-turkey-14-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "stars-of-the-middle-east-16-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "treasures-of-egypt-and-tunisia-16-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "egypt-and-dubai-13-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "spices-of-egypt-and-morocco",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "jewels-of-egypt-and-jordan-11-days",
+      "fields": [
+        "images.0"
+      ]
+    },
+    {
+      "slug": "journey-of-the-holy-family-10-days",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "hurghada-escape",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "sharm-el-sheikh-escape",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-01-legendary-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "itinerary.10.activitiesJsonb",
+        "itinerary.10.hotelsJsonb",
+        "itinerary.10.transportationJsonb",
+        "itinerary.10.notesJsonb",
+        "itinerary.10.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-04-legendary-cappadocia",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder"
+      ]
+    },
+    {
+      "slug": "ist-01-best-of-istanbul",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-03-passion-of-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-16-jordan-with-desert",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-17-jordan-with-desert-and-dead-sea",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-19-jordan-red-sea",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-21-jordan-extension-4-days",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-22-stop-over-dubai",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-23-dubai-and-its-history",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-24-dubai-city-of-the-future",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-25-dubai-and-abu-dhabi",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-26-dubai-with-overnight-in-abu-dhabi",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-27-one-week-in-dubai",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-28-the-complete-emirates",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "hm001-honeymoon-in-dubai",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "hm002-honeymoon-in-dubai-with-dinner-at-burj-al-arab",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-05-admirable-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-06-heart-of-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-07-turkish-riviera",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "itinerary.10.activitiesJsonb",
+        "itinerary.10.hotelsJsonb",
+        "itinerary.10.transportationJsonb",
+        "itinerary.10.notesJsonb",
+        "itinerary.10.sortOrder",
+        "itinerary.11.activitiesJsonb",
+        "itinerary.11.hotelsJsonb",
+        "itinerary.11.transportationJsonb",
+        "itinerary.11.notesJsonb",
+        "itinerary.11.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-08-stop-over",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-09-turkey-without-rush",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-10-turkish-riviera-with-fethiye",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "itinerary.10.activitiesJsonb",
+        "itinerary.10.hotelsJsonb",
+        "itinerary.10.transportationJsonb",
+        "itinerary.10.notesJsonb",
+        "itinerary.10.sortOrder",
+        "itinerary.11.activitiesJsonb",
+        "itinerary.11.hotelsJsonb",
+        "itinerary.11.transportationJsonb",
+        "itinerary.11.notesJsonb",
+        "itinerary.11.sortOrder",
+        "itinerary.12.activitiesJsonb",
+        "itinerary.12.hotelsJsonb",
+        "itinerary.12.transportationJsonb",
+        "itinerary.12.notesJsonb",
+        "itinerary.12.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-11-antalya",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-12-beautiful-turkey",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-05-b-admirable-turkey-winter",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-13-extension-7-churches",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-14-secret-of-the-temple",
+      "fields": [
+        "sourceCodeJsonb",
+        "highlightsJsonb",
+        "transportationJsonb",
+        "category",
+        "basePriceUsd",
+        "status",
+        "isActive",
+        "languages",
+        "itinerary.0.activitiesJsonb",
+        "itinerary.0.hotelsJsonb",
+        "itinerary.0.transportationJsonb",
+        "itinerary.0.notesJsonb",
+        "itinerary.0.sortOrder",
+        "itinerary.1.activitiesJsonb",
+        "itinerary.1.hotelsJsonb",
+        "itinerary.1.transportationJsonb",
+        "itinerary.1.notesJsonb",
+        "itinerary.1.sortOrder",
+        "itinerary.2.activitiesJsonb",
+        "itinerary.2.hotelsJsonb",
+        "itinerary.2.transportationJsonb",
+        "itinerary.2.notesJsonb",
+        "itinerary.2.sortOrder",
+        "itinerary.3.activitiesJsonb",
+        "itinerary.3.hotelsJsonb",
+        "itinerary.3.transportationJsonb",
+        "itinerary.3.notesJsonb",
+        "itinerary.3.sortOrder",
+        "itinerary.4.activitiesJsonb",
+        "itinerary.4.hotelsJsonb",
+        "itinerary.4.transportationJsonb",
+        "itinerary.4.notesJsonb",
+        "itinerary.4.sortOrder",
+        "itinerary.5.activitiesJsonb",
+        "itinerary.5.hotelsJsonb",
+        "itinerary.5.transportationJsonb",
+        "itinerary.5.notesJsonb",
+        "itinerary.5.sortOrder",
+        "itinerary.6.activitiesJsonb",
+        "itinerary.6.hotelsJsonb",
+        "itinerary.6.transportationJsonb",
+        "itinerary.6.notesJsonb",
+        "itinerary.6.sortOrder",
+        "itinerary.7.activitiesJsonb",
+        "itinerary.7.hotelsJsonb",
+        "itinerary.7.transportationJsonb",
+        "itinerary.7.notesJsonb",
+        "itinerary.7.sortOrder",
+        "itinerary.8.activitiesJsonb",
+        "itinerary.8.hotelsJsonb",
+        "itinerary.8.transportationJsonb",
+        "itinerary.8.notesJsonb",
+        "itinerary.8.sortOrder",
+        "itinerary.9.activitiesJsonb",
+        "itinerary.9.hotelsJsonb",
+        "itinerary.9.transportationJsonb",
+        "itinerary.9.notesJsonb",
+        "itinerary.9.sortOrder",
+        "itinerary.10.activitiesJsonb",
+        "itinerary.10.hotelsJsonb",
+        "itinerary.10.transportationJsonb",
+        "itinerary.10.notesJsonb",
+        "itinerary.10.sortOrder",
+        "images.count"
+      ]
+    },
+    {
+      "slug": "reg-29-sharm-el-sheikh",
+      "fields": [
+        "images.count"
+      ]
+    },
+    {
+      "slug": "mrc-01-spices-of-morocco",
+      "fields": [
+        "images.count"
+      ]
+    }
+  ]
+}

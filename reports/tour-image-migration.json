@@ -1,0 +1,32 @@
+{
+  "mode": "execute",
+  "catalogTours": 56,
+  "sourceImageRefs": 23,
+  "databaseTourImageRefs": 59,
+  "destinationHeroRefs": 8,
+  "uniqueImageRefs": 54,
+  "uniqueContentHashes": 51,
+  "uploaded": 51,
+  "reused": 0,
+  "tourImagesRewritten": 55,
+  "destinationHeroesRewritten": 7,
+  "duplicateTourImagesRemoved": 4,
+  "unavailableSkipped": 3,
+  "destinationHeroesCleared": 1,
+  "errors": [
+    {
+      "ref": "https://images.unsplash.com/photo-1579606032834-0d33e5c9a1a4?auto=format&fit=crop&w=1200&q=80",
+      "message": "HTTP 404 while downloading https://images.unsplash.com/photo-1579606032834-0d33e5c9a1a4?auto=format&fit=crop&w=1200&q=80"
+    },
+    {
+      "ref": "https://images.unsplash.com/photo-1609856878074-ce31ec407ac4?auto=format&fit=crop&w=1200&q=80",
+      "message": "HTTP 404 while downloading https://images.unsplash.com/photo-1609856878074-ce31ec407ac4?auto=format&fit=crop&w=1200&q=80"
+    },
+    {
+      "ref": "https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200",
+      "message": "HTTP 404 while downloading https://images.unsplash.com/photo-1548786811-dd4f764bc046?w=1200"
+    }
+  ],
+  "generatedAt": "2026-08-27T07:11:03.186Z",
+  "obsoleteTourMediaSoftDeleted": 28
+}

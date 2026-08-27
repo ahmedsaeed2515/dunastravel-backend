@@ -66,9 +66,7 @@
   "unchangedExistingBookings": 51,
   "availabilitySlotsCreated": 0,
   "destinationRelationsSynced": 0,
-  "destinationLandingPagesCreated": [
-    "tunisia"
-  ],
+  "destinationLandingPagesCreated": [],
   "tours": [
     {
       "sourceId": "eg-br-001",
@@ -868,5 +866,5 @@
     }
   ],
   "errors": [],
-  "generatedAt": "2026-08-26T17:37:36.964Z"
+  "generatedAt": "2026-08-27T06:50:08.969Z"
 }
