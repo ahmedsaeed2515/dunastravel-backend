@@ -44,14 +44,16 @@ export class RegisterDto {
   })
   phone?: string;
 
-  @ApiProperty({ description: 'User password', example: 'StrongPass123' })
+  @ApiProperty({
+    description:
+      '12–128 characters. The password policy also requires at least three character types and rejects predictable values.',
+    example: 'Journey!2026Atlas',
+    minLength: 12,
+    maxLength: 128,
+  })
   @IsString()
   @IsNotEmpty()
-  @MinLength(8)
-  @MaxLength(100)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, and one digit',
-  })
+  @MinLength(12)
+  @MaxLength(128)
   password!: string;
 }

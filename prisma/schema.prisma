@@ -1104,14 +1104,26 @@ model TourAvailability {
 }
 
 model TransportationService {
-  id           String                  @id @default(uuid())
-  name         String                  @db.VarChar(255)
-  serviceType  String                  @map("service_type") @db.VarChar(50) // AIRPORT, HOTEL, CITY_TO_CITY
-  isActive     Boolean                 @default(true) @map("is_active")
-  basePriceUsd Decimal                 @default(0.00) @map("base_price_usd") @db.Decimal(10, 2)
-  createdAt    DateTime                @default(now()) @map("created_at")
-  updatedAt    DateTime                @updatedAt @map("updated_at")
-  bookings     TransportationBooking[]
+  id                  String                  @id @default(uuid())
+  name                String                  @db.VarChar(255)
+  serviceType         String                  @map("service_type") @db.VarChar(50) // AIRPORT, HOTEL, CITY_TO_CITY
+  description         String?                 @db.Text
+  vehicleCategory     String?                 @map("vehicle_category") @db.VarChar(50)
+  vehicleType         String?                 @map("vehicle_type") @db.VarChar(100)
+  capacity            Int?
+  doors               Int?
+  transmission        String?                 @db.VarChar(50)
+  heroImageUrl        String?                 @map("hero_image_url") @db.VarChar(2048)
+  isPrivate           Boolean                 @default(true) @map("is_private")
+  pickupInstructions  String?                 @map("pickup_instructions") @db.Text
+  dropoffInstructions String?                 @map("dropoff_instructions") @db.Text
+  featuresJsonb       Json?                   @map("features_jsonb")
+  heroMediaId         String?                 @map("hero_media_id") @db.VarChar(50)
+  isActive            Boolean                 @default(true) @map("is_active")
+  basePriceUsd        Decimal                 @default(0.00) @map("base_price_usd") @db.Decimal(10, 2)
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  bookings            TransportationBooking[]
 
   @@map("transportation_services")
 }
@@ -1130,6 +1142,7 @@ model TransportationBooking {
   luggageCount    Int      @default(0) @map("luggage_count")
   totalAmountUsd  Decimal  @map("total_amount_usd") @db.Decimal(10, 2)
   flightNumber    String?  @map("flight_number") @db.VarChar(50)
+  notes           String?  @db.Text
   driverName      String?  @map("driver_name") @db.VarChar(100)
   vehicleType     String?  @map("vehicle_type") @db.VarChar(100)
   createdAt       DateTime @default(now()) @map("created_at")

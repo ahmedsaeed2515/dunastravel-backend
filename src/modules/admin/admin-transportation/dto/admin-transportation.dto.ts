@@ -7,6 +7,8 @@ import {
   IsString,
   IsBoolean,
   IsNumber,
+  IsArray,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -60,6 +62,69 @@ export class CreateTransportationServiceDto {
   @MaxLength(50)
   serviceType!: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  vehicleCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  vehicleType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  capacity?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  doors?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  transmission?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  heroImageUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  pickupInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  dropoffInstructions?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  features?: string[];
+
+  @IsOptional()
+  @IsUUID()
+  heroMediaId?: string;
+
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -82,6 +147,69 @@ export class UpdateTransportationServiceDto {
   @IsNotEmpty()
   @MaxLength(50)
   serviceType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  vehicleCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  vehicleType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  capacity?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  doors?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  transmission?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  heroImageUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  pickupInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000)
+  dropoffInstructions?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  features?: string[];
+
+  @IsOptional()
+  @IsUUID()
+  heroMediaId?: string;
 
   @IsOptional()
   @Type(() => Number)

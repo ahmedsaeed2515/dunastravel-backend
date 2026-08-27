@@ -185,11 +185,18 @@ describe('Catalog & Destinations Engine (HTTP Contracts)', () => {
         .get('/api/tours/luxury-nile-cruise?lang=en')
         .expect(200);
 
-      const detail = (res.body.data || res.body) as DetailBody;
+      const detail = (res.body.data || res.body) as any;
       expect(detail.slug).toBe('luxury-nile-cruise');
       expect(detail.title).toBe('Luxury Nile Cruise');
+      expect(detail.city).toBe('Luxor');
+      expect(detail.country).toBe('Egypt');
+      expect(detail.heroImage).toBe('https://example.com/hero.jpg');
       expect(detail).toHaveProperty('itinerary');
       expect(detail).toHaveProperty('images');
+      expect(detail).toHaveProperty('highlights');
+      expect(detail).toHaveProperty('includedServices');
+      expect(detail).toHaveProperty('excludedServices');
+      expect(detail).toHaveProperty('tags');
     });
 
     it('should return 404 for non-existent tour slug', async () => {

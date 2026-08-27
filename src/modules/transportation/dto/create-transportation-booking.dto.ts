@@ -60,4 +60,10 @@ export class CreateTransportationBookingDto {
   @MaxLength(20)
   @Matches(/^[A-Za-z0-9 -]+$/)
   flightNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2_000)
+  notes?: string;
 }

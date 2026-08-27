@@ -171,6 +171,7 @@ export class ToursService {
           basePriceUsd: true,
           durationJsonb: true,
           country: true,
+          city: true,
           languages: true,
           images: {
             take: 1,
@@ -194,6 +195,7 @@ export class ToursService {
       duration: extractI18n(record.durationJsonb, query.lang),
       heroImage: record.images[0]?.imageUrl ?? null,
       country: record.country,
+      city: record.city,
       languages: record.languages,
     }));
 
@@ -272,6 +274,10 @@ export class ToursService {
       description: extractI18n(it.descriptionJsonb, lang),
       meals: it.mealsJsonb ? extractI18n(it.mealsJsonb, lang) || null : null,
       sortOrder: it.sortOrder,
+      activities: it.activitiesJsonb ? extractI18n(it.activitiesJsonb, lang) || null : null,
+      hotels: it.hotelsJsonb ? extractI18n(it.hotelsJsonb, lang) || null : null,
+      notes: it.notesJsonb ? extractI18n(it.notesJsonb, lang) || null : null,
+      transportation: it.transportationJsonb ? extractI18n(it.transportationJsonb, lang) || null : null,
     }));
 
     const images: TourImageResponse[] = tour.images.map((img) => ({
@@ -280,7 +286,14 @@ export class ToursService {
       isHero: img.isHero,
       altText: img.altText,
       sortOrder: img.sortOrder,
+      isVideo: img.isVideo,
+      videoUrl: img.videoUrl,
     }));
+
+    const heroImgObj = tour.images.find((img) => img.isHero) || tour.images[0];
+    const heroImage = heroImgObj?.imageUrl || null;
+    const heroVideoObj = tour.images.find((img) => img.isVideo && img.videoUrl);
+    const heroVideoUrl = heroVideoObj?.videoUrl || null;
 
     return {
       id: tour.id,
@@ -324,6 +337,17 @@ export class ToursService {
       difficultyLevel: tour.difficultyLevel,
       meetingPoint: tour.meetingPoint,
       country: tour.country,
+      city: tour.city,
+      minPax: tour.minPaxJsonb ? extractI18n(tour.minPaxJsonb, lang) || null : null,
+      departureTime: tour.departureTime,
+      returnTime: tour.returnTime,
+      ageRestrictions: tour.ageRestrictions,
+      pickupLocations: tour.pickupLocationsJsonb ? extractI18nList(tour.pickupLocationsJsonb, lang) : null,
+      seoTitle: tour.seoTitle,
+      seoDescription: tour.seoDescription,
+      customBadge: null,
+      heroImage,
+      heroVideoUrl,
       languages: tour.languages,
       isFeatured: tour.isFeatured,
 

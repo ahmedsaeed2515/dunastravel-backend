@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -77,12 +78,19 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const verifyToken = crypto.randomBytes(32).toString('hex');
-    const verifyTokenHash = crypto
-      .createHash('sha256')
-      .update(verifyToken)
-      .digest('hex');
-    const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
+    const requireEmailVerification = (await this.settingsService.getSetting(
+      'AUTH_REQUIRE_EMAIL_VERIFICATION',
+      false,
+    )) as boolean;
+    const verifyToken = requireEmailVerification
+      ? crypto.randomBytes(32).toString('hex')
+      : null;
+    const verifyTokenHash = verifyToken
+      ? crypto.createHash('sha256').update(verifyToken).digest('hex')
+      : null;
+    const verifyTokenExp = verifyToken
+      ? new Date(Date.now() + 86400000)
+      : null;
 
     const user = await this.prisma.user.create({
       data: {
@@ -90,17 +98,33 @@ export class AuthService {
         email: dto.email.trim().toLowerCase(),
         phone: dto.phone?.trim(),
         passwordHash,
+        isVerified: !requireEmailVerification,
         verifyToken: verifyTokenHash,
         verifyTokenExp,
       },
     });
 
     this.logger.log(`User registered: userId=${user.id}`);
-    await this.notificationsService.sendVerificationEmail(
-      user.email,
-      user.name,
-      verifyToken,
-    );
+    if (verifyToken) {
+      try {
+        await this.notificationsService.sendVerificationEmail(
+          user.email,
+          user.name,
+          verifyToken,
+        );
+      } catch (error) {
+        // Do not leave a newly registered user blocked behind an email that
+        // could not be sent. A retry of registration remains possible.
+        await this.prisma.user.delete({ where: { id: user.id } }).catch(() => {
+          this.logger.error(
+            `Could not roll back registration after verification email failure: userId=${user.id}`,
+          );
+        });
+        throw new ServiceUnavailableException(
+          'Unable to send the verification email. Please try again later.',
+        );
+      }
+    }
 
     return this.userService.toSafeUser(user);
   }
@@ -160,7 +184,7 @@ export class AuthService {
 
     const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      true,
+      false,
     )) as boolean;
 
     if (requireEmailVerification && !user.isVerified) {
@@ -371,7 +395,7 @@ export class AuthService {
 
       const requireEmailVerification = (await this.settingsService.getSetting(
         'AUTH_REQUIRE_EMAIL_VERIFICATION',
-        true,
+        false,
       )) as boolean;
       if (requireEmailVerification && !user.isVerified) {
         throw new UnauthorizedException('Invalid refresh token');
@@ -471,6 +495,14 @@ export class AuthService {
   async resendVerification(
     dto: ResendVerificationDto,
   ): Promise<{ message: string }> {
+    const requireEmailVerification = (await this.settingsService.getSetting(
+      'AUTH_REQUIRE_EMAIL_VERIFICATION',
+      false,
+    )) as boolean;
+    if (!requireEmailVerification) {
+      return { message: 'Email verification is currently disabled.' };
+    }
+
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email, deletedAt: null },
     });

@@ -8,6 +8,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { TransportationBookingStatus } from '@prisma/client';
 import { paginate, getPaginationParams } from '../../../common/utils';
 import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util';
+import { Prisma } from '@prisma/client';
 import { AuthenticatedUser } from '../../../common/types';
 import {
   CreateTransportationServiceDto,
@@ -29,6 +30,29 @@ export class AdminTransportationService {
     return safe;
   }
 
+  private serviceData(
+    dto: CreateTransportationServiceDto | UpdateTransportationServiceDto,
+  ): Prisma.TransportationServiceUncheckedCreateInput {
+    const data: Record<string, unknown> = {};
+    if (dto.name !== undefined) data.name = sanitizePlainText(dto.name).slice(0, 255);
+    if (dto.serviceType !== undefined) data.serviceType = sanitizePlainText(dto.serviceType).slice(0, 50);
+    if (dto.description !== undefined) data.description = sanitizePlainText(dto.description).slice(0, 10_000) || null;
+    if (dto.vehicleCategory !== undefined) data.vehicleCategory = sanitizePlainText(dto.vehicleCategory).slice(0, 50) || null;
+    if (dto.vehicleType !== undefined) data.vehicleType = sanitizePlainText(dto.vehicleType).slice(0, 100) || null;
+    if (dto.capacity !== undefined) data.capacity = dto.capacity;
+    if (dto.doors !== undefined) data.doors = dto.doors;
+    if (dto.transmission !== undefined) data.transmission = sanitizePlainText(dto.transmission).slice(0, 50) || null;
+    if (dto.heroImageUrl !== undefined) data.heroImageUrl = sanitizePlainText(dto.heroImageUrl).slice(0, 2_048) || null;
+    if (dto.isPrivate !== undefined) data.isPrivate = dto.isPrivate;
+    if (dto.pickupInstructions !== undefined) data.pickupInstructions = sanitizePlainText(dto.pickupInstructions).slice(0, 10_000) || null;
+    if (dto.dropoffInstructions !== undefined) data.dropoffInstructions = sanitizePlainText(dto.dropoffInstructions).slice(0, 10_000) || null;
+    if (dto.features !== undefined) data.featuresJsonb = dto.features.map((value) => sanitizePlainText(value).slice(0, 100)).filter(Boolean) as Prisma.InputJsonValue;
+    if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId || null;
+    if (dto.basePriceUsd !== undefined) data.basePriceUsd = dto.basePriceUsd;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    return data as Prisma.TransportationServiceUncheckedCreateInput;
+  }
+
   async findAllServices() {
     return this.prisma.transportationService.findMany({
       orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
@@ -41,9 +65,7 @@ export class AdminTransportationService {
   ) {
     const service = await this.prisma.transportationService.create({
       data: {
-        name: sanitizePlainText(dto.name).slice(0, 255),
-        serviceType: sanitizePlainText(dto.serviceType).slice(0, 50),
-        basePriceUsd: dto.basePriceUsd,
+        ...this.serviceData(dto),
         isActive: dto.isActive ?? true,
       },
     });
@@ -71,14 +93,7 @@ export class AdminTransportationService {
     const service = await this.prisma.transportationService.update({
       where: { id },
       data: {
-        ...(dto.name !== undefined
-          ? { name: sanitizePlainText(dto.name).slice(0, 255) }
-          : {}),
-        ...(dto.serviceType !== undefined
-          ? { serviceType: sanitizePlainText(dto.serviceType).slice(0, 50) }
-          : {}),
-        ...(dto.basePriceUsd !== undefined ? { basePriceUsd: dto.basePriceUsd } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...this.serviceData(dto),
       },
     });
     await this.prisma.auditLog.create({

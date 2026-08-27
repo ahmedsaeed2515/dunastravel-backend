@@ -51,6 +51,7 @@ export class TransportationService {
           passengerCount: dto.passengerCount,
           luggageCount: dto.luggageCount || 0,
           flightNumber: dto.flightNumber?.trim().toUpperCase() || null,
+          notes: dto.notes?.trim() || null,
         }),
       )
       .digest('hex');
@@ -76,6 +77,11 @@ export class TransportationService {
     if (!service || !service.isActive) {
       throw new NotFoundException(
         'Transportation service not found or inactive',
+      );
+    }
+    if (service.capacity !== null && dto.passengerCount > service.capacity) {
+      throw new BadRequestException(
+        `Passenger count exceeds this service capacity of ${service.capacity}`,
       );
     }
 
@@ -118,6 +124,9 @@ export class TransportationService {
                   .slice(0, 20)
                   .toUpperCase()
               : null,
+            notes: dto.notes
+              ? sanitizePlainText(dto.notes).slice(0, 2_000)
+              : null,
             totalAmountUsd: totalAmount,
             status: 'SUBMITTED',
             idempotencyKey,
@@ -148,9 +157,27 @@ export class TransportationService {
   }
 
   async findAllServices() {
-    return this.prisma.transportationService.findMany({
+    const services = await this.prisma.transportationService.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
+    });
+    const mediaIds = services.flatMap((service) => service.heroMediaId ? [service.heroMediaId] : []);
+    const media = mediaIds.length
+      ? await this.prisma.mediaAsset.findMany({
+          where: { id: { in: mediaIds }, deletedAt: null },
+          select: { id: true, secureUrl: true, url: true, altText: true },
+        })
+      : [];
+    const mediaById = new Map(media.map((asset) => [asset.id, asset]));
+    return services.map((service) => {
+      const hero = service.heroMediaId ? mediaById.get(service.heroMediaId) : undefined;
+      return {
+        ...service,
+        basePriceUsd: Number(service.basePriceUsd),
+        features: Array.isArray(service.featuresJsonb) ? service.featuresJsonb.filter((item): item is string => typeof item === 'string') : [],
+        heroImageUrl: hero?.secureUrl || hero?.url || service.heroImageUrl || null,
+        heroImageAlt: hero?.altText || null,
+      };
     });
   }
 

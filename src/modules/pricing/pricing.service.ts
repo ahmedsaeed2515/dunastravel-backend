@@ -157,12 +157,21 @@ export class PricingService {
     const unadjustedSubtotal = adultBaseTotal.add(childBaseTotal);
 
     // Seasonal multiplier lookup
-    const seasonPricing = tour.seasonPricingJsonb as SeasonPricingItem[] | null;
+    const seasonPricing = tour.seasonPricingJsonb as any;
     let seasonalMultiplier = new Prisma.Decimal(1);
-    if (seasonPricing && Array.isArray(seasonPricing) && dto.date) {
+    const rulesArray: SeasonPricingItem[] | null = Array.isArray(seasonPricing)
+      ? seasonPricing
+      : (Array.isArray(seasonPricing?.rules)
+        ? seasonPricing.rules
+        : (Array.isArray(seasonPricing?.seasonalMultipliers)
+          ? seasonPricing.seasonalMultipliers
+          : null));
+
+    if (rulesArray && dto.date) {
       const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
       const matchingRules: Prisma.Decimal[] = [];
-      for (const season of seasonPricing) {
+      for (const season of rulesArray) {
+        if (!season?.startDate || !season?.endDate || season?.multiplier === undefined) continue;
         const start = new Date(`${season.startDate}T00:00:00.000Z`);
         const end = new Date(`${season.endDate}T00:00:00.000Z`);
         let multiplier: Prisma.Decimal;

@@ -40,7 +40,7 @@ export class SettingsController {
   }
 
   @Put(':key')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update a specific system setting' })
   async updateSetting(
     @Param('key') key: string,

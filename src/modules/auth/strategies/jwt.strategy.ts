@@ -42,7 +42,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      true,
+      false,
     )) as boolean;
     if (
       user.suspendedAt ||

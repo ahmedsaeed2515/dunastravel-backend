@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
@@ -262,9 +263,17 @@ export class NotificationsService {
       tags: { notificationType: NotificationType.USER_VERIFICATION },
     };
 
-    this.emailDelivery
-      .deliver(NotificationType.USER_VERIFICATION, 'AUTH', 'USER', payload)
-      .catch(() => this.logger.error('Send verification email failed'));
+    const delivered = await this.emailDelivery.deliver(
+      NotificationType.USER_VERIFICATION,
+      'AUTH',
+      'USER',
+      payload,
+    );
+    if (!delivered) {
+      throw new ServiceUnavailableException(
+        'Verification email could not be delivered. Please try again later.',
+      );
+    }
   }
 
   async sendPasswordResetEmail(

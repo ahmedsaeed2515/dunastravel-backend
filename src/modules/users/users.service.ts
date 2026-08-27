@@ -184,6 +184,9 @@ export class UserService {
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.phone && { phone: dto.phone }),
+        ...(dto.nationality && {
+          nationality: sanitizePlainText(dto.nationality).slice(0, 100),
+        }),
         ...(dto.preferredCurrency && {
           preferredCurrency: dto.preferredCurrency,
         }),

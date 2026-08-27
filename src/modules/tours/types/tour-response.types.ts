@@ -4,6 +4,8 @@ export interface TourImageResponse {
   isHero: boolean;
   altText: string | null;
   sortOrder: number;
+  isVideo?: boolean;
+  videoUrl?: string | null;
 }
 
 export interface TourItineraryResponse {
@@ -12,6 +14,10 @@ export interface TourItineraryResponse {
   description: string;
   meals: string | null;
   sortOrder: number;
+  activities?: string | null;
+  hotels?: string | null;
+  notes?: string | null;
+  transportation?: string | null;
 }
 
 export interface TourSummaryResponse {
@@ -23,6 +29,7 @@ export interface TourSummaryResponse {
   duration: string;
   heroImage: string | null;
   country: string | null;
+  city?: string | null;
   languages: string[];
 }
 
@@ -53,6 +60,17 @@ export interface TourDetailResponse {
   difficultyLevel: string | null;
   meetingPoint: string | null;
   country: string | null;
+  city: string | null;
+  minPax: string | null;
+  departureTime: string | null;
+  returnTime: string | null;
+  ageRestrictions: string | null;
+  pickupLocations: string[] | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  customBadge: string | null;
+  heroImage: string | null;
+  heroVideoUrl: string | null;
   languages: string[];
   isFeatured: boolean;
   itinerary: TourItineraryResponse[];

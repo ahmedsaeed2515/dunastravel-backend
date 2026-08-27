@@ -44,6 +44,11 @@ describe('AuthService', () => {
   jest.setTimeout(30000);
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
+  let notificationsService: {
+    sendPasswordResetEmail: jest.Mock;
+    sendVerificationEmail: jest.Mock;
+  };
+  let settingsService: { getSetting: jest.Mock };
   let jwtService: jest.Mocked<JwtService> = undefined as any;
   let prisma: {
     user: {
@@ -157,6 +162,13 @@ describe('AuthService', () => {
   } as unknown as SafeUser;
 
   beforeEach(async () => {
+    notificationsService = {
+      sendPasswordResetEmail: jest.fn(),
+      sendVerificationEmail: jest.fn(),
+    };
+    settingsService = {
+      getSetting: jest.fn().mockResolvedValue(true),
+    };
     const transactionUser = {
       findFirst: jest.fn(),
       update: jest.fn().mockResolvedValue(mockUser),
@@ -229,16 +241,11 @@ describe('AuthService', () => {
         },
         {
           provide: NotificationsService,
-          useValue: {
-            sendPasswordResetEmail: jest.fn(),
-            sendVerificationEmail: jest.fn(),
-          },
+          useValue: notificationsService,
         },
         {
           provide: SettingsService,
-          useValue: {
-            getSetting: jest.fn().mockResolvedValue(true),
-          },
+          useValue: settingsService,
         },
       ],
     }).compile();
@@ -278,6 +285,23 @@ describe('AuthService', () => {
 
       expect(result).toEqual(safeUser);
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('should activate a new user without sending email when verification is disabled', async () => {
+      userService.findByEmail.mockResolvedValueOnce(null);
+      settingsService.getSetting.mockResolvedValueOnce(false);
+      (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
+
+      await authService.register(registerDto);
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          isVerified: true,
+          verifyToken: null,
+          verifyTokenExp: null,
+        }),
+      });
+      expect(notificationsService.sendVerificationEmail).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException if email is already in use', async () => {

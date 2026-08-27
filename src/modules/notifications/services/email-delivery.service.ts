@@ -27,7 +27,7 @@ export class EmailDeliveryService {
     originReferenceCode: string,
     originEntityType: string,
     payload: EmailPayload,
-  ): Promise<void> {
+  ): Promise<boolean> {
     // 1. Create PENDING log entry
     const logRecord = this.prisma?.notificationDeliveryLog
       ? await this.prisma.notificationDeliveryLog.create({
@@ -102,5 +102,7 @@ export class EmailDeliveryService {
         }
       }
     }
+
+    return success;
   }
 }
