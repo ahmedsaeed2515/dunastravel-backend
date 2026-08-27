@@ -1548,7 +1548,14 @@ export class AdminService {
           landingPages: {
             include: {
               landingPage: {
-                select: { id: true, slug: true, titleJsonb: true, type: true },
+                select: {
+                  id: true,
+                  slug: true,
+                  titleJsonb: true,
+                  type: true,
+                  status: true,
+                  isActive: true,
+                },
               },
             },
           },
@@ -1579,6 +1586,9 @@ export class AdminService {
         slug: lp.landingPage.slug,
         titleJsonb: lp.landingPage.titleJsonb,
         type: lp.landingPage.type,
+        isVisible: lp.isVisible,
+        status: lp.landingPage.status,
+        isActive: lp.landingPage.isActive,
         isFeatured: lp.isFeatured,
         sortOrder: lp.sortOrder,
       })),

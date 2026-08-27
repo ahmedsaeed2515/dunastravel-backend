@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -17,6 +18,8 @@ import {
 
 @Injectable()
 export class AdminTransportationService {
+  private readonly logger = new Logger(AdminTransportationService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private toSafeBooking<
@@ -54,9 +57,14 @@ export class AdminTransportationService {
   }
 
   async findAllServices() {
-    return this.prisma.transportationService.findMany({
-      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
-    });
+    try {
+      return await this.prisma.transportationService.findMany({
+        orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+      });
+    } catch (err) {
+      this.logger.error('Failed to fetch transportation services from DB', err);
+      return [];
+    }
   }
 
   async createService(
