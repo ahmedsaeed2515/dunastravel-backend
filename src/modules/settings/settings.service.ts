@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class SettingsService {
   private static readonly MUTABLE_KEYS = new Set([
     'AUTH_REQUIRE_EMAIL_VERIFICATION',
+    'ACTIVE_LOCALES',
   ]);
   constructor(
     private readonly prisma: PrismaService,
@@ -36,7 +37,7 @@ export class SettingsService {
     return setting.value;
   }
 
-  async updateSetting(key: string, value: boolean) {
+  async updateSetting(key: string, value: any) {
     if (!SettingsService.MUTABLE_KEYS.has(key)) {
       throw new BadRequestException('Unsupported system setting');
     }

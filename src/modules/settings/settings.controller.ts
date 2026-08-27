@@ -20,6 +20,8 @@ import { AuthenticatedUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
 import { Request } from 'express';
 
+import { Public } from '../../common/decorators/public.decorator';
+
 @ApiTags('Settings')
 @Controller('settings')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,6 +31,32 @@ export class SettingsController {
     private readonly settingsService: SettingsService,
     private readonly auditService: AuditService,
   ) {}
+
+  @Public()
+  @Get('public/locales')
+  @ApiOperation({ summary: 'Get enabled system locales for public switchers' })
+  async getPublicLocales() {
+    const raw = await this.settingsService.getSetting('ACTIVE_LOCALES', {
+      en: true,
+      ar: true,
+      es: true,
+      pt: true,
+      it: true,
+    });
+    // Return array of active locale codes
+    let activeCodes: string[] = [];
+    if (Array.isArray(raw)) {
+      activeCodes = raw;
+    } else if (raw && typeof raw === 'object') {
+      activeCodes = Object.entries(raw)
+        .filter(([, active]) => Boolean(active))
+        .map(([code]) => code);
+    }
+    if (activeCodes.length === 0) {
+      activeCodes = ['en', 'ar', 'es', 'pt', 'it'];
+    }
+    return { locales: activeCodes, map: raw };
+  }
 
   @Get(':key')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
@@ -67,7 +95,7 @@ export class SettingsController {
   }
 
   private assertSupportedKey(key: string): void {
-    if (key !== 'AUTH_REQUIRE_EMAIL_VERIFICATION') {
+    if (key !== 'AUTH_REQUIRE_EMAIL_VERIFICATION' && key !== 'ACTIVE_LOCALES') {
       throw new BadRequestException('Unsupported system setting');
     }
   }

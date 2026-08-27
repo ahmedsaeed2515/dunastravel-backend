@@ -1,6 +1,6 @@
-import { IsBoolean } from 'class-validator';
+import { IsDefined } from 'class-validator';
 
 export class UpdateSettingDto {
-  @IsBoolean()
-  value!: boolean;
+  @IsDefined()
+  value!: any;
 }
