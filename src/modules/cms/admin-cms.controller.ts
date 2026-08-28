@@ -22,7 +22,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
-import { UserRole } from '@prisma/client';
 import {
   ListCmsBlocksQueryDto,
   CmsCatalogItemDto,
@@ -44,6 +43,12 @@ export class AdminCmsController {
   @ApiQuery({ name: 'search', required: false, type: String })
   async findAll(@Query() query: ListCmsBlocksQueryDto) {
     return this.cmsService.findAllAdmin(query.page, query.limit, query.search);
+  }
+
+  @Post('seed-defaults')
+  @ApiOperation({ summary: 'Seed curated luxury CMS content templates' })
+  async seedDefaults(@CurrentUser() user: AuthenticatedUser) {
+    return this.cmsService.seedCuratedDefaults(user);
   }
 
   @Get(':key')
@@ -90,8 +95,7 @@ export class AdminCmsController {
   }
 
   @Put(':key')
-  @Patch(':key')
-  @ApiOperation({ summary: 'Create or update a CMS block' })
+  @ApiOperation({ summary: 'Upsert (create or update) a full CMS block' })
   async upsert(
     @Param('key') key: string,
     @Body() dto: UpsertCmsBlockDto,
@@ -100,10 +104,19 @@ export class AdminCmsController {
     return this.cmsService.upsertAdmin(key, dto, user);
   }
 
+  @Patch(':key')
+  @ApiOperation({ summary: 'Partially update a full CMS block' })
+  async patch(
+    @Param('key') key: string,
+    @Body() dto: UpsertCmsBlockDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.cmsService.upsertAdmin(key, dto, user);
+  }
+
   @Delete(':key')
-  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a CMS block' })
-  async delete(
+  async remove(
     @Param('key') key: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {

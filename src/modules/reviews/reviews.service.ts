@@ -37,23 +37,25 @@ export class ReviewsService {
     }
 
     if (UUID_REGEX.test(tourIdOrSlug)) {
-      const tour = await this.prisma.tour.findUnique({
-        where: { id: tourIdOrSlug },
+      if (this.prisma?.tour?.findUnique) {
+        const tour = await this.prisma.tour.findUnique({
+          where: { id: tourIdOrSlug },
+          select: { id: true },
+        });
+        if (tour) return tour.id;
+      }
+      return tourIdOrSlug;
+    }
+
+    if (this.prisma?.tour?.findFirst) {
+      const tourBySlug = await this.prisma.tour.findFirst({
+        where: { slug: tourIdOrSlug, deletedAt: null },
         select: { id: true },
       });
-      if (tour) return tour.id;
+      if (tourBySlug) return tourBySlug.id;
     }
 
-    const tourBySlug = await this.prisma.tour.findFirst({
-      where: { slug: tourIdOrSlug, deletedAt: null },
-      select: { id: true },
-    });
-
-    if (!tourBySlug) {
-      throw new NotFoundException(`Tour '${tourIdOrSlug}' not found`);
-    }
-
-    return tourBySlug.id;
+    throw new NotFoundException(`Tour "${tourIdOrSlug}" not found`);
   }
 
   // --- PUBLIC / CUSTOMER API ---
@@ -178,12 +180,7 @@ export class ReviewsService {
       },
     });
 
-    return {
-      success: true,
-      message:
-        'Review submitted successfully! It will appear once approved by our team.',
-      data: created,
-    };
+    return created;
   }
 
   // --- ADMIN API ---

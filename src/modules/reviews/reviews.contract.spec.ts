@@ -59,6 +59,10 @@ describe('Reviews HTTP Contract Spec', () => {
           isPublished: true,
         }),
       },
+      tour: {
+        findUnique: jest.fn().mockResolvedValue({ id: mockTourId }),
+        findFirst: jest.fn().mockResolvedValue({ id: mockTourId }),
+      },
       booking: {
         findUnique: jest.fn().mockResolvedValue(mockBooking),
       },
