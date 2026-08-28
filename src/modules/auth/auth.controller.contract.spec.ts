@@ -113,7 +113,7 @@ describe('AuthController (HTTP Contract)', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'Password123',
+          password: 'StrongPassword123!',
           name: 'Test User',
         });
 

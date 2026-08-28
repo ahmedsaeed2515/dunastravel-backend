@@ -7196,6 +7196,26 @@
         ]
       }
     },
+    "/api/settings/public/locales": {
+      "get": {
+        "operationId": "SettingsController_getPublicLocales",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get enabled system locales for public switchers",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/api/settings/{key}": {
       "get": {
         "operationId": "SettingsController_getSetting",
@@ -7607,7 +7627,7 @@
             "in": "query",
             "schema": {
               "minimum": 1,
-              "maximum": 50,
+              "maximum": 100,
               "default": 20,
               "type": "number"
             }
@@ -8593,6 +8613,111 @@
           }
         ],
         "summary": "Create a new draft prompt version",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/prompts/seed-defaults": {
+      "post": {
+        "operationId": "AdminAiController_seedDefaultPrompts",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seed curated luxury prompt templates",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/prompts/{id}": {
+      "put": {
+        "operationId": "AdminAiController_updatePromptVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing prompt version (name, content, notes, status)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminAiController_deletePromptVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a prompt version",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/prompts/{id}/archive": {
+      "post": {
+        "operationId": "AdminAiController_archivePromptVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a prompt version so it is disabled/inactive",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -9922,6 +10047,46 @@
         ]
       }
     },
+    "/api/admin/cms-blocks/seed-defaults": {
+      "post": {
+        "operationId": "AdminCmsController_seedDefaults[0]",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seed curated luxury CMS content templates",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
+    "/api/admin/cms/seed-defaults": {
+      "post": {
+        "operationId": "AdminCmsController_seedDefaults[1]",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seed curated luxury CMS content templates",
+        "tags": [
+          "admin-cms"
+        ]
+      }
+    },
     "/api/admin/cms-blocks/{key}": {
       "get": {
         "operationId": "AdminCmsController_findOne[0]",
@@ -9982,13 +10147,50 @@
             "bearer": []
           }
         ],
-        "summary": "Create or update a CMS block",
+        "summary": "Upsert (create or update) a full CMS block",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminCmsController_patch[0]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCmsBlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Partially update a full CMS block",
         "tags": [
           "admin-cms"
         ]
       },
       "delete": {
-        "operationId": "AdminCmsController_delete[0]",
+        "operationId": "AdminCmsController_remove[0]",
         "parameters": [
           {
             "name": "key",
@@ -10075,13 +10277,50 @@
             "bearer": []
           }
         ],
-        "summary": "Create or update a CMS block",
+        "summary": "Upsert (create or update) a full CMS block",
+        "tags": [
+          "admin-cms"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminCmsController_patch[1]",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCmsBlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Partially update a full CMS block",
         "tags": [
           "admin-cms"
         ]
       },
       "delete": {
-        "operationId": "AdminCmsController_delete[1]",
+        "operationId": "AdminCmsController_remove[1]",
         "parameters": [
           {
             "name": "key",
@@ -12450,7 +12689,7 @@
             "description": ""
           }
         },
-        "summary": "Get published reviews for a tour",
+        "summary": "Get published reviews for a tour by ID or Slug",
         "tags": [
           "reviews"
         ]
@@ -12482,12 +12721,7 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Submit a verified customer review for a completed tour",
+        "summary": "Submit a customer or guest review for a tour (pending moderation)",
         "tags": [
           "reviews"
         ]
@@ -12497,6 +12731,22 @@
       "get": {
         "operationId": "AdminReviewsController_findAll",
         "parameters": [
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "isPublished",
             "required": false,
@@ -12549,6 +12799,100 @@
           }
         ],
         "summary": "List all customer reviews for moderation",
+        "tags": [
+          "admin-reviews"
+        ]
+      },
+      "post": {
+        "operationId": "AdminReviewsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new customer review or testimonial manually",
+        "tags": [
+          "admin-reviews"
+        ]
+      }
+    },
+    "/api/admin/reviews/{id}": {
+      "put": {
+        "operationId": "AdminReviewsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit review content, rating, reviewer name, or status",
+        "tags": [
+          "admin-reviews"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminReviewsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a review",
         "tags": [
           "admin-reviews"
         ]
@@ -12626,36 +12970,7 @@
             "bearer": []
           }
         ],
-        "summary": "Add official admin reply to a review",
-        "tags": [
-          "admin-reviews"
-        ]
-      }
-    },
-    "/api/admin/reviews/{id}": {
-      "delete": {
-        "operationId": "AdminReviewsController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Soft delete a review",
+        "summary": "Add or edit official admin reply to a review",
         "tags": [
           "admin-reviews"
         ]
@@ -14844,8 +15159,10 @@
           },
           "password": {
             "type": "string",
-            "description": "User password",
-            "example": "StrongPass123"
+            "description": "12–128 characters. The password policy also requires at least three character types and rejects predictable values.",
+            "example": "Journey!2026Atlas",
+            "minLength": 12,
+            "maxLength": 128
           }
         },
         "required": [
@@ -14883,6 +15200,10 @@
           "phone": {
             "type": "string",
             "example": "+1234567890"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "Egyptian"
           },
           "preferredCurrency": {
             "type": "string",
@@ -15306,6 +15627,9 @@
             "default": 0
           },
           "flightNumber": {
+            "type": "string"
+          },
+          "notes": {
             "type": "string"
           }
         },
@@ -16490,11 +16814,19 @@
         "properties": {
           "bookingId": {
             "type": "string",
-            "description": "ID of the completed booking for eligibility check"
+            "description": "ID of the completed booking for verified eligibility check"
           },
           "rating": {
             "type": "number",
             "description": "Rating between 1 and 5"
+          },
+          "reviewerName": {
+            "type": "string",
+            "description": "Reviewer name"
+          },
+          "email": {
+            "type": "string",
+            "description": "Reviewer email address"
           },
           "comment": {
             "type": "string",
@@ -16502,9 +16834,79 @@
           }
         },
         "required": [
-          "bookingId",
           "rating"
         ]
+      },
+      "AdminCreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "tourId": {
+            "type": "string",
+            "description": "Tour ID or Slug"
+          },
+          "reviewerName": {
+            "type": "string",
+            "description": "Reviewer display name"
+          },
+          "rating": {
+            "type": "number",
+            "description": "Rating score (1 to 5)"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Review comment text"
+          },
+          "adminReply": {
+            "type": "string",
+            "description": "Official admin reply"
+          },
+          "status": {
+            "type": "string",
+            "description": "Moderation status (APPROVED, PENDING, REJECTED)"
+          },
+          "isPublished": {
+            "type": "boolean",
+            "description": "Publish status flag"
+          }
+        },
+        "required": [
+          "tourId",
+          "reviewerName",
+          "rating"
+        ]
+      },
+      "AdminUpdateReviewDto": {
+        "type": "object",
+        "properties": {
+          "tourId": {
+            "type": "string",
+            "description": "Tour ID or Slug"
+          },
+          "reviewerName": {
+            "type": "string",
+            "description": "Reviewer display name"
+          },
+          "rating": {
+            "type": "number",
+            "description": "Rating score (1 to 5)"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Review comment text"
+          },
+          "adminReply": {
+            "type": "string",
+            "description": "Official admin reply"
+          },
+          "status": {
+            "type": "string",
+            "description": "Moderation status (APPROVED, PENDING, REJECTED)"
+          },
+          "isPublished": {
+            "type": "boolean",
+            "description": "Publish status flag"
+          }
+        }
       },
       "UpdateReviewStatusDto": {
         "type": "object",
