@@ -1,13 +1,13 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
- * Moves a tour between destination interfaces. The target is an actual
- * DESTINATION landing-page slug, not merely a display country label.
+ * Moves a tour between destination interfaces and countries/cities/categories.
  */
 export class MoveTourDto {
+  @IsOptional()
   @IsString()
   @MaxLength(150)
-  destinationSlug!: string;
+  destinationSlug?: string;
 
   @IsString()
   @MaxLength(100)
@@ -23,3 +23,4 @@ export class MoveTourDto {
   @MaxLength(100)
   category?: string;
 }
+

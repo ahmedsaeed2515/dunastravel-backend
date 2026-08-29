@@ -46,6 +46,7 @@ import { UpdateInquiryDto } from './dto/update-inquiry.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
+import { MoveTourDto } from './dto/move-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 import { ReorderToursDto } from './dto/reorder-tours.dto';
 import { AddTourImageDto } from './dto/add-tour-image.dto';
@@ -529,6 +530,19 @@ export class AdminController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.updateTour(slug, dto, user.id);
+  }
+
+  @Patch('tours/:slug/move')
+  @ApiOperation({ summary: 'Move a tour between destination landing pages, countries, cities, and categories.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ type: MoveTourDto })
+  @ApiOkResponse({ description: 'Tour moved successfully' })
+  async moveTour(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Body() dto: MoveTourDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.moveTour(slug, dto, user.id);
   }
 
   @Post('tours/:slug/publish')

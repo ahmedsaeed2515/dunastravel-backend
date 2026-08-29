@@ -2163,51 +2163,58 @@ export class AdminService {
    * the same transaction.
    */
   async moveTour(slug: string, dto: MoveTourDto, adminUserId: string) {
-    const targetSlug = dto.destinationSlug.trim().toLowerCase();
+    let targetSlug = dto.destinationSlug?.trim().toLowerCase();
     if (!targetSlug) {
-      throw new BadRequestException('A target destination interface is required');
+      targetSlug = this.canonicalDestinationSlugForCountry(dto.country);
     }
 
     const moved = await this.prisma.$transaction(
       async (tx) => {
-        const [tour, target] = await Promise.all([
-          tx.tour.findUnique({ where: { slug }, select: { id: true, category: true } }),
-          tx.tourLandingPage.findFirst({
+        const tour = await tx.tour.findUnique({ where: { slug }, select: { id: true, category: true } });
+        if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+        let target = await tx.tourLandingPage.findFirst({
+          where: {
+            slug: targetSlug,
+            type: 'DESTINATION',
+            deletedAt: null,
+          },
+          select: { id: true, slug: true },
+        });
+
+        if (!target) {
+          target = await tx.tourLandingPage.findFirst({
             where: {
-              slug: targetSlug,
               type: 'DESTINATION',
               deletedAt: null,
+              slug: { contains: targetSlug },
             },
             select: { id: true, slug: true },
-          }),
-        ]);
-        if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
-        if (!target) {
-          throw new BadRequestException(`Destination interface '${targetSlug}' is invalid`);
+          });
         }
 
-        const maxSortOrder = await tx.tourLandingPageTour.aggregate({
-          where: { landingPageId: target.id },
-          _max: { sortOrder: true },
-        });
+        if (target) {
+          const maxSortOrder = await tx.tourLandingPageTour.aggregate({
+            where: { landingPageId: target.id },
+            _max: { sortOrder: true },
+          });
 
-        // A tour can retain non-destination (theme/collection) memberships,
-        // but it has exactly one canonical destination interface after a move.
-        await tx.tourLandingPageTour.deleteMany({
-          where: {
-            tourId: tour.id,
-            landingPage: { type: 'DESTINATION' },
-          },
-        });
-        await tx.tourLandingPageTour.create({
-          data: {
-            landingPageId: target.id,
-            tourId: tour.id,
-            sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
-            isVisible: true,
-            isFeatured: false,
-          },
-        });
+          await tx.tourLandingPageTour.deleteMany({
+            where: {
+              tourId: tour.id,
+              landingPage: { type: 'DESTINATION' },
+            },
+          });
+          await tx.tourLandingPageTour.create({
+            data: {
+              landingPageId: target.id,
+              tourId: tour.id,
+              sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+              isVisible: true,
+              isFeatured: false,
+            },
+          });
+        }
 
         return tx.tour.update({
           where: { id: tour.id },
@@ -2219,7 +2226,7 @@ export class AdminService {
               create: {
                 userId: adminUserId,
                 action: 'TOUR_MOVED',
-                details: { destinationSlug: target.slug, country: dto.country, city: dto.city ?? null },
+                details: { destinationSlug: target ? target.slug : targetSlug, country: dto.country, city: dto.city ?? null },
               },
             },
           },
