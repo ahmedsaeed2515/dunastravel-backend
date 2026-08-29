@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,15 +17,16 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('reviews')
-@Controller()
+@Controller('tours')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  @Get('tours/:tourId/reviews')
+  @Get(':tourId/reviews')
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Get published reviews for a tour by ID or Slug' })
@@ -41,8 +43,9 @@ export class ReviewsController {
     );
   }
 
-  @Post('tours/:tourId/reviews')
+  @Post(':tourId/reviews')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Submit a customer or guest review for a tour (pending moderation)',
@@ -55,4 +58,5 @@ export class ReviewsController {
     return this.reviewsService.createCustomerReview(tourId, user || null, dto);
   }
 }
+
 

@@ -163,9 +163,11 @@ export class ReviewsService {
     const sanitizedComment = dto.comment
       ? sanitizePlainText(dto.comment).slice(0, 5_000)
       : null;
-    const reviewerName = sanitizePlainText(
-      dto.reviewerName || user?.name || 'Verified Traveler',
-    ).slice(0, 100);
+    const rawName =
+      (dto.reviewerName && dto.reviewerName.trim()) ||
+      user?.name ||
+      (user ? 'Verified Traveler' : 'Guest Traveler');
+    const reviewerName = sanitizePlainText(rawName).slice(0, 100);
 
     const created = await this.prisma.tourReview.create({
       data: {

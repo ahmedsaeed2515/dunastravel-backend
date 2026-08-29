@@ -131,6 +131,20 @@ describe('Reviews HTTP Contract Spec', () => {
     expect(review.id).toBe(mockReviewId);
   });
 
+  it('POST /api/tours/:tourId/reviews allows guest traveler to submit review with name', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/tours/${mockTourId}/reviews`)
+      .send({
+        reviewerName: 'Ahmed Tourist',
+        rating: 5,
+        comment: 'Unbelievable luxury trip!',
+      })
+      .expect(201);
+
+    const review = res.body.data || res.body;
+    expect(review.id).toBe(mockReviewId);
+  });
+
   it('GET /api/admin/reviews returns admin moderation list', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/reviews')

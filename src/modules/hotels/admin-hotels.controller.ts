@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -24,7 +24,7 @@ export class AdminHotelsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get hotel for administration' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.hotelsService.findOneAdmin(id);
   }
 
@@ -38,44 +38,44 @@ export class AdminHotelsController {
   @Put(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update hotel' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateHotelDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateHotelDto) {
     return this.hotelsService.updateAdmin(id, dto);
   }
 
   @Post(':id/publish')
   @ApiOperation({ summary: 'Publish a hotel with at least one active room' })
-  publish(@Param('id', ParseUUIDPipe) id: string) {
+  publish(@Param('id') id: string) {
     return this.hotelsService.publishAdmin(id);
   }
 
   @Post(':id/unpublish')
   @ApiOperation({ summary: 'Return a hotel to draft and hide it from the public catalog' })
-  unpublish(@Param('id', ParseUUIDPipe) id: string) {
+  unpublish(@Param('id') id: string) {
     return this.hotelsService.unpublishAdmin(id);
   }
 
   @Post(':id/archive')
   @ApiOperation({ summary: 'Archive a hotel without deleting its rooms' })
-  archive(@Param('id', ParseUUIDPipe) id: string) {
+  archive(@Param('id') id: string) {
     return this.hotelsService.archiveAdmin(id);
   }
 
   @Post(':id/unarchive')
   @ApiOperation({ summary: 'Restore an archived hotel to draft' })
-  unarchive(@Param('id', ParseUUIDPipe) id: string) {
+  unarchive(@Param('id') id: string) {
     return this.hotelsService.unarchiveAdmin(id);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Soft-delete hotel and disable its rooms' })
-  delete(@Param('id', ParseUUIDPipe) id: string) {
+  delete(@Param('id') id: string) {
     return this.hotelsService.softDeleteAdmin(id);
   }
 
   @Post(':id/restore')
   @ApiOperation({ summary: 'Restore a soft-deleted hotel as a draft' })
-  restore(@Param('id', ParseUUIDPipe) id: string) {
+  restore(@Param('id') id: string) {
     return this.hotelsService.restoreAdmin(id);
   }
 }
