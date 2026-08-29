@@ -91,14 +91,14 @@ export class AdminTransportationController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single transportation booking' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id') id: string) {
     return this.transportationService.findOne(id);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update transportation booking status' })
   async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateTransportationStatusDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -108,7 +108,7 @@ export class AdminTransportationController {
   @Patch(':id/assign-driver')
   @ApiOperation({ summary: 'Assign a driver to a transportation booking' })
   async assignDriver(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: AssignTransportationDriverDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {

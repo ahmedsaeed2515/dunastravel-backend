@@ -179,7 +179,7 @@ export class TourLandingPagesAdminController {
   })
   async updateTourRelation(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @Body() dto: UpdateTourRelationDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -194,7 +194,7 @@ export class TourLandingPagesAdminController {
   })
   async detachTour(
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.landingPagesService.detachTour(idOrSlug, tourId, actor);

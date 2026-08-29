@@ -42,7 +42,7 @@ export class AdminPromotionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific promotion' })
-  async getPromotion(@Param('id', ParseUUIDPipe) id: string) {
+  async getPromotion(@Param('id') id: string) {
     return this.adminPromotionsService.getPromotion(id);
   }
 
@@ -60,7 +60,7 @@ export class AdminPromotionsController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing promotion' })
   async updatePromotion(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdatePromotionDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -71,7 +71,7 @@ export class AdminPromotionsController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a promotion' })
   async deletePromotion(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminPromotionsService.deletePromotion(id, user.id);

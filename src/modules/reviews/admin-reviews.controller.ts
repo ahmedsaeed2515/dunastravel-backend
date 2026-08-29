@@ -77,7 +77,7 @@ export class AdminReviewsController {
   @Put(':id')
   @ApiOperation({ summary: 'Edit review content, rating, reviewer name, or status' })
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: AdminUpdateReviewDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -89,7 +89,7 @@ export class AdminReviewsController {
     summary: 'Update review moderation status (APPROVED, REJECTED, PENDING)',
   })
   async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateReviewStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -99,7 +99,7 @@ export class AdminReviewsController {
   @Post(':id/reply')
   @ApiOperation({ summary: 'Add or edit official admin reply to a review' })
   async reply(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: AdminReplyReviewDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -109,7 +109,7 @@ export class AdminReviewsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a review' })
   async delete(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.reviewsService.softDeleteAdmin(id, user);

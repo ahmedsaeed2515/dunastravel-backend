@@ -49,7 +49,7 @@ export class AdminTailorMadeController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a single tailor-made inquiry' })
   async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.findOne(id, user);
@@ -58,7 +58,7 @@ export class AdminTailorMadeController {
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update inquiry status' })
   async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateTailorMadeStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -69,7 +69,7 @@ export class AdminTailorMadeController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Assign inquiry' })
   async assignInquiry(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: AssignTailorMadeInquiryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -79,7 +79,7 @@ export class AdminTailorMadeController {
   @Post(':id/quote')
   @ApiOperation({ summary: 'Quote an inquiry' })
   async quoteInquiry(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: QuoteTailorMadeInquiryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -94,7 +94,7 @@ export class AdminTailorMadeController {
   @Patch(':id/quote')
   @ApiOperation({ summary: 'Update quote for an inquiry' })
   async updateQuote(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: QuoteTailorMadeInquiryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -110,7 +110,7 @@ export class AdminTailorMadeController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Convert inquiry to booking' })
   async convertToBooking(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.convertToBooking(id, user);

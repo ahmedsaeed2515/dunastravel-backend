@@ -8,7 +8,6 @@ import {
   Query,
   Body,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -59,11 +58,11 @@ export class AdminJourneyMapsController {
   @Patch(':id')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update a journey route' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'Journey route updated' })
   @ApiNotFoundResponse()
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateJourneyRouteDto,
   ) {
     return this.journeyMapsService.updateAdmin(id, dto);
@@ -72,10 +71,10 @@ export class AdminJourneyMapsController {
   @Delete(':id')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a journey route' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'Journey route deleted' })
   @ApiNotFoundResponse()
-  async delete(@Param('id', ParseUUIDPipe) id: string) {
+  async delete(@Param('id') id: string) {
     return this.journeyMapsService.deleteAdmin(id);
   }
 }

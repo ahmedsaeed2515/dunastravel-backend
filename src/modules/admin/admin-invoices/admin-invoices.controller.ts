@@ -43,7 +43,7 @@ export class AdminInvoicesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single invoice' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
@@ -51,7 +51,7 @@ export class AdminInvoicesController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Void an invoice' })
   async voidInvoice(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.service.voidInvoice(id, actor);
@@ -61,7 +61,7 @@ export class AdminInvoicesController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Refund an invoice' })
   async refundInvoice(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: RefundPaymentDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {

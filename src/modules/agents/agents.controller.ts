@@ -45,7 +45,7 @@ export class AgentsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single agent by ID' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.agentsService.findOne(id);
   }
 
@@ -69,7 +69,7 @@ export class AgentsController {
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Update agent profile or linked company' })
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateAgentDto,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
@@ -84,7 +84,7 @@ export class AgentsController {
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Soft delete an agent account' })
   async remove(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
   ) {

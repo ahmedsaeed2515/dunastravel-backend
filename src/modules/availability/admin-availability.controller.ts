@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -33,14 +32,14 @@ export class AdminAvailabilityController {
 
   @Get('tours/:tourId/availabilities')
   @ApiOperation({ summary: 'List every availability slot for an admin tour editor' })
-  async listAvailabilities(@Param('tourId', ParseUUIDPipe) tourId: string) {
+  async listAvailabilities(@Param('tourId') tourId: string) {
     return this.availabilityService.listAdminAvailability(tourId);
   }
 
   @Post('tours/:tourId/availabilities')
   @ApiOperation({ summary: 'Create single availability slot for a tour' })
   async createAvailability(
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @Body() dto: CreateAvailabilityDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -58,7 +57,7 @@ export class AdminAvailabilityController {
     summary: 'Batch generate availability slots for a date range',
   })
   async createBatchAvailability(
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
     @Body() dto: CreateBatchAvailabilityDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -77,7 +76,7 @@ export class AdminAvailabilityController {
     summary: 'Update capacity or status of an availability slot',
   })
   async updateAvailability(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateAvailabilityDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -87,7 +86,7 @@ export class AdminAvailabilityController {
   @Delete('availabilities/:id')
   @ApiOperation({ summary: 'Delete an availability slot' })
   async deleteAvailability(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.availabilityService.deleteAvailability(id, actor);

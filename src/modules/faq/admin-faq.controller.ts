@@ -50,7 +50,7 @@ export class AdminFaqController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get FAQ item by ID for admin' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id') id: string) {
     return this.faqService.findOneAdmin(id);
   }
 
@@ -65,7 +65,7 @@ export class AdminFaqController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing FAQ item' })
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateFaqDto,
   ) {
     return this.faqService.updateAdmin(id, dto);
@@ -81,7 +81,7 @@ export class AdminFaqController {
   @Delete(':id')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a FAQ item' })
-  async delete(@Param('id', ParseUUIDPipe) id: string) {
+  async delete(@Param('id') id: string) {
     return this.faqService.softDeleteAdmin(id);
   }
 }

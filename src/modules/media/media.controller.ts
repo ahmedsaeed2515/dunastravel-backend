@@ -10,7 +10,8 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -40,7 +41,6 @@ import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { ListMediaDto } from './dto/list-media.dto';
 import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { MediaEntityType } from '@prisma/client';
-
 import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
 import { PublicMediaAssetResponseDto } from './dto/public-media-asset-response.dto';
@@ -84,7 +84,7 @@ export class MediaAdminController {
       properties: {
         file: { type: 'string', format: 'binary' },
         entityType: { type: 'string', enum: Object.values(MediaEntityType) },
-        entityId: { type: 'string', format: 'uuid', nullable: true },
+        entityId: { type: 'string', nullable: true },
         altText: { type: 'string', maxLength: 255, nullable: true },
       },
     },
@@ -106,14 +106,15 @@ export class MediaAdminController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Soft-delete a media asset' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Soft-delete a media asset (admin only)' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ type: DeleteMediaResponseDto })
   @ApiNotFoundResponse()
   @ApiUnauthorizedResponse()
   @ApiForbiddenResponse()
   async deleteAsset(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<DeleteMediaResponseDto> {
     return this.mediaService.deleteAsset(id, user);
@@ -185,11 +186,11 @@ export class MediaPublicController {
 
   @Get('tours/:tourId')
   @ApiOperation({ summary: 'Get all active media assets for a tour' })
-  @ApiParam({ name: 'tourId', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'tourId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
   @ApiBadRequestResponse()
   async getAssetsByTourId(
-    @Param('tourId', ParseUUIDPipe) tourId: string,
+    @Param('tourId') tourId: string,
   ): Promise<PublicMediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByTourId(tourId);
     return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
@@ -197,10 +198,10 @@ export class MediaPublicController {
 
   @Get('hotels/:hotelId')
   @ApiOperation({ summary: 'Get all active media assets for a hotel' })
-  @ApiParam({ name: 'hotelId', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'hotelId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
   async getAssetsByHotelId(
-    @Param('hotelId', ParseUUIDPipe) hotelId: string,
+    @Param('hotelId') hotelId: string,
   ): Promise<PublicMediaAssetResponseDto[]> {
     const assets = await this.mediaService.getAssetsByHotelId(hotelId);
     return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -24,19 +24,19 @@ export class JourneyMapsController {
 
   @Get('tour/:tourId')
   @ApiOperation({ summary: 'Get journey route for a tour' })
-  @ApiParam({ name: 'tourId', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'tourId', type: 'string' })
   @ApiOkResponse({ description: 'The journey route details' })
   @ApiNotFoundResponse()
-  async getByTourId(@Param('tourId', ParseUUIDPipe) tourId: string) {
+  async getByTourId(@Param('tourId') tourId: string) {
     return this.journeyMapsService.findByTourIdPublic(tourId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get journey route by ID' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'The journey route details' })
   @ApiNotFoundResponse()
-  async getById(@Param('id', ParseUUIDPipe) id: string) {
+  async getById(@Param('id') id: string) {
     return this.journeyMapsService.findOnePublic(id);
   }
 }

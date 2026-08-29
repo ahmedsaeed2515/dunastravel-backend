@@ -42,7 +42,7 @@ export class AdminTemplatesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific email template' })
-  async getTemplate(@Param('id', ParseUUIDPipe) id: string) {
+  async getTemplate(@Param('id') id: string) {
     return this.adminTemplatesService.getTemplate(id);
   }
 
@@ -74,7 +74,7 @@ export class AdminTemplatesController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing email template' })
   async updateTemplate(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateEmailTemplateDto,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
@@ -101,7 +101,7 @@ export class AdminTemplatesController {
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete an email template' })
   async deleteTemplate(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
   ) {

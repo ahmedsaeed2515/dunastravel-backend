@@ -93,7 +93,7 @@ export class CompaniesController {
   @Get(':id')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get company by ID with full relations' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.companiesService.findOne(id);
   }
 
@@ -115,7 +115,7 @@ export class CompaniesController {
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Update company details' })
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() updateCompanyDto: UpdateCompanyDto,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
@@ -130,7 +130,7 @@ export class CompaniesController {
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Soft delete a company' })
   async remove(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
     @Req() req: Request,
   ) {
