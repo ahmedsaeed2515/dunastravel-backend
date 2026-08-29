@@ -33,6 +33,7 @@ import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
+import { MoveTourDto } from './dto/move-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 import { AddTourImageDto } from './dto/add-tour-image.dto';
 import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
@@ -1475,16 +1476,48 @@ export class AdminService {
 
     const targetDest = destination || country;
     if (targetDest && targetDest !== 'ALL') {
-      andConditions.push({
-        OR: [
-          { country: { equals: targetDest, mode: 'insensitive' } },
-          { country: { contains: targetDest, mode: 'insensitive' } },
-          { city: { contains: targetDest, mode: 'insensitive' } },
-          { region: { contains: targetDest, mode: 'insensitive' } },
-          { category: { contains: targetDest, mode: 'insensitive' } },
-          { slug: { contains: targetDest, mode: 'insensitive' } },
-        ],
-      });
+      const normalizedDestination = targetDest.trim().toLowerCase();
+      const destinationSlug = {
+        egypt: 'egypt',
+        turkey: 'turkey',
+        jordan: 'jordan',
+        morocco: 'morocco',
+        dubai: 'dubai',
+        uae: 'dubai',
+        'united arab emirates': 'dubai',
+        tunisia: 'tunisia',
+        greece: 'greece',
+        'multi-country': 'multi-country',
+        'multi country': 'multi-country',
+        religious: 'religious',
+      }[normalizedDestination];
+
+      if (destinationSlug) {
+        // Filtering by a destination means filtering by the persisted
+        // interface relation, not an incidental word in title/category/slug.
+        andConditions.push({
+          landingPages: {
+            some: {
+              landingPage: {
+                slug: destinationSlug,
+                type: 'DESTINATION',
+                deletedAt: null,
+              },
+            },
+          },
+        });
+      } else {
+        andConditions.push({
+          OR: [
+            { country: { equals: targetDest, mode: 'insensitive' } },
+            { country: { contains: targetDest, mode: 'insensitive' } },
+            { city: { contains: targetDest, mode: 'insensitive' } },
+            { region: { contains: targetDest, mode: 'insensitive' } },
+            { category: { contains: targetDest, mode: 'insensitive' } },
+            { slug: { contains: targetDest, mode: 'insensitive' } },
+          ],
+        });
+      }
     }
 
     if (city && city !== 'ALL') {
@@ -1635,6 +1668,129 @@ export class AdminService {
         totalCapacity > 0
           ? Number(((seatsSold / totalCapacity) * 100).toFixed(1))
           : 0,
+    };
+  }
+
+  /**
+   * A single source of truth for the dashboard's catalogue counters.  These
+   * values deliberately use the same visibility rules as the public tours
+   * endpoint: a published, active tour must have an active published
+   * destination interface relation marked visible.
+   */
+  async getTourCatalogOverview(adminUserId: string): Promise<Record<string, unknown>> {
+    this.logger.log(`getTourCatalogOverview invoked by admin ${adminUserId}`);
+    const locales = ['ar', 'en', 'es', 'pt', 'it'];
+    const hasText = (value: unknown, locale: string) =>
+      Boolean(
+        value &&
+          typeof value === 'object' &&
+          typeof (value as Record<string, unknown>)[locale] === 'string' &&
+          ((value as Record<string, string>)[locale] || '').trim(),
+      );
+
+    const [tours, interfaces] = await Promise.all([
+      this.prisma.tour.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          slug: true,
+          status: true,
+          isActive: true,
+          basePriceUsd: true,
+          titleJsonb: true,
+          overviewJsonb: true,
+          durationJsonb: true,
+          images: { select: { id: true }, take: 1 },
+          itineraries: { select: { id: true }, take: 1 },
+          landingPages: {
+            select: {
+              isVisible: true,
+              landingPage: {
+                select: {
+                  id: true,
+                  slug: true,
+                  titleJsonb: true,
+                  type: true,
+                  status: true,
+                  isActive: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.tourLandingPage.findMany({
+        where: { type: 'DESTINATION', deletedAt: null },
+        select: {
+          id: true,
+          slug: true,
+          titleJsonb: true,
+          status: true,
+          isActive: true,
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
+
+    const isPublicRelation = (relation: (typeof tours)[number]['landingPages'][number]) =>
+      relation.isVisible &&
+      relation.landingPage.type === 'DESTINATION' &&
+      relation.landingPage.status === 'PUBLISHED' &&
+      relation.landingPage.isActive &&
+      !relation.landingPage.deletedAt;
+    const isVisibleOnWebsite = (tour: (typeof tours)[number]) =>
+      tour.status === 'PUBLISHED' && tour.isActive && tour.landingPages.some(isPublicRelation);
+
+    const issues = tours.flatMap((tour) => {
+      const missingLocales = locales.filter(
+        (locale) =>
+          !hasText(tour.titleJsonb, locale) ||
+          !hasText(tour.overviewJsonb, locale) ||
+          !hasText(tour.durationJsonb, locale),
+      );
+      const missingFields: string[] = [];
+      if (missingLocales.length) missingFields.push('five-language core content');
+      if (tour.basePriceUsd.lte(0)) missingFields.push('base price');
+      if (tour.images.length === 0) missingFields.push('image');
+      if (tour.itineraries.length === 0) missingFields.push('itinerary');
+      if (!tour.landingPages.some((relation) => relation.landingPage.type === 'DESTINATION')) {
+        missingFields.push('destination interface');
+      }
+      return missingFields.length
+        ? [{ slug: tour.slug, missingLocales, missingFields }]
+        : [];
+    });
+
+    return {
+      totalTours: tours.length,
+      visibleOnWebsite: tours.filter(isVisibleOnWebsite).length,
+      hiddenFromWebsite: tours.filter((tour) => !isVisibleOnWebsite(tour)).length,
+      unpublished: tours.filter((tour) => tour.status !== 'PUBLISHED' || !tour.isActive).length,
+      unlinked: tours.filter((tour) => !tour.landingPages.some((relation) => relation.landingPage.type === 'DESTINATION')).length,
+      interfaces: interfaces.map((landingPage) => {
+        const attached = tours.filter((tour) =>
+          tour.landingPages.some((relation) => relation.landingPage.id === landingPage.id),
+        );
+        const visible = attached.filter((tour) =>
+          tour.status === 'PUBLISHED' &&
+          tour.isActive &&
+          tour.landingPages.some((relation) => relation.landingPage.id === landingPage.id && isPublicRelation(relation)),
+        );
+        return {
+          slug: landingPage.slug,
+          titleJsonb: landingPage.titleJsonb,
+          isPublic: landingPage.status === 'PUBLISHED' && landingPage.isActive,
+          total: attached.length,
+          visible: visible.length,
+          hidden: attached.length - visible.length,
+        };
+      }),
+      integrity: {
+        complete: tours.length - issues.length,
+        needsReview: issues.length,
+        issues,
+      },
     };
   }
 
@@ -1806,29 +1962,40 @@ export class AdminService {
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
 
-    const tour = await this.prisma.tour.create({
-      data: {
-        ...(safeTourData as Prisma.TourCreateInput),
-        itineraries: safeItineraries
-          ? {
-              create: safeItineraries,
-            }
-          : undefined,
-        images: safeImages
-          ? {
-              create: safeImages,
-            }
-          : undefined,
-        activityLogs: {
-          create: [
-            {
-              userId: adminUserId,
-              action: 'TOUR_CREATED',
-              details: { slug: dto.slug },
-            },
-          ],
+    const tour = await this.prisma.$transaction(async (tx) => {
+      const createdTour = await tx.tour.create({
+        data: {
+          ...(safeTourData as Prisma.TourCreateInput),
+          itineraries: safeItineraries
+            ? {
+                create: safeItineraries,
+              }
+            : undefined,
+          images: safeImages
+            ? {
+                create: safeImages,
+              }
+            : undefined,
+          activityLogs: {
+            create: [
+              {
+                userId: adminUserId,
+                action: 'TOUR_CREATED',
+                details: { slug: dto.slug },
+              },
+            ],
+          },
         },
-      },
+      });
+
+      await this.autoLinkDestinationInterface(
+        tx,
+        createdTour.id,
+        createdTour.country,
+        createdTour.category,
+      );
+
+      return createdTour;
     });
 
     return { success: true, slug: tour.slug };
@@ -1887,7 +2054,7 @@ export class AdminService {
         });
       }
 
-      return tx.tour.update({
+      const res = await tx.tour.update({
         where: { slug },
         data: {
           ...(safeTourData as Prisma.TourUpdateInput),
@@ -1907,6 +2074,15 @@ export class AdminService {
           },
         },
       });
+
+      await this.autoLinkDestinationInterface(
+        tx,
+        res.id,
+        res.country,
+        res.category,
+      );
+
+      return res;
     });
 
     // Invalidate cache
@@ -1916,6 +2092,85 @@ export class AdminService {
     }
 
     return { success: true, slug: updated.slug };
+  }
+
+  /**
+   * Destination pages are the catalogue's source of truth for a tour's
+   * placement. Updating only `country` makes the old interface keep showing
+   * the tour, so location data and the destination relation must change in
+   * the same transaction.
+   */
+  async moveTour(slug: string, dto: MoveTourDto, adminUserId: string) {
+    const targetSlug = dto.destinationSlug.trim().toLowerCase();
+    if (!targetSlug) {
+      throw new BadRequestException('A target destination interface is required');
+    }
+
+    const moved = await this.prisma.$transaction(
+      async (tx) => {
+        const [tour, target] = await Promise.all([
+          tx.tour.findUnique({ where: { slug }, select: { id: true, category: true } }),
+          tx.tourLandingPage.findFirst({
+            where: {
+              slug: targetSlug,
+              type: 'DESTINATION',
+              deletedAt: null,
+            },
+            select: { id: true, slug: true },
+          }),
+        ]);
+        if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+        if (!target) {
+          throw new BadRequestException(`Destination interface '${targetSlug}' is invalid`);
+        }
+
+        const maxSortOrder = await tx.tourLandingPageTour.aggregate({
+          where: { landingPageId: target.id },
+          _max: { sortOrder: true },
+        });
+
+        // A tour can retain non-destination (theme/collection) memberships,
+        // but it has exactly one canonical destination interface after a move.
+        await tx.tourLandingPageTour.deleteMany({
+          where: {
+            tourId: tour.id,
+            landingPage: { type: 'DESTINATION' },
+          },
+        });
+        await tx.tourLandingPageTour.create({
+          data: {
+            landingPageId: target.id,
+            tourId: tour.id,
+            sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+            isVisible: true,
+            isFeatured: false,
+          },
+        });
+
+        return tx.tour.update({
+          where: { id: tour.id },
+          data: {
+            country: dto.country.trim(),
+            city: dto.city?.trim() || null,
+            category: dto.category?.trim() || tour.category,
+            activityLogs: {
+              create: {
+                userId: adminUserId,
+                action: 'TOUR_MOVED',
+                details: { destinationSlug: target.slug, country: dto.country, city: dto.city ?? null },
+              },
+            },
+          },
+          select: { slug: true },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
+
+    await Promise.all(['en', 'es', 'pt', 'it', 'ar'].map((lang) =>
+      this.cacheManager.del(`tour:${slug}:${lang}`),
+    ));
+    return { success: true, slug: moved.slug, destinationSlug: targetSlug };
   }
 
   private assertValidSeasonPricing(
@@ -1950,6 +2205,61 @@ export class AdminService {
         );
       }
     }
+  }
+
+  private canonicalDestinationSlugForCountry(country?: string | null): string {
+    if (!country) return 'egypt';
+    const c = country.trim().toLowerCase();
+    if (c.includes('egypt') || c.includes('مصر')) return 'egypt';
+    if (c.includes('turk') || c.includes('ترك')) return 'turkey';
+    if (c.includes('jordan') || c.includes('أردن') || c.includes('اردن')) return 'jordan';
+    if (c.includes('emirates') || c.includes('dubai') || c.includes('إمارات') || c.includes('امارات') || c.includes('دبي')) return 'dubai';
+    if (c.includes('morocco') || c.includes('مغرب')) return 'morocco';
+    if (c.includes('greece') || c.includes('يونان')) return 'greece';
+    if (c.includes('tunis') || c.includes('تونس')) return 'tunisia';
+    if (c.includes('multi') || c.includes('متعدد')) return 'multi-country';
+    return 'egypt';
+  }
+
+  private async autoLinkDestinationInterface(
+    tx: Prisma.TransactionClient,
+    tourId: string,
+    country?: string | null,
+    category?: string | null,
+  ) {
+    const existing = await tx.tourLandingPageTour.findFirst({
+      where: {
+        tourId,
+        landingPage: { type: 'DESTINATION', deletedAt: null },
+      },
+    });
+    if (existing) return;
+
+    const targetSlug = this.canonicalDestinationSlugForCountry(country);
+    const target = await tx.tourLandingPage.findFirst({
+      where: {
+        slug: targetSlug,
+        type: 'DESTINATION',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!target) return;
+
+    const maxSortOrder = await tx.tourLandingPageTour.aggregate({
+      where: { landingPageId: target.id },
+      _max: { sortOrder: true },
+    });
+
+    await tx.tourLandingPageTour.create({
+      data: {
+        landingPageId: target.id,
+        tourId,
+        sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+        isVisible: true,
+        isFeatured: false,
+      },
+    });
   }
 
   private assertTourImages(images?: CreateTourDto['images']): void {
@@ -2345,6 +2655,29 @@ export class AdminService {
     }
 
     return { success: true };
+  }
+
+  async clearAllTours(adminUserId: string) {
+    this.logger.warn(
+      `clearAllTours invoked by admin ${adminUserId} — soft-deleting all tours`,
+    );
+    const now = new Date();
+    const result = await this.prisma.tour.updateMany({
+      where: { deletedAt: null },
+      data: { deletedAt: now, status: 'ARCHIVED', isActive: false },
+    });
+
+    // Best-effort cache eviction — ignore individual miss errors
+    const tours = await this.prisma.tour.findMany({
+      where: { deletedAt: now },
+      select: { slug: true },
+    });
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    await Promise.allSettled(
+      tours.flatMap((t) => langs.map((l) => this.cacheManager.del(`tour:${t.slug}:${l}`))),
+    );
+
+    return { success: true, message: `${result.count} tours archived`, count: result.count };
   }
 
   async publishTour(slug: string, adminUserId: string) {

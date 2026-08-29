@@ -26,11 +26,15 @@ export interface TourSummaryResponse {
   title: string;
   category: string | null;
   basePriceUsd: string;
+  currency: string;
   duration: string;
+  overview: string;
+  highlights: string[];
   heroImage: string | null;
   country: string | null;
   city?: string | null;
   languages: string[];
+  isFeatured: boolean;
 }
 
 export interface TourDetailResponse {

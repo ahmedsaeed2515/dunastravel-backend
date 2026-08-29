@@ -15,6 +15,7 @@ import {
   CreateTransportationServiceDto,
   UpdateTransportationServiceDto,
 } from './dto/admin-transportation.dto';
+import { CANONICAL_FLEET } from '../../transportation/constants/canonical-fleet.constant';
 
 @Injectable()
 export class AdminTransportationService {
@@ -50,7 +51,7 @@ export class AdminTransportationService {
     if (dto.pickupInstructions !== undefined) data.pickupInstructions = sanitizePlainText(dto.pickupInstructions).slice(0, 10_000) || null;
     if (dto.dropoffInstructions !== undefined) data.dropoffInstructions = sanitizePlainText(dto.dropoffInstructions).slice(0, 10_000) || null;
     if (dto.features !== undefined) data.featuresJsonb = dto.features.map((value) => sanitizePlainText(value).slice(0, 100)).filter(Boolean) as Prisma.InputJsonValue;
-    if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId || null;
+    if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId ? dto.heroMediaId.trim() : null;
     if (dto.basePriceUsd !== undefined) data.basePriceUsd = dto.basePriceUsd;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     return data as Prisma.TransportationServiceUncheckedCreateInput;
@@ -58,12 +59,69 @@ export class AdminTransportationService {
 
   async findAllServices() {
     try {
-      return await this.prisma.transportationService.findMany({
+      let services = await this.prisma.transportationService.findMany({
         orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+      });
+
+      if (services.length === 0) {
+        try {
+          await this.autoSeedCanonicalFleet();
+          services = await this.prisma.transportationService.findMany({
+            orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+          });
+        } catch (seedErr) {
+          this.logger.warn('Admin auto-seed transportation fleet failed', seedErr);
+        }
+      }
+
+      const mediaIds = services.flatMap((service) => service.heroMediaId ? [service.heroMediaId] : []);
+      const media = mediaIds.length
+        ? await this.prisma.mediaAsset.findMany({
+            where: { id: { in: mediaIds }, deletedAt: null },
+            select: { id: true, secureUrl: true, url: true, altText: true },
+          })
+        : [];
+      const mediaById = new Map(media.map((asset) => [asset.id, asset]));
+      return services.map((service) => {
+        const hero = service.heroMediaId ? mediaById.get(service.heroMediaId) : undefined;
+        return {
+          ...service,
+          basePriceUsd: Number(service.basePriceUsd),
+          features: Array.isArray(service.featuresJsonb)
+            ? service.featuresJsonb.filter((item): item is string => typeof item === 'string')
+            : [],
+          heroImageUrl: hero?.secureUrl || hero?.url || service.heroImageUrl || null,
+          heroImageAlt: hero?.altText || null,
+        };
       });
     } catch (err) {
       this.logger.error('Failed to fetch transportation services from DB', err);
       return [];
+    }
+  }
+
+  private async autoSeedCanonicalFleet(): Promise<void> {
+    for (const vehicle of CANONICAL_FLEET) {
+      await this.prisma.transportationService.upsert({
+        where: { id: vehicle.id },
+        create: {
+          id: vehicle.id,
+          name: vehicle.name,
+          serviceType: vehicle.serviceType,
+          vehicleCategory: vehicle.vehicleCategory,
+          vehicleType: vehicle.vehicleType,
+          capacity: vehicle.capacity,
+          doors: vehicle.doors,
+          transmission: vehicle.transmission,
+          basePriceUsd: vehicle.basePriceUsd,
+          heroImageUrl: vehicle.heroImageUrl,
+          isPrivate: vehicle.isPrivate,
+          isActive: vehicle.isActive,
+          featuresJsonb: vehicle.featuresJsonb,
+          description: vehicle.description,
+        },
+        update: {},
+      });
     }
   }
 
@@ -94,15 +152,18 @@ export class AdminTransportationService {
     dto: UpdateTransportationServiceDto,
     actor?: AuthenticatedUser,
   ) {
-    const existing = await this.prisma.transportationService.findUnique({
+    const data = this.serviceData(dto);
+    const service = await this.prisma.transportationService.upsert({
       where: { id },
-    });
-    if (!existing) throw new NotFoundException('Transportation service not found');
-    const service = await this.prisma.transportationService.update({
-      where: { id },
-      data: {
-        ...this.serviceData(dto),
+      create: {
+        basePriceUsd: 0,
+        isActive: true,
+        ...data,
+        name: (data.name as string) || 'Transportation Service',
+        serviceType: (data.serviceType as string) || 'AIRPORT',
+        id,
       },
+      update: data,
     });
     await this.prisma.auditLog.create({
       data: {

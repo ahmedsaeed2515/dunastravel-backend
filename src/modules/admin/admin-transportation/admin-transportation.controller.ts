@@ -60,7 +60,7 @@ export class AdminTransportationController {
   @Put('services/:id')
   @ApiOperation({ summary: 'Update a transportation service' })
   async updateService(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateTransportationServiceDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
@@ -70,7 +70,7 @@ export class AdminTransportationController {
   @Delete('services/:id')
   @ApiOperation({ summary: 'Deactivate a transportation service' })
   async deactivateService(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.transportationService.deactivateService(id, actor);

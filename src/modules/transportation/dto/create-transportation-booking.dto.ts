@@ -15,8 +15,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTransportationBookingDto {
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   serviceId!: string;
 
   @ApiProperty()

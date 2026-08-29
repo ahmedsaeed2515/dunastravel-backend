@@ -1061,7 +1061,11 @@ export class PaymentsService {
   ) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      include: { booking: true },
+      include: {
+        booking: {
+          include: { invoice: true },
+        },
+      },
     });
 
     let authorized = Boolean(
@@ -1089,6 +1093,14 @@ export class PaymentsService {
       status: payment.status,
       amount: payment.amount.toFixed(2),
       currency: payment.currency,
+      invoiceNumber: payment.booking?.invoice?.invoiceNumber || null,
+      booking: payment.booking
+        ? {
+            id: payment.booking.id,
+            referenceCode: payment.booking.referenceCode,
+            status: payment.booking.status,
+          }
+        : null,
       updatedAt: payment.updatedAt,
     };
   }

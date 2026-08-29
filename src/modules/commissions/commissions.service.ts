@@ -69,7 +69,11 @@ export class CommissionsService {
       booking.deletedAt ||
       booking.companyId !== data.companyId ||
       !(
-        [BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]
+        [
+          BookingStatus.CONFIRMED,
+          BookingStatus.PAID,
+          BookingStatus.COMPLETED,
+        ] as BookingStatus[]
       ).includes(booking.status)
     ) {
       throw new BadRequestException(
@@ -256,7 +260,11 @@ export class CommissionsService {
     }
     if (
       !(
-        [BookingStatus.PAID, BookingStatus.COMPLETED] as BookingStatus[]
+        [
+          BookingStatus.CONFIRMED,
+          BookingStatus.PAID,
+          BookingStatus.COMPLETED,
+        ] as BookingStatus[]
       ).includes(booking.status) ||
       booking.deletedAt ||
       booking.company.deletedAt ||

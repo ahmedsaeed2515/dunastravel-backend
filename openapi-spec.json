@@ -2226,6 +2226,32 @@
         ]
       }
     },
+    "/api/admin/tours/clear-all": {
+      "delete": {
+        "operationId": "AdminController_clearAllTours",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Count of archived tours"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete ALL tours (nuclear wipe � SUPER_ADMIN only).",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/tours/{slug}/images": {
       "post": {
         "operationId": "AdminController_addTourImage",
@@ -14789,7 +14815,11 @@
           },
           "invoiceType": {
             "type": "string",
-            "example": "company"
+            "example": "PERSONAL",
+            "enum": [
+              "PERSONAL",
+              "COMPANY"
+            ]
           },
           "companyName": {
             "type": "string"

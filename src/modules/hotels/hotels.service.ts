@@ -269,9 +269,8 @@ export class HotelsService {
     const data = this.hotelData(dto);
     return this.prisma.$transaction(async (tx) => {
       if (dto.rooms !== undefined) {
-        await tx.hotelRoom.updateMany({
-          where: { hotelId: id, deletedAt: null },
-          data: { deletedAt: new Date(), isActive: false },
+        await tx.hotelRoom.deleteMany({
+          where: { hotelId: id },
         });
       }
       return tx.hotel.update({

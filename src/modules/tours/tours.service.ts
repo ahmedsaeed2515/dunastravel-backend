@@ -97,12 +97,6 @@ export class ToursService {
       query.limit,
     );
 
-    const cacheKey = `tours:catalog:${query.lang || 'en'}:${query.category || ''}:${query.destination || query.country || ''}:${query.city || ''}:${query.search || ''}:${query.isFeatured ?? ''}:${query.sortPrice || ''}:${page}:${limit}`;
-    const cached = await this.cacheManager.get<PaginatedResponse<TourSummaryResponse>>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
     const where: Prisma.TourWhereInput = {
       isActive: true,
       status: 'PUBLISHED',
@@ -169,10 +163,14 @@ export class ToursService {
           titleJsonb: true,
           category: true,
           basePriceUsd: true,
+          currency: true,
           durationJsonb: true,
+          overviewJsonb: true,
+          highlightsJsonb: true,
           country: true,
           city: true,
           languages: true,
+          isFeatured: true,
           images: {
             take: 1,
             orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
@@ -192,28 +190,44 @@ export class ToursService {
       title: extractI18n(record.titleJsonb, query.lang),
       category: record.category,
       basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
+      currency: record.currency,
       duration: extractI18n(record.durationJsonb, query.lang),
+      overview: extractI18n(record.overviewJsonb, query.lang),
+      highlights: extractI18nList(record.highlightsJsonb, query.lang),
       heroImage: record.images[0]?.imageUrl ?? null,
       country: record.country,
       city: record.city,
       languages: record.languages,
+      isFeatured: record.isFeatured,
     }));
 
-    const result = paginate(mappedItems, total, page, limit);
-    await this.cacheManager.set(cacheKey, result, 60_000); // cache for 60 seconds
-    return result;
+    // Visibility may change through either a tour lifecycle action or an
+    // interface relation action.  Do not cache this public catalogue without
+    // a shared relation-aware invalidation key, otherwise an unpublished or
+    // hidden tour can remain visible until its TTL expires.
+    return paginate(mappedItems, total, page, limit);
   }
 
   async findBySlug(slug: string, lang: string): Promise<TourDetailResponse> {
     this.toursCounter.inc();
-    const cacheKey = `tour:${slug}:${lang}`;
-    const cached = await this.cacheManager.get<TourDetailResponse>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
     const tour = await this.prisma.tour.findFirst({
-      where: { slug, isActive: true, status: 'PUBLISHED', deletedAt: null },
+      where: {
+        slug,
+        isActive: true,
+        status: 'PUBLISHED',
+        deletedAt: null,
+        landingPages: {
+          some: {
+            isVisible: true,
+            landingPage: {
+              type: 'DESTINATION',
+              status: 'PUBLISHED',
+              isActive: true,
+              deletedAt: null,
+            },
+          },
+        },
+      },
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
         images: { orderBy: { sortOrder: 'asc' } },
@@ -229,7 +243,6 @@ export class ToursService {
 
     const response = this.toTourDetailResponse(tour, lang);
 
-    await this.cacheManager.set(cacheKey, response, 300_000); // cache for 5 minutes
     return response;
   }
 

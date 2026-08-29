@@ -531,6 +531,14 @@ export class AdminController {
     return this.adminService.unarchiveTour(slug, user.id);
   }
 
+
+  @Delete('tours/clear-all')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe — SUPER_ADMIN only).' })
+  @ApiOkResponse({ description: 'Count of archived tours' })
+  async clearAllTours(@CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.clearAllTours(user.id);
+  }
   @Delete('tours/:slug')
   @ApiOperation({ summary: 'Soft delete a tour.' })
   @ApiParam({ name: 'slug', type: 'string' })

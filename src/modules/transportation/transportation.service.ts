@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -9,10 +10,13 @@ import { CreateTransportationBookingDto } from './dto/create-transportation-book
 import { generateReferenceCode } from '../../common/utils';
 import { Prisma } from '@prisma/client';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+import { CANONICAL_FLEET } from './constants/canonical-fleet.constant';
 import crypto from 'crypto';
 
 @Injectable()
 export class TransportationService {
+  private readonly logger = new Logger(TransportationService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private toSafeBooking<
@@ -31,11 +35,10 @@ export class TransportationService {
     dto: CreateTransportationBookingDto,
     idempotencyKey?: string,
   ) {
+    const effectiveKey = idempotencyKey || crypto.randomUUID();
     if (
-      !userId ||
-      !idempotencyKey ||
-      idempotencyKey.length > 100 ||
-      !/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(idempotencyKey)
+      effectiveKey.length > 100 ||
+      !/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(effectiveKey)
     ) {
       throw new BadRequestException('A valid Idempotency-Key is required');
     }
@@ -56,9 +59,10 @@ export class TransportationService {
       )
       .digest('hex');
 
-    const existing = await this.prisma.transportationBooking.findUnique({
+    const existing = await this.prisma.transportationBooking.findFirst({
       where: {
-        userId_idempotencyKey: { userId, idempotencyKey },
+        userId: userId || null,
+        idempotencyKey: effectiveKey,
       },
     });
     if (existing) {
@@ -129,16 +133,17 @@ export class TransportationService {
               : null,
             totalAmountUsd: totalAmount,
             status: 'SUBMITTED',
-            idempotencyKey,
+            idempotencyKey: effectiveKey,
             requestHash,
           },
         });
         return this.toSafeBooking(created);
       } catch (error: unknown) {
         if ((error as { code?: string }).code !== 'P2002') throw error;
-        const winner = await this.prisma.transportationBooking.findUnique({
+        const winner = await this.prisma.transportationBooking.findFirst({
           where: {
-            userId_idempotencyKey: { userId, idempotencyKey },
+            userId: userId || null,
+            idempotencyKey: effectiveKey,
           },
         });
         if (winner) {
@@ -157,10 +162,34 @@ export class TransportationService {
   }
 
   async findAllServices() {
-    const services = await this.prisma.transportationService.findMany({
+    let services = await this.prisma.transportationService.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (services.length === 0) {
+      try {
+        await this.autoSeedCanonicalFleet();
+        services = await this.prisma.transportationService.findMany({
+          where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch (err) {
+        this.logger.warn('Auto-seed transportation fleet failed, using in-memory canonical fleet', err);
+        return CANONICAL_FLEET.filter((v) => v.isActive).map((v) => ({
+          ...v,
+          basePriceUsd: v.basePriceUsd,
+          features: v.featuresJsonb,
+          heroImageAlt: null,
+          heroMediaId: null,
+          pickupInstructions: null,
+          dropoffInstructions: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+      }
+    }
+
     const mediaIds = services.flatMap((service) => service.heroMediaId ? [service.heroMediaId] : []);
     const media = mediaIds.length
       ? await this.prisma.mediaAsset.findMany({
@@ -179,6 +208,31 @@ export class TransportationService {
         heroImageAlt: hero?.altText || null,
       };
     });
+  }
+
+  private async autoSeedCanonicalFleet(): Promise<void> {
+    for (const vehicle of CANONICAL_FLEET) {
+      await this.prisma.transportationService.upsert({
+        where: { id: vehicle.id },
+        create: {
+          id: vehicle.id,
+          name: vehicle.name,
+          serviceType: vehicle.serviceType,
+          vehicleCategory: vehicle.vehicleCategory,
+          vehicleType: vehicle.vehicleType,
+          capacity: vehicle.capacity,
+          doors: vehicle.doors,
+          transmission: vehicle.transmission,
+          basePriceUsd: vehicle.basePriceUsd,
+          heroImageUrl: vehicle.heroImageUrl,
+          isPrivate: vehicle.isPrivate,
+          isActive: vehicle.isActive,
+          featuresJsonb: vehicle.featuresJsonb,
+          description: vehicle.description,
+        },
+        update: {},
+      });
+    }
   }
 
   async findUserBookings(userId: string) {

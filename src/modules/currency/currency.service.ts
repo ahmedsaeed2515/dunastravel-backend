@@ -54,12 +54,19 @@ export class CurrencyService {
     details: CurrencyRateInfo[];
     timestamp: string;
   }> {
-    const cached = await this.cacheManager.get<{
-      base: string;
-      rates: Record<string, string>;
-      details: CurrencyRateInfo[];
-      timestamp: string;
-    }>(this.CACHE_KEY);
+    let cached = null;
+    try {
+      cached = await this.cacheManager.get<{
+        base: string;
+        rates: Record<string, string>;
+        details: CurrencyRateInfo[];
+        timestamp: string;
+      }>(this.CACHE_KEY);
+    } catch (cacheErr: unknown) {
+      this.logger.warn(
+        `Currency cache read failed, falling back to DB: ${cacheErr instanceof Error ? cacheErr.message : cacheErr}`,
+      );
+    }
 
     if (cached) {
       return cached;
@@ -104,7 +111,13 @@ export class CurrencyService {
       timestamp: new Date().toISOString(),
     };
 
-    await this.cacheManager.set(this.CACHE_KEY, response, 300000); // 5 min TTL
+    try {
+      await this.cacheManager.set(this.CACHE_KEY, response, 300000); // 5 min TTL
+    } catch (cacheErr: unknown) {
+      this.logger.warn(
+        `Currency cache write failed: ${cacheErr instanceof Error ? cacheErr.message : cacheErr}`,
+      );
+    }
     return response;
   }
 

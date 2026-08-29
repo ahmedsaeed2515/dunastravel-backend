@@ -717,6 +717,26 @@ export class TourLandingPagesService {
       seoKeywords: extractI18n(lp.seoKeywordsJsonb, locale),
       sections: lp.sectionsJsonb,
       toursCount: lp.tours.length,
+      // The destination catalogue is the authoritative owner of a tour's
+      // public placement. Returning its visible relations prevents clients
+      // from guessing membership from country labels or a partial global list.
+      tours: lp.tours.map((t) => ({
+        id: t.tour.id,
+        slug: t.tour.slug,
+        title: extractI18n(t.tour.titleJsonb, locale),
+        overview: extractI18n(t.tour.overviewJsonb, locale),
+        duration: extractI18n(t.tour.durationJsonb, locale),
+        basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
+        currency: t.tour.currency,
+        country: t.tour.country,
+        city: t.tour.city,
+        category: t.tour.category,
+        isFeatured: t.isFeatured || t.tour.isFeatured,
+        customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
+        heroImage: t.tour.images.find((img) => img.isHero)?.imageUrl || t.tour.images[0]?.imageUrl || null,
+        images: t.tour.images.map((img) => img.imageUrl),
+        sortOrder: t.sortOrder,
+      })),
     }));
 
     return paginate(formatted, total, page, limit);

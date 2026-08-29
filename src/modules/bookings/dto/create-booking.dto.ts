@@ -176,9 +176,12 @@ export class CreateBookingDto {
   @Matches(/^[\d\s\-+()]+$/)
   phone!: string;
 
-  @ApiPropertyOptional({ example: 'company' })
+  @ApiPropertyOptional({ example: 'PERSONAL', enum: ['PERSONAL', 'COMPANY'] })
   @IsOptional()
   @IsString()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase().trim() : value,
+  )
   @IsIn(['PERSONAL', 'COMPANY'])
   invoiceType?: string;
 

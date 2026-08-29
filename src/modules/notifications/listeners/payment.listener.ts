@@ -86,7 +86,7 @@ export class PaymentEventsListener {
         });
       }
 
-      if (booking.status === 'PAID') {
+      if (booking.status === 'PAID' || booking.status === 'CONFIRMED') {
         try {
           await this.commissionsService.createCommissionForBooking(
             payload.bookingId,

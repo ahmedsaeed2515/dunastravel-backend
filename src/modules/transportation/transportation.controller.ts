@@ -34,17 +34,17 @@ export class TransportationController {
   }
 
   @Post('bookings')
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
+  @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
   @ApiOperation({ summary: 'Submit a new transportation booking request' })
   @ApiCreatedResponse({ description: 'Booking request created successfully' })
   async createBooking(
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { id: string } | undefined,
     @Body() dto: CreateTransportationBookingDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.transportationService.createBooking(
-      user.id,
+      user?.id ?? null,
       dto,
       idempotencyKey,
     );

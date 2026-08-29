@@ -1,9 +1,10 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as fs from 'fs';
 import * as path from 'path';
 import { seedMediaAssets } from './seeds/media.seed';
+import { seedTransportationServices } from './seeds/transportation.seed';
 import * as bcrypt from 'bcryptjs';
 
 const connectionString = process.env.DATABASE_URL;
@@ -2182,6 +2183,7 @@ async function main(): Promise<void> {
     throw new Error('Development reference catalog is missing or empty; sample fallback tours are forbidden.');
   }
 
+  await seedTransportationServices(prisma);
   await seedTourLandingPages();
   if (seedDemoData) {
     await seedContactSubmissions();
