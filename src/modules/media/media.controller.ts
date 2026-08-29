@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Put,
   Delete,
   Param,
   Query,
@@ -36,6 +38,9 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MediaService } from './media.service';
 import { UploadMediaDto } from './dto/upload-media.dto';
+import { UpdateMediaDto } from './dto/update-media.dto';
+import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
+import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
 import { MediaAssetResponseDto } from './dto/media-asset-response.dto';
 import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { ListMediaDto } from './dto/list-media.dto';
@@ -54,7 +59,7 @@ export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Post('upload')
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Throttle({ default: { limit: 20, ttl: 3_600_000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @UseInterceptors(
@@ -63,9 +68,9 @@ export class MediaAdminController {
       limits: {
         fileSize: 10 * 1024 * 1024,
         fieldSize: 10 * 1024,
-        fields: 3,
+        fields: 5,
         files: 1,
-        parts: 4,
+        parts: 6,
       },
       fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -86,6 +91,7 @@ export class MediaAdminController {
         entityType: { type: 'string', enum: Object.values(MediaEntityType) },
         entityId: { type: 'string', nullable: true },
         altText: { type: 'string', maxLength: 255, nullable: true },
+        categorySlug: { type: 'string', nullable: true },
       },
     },
   })
@@ -103,9 +109,66 @@ export class MediaAdminController {
     return MediaAssetResponseDto.fromPrisma(asset);
   }
 
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update media asset details, category, or alt text' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ type: MediaAssetResponseDto })
+  async updateAsset(
+    @Param('id') id: string,
+    @Body() dto: UpdateMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MediaAssetResponseDto> {
+    const asset = await this.mediaService.updateAsset(id, dto, user);
+    return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Post('bulk-move')
+  @ApiOperation({ summary: 'Bulk move multiple media assets to a category or entity' })
+  @ApiOkResponse({ description: 'Assets moved successfully' })
+  async bulkMove(
+    @Body() dto: BulkMoveMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.bulkMoveAssets(dto, user);
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all media categories with live asset counts' })
+  async getCategories() {
+    return this.mediaService.getCategoriesWithCounts();
+  }
+
+  @Post('categories')
+  @ApiOperation({ summary: 'Create a new media category' })
+  async createCategory(
+    @Body() dto: CreateMediaCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.createCategory(dto, user);
+  }
+
+  @Put('categories/:slug')
+  @ApiOperation({ summary: 'Update a media category' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async updateCategory(
+    @Param('slug') slug: string,
+    @Body() dto: UpdateMediaCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.updateCategory(slug, dto, user);
+  }
+
+  @Delete('categories/:slug')
+  @ApiOperation({ summary: 'Delete a custom media category and reassign assets' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async deleteCategory(
+    @Param('slug') slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.deleteCategory(slug, user);
+  }
+
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Soft-delete a media asset (admin only)' })
   @ApiParam({ name: 'id', type: 'string' })
@@ -121,39 +184,16 @@ export class MediaAdminController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @ApiOperation({ summary: 'List media assets (admin, paginated)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'entityType', required: false, enum: MediaEntityType })
   @ApiQuery({ name: 'entityId', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'includeDeleted', required: false, type: Boolean })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'bytes'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/MediaAssetResponseDto' },
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' },
-          },
-        },
-      },
-    },
-  })
-  @ApiUnauthorizedResponse()
-  @ApiForbiddenResponse()
   async listAssets(@Query() query: ListMediaDto) {
     const result = await this.mediaService.listAssets(query);
     return {

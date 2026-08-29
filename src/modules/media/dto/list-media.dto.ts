@@ -7,7 +7,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -37,8 +36,13 @@ export class ListMediaDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   entityId?: string;
+
+  @ApiPropertyOptional({ description: 'Category slug for filtering' })
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @ApiPropertyOptional({ default: false })
   @IsOptional()

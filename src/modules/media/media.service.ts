@@ -24,6 +24,9 @@ import {
 import { STORAGE_PROVIDER } from '../../common/storage/storage-provider.token';
 import { Prisma, MediaEntityType, MediaProvenance } from '@prisma/client';
 import { UploadMediaDto } from './dto/upload-media.dto';
+import { UpdateMediaDto } from './dto/update-media.dto';
+import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
+import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
 import { ListMediaDto } from './dto/list-media.dto';
 import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { IMediaAsset } from './interfaces/media-asset.interface';
@@ -32,6 +35,93 @@ import {
   MediaUploadedEvent,
 } from './interfaces/media-events.interface';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+
+export interface MediaCategoryItem {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  color?: string;
+  icon?: string;
+  description?: string;
+  isSystem?: boolean;
+  count?: number;
+}
+
+const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
+  {
+    id: 'general',
+    slug: 'general',
+    nameEn: 'General Library',
+    nameAr: 'المكتبة العامة',
+    color: 'amber',
+    icon: 'Folder',
+    description: 'General media assets, brand graphics, and unclassified images',
+    isSystem: true,
+  },
+  {
+    id: 'tours',
+    slug: 'tours',
+    nameEn: 'Tours & Excursions',
+    nameAr: 'الرحلات والجولات',
+    color: 'sky',
+    icon: 'Compass',
+    description: 'Tour gallery photos, day-by-day itinerary images, and excursion highlights',
+    isSystem: true,
+  },
+  {
+    id: 'hotels',
+    slug: 'hotels',
+    nameEn: 'Hotels & Accommodations',
+    nameAr: 'الفنادق والإقامة',
+    color: 'violet',
+    icon: 'Hotel',
+    description: 'Luxury hotel exterior, interior, suites, rooms, and resort amenities',
+    isSystem: true,
+  },
+  {
+    id: 'destinations',
+    slug: 'destinations',
+    nameEn: 'Destinations & Landmarks',
+    nameAr: 'الوجهات والمعالم',
+    color: 'emerald',
+    icon: 'MapPin',
+    description: 'Pyramids, Bosphorus, Dead Sea, Petra, Dubai Burj, and world landmarks',
+    isSystem: false,
+  },
+  {
+    id: 'hero-covers',
+    slug: 'hero-covers',
+    nameEn: 'Hero Covers & Banners',
+    nameAr: 'أغلفة وبانرات الواجهة',
+    color: 'rose',
+    icon: 'Sparkles',
+    description: 'Cinematic high-resolution hero banners and promotional graphics',
+    isSystem: false,
+  },
+  {
+    id: 'blog',
+    slug: 'blog',
+    nameEn: 'Blog & Articles',
+    nameAr: 'المقالات والمدونة',
+    color: 'indigo',
+    icon: 'BookOpen',
+    description: 'Travel guides, stories, cultural tips, and blog editorial imagery',
+    isSystem: false,
+  },
+  {
+    id: 'transport',
+    slug: 'transport',
+    nameEn: 'Transportation Fleet',
+    nameAr: 'الأسطول والنقل',
+    color: 'teal',
+    icon: 'Car',
+    description: 'VIP Mercedes vans, luxury coaches, airport transfers, and private chauffeurs',
+    isSystem: false,
+  },
+];
+
+const CMS_MEDIA_CATEGORIES_KEY = 'media_categories';
 
 @Injectable()
 export class MediaService {
@@ -92,14 +182,14 @@ export class MediaService {
           throw new BadRequestException('Target hotel does not exist');
         }
       }
-    } else if (dto.entityId) {
-      throw new BadRequestException(
-        'entityId is not allowed for general media',
-      );
     }
 
+    const targetEntityId = isEntityMedia
+      ? dto.entityId
+      : (dto.categorySlug || dto.entityId || null);
+
     this.logger.debug(
-      `Upload initiated { entityType: ${dto.entityType}, entityId: ${dto.entityId}, mimeType: ${file.mimetype}, bytes: ${file.size} }`,
+      `Upload initiated { entityType: ${dto.entityType}, entityId: ${targetEntityId}, mimeType: ${file.mimetype}, bytes: ${file.size} }`,
     );
 
     const folder =
@@ -117,7 +207,7 @@ export class MediaService {
     const options: UploadOptions = {
       folder,
       entityType: dto.entityType,
-      entityId: isEntityMedia ? (dto.entityId ?? null) : null,
+      entityId: targetEntityId ?? null,
       altText: sanitizePlainText(dto.altText).slice(0, 255) || null,
       eager,
     };
@@ -217,14 +307,14 @@ export class MediaService {
               publicId: result.publicId,
               url: result.url,
               secureUrl: result.secureUrl,
-              providerName: 'cloudinary', // Cloudinary is the sole provider for now
+              providerName: 'cloudinary',
               format: result.format,
               mimeType: file.mimetype,
               bytes: result.bytes,
               width: result.width,
               height: result.height,
               entityType: dto.entityType,
-              entityId: isEntityMedia ? dto.entityId : null,
+              entityId: targetEntityId,
               provenance: MediaProvenance.UPLOADED,
               altText: sanitizePlainText(dto.altText).slice(0, 255) || null,
               uploadedBy: uploadedByUserId,
@@ -236,8 +326,6 @@ export class MediaService {
           );
 
           if (dto.entityType === MediaEntityType.TOUR && dto.entityId) {
-            // Sync with TourImage
-            // We will find the current highest sortOrder and append
             const existingImages = await tx.tourImage.findMany({
               where: { tourId: dto.entityId },
               orderBy: { sortOrder: 'desc' },
@@ -268,8 +356,7 @@ export class MediaService {
               entityId: asset.id,
               metadata: {
                 mediaEntityType: dto.entityType,
-                mediaEntityId:
-                  isEntityMedia ? dto.entityId : null,
+                mediaEntityId: targetEntityId,
                 bytes: result.bytes,
                 format: result.format,
               },
@@ -312,6 +399,346 @@ export class MediaService {
     );
 
     return mediaAsset;
+  }
+
+  async updateAsset(
+    id: string,
+    dto: UpdateMediaDto,
+    actor?: AuthenticatedUser,
+  ): Promise<IMediaAsset> {
+    const existing = await this.prisma.mediaAsset.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const newEntityType = dto.entityType ?? existing.entityType;
+      let newEntityId = dto.entityId !== undefined ? dto.entityId : existing.entityId;
+
+      if (dto.category !== undefined) {
+        newEntityId = dto.category || null;
+      }
+
+      // If moving away from TOUR, clean up tour image link
+      if (existing.entityType === MediaEntityType.TOUR && existing.entityId && newEntityType !== MediaEntityType.TOUR) {
+        await tx.tourImage.deleteMany({
+          where: { tourId: existing.entityId, imageUrl: existing.secureUrl },
+        });
+      }
+
+      // If moving to TOUR, link to tour images
+      if (newEntityType === MediaEntityType.TOUR && newEntityId && (existing.entityType !== MediaEntityType.TOUR || existing.entityId !== newEntityId)) {
+        const existingTourImages = await tx.tourImage.findMany({
+          where: { tourId: newEntityId },
+          orderBy: { sortOrder: 'desc' },
+          take: 1,
+        });
+        const nextOrder = existingTourImages.length > 0 ? existingTourImages[0].sortOrder + 1 : 0;
+        await tx.tourImage.create({
+          data: {
+            tourId: newEntityId,
+            imageUrl: existing.secureUrl,
+            altText: dto.altText ?? existing.altText,
+            sortOrder: nextOrder,
+          },
+        });
+      }
+
+      const asset = await tx.mediaAsset.update({
+        where: { id },
+        data: {
+          altText: dto.altText !== undefined ? sanitizePlainText(dto.altText).slice(0, 255) || null : undefined,
+          entityType: newEntityType,
+          entityId: newEntityId,
+        },
+      });
+
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'MEDIA_ASSET_UPDATED',
+            entityType: 'MEDIA_ASSET',
+            entityId: id,
+            metadata: {
+              previousEntityType: existing.entityType,
+              previousEntityId: existing.entityId,
+              newEntityType,
+              newEntityId,
+            },
+          },
+        });
+      }
+
+      return asset as IMediaAsset;
+    });
+
+    return updated;
+  }
+
+  async bulkMoveAssets(
+    dto: BulkMoveMediaDto,
+    actor?: AuthenticatedUser,
+  ): Promise<{ success: boolean; updatedCount: number }> {
+    const { assetIds, entityType, entityId, categorySlug } = dto;
+    if (!assetIds.length) {
+      throw new BadRequestException('No media asset IDs provided');
+    }
+
+    const targetEntityId = entityType === MediaEntityType.GENERAL ? (categorySlug || entityId || null) : (entityId || null);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const assets = await tx.mediaAsset.findMany({
+        where: { id: { in: assetIds }, deletedAt: null },
+      });
+
+      // Cleanup tour links for any assets leaving TOUR
+      for (const a of assets) {
+        if (a.entityType === MediaEntityType.TOUR && a.entityId && entityType !== MediaEntityType.TOUR) {
+          await tx.tourImage.deleteMany({
+            where: { tourId: a.entityId, imageUrl: a.secureUrl },
+          });
+        }
+      }
+
+      const updateRes = await tx.mediaAsset.updateMany({
+        where: { id: { in: assetIds }, deletedAt: null },
+        data: {
+          entityType,
+          entityId: targetEntityId,
+        },
+      });
+
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'MEDIA_ASSETS_BULK_MOVED',
+            entityType: 'MEDIA_ASSET',
+            entityId: assetIds[0],
+            metadata: {
+              assetCount: updateRes.count,
+              targetEntityType: entityType,
+              targetEntityId,
+            },
+          },
+        });
+      }
+
+      return updateRes.count;
+    });
+
+    return { success: true, updatedCount: result };
+  }
+
+  async getCategoriesWithCounts(): Promise<MediaCategoryItem[]> {
+    let customCategories: MediaCategoryItem[] = [];
+    try {
+      const cmsBlock = await this.prisma.cmsBlock.findUnique({
+        where: { key: CMS_MEDIA_CATEGORIES_KEY },
+      });
+      if (cmsBlock && Array.isArray(cmsBlock.content)) {
+        customCategories = cmsBlock.content as unknown as MediaCategoryItem[];
+      }
+    } catch {
+      // Fallback
+    }
+
+    const allCategoriesMap = new Map<string, MediaCategoryItem>();
+    for (const cat of DEFAULT_CATEGORIES) {
+      allCategoriesMap.set(cat.slug, { ...cat });
+    }
+    for (const cat of customCategories) {
+      allCategoriesMap.set(cat.slug, { ...cat, isSystem: false });
+    }
+
+    // Count live assets for each category/entityType
+    const [groupedByType, generalAssets] = await Promise.all([
+      this.prisma.mediaAsset.groupBy({
+        by: ['entityType'],
+        where: { deletedAt: null },
+        _count: { id: true },
+      }),
+      this.prisma.mediaAsset.findMany({
+        where: { entityType: MediaEntityType.GENERAL, deletedAt: null },
+        select: { entityId: true },
+      }),
+    ]);
+
+    const typeCounts: Record<string, number> = {
+      TOUR: 0,
+      HOTEL: 0,
+      GENERAL: 0,
+    };
+    for (const g of groupedByType) {
+      typeCounts[g.entityType] = g._count.id;
+    }
+
+    if (allCategoriesMap.has('tours')) {
+      allCategoriesMap.get('tours')!.count = typeCounts.TOUR;
+    }
+    if (allCategoriesMap.has('hotels')) {
+      allCategoriesMap.get('hotels')!.count = typeCounts.HOTEL;
+    }
+
+    // Count general categories based on entityId (category slug)
+    const slugCounts: Record<string, number> = { general: 0 };
+    for (const a of generalAssets) {
+      const slug = a.entityId || 'general';
+      slugCounts[slug] = (slugCounts[slug] || 0) + 1;
+    }
+
+    for (const [slug, item] of allCategoriesMap.entries()) {
+      if (slug !== 'tours' && slug !== 'hotels') {
+        item.count = slugCounts[slug] || 0;
+      }
+    }
+
+    return Array.from(allCategoriesMap.values());
+  }
+
+  async createCategory(
+    dto: CreateMediaCategoryDto,
+    actor?: AuthenticatedUser,
+  ): Promise<MediaCategoryItem> {
+    const slug = dto.slug.trim().toLowerCase().replace(/\s+/g, '-');
+    const existing = await this.getCategoriesWithCounts();
+    if (existing.some((c) => c.slug === slug)) {
+      throw new BadRequestException(`Category with slug '${slug}' already exists`);
+    }
+
+    const newCategory: MediaCategoryItem = {
+      id: slug,
+      slug,
+      nameEn: dto.nameEn.trim(),
+      nameAr: dto.nameAr.trim(),
+      color: dto.color || 'amber',
+      icon: dto.icon || 'Folder',
+      description: dto.description || '',
+      isSystem: false,
+      count: 0,
+    };
+
+    const currentBlock = await this.prisma.cmsBlock.findUnique({
+      where: { key: CMS_MEDIA_CATEGORIES_KEY },
+    });
+    const currentList: MediaCategoryItem[] = currentBlock && Array.isArray(currentBlock.content)
+      ? (currentBlock.content as unknown as MediaCategoryItem[])
+      : [];
+
+    currentList.push(newCategory);
+
+    await this.prisma.cmsBlock.upsert({
+      where: { key: CMS_MEDIA_CATEGORIES_KEY },
+      create: {
+        key: CMS_MEDIA_CATEGORIES_KEY,
+        content: currentList as any,
+        status: 'PUBLISHED',
+        lastUpdatedBy: actor?.id,
+      },
+      update: {
+        content: currentList as any,
+        lastUpdatedBy: actor?.id,
+        version: { increment: 1 },
+      },
+    });
+
+    return newCategory;
+  }
+
+  async updateCategory(
+    slug: string,
+    dto: UpdateMediaCategoryDto,
+    actor?: AuthenticatedUser,
+  ): Promise<MediaCategoryItem> {
+    const currentBlock = await this.prisma.cmsBlock.findUnique({
+      where: { key: CMS_MEDIA_CATEGORIES_KEY },
+    });
+    const currentList: MediaCategoryItem[] = currentBlock && Array.isArray(currentBlock.content)
+      ? (currentBlock.content as unknown as MediaCategoryItem[])
+      : [];
+
+    const index = currentList.findIndex((c) => c.slug === slug);
+    if (index === -1) {
+      // Check if it's default
+      const def = DEFAULT_CATEGORIES.find((c) => c.slug === slug);
+      if (def) {
+        // Create an overridden version in custom list
+        const updated = {
+          ...def,
+          nameEn: dto.nameEn || def.nameEn,
+          nameAr: dto.nameAr || def.nameAr,
+          color: dto.color || def.color,
+          icon: dto.icon || def.icon,
+          description: dto.description || def.description,
+        };
+        currentList.push(updated);
+      } else {
+        throw new NotFoundException(`Category '${slug}' not found`);
+      }
+    } else {
+      currentList[index] = {
+        ...currentList[index],
+        nameEn: dto.nameEn || currentList[index].nameEn,
+        nameAr: dto.nameAr || currentList[index].nameAr,
+        color: dto.color || currentList[index].color,
+        icon: dto.icon || currentList[index].icon,
+        description: dto.description !== undefined ? dto.description : currentList[index].description,
+      };
+    }
+
+    await this.prisma.cmsBlock.upsert({
+      where: { key: CMS_MEDIA_CATEGORIES_KEY },
+      create: {
+        key: CMS_MEDIA_CATEGORIES_KEY,
+        content: currentList as any,
+        status: 'PUBLISHED',
+        lastUpdatedBy: actor?.id,
+      },
+      update: {
+        content: currentList as any,
+        lastUpdatedBy: actor?.id,
+        version: { increment: 1 },
+      },
+    });
+
+    const all = await this.getCategoriesWithCounts();
+    return all.find((c) => c.slug === slug)!;
+  }
+
+  async deleteCategory(
+    slug: string,
+    actor?: AuthenticatedUser,
+  ): Promise<{ success: boolean; message: string }> {
+    const isSystem = DEFAULT_CATEGORIES.some((c) => c.slug === slug && c.isSystem);
+    if (isSystem) {
+      throw new BadRequestException('System categories cannot be deleted');
+    }
+
+    // Safely reassign any assets in this category to general
+    await this.prisma.mediaAsset.updateMany({
+      where: { entityId: slug, entityType: MediaEntityType.GENERAL },
+      data: { entityId: null },
+    });
+
+    const currentBlock = await this.prisma.cmsBlock.findUnique({
+      where: { key: CMS_MEDIA_CATEGORIES_KEY },
+    });
+    if (currentBlock && Array.isArray(currentBlock.content)) {
+      const filtered = (currentBlock.content as unknown as MediaCategoryItem[]).filter(
+        (c) => c.slug !== slug,
+      );
+      await this.prisma.cmsBlock.update({
+        where: { key: CMS_MEDIA_CATEGORIES_KEY },
+        data: { content: filtered as any, lastUpdatedBy: actor?.id },
+      });
+    }
+
+    return { success: true, message: `Category '${slug}' deleted and assets moved to General.` };
   }
 
   async deleteAsset(
@@ -412,6 +839,7 @@ export class MediaService {
       limit = 20,
       entityType,
       entityId,
+      category,
       includeDeleted = false,
       search,
       sortBy = 'createdAt',
@@ -427,6 +855,19 @@ export class MediaService {
     }
     if (entityId) {
       where.entityId = entityId;
+    }
+    if (category) {
+      if (category === 'tours') {
+        where.entityType = MediaEntityType.TOUR;
+      } else if (category === 'hotels') {
+        where.entityType = MediaEntityType.HOTEL;
+      } else if (category === 'general') {
+        where.entityType = MediaEntityType.GENERAL;
+        where.OR = [{ entityId: null }, { entityId: 'general' }];
+      } else {
+        where.entityType = MediaEntityType.GENERAL;
+        where.entityId = category;
+      }
     }
     if (search?.trim()) {
       const needle = search.trim();
@@ -486,9 +927,6 @@ export class MediaService {
       orderBy: { createdAt: 'asc' },
     });
 
-    this.logger.debug(
-      `Tour assets queried { tourId: ${tourId}, count: ${assets.length} }`,
-    );
     return assets;
   }
 
@@ -562,7 +1000,6 @@ export class MediaService {
       'Starting scheduled cleanup of orphaned MediaAsset records...',
     );
     try {
-      // Entity-owned assets must not outlive a soft-deleted tour or hotel.
       const entityAssets = await this.prisma.mediaAsset.findMany({
         where: {
           entityType: { in: [MediaEntityType.TOUR, MediaEntityType.HOTEL] },

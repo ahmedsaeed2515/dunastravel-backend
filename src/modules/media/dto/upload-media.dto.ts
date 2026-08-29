@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
@@ -20,9 +19,8 @@ export class UploadMediaDto {
   entityType!: MediaEntityType;
 
   @ApiPropertyOptional({
-    description: 'Required if entityType is TOUR or HOTEL',
+    description: 'Required if entityType is TOUR or HOTEL, or category slug if GENERAL',
     type: 'string',
-    format: 'uuid',
   })
   @ValidateIf(
     (o) =>
@@ -30,8 +28,8 @@ export class UploadMediaDto {
       o.entityType === MediaEntityType.HOTEL,
   )
   @IsNotEmpty()
-  @IsUUID()
-  entityId!: string | null;
+  @IsString()
+  entityId?: string | null;
 
   @ApiPropertyOptional({
     description: 'Accessibility alt text for the image',
@@ -40,5 +38,13 @@ export class UploadMediaDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  altText!: string | null;
+  altText?: string;
+
+  @ApiPropertyOptional({
+    description: 'Category slug for general library assets',
+    type: 'string',
+  })
+  @IsOptional()
+  @IsString()
+  categorySlug?: string;
 }
