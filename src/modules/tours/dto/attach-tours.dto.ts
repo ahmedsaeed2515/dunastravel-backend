@@ -54,9 +54,13 @@ export class UpdateTourRelationDto {
   customBadge?: Record<string, string>;
 }
 
-class ReorderTourItemDto {
+export class ReorderTourItemDto {
+  @IsOptional()
   @IsUUID('4')
-  tourId!: string;
+  tourId?: string;
+
+  @IsOptional()
+  slug?: string;
 
   @Type(() => Number)
   @IsInt()
@@ -73,3 +77,4 @@ export class ReorderToursDto {
   @Type(() => ReorderTourItemDto)
   items!: ReorderTourItemDto[];
 }
+

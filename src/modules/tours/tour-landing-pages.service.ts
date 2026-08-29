@@ -623,32 +623,60 @@ export class TourLandingPagesService {
     if (!landingPage)
       throw new NotFoundException(`Landing page '${idOrSlug}' not found.`);
 
-    const tourIds = dto.items.map((item) => item.tourId);
-    if (tourIds.length === 0) {
-      throw new BadRequestException('At least one attached tour is required to reorder');
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException('At least one tour is required to reorder');
     }
-    if (new Set(tourIds).size !== tourIds.length) {
-      throw new BadRequestException('Tour reorder contains duplicate tour ids');
-    }
-    const relationCount = await this.prisma.tourLandingPageTour.count({
-      where: { landingPageId: landingPage.id, tourId: { in: tourIds } },
-    });
-    if (relationCount !== tourIds.length) {
-      throw new BadRequestException('One or more tours are not attached to this interface');
+
+    // Resolve all tour IDs (whether provided by tourId UUID or by tour slug)
+    const itemsWithTourIds = await Promise.all(
+      dto.items.map(async (item) => {
+        if (item.tourId) return { tourId: item.tourId, sortOrder: item.sortOrder };
+        if (item.slug) {
+          const tour = await this.prisma.tour.findUnique({
+            where: { slug: item.slug },
+            select: { id: true },
+          });
+          if (tour) return { tourId: tour.id, sortOrder: item.sortOrder };
+        }
+        return null;
+      }),
+    );
+
+    const validItems = itemsWithTourIds.filter((it): it is { tourId: string; sortOrder: number } => it !== null);
+    if (validItems.length === 0) {
+      throw new BadRequestException('No valid tours found in the reorder request');
     }
 
     await this.prisma.$transaction(
-      dto.items.map((item) =>
-        this.prisma.tourLandingPageTour.updateMany({
-          where: {
-            landingPageId: landingPage.id,
-            tourId: item.tourId,
-          },
-          data: {
-            sortOrder: item.sortOrder,
-          },
-        }),
-      ),
+      async (tx) => {
+        for (const item of validItems) {
+          await tx.tourLandingPageTour.upsert({
+            where: {
+              landingPageId_tourId: {
+                landingPageId: landingPage.id,
+                tourId: item.tourId,
+              },
+            },
+            create: {
+              landingPageId: landingPage.id,
+              tourId: item.tourId,
+              sortOrder: item.sortOrder,
+              isVisible: true,
+              isFeatured: false,
+            },
+            update: {
+              sortOrder: item.sortOrder,
+            },
+          });
+
+          // Keep tour displayOrder in sync for destination queries
+          await tx.tour.update({
+            where: { id: item.tourId },
+            data: { displayOrder: item.sortOrder },
+          });
+        }
+      },
+      { isolationLevel: 'Serializable' },
     );
 
     await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_REORDERED', landingPage.id, {
