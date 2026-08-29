@@ -47,6 +47,7 @@ import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
+import { ReorderToursDto } from './dto/reorder-tours.dto';
 import { AddTourImageDto } from './dto/add-tour-image.dto';
 import { ReorderTourImageDto } from './dto/reorder-tour-image.dto';
 import { SetTourImageHeroDto } from './dto/set-tour-image-hero.dto';
@@ -482,6 +483,32 @@ export class AdminController {
     return this.adminService.bulkUpdateTours(dto, user.id);
   }
 
+  @Patch('tours/reorder')
+  @ApiOperation({
+    summary: 'Bulk reorder tours by setting displayOrder for each slug.',
+  })
+  @ApiBody({ type: ReorderToursDto })
+  @ApiOkResponse({ description: 'Tours reordered successfully' })
+  async reorderTours(
+    @Body() dto: ReorderToursDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.reorderTours(dto, user.id);
+  }
+
+  @Patch('tours/:slug/featured')
+  @ApiOperation({ summary: 'Toggle isFeatured status for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ schema: { properties: { isFeatured: { type: 'boolean' } } } })
+  @ApiOkResponse({ description: 'Featured status updated' })
+  async toggleFeatured(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Body('isFeatured') isFeatured: boolean,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.toggleFeatured(slug, isFeatured, user.id);
+  }
+
   @Patch('tours/:slug')
   @ApiOperation({ summary: 'Update tour details.' })
   @ApiParam({ name: 'slug', type: 'string' })
@@ -534,7 +561,7 @@ export class AdminController {
 
   @Delete('tours/clear-all')
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe — SUPER_ADMIN only).' })
+  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe ï¿½ SUPER_ADMIN only).' })
   @ApiOkResponse({ description: 'Count of archived tours' })
   async clearAllTours(@CurrentUser() user: AuthenticatedUser) {
     return this.adminService.clearAllTours(user.id);

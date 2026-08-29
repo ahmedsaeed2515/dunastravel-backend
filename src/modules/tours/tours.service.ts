@@ -146,9 +146,13 @@ export class ToursService {
       ];
     }
 
-    const orderBy: Prisma.TourOrderByWithRelationInput = query.sortPrice
-      ? { basePriceUsd: query.sortPrice }
-      : { createdAt: 'desc' };
+    const orderBy: Prisma.TourOrderByWithRelationInput[] = query.sortPrice
+      ? [{ basePriceUsd: query.sortPrice }]
+      : [
+          { isFeatured: 'desc' },
+          { displayOrder: 'asc' },
+          { createdAt: 'desc' },
+        ];
 
     const [total, records] = await this.prisma.$transaction([
       this.prisma.tour.count({ where }),
@@ -171,6 +175,7 @@ export class ToursService {
           city: true,
           languages: true,
           isFeatured: true,
+          displayOrder: true,
           images: {
             take: 1,
             orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
@@ -199,6 +204,7 @@ export class ToursService {
       city: record.city,
       languages: record.languages,
       isFeatured: record.isFeatured,
+      displayOrder: record.displayOrder ?? 0,
     }));
 
     // Visibility may change through either a tour lifecycle action or an

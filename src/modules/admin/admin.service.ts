@@ -34,6 +34,7 @@ import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { MoveTourDto } from './dto/move-tour.dto';
+import { ReorderToursDto } from './dto/reorder-tours.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
 import { AddTourImageDto } from './dto/add-tour-image.dto';
 import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
@@ -1564,13 +1565,24 @@ export class AdminService {
     }
 
     const skip = (page - 1) * limit;
+
+    // Build orderBy: custom sort fields take precedence; default is priority order
+    let orderByClause: any;
+    if (sortBy === 'isFeatured' || sortBy === 'displayOrder') {
+      orderByClause = [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }];
+    } else if (sortBy && sortBy !== 'createdAt') {
+      orderByClause = { [sortBy]: sortOrder };
+    } else {
+      orderByClause = [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: sortOrder }];
+    }
+
     const [total, records] = await Promise.all([
       this.prisma.tour.count({ where }),
       this.prisma.tour.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: orderByClause,
         include: {
           _count: { select: { bookings: true, reviews: true } },
           images: {
@@ -1608,6 +1620,7 @@ export class AdminService {
       isActive: t.isActive,
       status: t.status,
       isFeatured: t.isFeatured,
+      displayOrder: t.displayOrder,
       country: t.country,
       city: t.city,
 
@@ -2092,6 +2105,55 @@ export class AdminService {
     }
 
     return { success: true, slug: updated.slug };
+  }
+
+  async reorderTours(dto: ReorderToursDto, adminUserId: string) {
+    this.logger.log(
+      `reorderTours invoked by admin ${adminUserId} with ${dto.orders.length} items`,
+    );
+
+    const updates = dto.orders.map((item) =>
+      this.prisma.tour.update({
+        where: { slug: item.slug },
+        data: { displayOrder: item.displayOrder },
+      }),
+    );
+
+    await this.prisma.$transaction(updates);
+
+    // Invalidate public tour cache
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    for (const item of dto.orders) {
+      for (const l of langs) {
+        await this.cacheManager.del(`tour:${item.slug}:${l}`);
+      }
+    }
+
+    return { success: true, count: dto.orders.length };
+  }
+
+  async toggleFeatured(slug: string, isFeatured: boolean, adminUserId: string) {
+    this.logger.log(
+      `toggleFeatured invoked by admin ${adminUserId} for tour ${slug} to ${isFeatured}`,
+    );
+
+    const tour = await this.prisma.tour.findFirst({
+      where: { slug, deletedAt: null },
+    });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    const updated = await this.prisma.tour.update({
+      where: { id: tour.id },
+      data: { isFeatured },
+      select: { id: true, slug: true, isFeatured: true, displayOrder: true },
+    });
+
+    const langs = ['en', 'es', 'pt', 'it', 'ar'];
+    for (const l of langs) {
+      await this.cacheManager.del(`tour:${slug}:${l}`);
+    }
+
+    return { success: true, slug: updated.slug, isFeatured: updated.isFeatured };
   }
 
   /**

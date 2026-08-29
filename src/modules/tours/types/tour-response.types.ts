@@ -35,6 +35,7 @@ export interface TourSummaryResponse {
   city?: string | null;
   languages: string[];
   isFeatured: boolean;
+  displayOrder: number;
 }
 
 export interface TourDetailResponse {

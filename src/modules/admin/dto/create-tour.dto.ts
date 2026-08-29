@@ -455,6 +455,13 @@ export class CreateTourDto {
   @Type(() => Number)
   longitude?: number;
 
+  @ApiPropertyOptional({ description: 'Display priority order — lower value = appears first (0 = default)' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  displayOrder?: number;
+
   @ApiPropertyOptional({ type: [CreateTourItineraryDto] })
   @IsOptional()
   @IsArray()
