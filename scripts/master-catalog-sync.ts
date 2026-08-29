@@ -789,6 +789,7 @@ export async function runMasterSync(execute: boolean = true) {
           sourceRating: tour.sourceRating !== undefined ? new Prisma.Decimal(tour.sourceRating) : new Prisma.Decimal(4.9),
           sourceReviewCount: tour.sourceReviewCount || 100,
           sourceCatalogId: tour.sourceCatalogId,
+          basePriceUsd: (tour.country.toLowerCase() === 'egypt' || tour.destinationSlug.toLowerCase() === 'egypt') ? new Prisma.Decimal('0.00') : new Prisma.Decimal('0.00'),
           isActive: true,
           status: 'PUBLISHED',
           deletedAt: null,
