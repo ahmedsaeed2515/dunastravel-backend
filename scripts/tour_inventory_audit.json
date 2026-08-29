@@ -14,7 +14,7 @@
   {
     "slug": "cairo-cruzeiro-sharm-11d",
     "country": "Egypt",
-    "category": "Cruzeiro + Mar Vermelho",
+    "category": "Classic",
     "daysCount": 11,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -26,7 +26,7 @@
   {
     "slug": "cairo-express-4d",
     "country": "Egypt",
-    "category": "City Break",
+    "category": "Classic",
     "daysCount": 4,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -38,7 +38,7 @@
   {
     "slug": "cairo-express-alexandria-5d",
     "country": "Egypt",
-    "category": "City Break",
+    "category": "Classic",
     "daysCount": 5,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -50,7 +50,7 @@
   {
     "slug": "classic-program",
     "country": "Egypt",
-    "category": "Classic",
+    "category": "Classic Program",
     "daysCount": 8,
     "imagesCount": 4,
     "landingPages": "egypt",
@@ -62,7 +62,7 @@
   {
     "slug": "complete-egypt-8d",
     "country": "Egypt",
-    "category": "Complete Egypt Tour",
+    "category": "Classic",
     "daysCount": 8,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -74,7 +74,7 @@
   {
     "slug": "egito-classico-8d",
     "country": "Egypt",
-    "category": "Cruzeiro + City",
+    "category": "Classic",
     "daysCount": 8,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -86,7 +86,7 @@
   {
     "slug": "egito-classico-ii-9d",
     "country": "Egypt",
-    "category": "Cruzeiro + City",
+    "category": "Classic",
     "daysCount": 9,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -98,7 +98,7 @@
   {
     "slug": "egito-historico-10d",
     "country": "Egypt",
-    "category": "Cruzeiro + Mar Vermelho",
+    "category": "Classic",
     "daysCount": 10,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -158,7 +158,7 @@
   {
     "slug": "grande-ramses-10d",
     "country": "Egypt",
-    "category": "Cruzeiro + Abu Simbel",
+    "category": "Classic",
     "daysCount": 10,
     "imagesCount": 1,
     "landingPages": "egypt",
@@ -206,7 +206,7 @@
   {
     "slug": "hurghada-4d3n",
     "country": "Egypt",
-    "category": "Beach",
+    "category": "Extension",
     "daysCount": 4,
     "imagesCount": 2,
     "landingPages": "egypt",
@@ -626,7 +626,7 @@
   {
     "slug": "sharm-4d3n",
     "country": "Egypt",
-    "category": "Beach",
+    "category": "Extension",
     "daysCount": 4,
     "imagesCount": 2,
     "landingPages": "egypt",
@@ -638,7 +638,7 @@
   {
     "slug": "siwa-oasis-alexandria",
     "country": "Egypt",
-    "category": "Desert Adventure",
+    "category": "Extension",
     "daysCount": 5,
     "imagesCount": 3,
     "landingPages": "egypt",
@@ -674,7 +674,7 @@
   {
     "slug": "tesouros-egipto-9d",
     "country": "Egypt",
-    "category": "Cruzeiro + Alexandria",
+    "category": "Classic",
     "daysCount": 9,
     "imagesCount": 1,
     "landingPages": "egypt",

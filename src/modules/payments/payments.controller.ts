@@ -35,7 +35,7 @@ export class PaymentsController {
     return this.paymentsService.getReadiness();
   }
 
-  @Post(['initiate', 'checkout-session'])
+  @Post(['initiate', 'checkout-session', 'geitpatin/initiate', 'getpayin/initiate'])
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -59,19 +59,26 @@ export class PaymentsController {
     return {
       sessionUrl: session.url,
       url: session.url,
+      checkoutUrl: session.url,
+      paymentUrl: session.url,
       transactionId: session.transactionId,
       paymentId: session.paymentId,
+      sessionToken: session.transactionId,
     };
   }
 
-  @Post('webhook/:provider')
+  @Post(['webhook/:provider', 'geitpatin/webhook', 'getpayin/webhook'])
   @Public()
   @SkipCsrf()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
-    @Param('provider') provider: string,
+    @Param('provider') paramProvider: string | undefined,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
+    const provider =
+      paramProvider ||
+      (req.path?.toLowerCase().includes('geitpatin') ? 'getpayin' : 'getpayin');
+
     if (!provider) {
       throw new BadRequestException('Payment provider is required');
     }
