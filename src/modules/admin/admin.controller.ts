@@ -447,6 +447,15 @@ export class AdminController {
     return this.adminService.exportToursCsv(query, user.id);
   }
 
+  @Get('tours/catalog-overview')
+  @ApiOperation({
+    summary: 'Get tour catalog overview and visibility counters.',
+  })
+  @ApiOkResponse({ description: 'Tour catalog overview object' })
+  async getTourCatalogOverview(@CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.getTourCatalogOverview(user.id);
+  }
+
   @Get('tours/:slug')
   @ApiOperation({ summary: 'Get full details for a single tour.' })
   @ApiParam({ name: 'slug', type: 'string' })

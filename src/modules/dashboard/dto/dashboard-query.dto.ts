@@ -65,9 +65,16 @@ export class DashboardQueryDto {
   period?: 'daily' | 'weekly' | 'monthly';
 
   @ApiPropertyOptional({
-    description: 'Preset period filter (all, 30d, 90d, 12m)',
+    description: 'Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)',
   })
   @IsOptional()
   @IsString()
   preset?: string;
+
+  @ApiPropertyOptional({
+    description: 'Specific year filter (e.g. 2026, 2025)',
+  })
+  @IsOptional()
+  @IsString()
+  year?: string;
 }

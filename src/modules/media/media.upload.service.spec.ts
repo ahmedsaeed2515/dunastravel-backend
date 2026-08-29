@@ -64,7 +64,7 @@ describe('MediaService upload integrity', () => {
     const upload = jest.fn().mockResolvedValue({ success: false, error: 'timeout' });
     const service = createService({ mediaAsset: { findUnique: jest.fn() } }, { upload, delete: jest.fn() });
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: null }, 'admin-1')).rejects.toBeInstanceOf(HttpException);
+    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(HttpException);
     expect(upload).toHaveBeenCalledTimes(3);
   });
 
@@ -75,7 +75,7 @@ describe('MediaService upload integrity', () => {
       { upload: jest.fn().mockResolvedValue({ ...uploadedAsset, secureUrl: '' }), delete: jest.fn() },
     );
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: null }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(transaction).not.toHaveBeenCalled();
   });
 
@@ -86,7 +86,7 @@ describe('MediaService upload integrity', () => {
       { upload: jest.fn().mockResolvedValue(uploadedAsset), delete: jest.fn() },
     );
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: null }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(transaction).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe('MediaService upload integrity', () => {
     const service = createService({}, { upload, delete: jest.fn() });
     const tooLargeFile = { ...imageFile, size: 10 * 1024 * 1024 + 1 };
 
-    await expect(service.uploadAsset(tooLargeFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: null }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.uploadAsset(tooLargeFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
     expect(upload).not.toHaveBeenCalled();
   });
 });

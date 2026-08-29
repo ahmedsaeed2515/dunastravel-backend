@@ -224,6 +224,14 @@ export class AdminAiController {
     return this.keyPoolService.addKey(body);
   }
 
+  @Put('keys/reorder')
+  @ApiOperation({ summary: 'Reorder API keys priority sequentially' })
+  async reorderKeysInPool(
+    @Body() body: { orderedIds: string[] },
+  ) {
+    return this.keyPoolService.reorderKeys(body.orderedIds || []);
+  }
+
   @Put('keys/:id')
   @ApiOperation({ summary: 'Update an existing API key entry or toggle status' })
   async updateKeyInPool(

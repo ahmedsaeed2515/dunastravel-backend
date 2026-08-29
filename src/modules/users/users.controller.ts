@@ -43,6 +43,7 @@ import {
   BulkUpdateCustomersDto,
   AddCustomerNoteDto,
   AddCustomerDocumentDto,
+  CreateCustomerCrmDto,
 } from './dto/customer-crm.dto';
 import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
@@ -60,6 +61,17 @@ export class UsersController {
   ) {}
 
   // ─── ENTERPRISE CRM ENDPOINTS (PHASE 5) ────────────────────────
+
+  @Post('crm')
+  @ApiOperation({ summary: 'Create a new customer profile in CRM.' })
+  @ApiBody({ type: CreateCustomerCrmDto })
+  @ApiCreatedResponse({ description: 'Created customer CRM profile' })
+  async createCustomerCrm(
+    @Body() dto: CreateCustomerCrmDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.userService.createCustomerCrm(dto, user.id);
+  }
 
   @Get('crm/metrics')
   @ApiOperation({ summary: 'Get live CRM analytics and dashboard metrics.' })

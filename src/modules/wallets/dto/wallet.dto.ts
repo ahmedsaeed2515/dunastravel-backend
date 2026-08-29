@@ -95,3 +95,41 @@ export class WalletTransactionQueryFilters {
   @Matches(/^[A-Z][A-Z0-9_]*$/)
   referenceType?: string;
 }
+
+export class ListWalletsQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  page?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ enum: WalletOwnerType })
+  @IsOptional()
+  @IsEnum(WalletOwnerType)
+  ownerType?: WalletOwnerType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({ enum: ['asc', 'desc'] })
+  @IsOptional()
+  @IsString()
+  sortOrder?: 'asc' | 'desc';
+}
+

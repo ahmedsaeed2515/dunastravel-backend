@@ -111,6 +111,9 @@ export class AiKeyPoolService {
   }): Promise<MaskedApiKeyPoolEntry> {
     const { configId, pool } = await this.getRawKeyPool();
 
+    const maxPriority = pool.reduce((max, k) => Math.max(max, k.priority || 0), 0);
+    const assignedPriority = (dto.priority && dto.priority > 0) ? dto.priority : (maxPriority + 1);
+
     const newId = `key-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const newEntry: ApiKeyPoolEntry = {
       id: newId,
@@ -119,7 +122,7 @@ export class AiKeyPoolService {
       baseUrl: dto.baseUrl?.trim() || undefined,
       encryptedKey: encryptSensitiveField(dto.apiKey.trim())!,
       label: dto.label?.trim() || `${dto.provider} - ${dto.model}`,
-      priority: dto.priority ?? (pool.length + 1),
+      priority: assignedPriority,
       isActive: dto.isActive ?? true,
       failCount: 0,
       lastStatus: 'UNTESTED',
@@ -166,7 +169,7 @@ export class AiKeyPoolService {
     if (dto.model) current.model = dto.model.trim();
     if (dto.baseUrl !== undefined) current.baseUrl = dto.baseUrl.trim() || undefined;
     if (dto.label !== undefined) current.label = dto.label.trim();
-    if (dto.priority !== undefined) current.priority = dto.priority;
+    if (dto.priority !== undefined && dto.priority > 0) current.priority = dto.priority;
     if (dto.isActive !== undefined) current.isActive = dto.isActive;
     if (dto.apiKey && dto.apiKey.trim().length > 5 && !dto.apiKey.includes('••')) {
       current.encryptedKey = encryptSensitiveField(dto.apiKey.trim())!;
@@ -190,6 +193,35 @@ export class AiKeyPoolService {
       maskedKey: this.maskKey(current.encryptedKey),
       hasKey: true,
     };
+  }
+
+  async reorderKeys(orderedIds: string[]): Promise<MaskedApiKeyPoolEntry[]> {
+    const { configId, pool } = await this.getRawKeyPool();
+
+    orderedIds.forEach((id, index) => {
+      const key = pool.find((k) => k.id === id);
+      if (key) {
+        key.priority = index + 1;
+      }
+    });
+
+    let nextPriority = orderedIds.length + 1;
+    pool.forEach((k) => {
+      if (!orderedIds.includes(k.id)) {
+        k.priority = nextPriority++;
+      }
+    });
+
+    const config = await this.getAiConfig();
+    const settings = (config.tourSettings as any) || {};
+    settings.apiKeysPool = pool;
+
+    await (this.prisma as any).aiConfig.update({
+      where: { id: configId },
+      data: { tourSettings: settings },
+    });
+
+    return this.getKeyPool();
   }
 
   async deleteKey(id: string): Promise<{ success: boolean; id: string }> {

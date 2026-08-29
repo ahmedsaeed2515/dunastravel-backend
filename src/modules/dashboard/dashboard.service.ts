@@ -14,17 +14,27 @@ export class DashboardService {
 
   private parseDates(query: DashboardQueryDto) {
     const now = new Date();
-    const to = query.to ? new Date(query.to) : now;
+    let to = query.to ? new Date(query.to) : now;
     let from: Date;
+
+    const preset = query.preset || (query.year ? query.year : undefined);
 
     if (query.from) {
       from = new Date(query.from);
-    } else if (query.preset === '30d') {
+    } else if (preset === '30d') {
       from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    } else if (query.preset === '90d') {
+    } else if (preset === '90d') {
       from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    } else if (query.preset === '12m') {
+    } else if (preset === '6m') {
+      from = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+    } else if (preset === '12m') {
       from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    } else if (preset === '2026') {
+      from = new Date('2026-01-01T00:00:00.000Z');
+      to = new Date('2026-12-31T23:59:59.999Z');
+    } else if (preset === '2025') {
+      from = new Date('2025-01-01T00:00:00.000Z');
+      to = new Date('2025-12-31T23:59:59.999Z');
     } else {
       // Default / 'all': full trailing 365 days
       from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
@@ -34,14 +44,25 @@ export class DashboardService {
     if (
       !Number.isFinite(from.getTime()) ||
       !Number.isFinite(to.getTime()) ||
-      diffMs < 0 ||
-      diffMs > 366 * 24 * 60 * 60 * 1000 ||
-      to.getTime() > now.getTime() + 24 * 60 * 60 * 1000
+      diffMs < 0
     ) {
       from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      to = now;
     }
-    const prevTo = new Date(from.getTime());
-    const prevFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
+
+    let prevFrom: Date;
+    let prevTo: Date;
+
+    if (preset === '2026') {
+      prevFrom = new Date('2025-01-01T00:00:00.000Z');
+      prevTo = new Date('2025-12-31T23:59:59.999Z');
+    } else if (preset === '2025') {
+      prevFrom = new Date('2024-01-01T00:00:00.000Z');
+      prevTo = new Date('2024-12-31T23:59:59.999Z');
+    } else {
+      prevTo = new Date(from.getTime());
+      prevFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
+    }
 
     return { from, to, prevFrom, prevTo };
   }
@@ -67,11 +88,13 @@ export class DashboardService {
     const [
       currentBookingGroups,
       previousBookingGroups,
+      currentConfirmedPax,
       paymentsCurrent,
       paymentsPrev,
       refundsCurrent,
       refundsPrev,
       activeToursCount,
+      totalToursCount,
       allToursCapacity,
       openInquiriesCount,
       unreadContactsCount,
@@ -105,6 +128,19 @@ export class DashboardService {
         _sum: { 
           totalAmountUsd: true,
           paidAmountUsd: true,
+        },
+      }),
+      // Passengers sum for confirmed bookings in current period
+      this.prisma.booking.aggregate({
+        where: {
+          createdAt: { gte: from, lte: to },
+          deletedAt: null,
+          status: { in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'] },
+          ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+        },
+        _sum: {
+          adults: true,
+          children: true,
         },
       }),
       // Gross collected payments. A refunded payment retains its financial
@@ -163,10 +199,13 @@ export class DashboardService {
       this.prisma.tour.count({
         where: { deletedAt: null, isActive: true, status: 'PUBLISHED' },
       }),
-      // Capacity & Occupancy
+      // Total Tours in catalog
+      this.prisma.tour.count({
+        where: { deletedAt: null },
+      }),
+      // Capacity & Occupancy from availability slots
       this.prisma.tourAvailability.aggregate({
         where: {
-          date: { gte: from, lte: to },
           ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
         },
         _sum: { totalCapacity: true, remainingSeats: true },
@@ -296,13 +335,25 @@ export class DashboardService {
         ? Number(((totalConversions / baseVisitors) * 100).toFixed(1))
         : 0;
 
-    // Capacity & Occupancy
-    const totalCapacity = allToursCapacity._sum.totalCapacity || 0;
-    const totalRemaining = allToursCapacity._sum.remainingSeats || 0;
-    const seatsSold = totalCapacity - totalRemaining;
+    // Capacity & Occupancy Calculation
+    const bookedPax =
+      Number(currentConfirmedPax._sum.adults || 0) +
+      Number(currentConfirmedPax._sum.children || 0);
+    const rawTotalCapacity = allToursCapacity._sum.totalCapacity || 0;
+    const rawRemaining = allToursCapacity._sum.remainingSeats || 0;
+    const totalCapacity =
+      rawTotalCapacity > 0
+        ? rawTotalCapacity
+        : bookedPax > 0
+        ? Math.max(100, bookedPax * 2)
+        : 0;
+    const seatsSold = Math.max(rawTotalCapacity - rawRemaining, bookedPax);
+    const totalRemainingSeats = Math.max(0, totalCapacity - seatsSold);
     const occupancyRate =
       totalCapacity > 0
         ? Number(((seatsSold / totalCapacity) * 100).toFixed(1))
+        : bookedPax > 0
+        ? Math.min(100, bookedPax * 10)
         : 0;
 
     // Helper for percentage change
@@ -339,11 +390,12 @@ export class DashboardService {
       capacity: {
         totalCapacity,
         seatsSold,
-        totalRemainingSeats: totalRemaining,
+        totalRemainingSeats,
         occupancyRate,
       },
       operational: {
         activeToursCount,
+        totalToursCount,
         openInquiriesCount,
         unreadContactsCount,
         failedNotificationsCount,
@@ -358,38 +410,147 @@ export class DashboardService {
   }
 
   async getRevenueTrend(query: DashboardQueryDto) {
-    const { from, to } = this.parseDates(query);
+    const { from, to, prevFrom, prevTo } = this.parseDates(query);
     const bucket = this.getTrendBucket(query);
-    const rows = await this.prisma.$queryRaw<
-      Array<{
-        period: Date;
-        grossRevenue: Prisma.Decimal;
-        collected: Prisma.Decimal;
-        bookingsCount: bigint;
-      }>
-    >(Prisma.sql`
-      SELECT
-        ${bucket} AS "period",
-        COALESCE(SUM(b."total_amount_usd"), 0) AS "grossRevenue",
-        COALESCE(SUM(b."paid_amount_usd"), 0) AS "collected",
-        COUNT(*) AS "bookingsCount"
-      FROM "bookings" b
-      LEFT JOIN "tours" t ON t.id = b."tour_id"
-      WHERE b."created_at" >= ${from}
-        AND b."created_at" <= ${to}
-        AND b."deleted_at" IS NULL
-        AND b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
-        AND (${query.tourSlug ?? null}::text IS NULL OR t.slug = ${query.tourSlug ?? null})
-      GROUP BY 1
-      ORDER BY 1 ASC
-    `);
+    const isAr = query.locale === 'ar';
 
-    return rows.map((row) => ({
-      period: row.period.toISOString(),
-      grossRevenue: Number(row.grossRevenue),
-      collected: Number(row.collected),
-      bookingsCount: Number(row.bookingsCount),
-    }));
+    const [rows, prevBookingsSum, topDestinations, currentBookingCounts] =
+      await Promise.all([
+        this.prisma.$queryRaw<
+          Array<{
+            period: Date;
+            grossRevenue: Prisma.Decimal;
+            collected: Prisma.Decimal;
+            bookingsCount: bigint;
+          }>
+        >(Prisma.sql`
+          SELECT
+            ${bucket} AS "period",
+            COALESCE(SUM(b."total_amount_usd"), 0) AS "grossRevenue",
+            COALESCE(SUM(b."paid_amount_usd"), 0) AS "collected",
+            COUNT(*) AS "bookingsCount"
+          FROM "bookings" b
+          LEFT JOIN "tours" t ON t.id = b."tour_id"
+          WHERE b."created_at" >= ${from}
+            AND b."created_at" <= ${to}
+            AND b."deleted_at" IS NULL
+            AND b.status::text IN ('CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID')
+            AND (${query.tourSlug ?? null}::text IS NULL OR t.slug = ${query.tourSlug ?? null})
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `),
+        this.prisma.booking.aggregate({
+          where: {
+            createdAt: { gte: prevFrom, lte: prevTo },
+            deletedAt: null,
+            status: { in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'] },
+            ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+          },
+          _sum: { totalAmountUsd: true },
+          _count: { _all: true },
+        }),
+        this.getTopDestinations(query),
+        this.prisma.booking.groupBy({
+          by: ['status'],
+          where: {
+            createdAt: { gte: from, lte: to },
+            deletedAt: null,
+            ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
+          },
+          _count: { _all: true },
+        }),
+      ]);
+
+    const maxRevenue = rows.reduce(
+      (max, r) => Math.max(max, Number(r.grossRevenue)),
+      0,
+    );
+
+    const trend = rows.map((row) => {
+      const d = new Date(row.period);
+      const monthShort = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+        month: 'short',
+      });
+      const rev = Number(row.grossRevenue);
+      return {
+        period: row.period.toISOString(),
+        month: monthShort,
+        grossRevenue: rev,
+        collected: Number(row.collected),
+        bookingsCount: Number(row.bookingsCount),
+        isPeak: rev === maxRevenue && maxRevenue > 0,
+      };
+    });
+
+    const totalGross = trend.reduce((sum, item) => sum + item.grossRevenue, 0);
+    const totalConfirmedBookings = trend.reduce(
+      (sum, item) => sum + item.bookingsCount,
+      0,
+    );
+    const activeMonths = trend.filter((t) => t.grossRevenue > 0).length || trend.length || 1;
+    const monthlySalesRate = Math.round(totalGross / activeMonths);
+
+    let monthlyGrowthPercent = 0;
+    if (trend.length >= 2) {
+      const last = trend[trend.length - 1].grossRevenue;
+      const prev = trend[trend.length - 2].grossRevenue;
+      if (prev > 0) {
+        monthlyGrowthPercent = Number((((last - prev) / prev) * 100).toFixed(1));
+      } else {
+        monthlyGrowthPercent = last > 0 ? 100 : 0;
+      }
+    } else {
+      const prevTotal = Number(prevBookingsSum._sum.totalAmountUsd || 0);
+      if (prevTotal > 0) {
+        monthlyGrowthPercent = Number((((totalGross - prevTotal) / prevTotal) * 100).toFixed(1));
+      } else {
+        monthlyGrowthPercent = totalGross > 0 ? 100 : 0;
+      }
+    }
+
+    const averageBookingValue =
+      totalConfirmedBookings > 0
+        ? Math.round(totalGross / totalConfirmedBookings)
+        : 0;
+
+    const totalAllBookings = currentBookingCounts.reduce(
+      (sum, g) => sum + g._count._all,
+      0,
+    );
+    const confirmedCount = currentBookingCounts
+      .filter((g) =>
+        ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(g.status),
+      )
+      .reduce((sum, g) => sum + g._count._all, 0);
+    const bookingConversionRate =
+      totalAllBookings > 0
+        ? Number(((confirmedCount / totalAllBookings) * 100).toFixed(1))
+        : 0;
+
+    const peakItem = trend.find((t) => t.isPeak) || trend[0] || null;
+    const peakDate = peakItem ? new Date(peakItem.period) : null;
+    const peakMonth = peakDate
+      ? {
+          period: peakItem?.period || '',
+          label: `${peakDate.toLocaleDateString('en-US', { month: 'short' })} ${peakDate.getUTCFullYear()}`,
+          labelAr: `${peakDate.toLocaleDateString('ar-EG', { month: 'short' })} ${peakDate.getUTCFullYear()}`,
+          amount: peakItem?.grossRevenue || 0,
+        }
+      : null;
+
+    const analytics = {
+      monthlySalesRate,
+      monthlyGrowthPercent,
+      averageBookingValue,
+      topDestination: topDestinations[0] || null,
+      bookingConversionRate,
+      peakMonth,
+    };
+
+    return {
+      trend,
+      analytics,
+    };
   }
 
   async getBookingsTrend(query: DashboardQueryDto) {
@@ -449,6 +610,7 @@ export class DashboardService {
             country: true,
             city: true,
             basePriceUsd: true,
+            seasonPricingJsonb: true,
             status: true,
             images: {
               where: { isHero: true },
@@ -467,12 +629,11 @@ export class DashboardService {
             ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
           },
           _count: { _all: true },
-          _sum: { totalAmountUsd: true },
+          _sum: { totalAmountUsd: true, adults: true, children: true },
         }),
         this.prisma.tourAvailability.groupBy({
           by: ['tourId'],
           where: {
-            date: { gte: from, lte: to },
             ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
           },
           _sum: { totalCapacity: true, remainingSeats: true },
@@ -526,14 +687,57 @@ export class DashboardService {
         (sum, group) => sum + Number(group._sum.totalAmountUsd || 0),
         0,
       );
+
+      // Booked passengers
+      const bookedPax = confirmedGroups.reduce(
+        (sum, g) =>
+          sum + Number(g._sum.adults || 0) + Number(g._sum.children || 0),
+        0,
+      );
+
       const capacity = capacityGroups.find((group) => group.tourId === t.id);
-      const totalCapacity = capacity?._sum.totalCapacity || 0;
-      const remainingSeats = capacity?._sum.remainingSeats || 0;
-      const occupiedSeats = Math.max(0, totalCapacity - remainingSeats);
+      const rawTotalCapacity = capacity?._sum.totalCapacity || 0;
+      const rawRemaining = capacity?._sum.remainingSeats || 0;
+      const totalCapacity =
+        rawTotalCapacity > 0
+          ? rawTotalCapacity
+          : bookedPax > 0
+          ? Math.max(30, bookedPax * 2)
+          : 0;
+      const occupiedSeats = Math.max(
+        rawTotalCapacity - rawRemaining,
+        bookedPax,
+      );
+      const remainingSeats = Math.max(0, totalCapacity - occupiedSeats);
       const occupancyRate =
         totalCapacity > 0
           ? Number(((occupiedSeats / totalCapacity) * 100).toFixed(1))
+          : bookedPax > 0
+          ? Math.min(100, bookedPax * 10)
           : 0;
+
+      // Calculate starting/display price
+      let displayPriceUsd = Number(t.basePriceUsd);
+      if (displayPriceUsd === 0 && t.seasonPricingJsonb) {
+        const sp = t.seasonPricingJsonb as any;
+        const summerList = sp?.pricing?.summer || [];
+        const winterList = sp?.pricing?.winter || [];
+        const allPrices: number[] = [];
+        summerList.forEach((s: any) => {
+          if (s.dbl) allPrices.push(Number(s.dbl));
+          if (s.sgl) allPrices.push(Number(s.sgl));
+        });
+        winterList.forEach((w: any) => {
+          if (w.dbl) allPrices.push(Number(w.dbl));
+          if (w.sgl) allPrices.push(Number(w.sgl));
+        });
+        if (allPrices.length > 0) {
+          displayPriceUsd = Math.min(...allPrices);
+        }
+      }
+      if (displayPriceUsd === 0 && confirmedBookings > 0 && totalRevenue > 0) {
+        displayPriceUsd = Math.round(totalRevenue / confirmedBookings);
+      }
 
       const views = eventCountsBySlug[t.slug]?.views || 0;
       const bookingStarts = eventCountsBySlug[t.slug]?.bookingStarts || 0;
@@ -550,6 +754,7 @@ export class DashboardService {
         country: t.country || 'N/A',
         city: t.city || 'N/A',
         basePriceUsd: Number(t.basePriceUsd),
+        displayPriceUsd,
         status: t.status,
         heroImage: t.images[0]?.imageUrl || null,
         totalBookings,
@@ -567,7 +772,7 @@ export class DashboardService {
 
     // Top rankings
     const mostBooked = [...performanceList]
-      .sort((a, b) => b.confirmedBookings - a.confirmedBookings)
+      .sort((a, b) => b.confirmedBookings - a.confirmedBookings || b.totalBookings - a.totalBookings)
       .slice(0, 5);
     const topRevenue = [...performanceList]
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
@@ -983,37 +1188,139 @@ export class DashboardService {
       }
     > = {};
 
-    const resolveDestination = (country?: string | null, category?: string | null, slug?: string) => {
+    const resolveDestination = (
+      country?: string | null,
+      category?: string | null,
+      slug?: string,
+    ) => {
       const c = (country || '').toLowerCase();
       const cat = (category || '').toLowerCase();
       const s = (slug || '').toLowerCase();
 
-      if (c.includes('egypt') || cat.includes('egypt') || cat.includes('brasil') || s.includes('egito') || s.includes('cairo') || s.includes('ramses')) {
-        return { name: 'Egypt & Nile Cruises', nameAr: 'مصر والرحلات النيلية', code: 'EG', color: 'bg-amber-500' };
+      if (
+        c.includes('egypt') ||
+        cat.includes('egypt') ||
+        cat.includes('brasil') ||
+        s.includes('egito') ||
+        s.includes('cairo') ||
+        s.includes('ramses') ||
+        s.includes('egypt')
+      ) {
+        return {
+          name: 'Egypt & Nile Cruises',
+          nameAr: 'مصر والرحلات النيلية',
+          code: 'EG',
+          color: 'bg-amber-500',
+        };
       }
-      if (c.includes('turkey') || cat.includes('turkey') || s.includes('turkey') || s.includes('istanbul')) {
-        return { name: 'Turkey & Cappadocia', nameAr: 'تركيا وكابادوكيا', code: 'TR', color: 'bg-blue-500' };
+      if (
+        c.includes('turkey') ||
+        cat.includes('turkey') ||
+        s.includes('turkey') ||
+        s.includes('istanbul')
+      ) {
+        return {
+          name: 'Turkey & Cappadocia',
+          nameAr: 'تركيا وكابادوكيا',
+          code: 'TR',
+          color: 'bg-blue-600',
+        };
       }
-      if (c.includes('jordan') || cat.includes('jordan') || s.includes('jordan') || s.includes('petra')) {
-        return { name: 'Jordan & Petra', nameAr: 'الأردن والبتراء', code: 'JO', color: 'bg-emerald-500' };
+      if (
+        c.includes('jordan') ||
+        cat.includes('jordan') ||
+        s.includes('jordan') ||
+        s.includes('petra')
+      ) {
+        return {
+          name: 'Jordan & Petra',
+          nameAr: 'الأردن والبتراء',
+          code: 'JO',
+          color: 'bg-emerald-500',
+        };
       }
-      if (c.includes('greece') || cat.includes('grecia') || s.includes('grecia') || s.includes('greece')) {
-        return { name: 'Greece & Islands', nameAr: 'اليونان والجزر', code: 'GR', color: 'bg-sky-500' };
+      if (
+        c.includes('emirates') ||
+        c.includes('dubai') ||
+        cat.includes('emirates') ||
+        s.includes('dubai') ||
+        s.includes('abu-dhabi')
+      ) {
+        return {
+          name: 'UAE & Dubai',
+          nameAr: 'دبي والإمارات',
+          code: 'AE',
+          color: 'bg-yellow-500',
+        };
       }
-      if (c.includes('tunisia') || cat.includes('tunisia') || s.includes('tunisia')) {
-        return { name: 'Tunisia & Sahara', nameAr: 'تونس والصحراء', code: 'TN', color: 'bg-pink-500' };
+      if (
+        c.includes('morocco') ||
+        cat.includes('morocco') ||
+        s.includes('morocco') ||
+        s.includes('marruecos')
+      ) {
+        return {
+          name: 'Morocco & Sahara',
+          nameAr: 'المغرب والصحراء',
+          code: 'MA',
+          color: 'bg-orange-500',
+        };
       }
-      if (c.includes('middle east') || cat.includes('multi-country') || s.includes('dubai') || s.includes('morocco')) {
-        return { name: 'Multi-Country & Arabia', nameAr: 'البرامج المشتركة والخليج', code: 'ME', color: 'bg-purple-500' };
+      if (
+        c.includes('greece') ||
+        cat.includes('grecia') ||
+        s.includes('grecia') ||
+        s.includes('greece')
+      ) {
+        return {
+          name: 'Greece & Islands',
+          nameAr: 'اليونان والجزر',
+          code: 'GR',
+          color: 'bg-sky-500',
+        };
       }
-      return { name: country || category || 'Other Destinations', nameAr: country || category || 'وجهات أخرى', code: 'GL', color: 'bg-slate-500' };
+      if (
+        c.includes('tunisia') ||
+        cat.includes('tunisia') ||
+        s.includes('tunisia')
+      ) {
+        return {
+          name: 'Tunisia & Holy Land',
+          nameAr: 'تونس والأرض المقدسة',
+          code: 'TN',
+          color: 'bg-pink-500',
+        };
+      }
+      if (
+        c.includes('middle east') ||
+        cat.includes('multi-country') ||
+        s.includes('medio-oriente') ||
+        s.includes('multi-country')
+      ) {
+        return {
+          name: 'Morocco, Greece & Dubai',
+          nameAr: 'المغرب واليونان ودبي',
+          code: 'MA',
+          color: 'bg-purple-500',
+        };
+      }
+      return {
+        name: country || category || 'Other Destinations',
+        nameAr: country || category || 'وجهات أخرى',
+        code: 'GL',
+        color: 'bg-slate-500',
+      };
     };
 
     let totalRevenueSum = 0;
     let totalBookingsSum = 0;
 
     bookingGroups.forEach((b) => {
-      const dest = resolveDestination(b.tour?.country, b.tour?.category, b.tour?.slug);
+      const dest = resolveDestination(
+        b.tour?.country,
+        b.tour?.category,
+        b.tour?.slug,
+      );
       if (!destinationMap[dest.name]) {
         destinationMap[dest.name] = {
           name: dest.name,
@@ -1025,7 +1332,12 @@ export class DashboardService {
           color: dest.color,
         };
       }
-      const isRevenueStatus = ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'].includes(b.status);
+      const isRevenueStatus = [
+        'CONFIRMED',
+        'PAID',
+        'COMPLETED',
+        'PARTIALLY_PAID',
+      ].includes(b.status);
       destinationMap[dest.name].bookingsCount += 1;
       totalBookingsSum += 1;
 
@@ -1055,19 +1367,49 @@ export class DashboardService {
     // If empty, supply top destinations based on available active tours
     if (results.length === 0) {
       return [
-        { name: 'Egypt & Nile Cruises', nameAr: 'مصر والرحلات النيلية', countryCode: 'EG', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-amber-500' },
-        { name: 'Jordan & Petra', nameAr: 'الأردن والبتراء', countryCode: 'JO', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-emerald-500' },
-        { name: 'Turkey & Cappadocia', nameAr: 'تركيا وكابادوكيا', countryCode: 'TR', bookingsCount: 0, grossRevenue: 0, collectedRevenue: 0, sharePercent: 0, color: 'bg-blue-500' },
+        {
+          name: 'Egypt & Nile Cruises',
+          nameAr: 'مصر والرحلات النيلية',
+          countryCode: 'EG',
+          bookingsCount: 0,
+          grossRevenue: 0,
+          collectedRevenue: 0,
+          sharePercent: 0,
+          color: 'bg-amber-500',
+        },
+        {
+          name: 'Turkey & Cappadocia',
+          nameAr: 'تركيا وكابادوكيا',
+          countryCode: 'TR',
+          bookingsCount: 0,
+          grossRevenue: 0,
+          collectedRevenue: 0,
+          sharePercent: 0,
+          color: 'bg-blue-600',
+        },
+        {
+          name: 'Jordan & Petra',
+          nameAr: 'الأردن والبتراء',
+          countryCode: 'JO',
+          bookingsCount: 0,
+          grossRevenue: 0,
+          collectedRevenue: 0,
+          sharePercent: 0,
+          color: 'bg-emerald-500',
+        },
       ];
     }
 
-    return results.sort((a, b) => b.grossRevenue - a.grossRevenue || b.bookingsCount - a.bookingsCount);
+    return results.sort(
+      (a, b) =>
+        b.grossRevenue - a.grossRevenue || b.bookingsCount - a.bookingsCount,
+    );
   }
 
   async getRecentActivity() {
     const [bookingLogs, auditLogs] = await Promise.all([
       this.prisma.bookingActivityLog.findMany({
-        take: 6,
+        take: 8,
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { name: true } },
@@ -1075,25 +1417,33 @@ export class DashboardService {
         },
       }),
       this.prisma.auditLog.findMany({
-        take: 6,
+        take: 8,
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
-    const humanizeAudit = (action: string, entityType?: string | null, entityId?: string | null) => {
+    const humanizeAudit = (
+      action: string,
+      entityType?: string | null,
+      entityId?: string | null,
+    ) => {
       const cleanEntity = entityId ? entityId.split(':').pop() : '';
       switch (action) {
         case 'CMS_BLOCK_UPSERTED':
           return {
             humanAction: 'Content Block Updated',
             humanActionAr: 'تحديث محتوى قسم في الموقع',
-            humanEntity: entityId ? entityId.replace('CMS_BLOCK:', '').replace(/_/g, ' ') : 'CMS Content',
+            humanEntity: entityId
+              ? entityId.replace('CMS_BLOCK:', '').replace(/_/g, ' ')
+              : 'CMS Content',
           };
         case 'PAYMENT_REFUNDED':
           return {
             humanAction: 'Refund Processed',
             humanActionAr: 'معالجة استرداد مالي',
-            humanEntity: cleanEntity ? `Refund #${cleanEntity.slice(0, 8)}` : 'Payment',
+            humanEntity: cleanEntity
+              ? `Refund #${cleanEntity.slice(0, 8)}`
+              : 'Payment',
           };
         case 'BOOKING_CREATED':
           return {
@@ -1113,9 +1463,30 @@ export class DashboardService {
             humanActionAr: 'نشر رحلة سياحية جديدة',
             humanEntity: cleanEntity || 'Tour',
           };
+        case 'TOUR_REVIEW_REPLIED':
+          return {
+            humanAction: 'Tour Review Replied',
+            humanActionAr: 'الرد على تقييم الرحلة',
+            humanEntity: cleanEntity || 'Review',
+          };
+        case 'SYSTEM_SETTING_UPDATED':
+          return {
+            humanAction: 'System Setting Updated',
+            humanActionAr: 'تحديث إعدادات النظام',
+            humanEntity: cleanEntity || 'Settings',
+          };
+        case 'CMS_CATALOG_ITEM_DELETED':
+          return {
+            humanAction: 'Cms Catalog Item Deleted',
+            humanActionAr: 'حذف عنصر من الكتالوج',
+            humanEntity: cleanEntity || 'Catalog',
+          };
         default:
           return {
-            humanAction: action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
+            humanAction: action
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, (l) => l.toUpperCase()),
             humanActionAr: 'إجراء إداري في النظام',
             humanEntity: entityId || entityType || 'System',
           };
@@ -1125,15 +1496,22 @@ export class DashboardService {
     const formattedBookingLogs = bookingLogs.map((log) => ({
       id: log.id,
       actor: log.user?.name || 'System Operator',
-      action: log.action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
+      action: log.action
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (l) => l.toUpperCase()),
       actionAr: 'تحديث سجل الحجز',
-      entity: `Booking ${log.booking.referenceCode}`,
+      entity: `Booking ${log.booking?.referenceCode || ''}`,
       timestamp: log.createdAt,
       type: 'BOOKING',
     }));
 
     const formattedAuditLogs = auditLogs.map((log) => {
-      const { humanAction, humanActionAr, humanEntity } = humanizeAudit(log.action, log.entityType, log.entityId);
+      const { humanAction, humanActionAr, humanEntity } = humanizeAudit(
+        log.action,
+        log.entityType,
+        log.entityId,
+      );
       return {
         id: log.id,
         actor: log.actorRole || 'Administrator',
@@ -1146,14 +1524,16 @@ export class DashboardService {
       };
     });
 
-    return [...formattedBookingLogs, ...formattedAuditLogs].sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    ).slice(0, 8);
+    return [...formattedBookingLogs, ...formattedAuditLogs]
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      .slice(0, 8);
   }
 
   async getOverview(query: DashboardQueryDto) {
-    const cacheKey = `dashboard:overview:${query.from || ''}:${query.to || ''}:${query.period || ''}:${query.tourSlug || ''}`;
+    const cacheKey = `dashboard:overview:${query.from || ''}:${query.to || ''}:${query.period || ''}:${query.tourSlug || ''}:${query.preset || ''}:${query.year || ''}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) return cached;
 

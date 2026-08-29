@@ -10,6 +10,7 @@ import {
   CreateWalletTransactionDto,
   WalletQueryFilters,
   WalletTransactionQueryFilters,
+  ListWalletsQueryDto,
 } from './dto/wallet.dto';
 import {
   WalletOwnerType,
@@ -276,18 +277,197 @@ export class WalletsService {
   }
 
   async getMetrics() {
-    const totalCompanyWallets = await this.prisma.wallet.count({
-      where: { ownerType: 'COMPANY' },
-    });
-
-    const balanceAgg = await this.prisma.wallet.aggregate({
-      where: { ownerType: 'COMPANY' },
-      _sum: { balance: true },
-    });
+    const [totalCompanyWallets, totalUserWallets, balanceAgg, totalTxCount] = await Promise.all([
+      this.prisma.wallet.count({ where: { ownerType: 'COMPANY' } }),
+      this.prisma.wallet.count({ where: { ownerType: 'USER' } }),
+      this.prisma.wallet.aggregate({ _sum: { balance: true } }),
+      this.prisma.walletTransaction.count(),
+    ]);
 
     return {
       totalCompanyWallets,
+      totalUserWallets,
+      totalWallets: totalCompanyWallets + totalUserWallets,
       totalLiabilitiesUsd: Number(balanceAgg._sum.balance || 0),
+      totalTransactions: totalTxCount,
+    };
+  }
+
+  async listWallets(query: ListWalletsQueryDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.ownerType) {
+      where.ownerType = query.ownerType;
+    }
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    const [total, wallets] = await Promise.all([
+      this.prisma.wallet.count({ where }),
+      this.prisma.wallet.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: query.sortBy === 'balance'
+          ? { balance: query.sortOrder === 'asc' ? 'asc' : 'desc' }
+          : { updatedAt: 'desc' },
+        include: {
+          _count: {
+            select: { transactions: true },
+          },
+        },
+      }),
+    ]);
+
+    // Populate owner details (Company or User)
+    const companyIds = wallets.filter((w) => w.ownerType === WalletOwnerType.COMPANY).map((w) => w.ownerId);
+    const userIds = wallets.filter((w) => w.ownerType === WalletOwnerType.USER).map((w) => w.ownerId);
+
+    const [companies, users] = await Promise.all([
+      companyIds.length > 0
+        ? this.prisma.company.findMany({
+            where: { id: { in: companyIds } },
+            select: {
+              id: true,
+              name: true,
+              referenceCode: true,
+              companyType: true,
+              email: true,
+              phone: true,
+              commissionRate: true,
+              status: true,
+            },
+          })
+        : [],
+      userIds.length > 0
+        ? this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              role: true,
+              status: true,
+              company: { select: { id: true, name: true, referenceCode: true } },
+            },
+          })
+        : [],
+    ]);
+
+    const companyMap = new Map(companies.map((c) => [c.id, c]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    let data = wallets.map((w) => {
+      const company = w.ownerType === WalletOwnerType.COMPANY ? companyMap.get(w.ownerId) : null;
+      const user = w.ownerType === WalletOwnerType.USER ? userMap.get(w.ownerId) : null;
+
+      return {
+        id: w.id,
+        ownerType: w.ownerType,
+        ownerId: w.ownerId,
+        currency: w.currency,
+        balance: Number(w.balance),
+        status: w.status,
+        transactionsCount: w._count.transactions,
+        createdAt: w.createdAt,
+        updatedAt: w.updatedAt,
+        owner: company
+          ? {
+              id: company.id,
+              name: company.name,
+              referenceCode: company.referenceCode,
+              type: company.companyType,
+              email: company.email,
+              phone: company.phone,
+              commissionRate: Number(company.commissionRate),
+              status: company.status,
+            }
+          : user
+          ? {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              role: user.role,
+              status: user.status,
+              company: user.company,
+            }
+          : null,
+      };
+    });
+
+    // Optional in-memory search filter if search term is provided
+    if (query.search && query.search.trim()) {
+      const s = query.search.trim().toLowerCase();
+      data = data.filter((item) => {
+        const ownerName = item.owner?.name?.toLowerCase() || '';
+        const ownerRef = (item.owner as any)?.referenceCode?.toLowerCase() || '';
+        const ownerEmail = item.owner?.email?.toLowerCase() || '';
+        return ownerName.includes(s) || ownerRef.includes(s) || ownerEmail.includes(s) || item.id.includes(s);
+      });
+    }
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async reconcileWallets() {
+    this.logger.log('Starting full wallet ledger reconciliation...');
+    const wallets = await this.prisma.wallet.findMany();
+    let driftCount = 0;
+
+    for (const w of wallets) {
+      const txs = await this.prisma.walletTransaction.findMany({
+        where: {
+          walletId: w.id,
+          status: WalletTransactionStatus.COMPLETED,
+        },
+      });
+
+      let calculated = new Prisma.Decimal(0);
+      for (const t of txs) {
+        if (t.type === WalletTransactionType.CREDIT) {
+          calculated = calculated.add(t.amount);
+        } else if (t.type === WalletTransactionType.DEBIT) {
+          calculated = calculated.sub(t.amount);
+        }
+      }
+
+      if (!calculated.equals(w.balance)) {
+        driftCount++;
+        this.logger.warn(`Discrepancy found on wallet ${w.id} (DB: ${w.balance}, Calc: ${calculated}). Reconciling...`);
+        await this.prisma.wallet.update({
+          where: { id: w.id },
+          data: { balance: calculated },
+        });
+        if (w.ownerType === WalletOwnerType.COMPANY) {
+          await this.prisma.company.update({
+            where: { id: w.ownerId },
+            data: { currentBalance: calculated },
+          }).catch(() => {});
+        }
+      }
+    }
+
+    this.logger.log(`Reconciliation completed. Checked ${wallets.length} wallets. Fixed ${driftCount} discrepancies.`);
+    return {
+      success: true,
+      totalWalletsChecked: wallets.length,
+      driftCount,
+      message: driftCount === 0 ? 'All wallet ledgers are perfectly balanced.' : `Reconciled and corrected ${driftCount} wallet balances.`,
     };
   }
 }
+

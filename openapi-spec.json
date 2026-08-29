@@ -1936,6 +1936,32 @@
         ]
       }
     },
+    "/api/admin/tours/catalog-overview": {
+      "get": {
+        "operationId": "AdminController_getTourCatalogOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tour catalog overview object"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tour catalog overview and visibility counters.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/tours/{slug}": {
       "get": {
         "operationId": "AdminController_getTourBySlug",
@@ -2081,6 +2107,91 @@
           }
         ],
         "summary": "Bulk update tours.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/tours/reorder": {
+      "patch": {
+        "operationId": "AdminController_reorderTours",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tours reordered successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bulk reorder tours by setting displayOrder for each slug.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/tours/{slug}/featured": {
+      "patch": {
+        "operationId": "AdminController_toggleFeatured",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "isFeatured": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Featured status updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Toggle isFeatured status for a tour.",
         "tags": [
           "Admin"
         ]
@@ -3301,7 +3412,7 @@
         ]
       }
     },
-    "/api/admin/payments/initiate": {
+    "/api/payments/geitpatin/initiate": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[2]",
         "parameters": [],
@@ -3325,9 +3436,105 @@
         ]
       }
     },
-    "/api/admin/payments/checkout-session": {
+    "/api/payments/getpayin/initiate": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[3]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[4]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/checkout-session": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[5]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/geitpatin/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[6]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/getpayin/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiatePayment[7]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3352,16 +3559,35 @@
     "/api/payments/webhook/{provider}": {
       "post": {
         "operationId": "PaymentsController_handleWebhook[0]",
-        "parameters": [
-          {
-            "name": "provider",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
           }
-        ],
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/geitpatin/webhook": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/getpayin/webhook": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook[2]",
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -3374,17 +3600,36 @@
     },
     "/api/admin/payments/webhook/{provider}": {
       "post": {
-        "operationId": "PaymentsController_handleWebhook[1]",
-        "parameters": [
-          {
-            "name": "provider",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+        "operationId": "PaymentsController_handleWebhook[3]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
           }
-        ],
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/geitpatin/webhook": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook[4]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/getpayin/webhook": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook[5]",
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -4661,78 +4906,6 @@
           }
         },
         "summary": "Get full tour details by slug",
-        "tags": [
-          "Tours"
-        ]
-      }
-    },
-    "/api/tours/{slug}/reviews": {
-      "get": {
-        "operationId": "ToursController_getTourReviews",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated list of reviews"
-          }
-        },
-        "summary": "Get published reviews for a tour",
-        "tags": [
-          "Tours"
-        ]
-      },
-      "post": {
-        "operationId": "ToursController_addTourReview",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTourReviewDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Review submitted successfully"
-          }
-        },
-        "summary": "Submit a review for a completed tour",
         "tags": [
           "Tours"
         ]
@@ -7549,12 +7722,15 @@
                   },
                   "entityId": {
                     "type": "string",
-                    "format": "uuid",
                     "nullable": true
                   },
                   "altText": {
                     "type": "string",
                     "maxLength": 255,
+                    "nullable": true
+                  },
+                  "categorySlug": {
+                    "type": "string",
                     "nullable": true
                   }
                 }
@@ -7593,6 +7769,45 @@
       }
     },
     "/api/admin/media/{id}": {
+      "patch": {
+        "operationId": "MediaAdminController_updateAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaAssetResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update media asset details, category, or alt text",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
       "delete": {
         "operationId": "MediaAdminController_deleteAsset",
         "parameters": [
@@ -7601,7 +7816,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -7627,7 +7841,126 @@
             "description": ""
           }
         },
-        "summary": "Soft-delete a media asset",
+        "summary": "Soft-delete a media asset (admin only)",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/bulk-move": {
+      "post": {
+        "operationId": "MediaAdminController_bulkMove",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMoveMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assets moved successfully"
+          }
+        },
+        "summary": "Bulk move multiple media assets to a category or entity",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/categories": {
+      "get": {
+        "operationId": "MediaAdminController_getCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all media categories with live asset counts",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "post": {
+        "operationId": "MediaAdminController_createCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMediaCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a new media category",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/categories/{slug}": {
+      "put": {
+        "operationId": "MediaAdminController_updateCategory",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMediaCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a media category",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "delete": {
+        "operationId": "MediaAdminController_deleteCategory",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a custom media category and reassign assets",
         "tags": [
           "Admin — Media"
         ]
@@ -7680,6 +8013,15 @@
             }
           },
           {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Category slug for filtering",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "includeDeleted",
             "required": false,
             "in": "query",
@@ -7724,44 +8066,6 @@
         ],
         "responses": {
           "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/MediaAssetResponseDto"
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "number"
-                        },
-                        "page": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "totalPages": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": ""
-          },
-          "403": {
             "description": ""
           }
         },
@@ -7820,7 +8124,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -7858,7 +8161,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -10843,7 +11145,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -10945,7 +11256,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11047,7 +11367,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11149,7 +11478,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11251,7 +11589,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11353,7 +11700,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11455,7 +11811,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11557,7 +11922,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11659,7 +12033,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -11761,7 +12144,16 @@
             "name": "preset",
             "required": false,
             "in": "query",
-            "description": "Preset period filter (all, 30d, 90d, 12m)",
+            "description": "Preset period filter (all, 30d, 90d, 6m, 12m, 2026, 2025)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "description": "Specific year filter (e.g. 2026, 2025)",
             "schema": {
               "type": "string"
             }
@@ -13026,7 +13418,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -13054,7 +13445,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -13147,7 +13537,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -13188,7 +13577,6 @@
             "required": true,
             "in": "path",
             "schema": {
-              "format": "uuid",
               "type": "string"
             }
           }
@@ -14219,6 +14607,10 @@
             "type": "number",
             "description": "Longitude"
           },
+          "displayOrder": {
+            "type": "number",
+            "description": "Display priority order — lower value = appears first (0 = default)"
+          },
           "itineraries": {
             "type": "array",
             "items": {
@@ -14268,6 +14660,27 @@
         "required": [
           "slugs"
         ]
+      },
+      "TourOrderItem": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Tour slug identifier"
+          },
+          "displayOrder": {
+            "type": "number",
+            "description": "New display order position (0 = first)"
+          }
+        },
+        "required": [
+          "slug",
+          "displayOrder"
+        ]
+      },
+      "ReorderToursDto": {
+        "type": "object",
+        "properties": {}
       },
       "UpdateTourDto": {
         "type": "object",
@@ -14484,6 +14897,10 @@
           "longitude": {
             "type": "number",
             "description": "Longitude"
+          },
+          "displayOrder": {
+            "type": "number",
+            "description": "Display priority order — lower value = appears first (0 = default)"
           },
           "itineraries": {
             "type": "array",
@@ -14905,23 +15322,6 @@
         "type": "object",
         "properties": {}
       },
-      "CreateTourReviewDto": {
-        "type": "object",
-        "properties": {
-          "rating": {
-            "type": "number",
-            "description": "Rating between 1 and 5",
-            "example": 5
-          },
-          "comment": {
-            "type": "string",
-            "description": "Review comment"
-          }
-        },
-        "required": [
-          "rating"
-        ]
-      },
       "CreateTourLandingPageDto": {
         "type": "object",
         "properties": {}
@@ -14935,10 +15335,6 @@
         "properties": {}
       },
       "AttachToursDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ReorderToursDto": {
         "type": "object",
         "properties": {}
       },
@@ -15826,6 +16222,131 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "UpdateMediaDto": {
+        "type": "object",
+        "properties": {
+          "altText": {
+            "type": "string",
+            "description": "Accessibility alt text or caption for the image",
+            "maxLength": 255
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "TOUR",
+              "HOTEL",
+              "GENERAL"
+            ],
+            "description": "Type of entity/category this media belongs to"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "Target category slug, folder, tour ID, or hotel ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category slug or folder name (e.g. destinations, banners, blog)"
+          }
+        }
+      },
+      "BulkMoveMediaDto": {
+        "type": "object",
+        "properties": {
+          "assetIds": {
+            "description": "Array of media asset IDs to move",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "TOUR",
+              "HOTEL",
+              "GENERAL"
+            ],
+            "description": "Target entity type (GENERAL, TOUR, HOTEL)"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "Target entity ID (e.g. tour ID, hotel ID, or custom category slug)"
+          },
+          "categorySlug": {
+            "type": "string",
+            "description": "Target category slug"
+          }
+        },
+        "required": [
+          "assetIds",
+          "entityType"
+        ]
+      },
+      "CreateMediaCategoryDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "Category name in English",
+            "example": "Destinations & Landmarks"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Category name in Arabic",
+            "example": "الوجهات والمعالم"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Category URL slug",
+            "example": "destinations"
+          },
+          "color": {
+            "type": "string",
+            "description": "Badge color name",
+            "example": "emerald"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Lucide icon name",
+            "example": "MapPin"
+          },
+          "description": {
+            "type": "string",
+            "description": "Short description",
+            "example": "Photos of pyramids, historical landmarks and destinations"
+          }
+        },
+        "required": [
+          "nameEn",
+          "nameAr",
+          "slug"
+        ]
+      },
+      "UpdateMediaCategoryDto": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "description": "Category name in English"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Category name in Arabic"
+          },
+          "color": {
+            "type": "string",
+            "description": "Badge color name"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Lucide icon name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Short description"
+          }
+        }
       },
       "DeleteMediaResponseDto": {
         "type": "object",

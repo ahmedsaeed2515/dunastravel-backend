@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { User, UserRole, Prisma, MediaEntityType } from '@prisma/client';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ListCustomersQueryDto,
@@ -14,6 +15,7 @@ import {
   BulkUpdateCustomersDto,
   AddCustomerNoteDto,
   AddCustomerDocumentDto,
+  CreateCustomerCrmDto,
 } from './dto/customer-crm.dto';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
@@ -580,6 +582,88 @@ export class UserService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async createCustomerCrm(dto: CreateCustomerCrmDto, adminUserId: string) {
+    const existing = await this.prisma.user.findFirst({
+      where: { email: dto.email.toLowerCase().trim() },
+    });
+    if (existing) {
+      throw new ConflictException('A customer with this email already exists');
+    }
+
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const customerNumber = `CUST-2026-${randomSuffix}`;
+    const dummyHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12);
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: sanitizePlainText(dto.name),
+          email: dto.email.toLowerCase().trim(),
+          phone: dto.phone ? sanitizePlainText(dto.phone) : null,
+          role: UserRole.USER,
+          passwordHash: dummyHash,
+          isVerified: true,
+          customerNumber,
+          nationality: dto.nationality ? sanitizePlainText(dto.nationality) : null,
+          isVip: dto.isVip ?? false,
+          preferredLanguage: dto.preferredLanguage || 'en',
+          preferredCurrency: dto.preferredCurrency || 'USD',
+          preferredDestination: dto.preferredDestination ? sanitizePlainText(dto.preferredDestination) : null,
+          preferredTravelType: dto.preferredTravelType ? sanitizePlainText(dto.preferredTravelType) : null,
+          customerSource: dto.customerSource || 'ADMIN',
+          passportNumber: dto.passportNumber ? encryptSensitiveField(dto.passportNumber) : null,
+          tags: dto.tags || [],
+          segments: dto.segments || [],
+          status: 'ACTIVE',
+        },
+      });
+
+      if (dto.initialNote && dto.initialNote.trim()) {
+        await tx.customerNote.create({
+          data: {
+            customerId: user.id,
+            userId: adminUserId,
+            noteType: 'SALES',
+            content: sanitizePlainText(dto.initialNote),
+            isPinned: false,
+          },
+        });
+      }
+
+      await tx.customerActivityLog.create({
+        data: {
+          customerId: user.id,
+          userId: adminUserId,
+          action: 'CUSTOMER_CREATED_IN_CRM',
+          details: {
+            customerNumber,
+            isVip: user.isVip,
+            customerSource: user.customerSource,
+          },
+        },
+      });
+
+      return {
+        id: user.id,
+        customerNumber: user.customerNumber,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isVip: user.isVip,
+        status: user.status,
+        tags: user.tags,
+        segments: user.segments,
+        nationality: user.nationality,
+        bookingsCount: 0,
+        notesCount: dto.initialNote ? 1 : 0,
+        documentsCount: 0,
+        totalSpent: 0,
+        outstandingBalance: 0,
+        createdAt: user.createdAt,
+      };
+    });
   }
 
   async getCustomerCrmDetail(id: string, adminUserId: string) {

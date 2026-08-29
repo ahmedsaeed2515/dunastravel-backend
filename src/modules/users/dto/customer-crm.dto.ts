@@ -377,3 +377,88 @@ export class AddCustomerDocumentDto {
   @MaxLength(255)
   title!: string;
 }
+
+export class CreateCustomerCrmDto {
+  @ApiProperty({ example: 'Lady Eleanor Vance' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name!: string;
+
+  @ApiProperty({ example: 'eleanor.vance@luxurytravel.com' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  email!: string;
+
+  @ApiPropertyOptional({ example: '+44 20 7946 0912' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'British' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nationality?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isVip?: boolean;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  preferredLanguage?: string;
+
+  @ApiPropertyOptional({ example: 'USD' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  preferredCurrency?: string;
+
+  @ApiPropertyOptional({ example: 'Luxor & Aswan Nile Cruise' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  preferredDestination?: string;
+
+  @ApiPropertyOptional({ example: 'Luxury Private Dahabiya' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  preferredTravelType?: string;
+
+  @ApiPropertyOptional({ enum: CUSTOMER_SOURCES, example: 'ADMIN' })
+  @IsOptional()
+  @IsIn(CUSTOMER_SOURCES)
+  customerSource?: (typeof CUSTOMER_SOURCES)[number];
+
+  @ApiPropertyOptional({ example: 'VIP referral from London concierge' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  initialNote?: string;
+
+  @ApiPropertyOptional({ example: ['VIP', 'RepeatClient'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional({ example: ['LuxuryTraveler'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  segments?: string[];
+
+  @ApiPropertyOptional({ example: 'GB987654321' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  passportNumber?: string;
+}
+

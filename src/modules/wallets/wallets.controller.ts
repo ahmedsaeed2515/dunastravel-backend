@@ -13,6 +13,7 @@ import { WalletsService } from './wallets.service';
 import {
   ManualWalletTransactionDto,
   WalletTransactionQueryFilters,
+  ListWalletsQueryDto,
 } from './dto/wallet.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -42,6 +43,31 @@ export class WalletsController {
   @ApiOperation({ summary: 'Get global wallet and liability metrics' })
   async getMetrics() {
     return this.walletsService.getMetrics();
+  }
+
+  @Get()
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'List all partner and agent wallets with directory search' })
+  async listWallets(@Query() query: ListWalletsQueryDto) {
+    return this.walletsService.listWallets(query);
+  }
+
+  @Post('reconcile')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Reconcile wallet balances against transaction ledger' })
+  async reconcileWallets(@CurrentUser() actor: AuthenticatedUser) {
+    const result = await this.walletsService.reconcileWallets();
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'WALLET_LEDGER_RECONCILED',
+      entityType: 'Wallet',
+      metadata: {
+        totalWalletsChecked: result.totalWalletsChecked,
+        driftCount: result.driftCount,
+      },
+    });
+    return result;
   }
 
   @Get(':ownerType/:ownerId')
