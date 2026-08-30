@@ -293,9 +293,11 @@ export class AiKeyPoolService {
         provider: keyEntry.provider,
         model: keyEntry.model,
         error: err.message,
+        message: err.message || 'Connection test failed',
       };
     }
   }
+
 
   private async savePool(pool: ApiKeyPoolEntry[]) {
     const config = await this.getAiConfig();

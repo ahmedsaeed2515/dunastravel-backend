@@ -137,7 +137,20 @@ export class UniversalAiProvider implements IAiProvider {
   ): Promise<IAiProviderResponse> {
     const config = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.custom;
     let baseUrl = (options.baseUrl || config.defaultBaseUrl).replace(/\/+$/, '');
-    const model = options.model || config.defaultModel;
+    
+    // Clean and normalize model name (strip provider prefixes like 'google - ' or 'google/')
+    let model = options.model || config.defaultModel;
+    model = model.replace(/^(google|openai|anthropic|deepseek)[\s\-\/]+/i, '').trim();
+
+    // Map common Gemini naming variations to Google standard API identifiers
+    if (provider === 'google') {
+      if (model === 'gemini-2.5-pro' || model === 'gemini-2.5-pro-preview') {
+        model = 'gemini-2.0-flash'; // Fallback to current GA flash/pro if preview is requested
+      } else if (model === 'gemini-2.5-flash') {
+        model = 'gemini-2.0-flash';
+      }
+    }
+
     const timeoutMs = options.timeoutMs || 15_000;
     const maxTokens = options.maxTokens || 1_024;
     const temperature = options.temperature ?? 0.7;
@@ -152,10 +165,15 @@ export class UniversalAiProvider implements IAiProvider {
       'Authorization': `Bearer ${apiKey}`,
     };
 
+    if (provider === 'google') {
+      headers['x-goog-api-key'] = apiKey;
+    }
+
     if (provider === 'openrouter') {
       headers['HTTP-Referer'] = 'https://dunas-travel.com';
       headers['X-Title'] = 'Dunas Travel GuideR AI Concierge';
     }
+
 
     const messages = [];
     if (options.systemPrompt) {
