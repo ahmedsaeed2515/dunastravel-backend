@@ -84,11 +84,12 @@ export class LiveCatalogRetrieverService {
         images: { where: { isHero: true }, take: 1 },
         availabilities: {
           where: {
-            startDate: { gte: new Date() },
-            isAvailable: true,
+            date: { gte: new Date() },
+            remainingSeats: { gt: 0 },
+            status: 'AVAILABLE',
           },
           take: 3,
-          orderBy: { startDate: 'asc' },
+          orderBy: { date: 'asc' },
         },
       },
     });
@@ -119,12 +120,13 @@ export class LiveCatalogRetrieverService {
         publicUrl: `/tours/${tour.slug}`,
         highlights: highlights.slice(0, 4),
         upcomingAvailabilities: (tour.availabilities || []).map((a: any) => ({
-          startDate: a.startDate.toISOString().split('T')[0],
-          availableSeats: a.capacity - a.bookedCount,
-          priceOverrideUsd: a.priceOverrideUsd ? Number(a.priceOverrideUsd) : undefined,
+          startDate: a.date ? (typeof a.date === 'string' ? a.date.split('T')[0] : a.date.toISOString().split('T')[0]) : '',
+          availableSeats: a.remainingSeats ?? a.totalCapacity,
+          priceOverrideUsd: undefined,
         })),
       };
     });
+
   }
 
   /**
