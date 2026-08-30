@@ -132,7 +132,8 @@ export class WalletsService {
             }
 
             const permitsNegativeBalance =
-              data.referenceType === 'COMMISSION_REVERSAL';
+              data.referenceType === 'COMMISSION_REVERSAL' ||
+              data.referenceType === 'COMMISSION_REVERSAL_PARTIAL';
             const updated =
               data.type === WalletTransactionType.CREDIT
                 ? await tx.wallet.updateMany({
@@ -470,4 +471,3 @@ export class WalletsService {
     };
   }
 }
-

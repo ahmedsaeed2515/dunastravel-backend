@@ -306,6 +306,52 @@ export class CommissionsService {
     });
   }
 
+  async adjustCommissionForPartialRefund(
+    bookingId: string,
+    totalRefunded: Prisma.Decimal,
+    refundRecordId: string,
+  ) {
+    const commission = await this.prisma.commission.findUnique({
+      where: { bookingId },
+      include: { booking: { select: { totalAmountUsd: true } } },
+    });
+    if (!commission || commission.status === CommissionStatus.CANCELLED) {
+      return commission;
+    }
+
+    const remainingRevenue = Prisma.Decimal.max(
+      commission.booking.totalAmountUsd.minus(totalRefunded),
+      new Prisma.Decimal(0),
+    );
+    const adjustedAmount = remainingRevenue
+      .mul(commission.rate)
+      .div(100)
+      .toDecimalPlaces(2);
+    const reduction = commission.amount.minus(adjustedAmount);
+    if (reduction.lte(0)) return commission;
+
+    if (
+      commission.status === CommissionStatus.APPROVED ||
+      commission.status === CommissionStatus.PAID
+    ) {
+      await this.walletsService.addTransaction({
+        ownerType: WalletOwnerType.COMPANY,
+        ownerId: commission.companyId,
+        amount: reduction.toNumber(),
+        type: WalletTransactionType.DEBIT,
+        referenceType: 'COMMISSION_REVERSAL_PARTIAL',
+        referenceId: refundRecordId,
+        description: `Commission adjustment for partial refund on booking ${bookingId}`,
+        status: WalletTransactionStatus.COMPLETED,
+      });
+    }
+
+    return this.prisma.commission.update({
+      where: { id: commission.id },
+      data: { amount: adjustedAmount },
+    });
+  }
+
   async findAll(filters: CommissionQueryFilters) {
     const {
       page = 1,

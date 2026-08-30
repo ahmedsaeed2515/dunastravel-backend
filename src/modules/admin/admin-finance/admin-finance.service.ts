@@ -78,6 +78,7 @@ export class AdminFinanceService {
               status: true,
               totalAmountUsd: true,
               paidAmountUsd: true,
+              billingInfo: { select: { fullName: true, email: true } },
             },
           },
           invoices: {
@@ -113,6 +114,10 @@ export class AdminFinanceService {
       providerEnvironment: item.providerEnvironment,
       merchantReference: item.merchantReference,
       providerPaymentId: item.providerPaymentId,
+      providerStatus: item.providerStatus,
+      providerAuthCode: item.providerAuthCode,
+      lastProviderCheckAt: item.lastProviderCheckAt,
+      checkoutExpiresAt: item.expiresAt,
       attemptNumber: item.attemptNumber,
       method: item.method,
       transactionId: item.transactionId,
@@ -127,6 +132,16 @@ export class AdminFinanceService {
       failureCode: item.failureCode,
       failureMessage: item.failureMessage,
       bookingStatus: item.booking.status,
+      customerName: item.booking.billingInfo?.fullName ?? null,
+      customerEmail: item.booking.billingInfo?.email ?? null,
+      invoiceNumber: item.invoices[0]?.invoiceNumber ?? null,
+      refundedAmount: item.refunds
+        .filter((refund) => refund.status === 'COMPLETED')
+        .reduce(
+          (total, refund) => total.plus(refund.amount),
+          new Prisma.Decimal(0),
+        )
+        .toFixed(2),
       bookingTotalAmountUsd: item.booking.totalAmountUsd.toFixed(2),
       bookingPaidAmountUsd: item.booking.paidAmountUsd.toFixed(2),
       invoices: item.invoices,

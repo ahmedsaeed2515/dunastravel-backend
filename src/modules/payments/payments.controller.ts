@@ -23,6 +23,7 @@ import { UserRole } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
+import { PayLinkCallbackDto } from './dto/paylink-callback.dto';
 
 @Controller(['payments', 'admin/payments'])
 export class PaymentsController {
@@ -36,40 +37,32 @@ export class PaymentsController {
   }
 
   @Post(['initiate', 'checkout-session', 'geitpatin/initiate', 'getpayin/initiate'])
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async initiatePayment(
     @Body() dto: CreatePaymentDto,
-    @Req() req: ExpressRequest & { user?: { id: string } },
+    @Req() req: ExpressRequest & { user: { id: string } },
   ) {
-    const rawGuestToken = req.headers['x-guest-token'];
-    const guestToken =
-      typeof rawGuestToken === 'string'
-        ? rawGuestToken
-        : Array.isArray(rawGuestToken)
-          ? rawGuestToken[0]
-          : undefined;
-
     const session = await this.paymentsService.initiatePayment(
       dto.bookingId,
-      req.user?.id,
-      guestToken,
+      req.user.id,
     );
     return {
       sessionUrl: session.url,
       url: session.url,
       checkoutUrl: session.url,
       paymentUrl: session.url,
-      transactionId: session.transactionId,
+      transactionId: session.providerInvoiceId,
+      providerInvoiceId: session.providerInvoiceId,
       paymentId: session.paymentId,
-      sessionToken: session.transactionId,
+      sessionToken: session.providerInvoiceId,
     };
   }
 
   @Post(['webhook/:provider', 'geitpatin/webhook', 'getpayin/webhook'])
   @Public()
   @SkipCsrf()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Param('provider') paramProvider: string | undefined,
@@ -90,6 +83,16 @@ export class PaymentsController {
     }
 
     return this.paymentsService.handleWebhook(provider, req, req.rawBody);
+  }
+
+  @Post('callback/getpayin')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async handlePayLinkCallback(
+    @Body() dto: PayLinkCallbackDto,
+    @Req() req: ExpressRequest & { user: { id: string } },
+  ) {
+    return this.paymentsService.reconcilePayLinkCallback(dto, req.user.id);
   }
 
   @Post(':id/refund')

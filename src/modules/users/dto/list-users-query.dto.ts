@@ -37,4 +37,24 @@ export class ListUsersQueryDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @ApiPropertyOptional({ description: 'Filter by status (ACTIVE, SUSPENDED, etc.)' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by verification status' })
+  @IsOptional()
+  @Type(() => Boolean)
+  isVerified?: boolean;
+
+  @ApiPropertyOptional({ description: 'Start date ISO string' })
+  @IsOptional()
+  @IsString()
+  dateFrom?: string;
+
+  @ApiPropertyOptional({ description: 'End date ISO string' })
+  @IsOptional()
+  @IsString()
+  dateTo?: string;
 }

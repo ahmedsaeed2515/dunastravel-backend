@@ -165,8 +165,8 @@ export const envValidationSchema = Joi.object({
   // Currency
   OPENEXCHANGERATES_APP_ID: Joi.string().optional().allow(''),
 
-  // Payments remain fail-closed unless an explicitly selected provider has a
-  // complete, reviewed merchant contract.
+  // PayLink remains fail-closed unless the selected backend runtime has the
+  // real dashboard-issued credentials and registered callback URLs.
   PAYMENT_PROVIDER: Joi.string()
     .valid('DISABLED', 'GETPAYIN')
     .default('DISABLED'),
@@ -174,11 +174,27 @@ export const envValidationSchema = Joi.object({
     .uri({ scheme: ['https'] })
     .default('https://dunastravel-backend-seven.vercel.app'),
   GETPAYIN_MODE: Joi.string().valid('sandbox', 'production').default('sandbox'),
-  GETPAYIN_API_BASE_URL: Joi.string().uri().optional().allow(''),
+  GETPAYIN_BASE_URL: Joi.string()
+    .uri({ scheme: ['https'] })
+    .default('https://pay.getpayin.com'),
+  GETPAYIN_AUTH_TOKEN: Joi.string().optional().allow(''),
+  GETPAYIN_HASH_TOKEN: Joi.string().optional().allow(''),
+  GETPAYIN_REDIRECT_URL: Joi.when('PAYMENT_PROVIDER', {
+    is: 'GETPAYIN',
+    then: Joi.string().uri({ scheme: ['https'] }).required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  GETPAYIN_WEBHOOK_URL: Joi.when('PAYMENT_PROVIDER', {
+    is: 'GETPAYIN',
+    then: Joi.string().uri({ scheme: ['https'] }).required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
+  GETPAYIN_TIMEOUT_MS: Joi.number().integer().min(1000).max(60000).default(30000),
+  GETPAYIN_MAX_RETRIES: Joi.number().integer().min(0).max(5).default(2),
+  // Deprecated semantic aliases retained temporarily for existing deployments.
+  GETPAYIN_API_BASE_URL: Joi.string().uri({ scheme: ['https'] }).optional().allow(''),
   GETPAYIN_API_KEY: Joi.string().optional().allow(''),
   GETPAYIN_WEBHOOK_SECRET: Joi.string().optional().allow(''),
-  GETPAYIN_MERCHANT_ID: Joi.string().optional().allow(''),
-  GETPAYIN_CONTRACT_VERSION: Joi.string().optional().allow(''),
 
   // AI Platform
   AI_PROVIDER: Joi.string().optional(),
@@ -208,4 +224,15 @@ export const envValidationSchema = Joi.object({
     .positive()
     .optional()
     .default(50),
-}).options({ presence: 'optional' });
+})
+  .custom((value: Record<string, unknown>, helpers) => {
+    if (value.PAYMENT_PROVIDER !== 'GETPAYIN') return value;
+    if (!value.GETPAYIN_AUTH_TOKEN && !value.GETPAYIN_API_KEY) {
+      return helpers.message({ custom: 'GETPAYIN_AUTH_TOKEN is required' });
+    }
+    if (!value.GETPAYIN_HASH_TOKEN && !value.GETPAYIN_WEBHOOK_SECRET) {
+      return helpers.message({ custom: 'GETPAYIN_HASH_TOKEN is required' });
+    }
+    return value;
+  }, 'PayLink credential alias validation')
+  .options({ presence: 'optional' });

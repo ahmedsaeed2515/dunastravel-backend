@@ -89,4 +89,80 @@ describe('UserService - Create Admin User', () => {
     expect(safeUser).not.toHaveProperty('resetToken');
     expect(safeUser.email).toBe('admin-created@example.com');
   });
+
+  it('should suspend user, increment sessionVersion, and write audit logs', async () => {
+    prisma.user.findFirst.mockResolvedValue(mockUser);
+    (prisma as any).user.update = jest.fn().mockResolvedValue({
+      ...mockUser,
+      status: 'SUSPENDED',
+      suspendReason: 'Suspicious login pattern',
+    });
+    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) };
+
+    const result = await service.suspendUser(
+      'user-uuid-123',
+      'Suspicious login pattern',
+      'admin-actor-1',
+      'ADMIN',
+      '127.0.0.1'
+    );
+
+    expect(result.status).toBe('SUSPENDED');
+    expect((prisma as any).user.update).toHaveBeenCalledWith({
+      where: { id: 'user-uuid-123' },
+      data: expect.objectContaining({
+        status: 'SUSPENDED',
+        suspendReason: 'Suspicious login pattern',
+        sessionVersion: { increment: 1 },
+      }),
+    });
+    expect((prisma as any).auditLog.create).toHaveBeenCalled();
+  });
+
+  it('should reactivate suspended user and clear suspendReason', async () => {
+    prisma.user.findFirst.mockResolvedValue({ ...mockUser, status: 'SUSPENDED' });
+    (prisma as any).user.update = jest.fn().mockResolvedValue({
+      ...mockUser,
+      status: 'ACTIVE',
+      suspendReason: null,
+    });
+    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-2' }) };
+
+    const result = await service.activateUser(
+      'user-uuid-123',
+      'admin-actor-1',
+      'ADMIN',
+      '127.0.0.1'
+    );
+
+    expect(result.status).toBe('ACTIVE');
+    expect((prisma as any).user.update).toHaveBeenCalledWith({
+      where: { id: 'user-uuid-123' },
+      data: expect.objectContaining({
+        status: 'ACTIVE',
+        suspendedAt: null,
+        suspendReason: null,
+      }),
+    });
+  });
+
+  it('should revoke user sessions by incrementing sessionVersion', async () => {
+    prisma.user.findFirst.mockResolvedValue(mockUser);
+    (prisma as any).user.update = jest.fn().mockResolvedValue({
+      ...mockUser,
+      sessionVersion: 2,
+    });
+    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-3' }) };
+
+    const result = await service.revokeSessionsAdmin('user-uuid-123', 'admin-actor-1', '127.0.0.1');
+
+    expect(result.success).toBe(true);
+    expect((prisma as any).user.update).toHaveBeenCalledWith({
+      where: { id: 'user-uuid-123' },
+      data: expect.objectContaining({
+        sessionVersion: { increment: 1 },
+        refreshToken: null,
+      }),
+    });
+  });
 });

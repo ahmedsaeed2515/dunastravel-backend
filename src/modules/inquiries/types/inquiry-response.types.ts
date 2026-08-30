@@ -14,6 +14,8 @@ export interface InquiryResponse {
   budgetAmount: string | null;
   budgetCurrency: string | null;
   notes: string | null;
+  partnerCode?: string | null;
+  companyId?: string | null;
   status: TailorMadeInquiryStatus;
   createdAt: string;
   updatedAt: string;

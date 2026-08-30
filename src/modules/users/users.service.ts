@@ -17,6 +17,11 @@ import {
   AddCustomerDocumentDto,
   CreateCustomerCrmDto,
 } from './dto/customer-crm.dto';
+import {
+  SuspendUserDto,
+  AddUserMonitoringNoteDto,
+  ListActivityStreamQueryDto,
+} from './dto/user-monitoring.dto';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 import { sanitizeCsvField } from '../../common/utils/sanitize.util';
@@ -50,8 +55,16 @@ export interface UserListItem {
   status: string;
   companyId: string | null;
   suspendedAt: Date | null;
+  suspendReason?: string | null;
+  customerNumber?: string | null;
+  isVip?: boolean;
+  preferredCurrency?: string | null;
+  preferredLanguage?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  bookingsCount?: number;
+  reviewsCount?: number;
+  inquiriesCount?: number;
 }
 
 export interface CreateUserData {
@@ -206,20 +219,34 @@ export class UserService {
     limit: number;
     search?: string;
     role?: UserRole;
+    status?: string;
+    isVerified?: boolean;
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<{ users: UserListItem[]; total: number }> {
-    const { page, limit, search, role } = options;
+    const { page, limit, search, role, status, isVerified, dateFrom, dateTo } = options;
     const skip = (page - 1) * limit;
 
     const where: Prisma.UserWhereInput = {
       deletedAt: null,
       ...(role && { role }),
+      ...(status && { status }),
+      ...(isVerified !== undefined && { isVerified }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { customerNumber: { contains: search, mode: 'insensitive' } },
         ],
       }),
     };
+
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -237,14 +264,47 @@ export class UserService {
           status: true,
           companyId: true,
           suspendedAt: true,
+          suspendReason: true,
+          customerNumber: true,
+          isVip: true,
+          preferredCurrency: true,
+          preferredLanguage: true,
           createdAt: true,
           updatedAt: true,
+          _count: {
+            select: {
+              bookings: true,
+              reviews: true,
+              tourFavorites: true,
+            },
+          },
         },
       }),
       this.prisma.user.count({ where }),
     ]);
 
-    return { users, total };
+    const formattedUsers: UserListItem[] = users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      isVerified: u.isVerified,
+      status: u.status,
+      companyId: u.companyId,
+      suspendedAt: u.suspendedAt,
+      suspendReason: u.suspendReason,
+      customerNumber: u.customerNumber,
+      isVip: u.isVip,
+      preferredCurrency: u.preferredCurrency,
+      preferredLanguage: u.preferredLanguage,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+      bookingsCount: u._count.bookings,
+      reviewsCount: u._count.reviews,
+    }));
+
+    return { users: formattedUsers, total };
   }
 
   async updateRefreshToken(
@@ -488,7 +548,10 @@ export class UserService {
     } = query;
     this.logger.log(`findCustomersCrm invoked by admin ${adminUserId}`);
 
-    const where: Prisma.UserWhereInput = { deletedAt: null, role: 'USER' };
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      role: { in: ['USER', 'GUEST'] },
+    };
 
     if (status) where.status = status;
     if (isVip !== undefined) where.isVip = isVip;
@@ -1332,5 +1395,551 @@ export class UserService {
             : this.redactActivityDetails(item, depth + 1),
         ]),
     );
+  }
+
+  // ─── USER MONITORING & ACTIVITY HUB ─────────────────────────────
+
+  async getMonitoringOverview() {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      activeUsers,
+      suspendedUsers,
+      vipUsers,
+      newToday,
+      newSevenDays,
+      newThirtyDays,
+      roleCounts,
+      recentAuditsCount,
+      recentLoginsCount,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({ where: { deletedAt: null, status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { deletedAt: null, status: 'SUSPENDED' } }),
+      this.prisma.user.count({ where: { deletedAt: null, isVip: true } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: todayStart } } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.user.groupBy({
+        by: ['role'],
+        where: { deletedAt: null },
+        _count: { _all: true },
+      }),
+      this.prisma.auditLog.count({
+        where: { createdAt: { gte: twentyFourHoursAgo } },
+      }),
+      this.prisma.auditLog.count({
+        where: {
+          createdAt: { gte: twentyFourHoursAgo },
+          action: { contains: 'LOGIN', mode: 'insensitive' },
+        },
+      }),
+    ]);
+
+    const rolesDistribution = roleCounts.reduce((acc, curr) => {
+      acc[curr.role] = curr._count._all;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalUsers,
+      activeUsers,
+      suspendedUsers,
+      vipUsers,
+      newUsers: {
+        today: newToday,
+        last7Days: newSevenDays,
+        last30Days: newThirtyDays,
+      },
+      rolesDistribution,
+      activityMetrics: {
+        past24HoursEvents: recentAuditsCount,
+        past24HoursLogins: recentLoginsCount,
+      },
+    };
+  }
+
+  async getUserMonitoringDetail(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        company: {
+          select: { id: true, name: true, referenceCode: true, companyType: true },
+        },
+        bookings: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            referenceCode: true,
+            status: true,
+            totalAmountUsd: true,
+            tourId: true,
+            arrivalDate: true,
+            departureDate: true,
+            createdAt: true,
+            tour: {
+              select: { slug: true, titleJsonb: true },
+            },
+          },
+        },
+        reviews: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            tourId: true,
+            rating: true,
+            comment: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+        tourFavorites: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            tour: {
+              select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
+            },
+          },
+        },
+        customerNotes: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+        },
+        _count: {
+          select: {
+            bookings: true,
+            reviews: true,
+            tourFavorites: true,
+            customerNotes: true,
+            customerDocuments: true,
+          },
+        },
+      },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const inquiries = await this.prisma.tailorMadeInquiry.findMany({
+      where: {
+        OR: [
+          { email: user.email },
+          ...(user.phone ? [{ phone: user.phone }] : []),
+        ],
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        referenceCode: true,
+        destinations: true,
+        status: true,
+        budgetAmount: true,
+        budgetCurrency: true,
+        createdAt: true,
+      },
+    });
+
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: {
+        OR: [
+          { actorId: user.id },
+          { entityId: user.id },
+        ],
+      },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const customerActivityLogs = await this.prisma.customerActivityLog.findMany({
+      where: { customerId: user.id },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    const analyticsEvents = await this.prisma.analyticsEvent.findMany({
+      where: { userId: user.id },
+      take: 30,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        eventName: true,
+        pathname: true,
+        tourSlug: true,
+        deviceCategory: true,
+        properties: true,
+        createdAt: true,
+      },
+    });
+
+    const rawTimeline: Array<{
+      id: string;
+      type: 'AUTH' | 'BOOKING' | 'INQUIRY' | 'REVIEW' | 'FAVORITE' | 'ADMIN_ACTION' | 'NAVIGATION';
+      action: string;
+      title: string;
+      description?: string;
+      timestamp: Date;
+      ipAddress?: string | null;
+      userAgent?: string | null;
+      metadata?: any;
+      status?: string;
+    }> = [];
+
+    for (const log of auditLogs) {
+      rawTimeline.push({
+        id: `audit-${log.id}`,
+        type: log.action.includes('LOGIN') ? 'AUTH' : 'ADMIN_ACTION',
+        action: log.action,
+        title: log.action.replace(/_/g, ' '),
+        description: log.entityType ? `Target: ${log.entityType} ${log.entityId || ''}` : undefined,
+        timestamp: log.createdAt,
+        ipAddress: log.ipAddress,
+        userAgent: log.userAgent,
+        metadata: log.metadata,
+        status: log.action.includes('FAILED') ? 'FAILED' : 'SUCCESS',
+      });
+    }
+
+    for (const log of customerActivityLogs) {
+      rawTimeline.push({
+        id: `cust-act-${log.id}`,
+        type: 'ADMIN_ACTION',
+        action: log.action,
+        title: log.action,
+        description: log.user?.name ? `By staff: ${log.user.name}` : undefined,
+        timestamp: log.createdAt,
+        metadata: log.details,
+      });
+    }
+
+    for (const b of user.bookings) {
+      const tourTitleObj = b.tour?.titleJsonb as any;
+      const tourTitle = tourTitleObj?.en || tourTitleObj?.ar || tourTitleObj?.es || 'Tour booking';
+      rawTimeline.push({
+        id: `booking-${b.id}`,
+        type: 'BOOKING',
+        action: 'BOOKING_CREATED',
+        title: `Booking #${b.referenceCode || b.id.slice(0, 8)}`,
+        description: `${tourTitle} — $${b.totalAmountUsd}`,
+        timestamp: b.createdAt,
+        status: b.status,
+        metadata: { bookingId: b.id, tourId: b.tourId, status: b.status, totalPrice: Number(b.totalAmountUsd) },
+      });
+    }
+
+    for (const inq of inquiries) {
+      const dest = Array.isArray(inq.destinations) ? inq.destinations.join(', ') : 'Tailor-Made Tour';
+      rawTimeline.push({
+        id: `inquiry-${inq.id}`,
+        type: 'INQUIRY',
+        action: 'INQUIRY_SUBMITTED',
+        title: `Inquiry #${inq.referenceCode || inq.id.slice(0, 8)}: ${dest}`,
+        description: `Status: ${inq.status}, Budget: ${inq.budgetAmount || 0} ${inq.budgetCurrency || 'USD'}`,
+        timestamp: inq.createdAt,
+        status: inq.status,
+        metadata: { inquiryId: inq.id, status: inq.status },
+      });
+    }
+
+    for (const rev of user.reviews) {
+      rawTimeline.push({
+        id: `review-${rev.id}`,
+        type: 'REVIEW',
+        action: 'REVIEW_POSTED',
+        title: `Review rating: ${rev.rating}★`,
+        description: rev.comment ? (rev.comment.slice(0, 120) + (rev.comment.length > 120 ? '...' : '')) : undefined,
+        timestamp: rev.createdAt,
+        status: rev.status,
+        metadata: { tourId: rev.tourId, rating: rev.rating },
+      });
+    }
+
+    for (const fav of user.tourFavorites) {
+      const tourTitleObj = fav.tour?.titleJsonb as any;
+      const tourTitle = tourTitleObj?.en || tourTitleObj?.ar || tourTitleObj?.es || 'Tour';
+      rawTimeline.push({
+        id: `fav-${fav.id}`,
+        type: 'FAVORITE',
+        action: 'FAVORITE_SAVED',
+        title: `Favorited Tour: ${tourTitle}`,
+        timestamp: fav.createdAt,
+      });
+    }
+
+    for (const ev of analyticsEvents) {
+      rawTimeline.push({
+        id: `analytics-${ev.id}`,
+        type: 'NAVIGATION',
+        action: ev.eventName,
+        title: `Page event: ${ev.eventName}`,
+        description: ev.pathname || (ev.tourSlug ? `Tour: ${ev.tourSlug}` : undefined),
+        timestamp: ev.createdAt,
+        metadata: ev.properties,
+      });
+    }
+
+    rawTimeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    const completedBookings = user.bookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED').length;
+    const totalSpent = user.bookings
+      .filter((b) => b.status !== 'CANCELLED')
+      .reduce((sum, b) => sum + Number(b.totalAmountUsd || 0), 0);
+
+    const lastActiveTimestamp = rawTimeline.length > 0 ? rawTimeline[0].timestamp : user.updatedAt;
+    const lastLoginLog = auditLogs.find((l) => l.action.includes('LOGIN'));
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+        isVerified: user.isVerified,
+        phoneVerified: user.phoneVerified,
+        isVip: user.isVip,
+        customerNumber: user.customerNumber,
+        nationality: user.nationality,
+        gender: user.gender,
+        dateOfBirth: user.dateOfBirth,
+        preferredCurrency: user.preferredCurrency,
+        preferredLanguage: user.preferredLanguage,
+        preferredDestination: user.preferredDestination,
+        preferredTravelType: user.preferredTravelType,
+        referralSource: user.referralSource,
+        tags: user.tags,
+        segments: user.segments,
+        address: user.address,
+        emergencyContact: user.emergencyContact,
+        familyMembers: user.familyMembers,
+        travelCompanions: user.travelCompanions,
+        suspendedAt: user.suspendedAt,
+        suspendReason: user.suspendReason,
+        sessionVersion: user.sessionVersion,
+        company: user.company,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        lastLoginIp: lastLoginLog?.ipAddress || null,
+        lastLoginAt: lastLoginLog?.createdAt || null,
+        lastActiveAt: lastActiveTimestamp,
+      },
+      metrics: {
+        totalBookings: user._count.bookings,
+        completedBookings,
+        totalSpent,
+        totalInquiries: inquiries.length,
+        totalReviews: user._count.reviews,
+        totalFavorites: user._count.tourFavorites,
+        notesCount: user._count.customerNotes,
+        documentsCount: user._count.customerDocuments,
+      },
+      activityTimeline: rawTimeline.slice(0, 100),
+      bookings: user.bookings.map((b) => ({
+        id: b.id,
+        bookingReference: b.referenceCode,
+        status: b.status,
+        totalPrice: Number(b.totalAmountUsd),
+        currency: 'USD',
+        tourId: b.tourId,
+        tourTitle: (b.tour?.titleJsonb as any)?.en || (b.tour?.titleJsonb as any)?.ar || 'Tour booking',
+        startDate: b.arrivalDate ? b.arrivalDate.toISOString() : undefined,
+        endDate: b.departureDate ? b.departureDate.toISOString() : undefined,
+        createdAt: b.createdAt.toISOString(),
+      })),
+      inquiries,
+      reviews: user.reviews,
+      notes: user.customerNotes,
+    };
+  }
+
+  async getLiveActivityStream(query: ListActivityStreamQueryDto) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const whereAudit: Prisma.AuditLogWhereInput = {};
+    if (query.userId) {
+      whereAudit.OR = [{ actorId: query.userId }, { entityId: query.userId }];
+    }
+    if (query.search) {
+      whereAudit.action = { contains: query.search, mode: 'insensitive' };
+    }
+
+    const [auditLogs, total] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where: whereAudit,
+        take: limit,
+        skip,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.auditLog.count({ where: whereAudit }),
+    ]);
+
+    const actorIds = [...new Set(auditLogs.map(l => l.actorId).filter((id): id is string => Boolean(id)))];
+    const actors = actorIds.length > 0 ? await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: { id: true, name: true, email: true, role: true },
+    }) : [];
+    const actorMap = new Map(actors.map(a => [a.id, a]));
+
+    const items = auditLogs.map(l => ({
+      id: l.id,
+      action: l.action,
+      entityType: l.entityType,
+      entityId: l.entityId,
+      actorId: l.actorId,
+      actorRole: l.actorRole,
+      actor: l.actorId ? actorMap.get(l.actorId) || null : null,
+      ipAddress: l.ipAddress,
+      userAgent: l.userAgent,
+      metadata: l.metadata,
+      createdAt: l.createdAt,
+    }));
+
+    return {
+      data: items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async suspendUser(id: string, reason: string, actorId: string, actorRole: string, ip?: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        status: 'SUSPENDED',
+        suspendedAt: new Date(),
+        suspendReason: sanitizePlainText(reason).slice(0, 500),
+        sessionVersion: { increment: 1 },
+        refreshToken: null,
+      },
+    });
+
+    await Promise.all([
+      this.prisma.customerActivityLog.create({
+        data: {
+          customerId: id,
+          userId: actorId,
+          action: 'ACCOUNT_SUSPENDED',
+          details: { reason, suspendedBy: actorId },
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          actorId,
+          actorRole,
+          action: 'USER_SUSPENDED',
+          entityType: 'User',
+          entityId: id,
+          metadata: { reason },
+          ipAddress: ip || null,
+        },
+      }),
+    ]);
+
+    return this.toSafeUser(updated);
+  }
+
+  async activateUser(id: string, actorId: string, actorRole: string, ip?: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        suspendedAt: null,
+        suspendReason: null,
+      },
+    });
+
+    await Promise.all([
+      this.prisma.customerActivityLog.create({
+        data: {
+          customerId: id,
+          userId: actorId,
+          action: 'ACCOUNT_ACTIVATED',
+          details: { activatedBy: actorId },
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          actorId,
+          actorRole,
+          action: 'USER_ACTIVATED',
+          entityType: 'User',
+          entityId: id,
+          metadata: { previousStatus: user.status },
+          ipAddress: ip || null,
+        },
+      }),
+    ]);
+
+    return this.toSafeUser(updated);
+  }
+
+  async revokeSessionsAdmin(id: string, actorId: string, ip?: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        sessionVersion: { increment: 1 },
+        refreshToken: null,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'USER_SESSIONS_REVOKED',
+        entityType: 'User',
+        entityId: id,
+        ipAddress: ip || null,
+      },
+    });
+
+    return { success: true };
+  }
+
+  async addUserMonitoringNote(id: string, dto: AddUserMonitoringNoteDto, actorId: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const note = await this.prisma.customerNote.create({
+      data: {
+        customerId: id,
+        userId: actorId,
+        noteType: dto.noteType || 'MONITORING',
+        content: sanitizePlainText(dto.content).slice(0, 2000),
+        isPinned: dto.isPinned || false,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return note;
   }
 }

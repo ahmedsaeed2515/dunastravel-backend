@@ -17,6 +17,7 @@ import { TourCatalogToolService } from './services/tour-catalog-tool.service';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
 import { ModelRegistryService } from './services/model-registry.service';
+import { ModelRoutingService } from './services/model-routing.service';
 import { AgentRegistryService } from './services/agent-registry.service';
 import { LiveCatalogRetrieverService } from './services/live-catalog-retriever.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
@@ -43,6 +44,7 @@ import { PromptEngineService } from './services/prompt-engine.service';
     ChatOrchestratorService,
     TourKnowledgeIngestionService,
     ModelRegistryService,
+    ModelRoutingService,       // NEW: Model routing policy engine
     AgentRegistryService,
     LiveCatalogRetrieverService,
     HybridRagEngineService,
@@ -58,6 +60,7 @@ import { PromptEngineService } from './services/prompt-engine.service';
     TourCatalogToolService,
     TourKnowledgeIngestionService,
     ModelRegistryService,
+    ModelRoutingService,       // NEW: exported for use in other modules
     AgentRegistryService,
     LiveCatalogRetrieverService,
     HybridRagEngineService,
@@ -65,4 +68,3 @@ import { PromptEngineService } from './services/prompt-engine.service';
   ],
 })
 export class AiModule {}
-

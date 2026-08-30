@@ -24,13 +24,16 @@ TRUST_PROXY_HOPS=1
 # External Services
 DATABASE_URL=postgresql://user:password@pg-host:5432/dunastravel?sslmode=require
 REDIS_URL=rediss://:redis_password@redis-host:6379/0
-# GetPayIn credentials must be supplied only after its official merchant
-# documentation is reviewed. Never put them in frontend variables.
-GETPAYIN_API_BASE_URL=
-GETPAYIN_API_KEY=
-GETPAYIN_WEBHOOK_SECRET=
-GETPAYIN_MERCHANT_ID=
-GETPAYIN_CONTRACT_VERSION=
+# PayLink credentials are backend-only. Never put them in browser variables.
+PAYMENT_PROVIDER=GETPAYIN
+GETPAYIN_MODE=production
+GETPAYIN_BASE_URL=https://pay.getpayin.com
+GETPAYIN_AUTH_TOKEN=
+GETPAYIN_HASH_TOKEN=
+GETPAYIN_REDIRECT_URL=https://www.dunastravel.com/payment/return
+GETPAYIN_WEBHOOK_URL=https://api.example.com/api/payments/webhook/getpayin
+GETPAYIN_TIMEOUT_MS=30000
+GETPAYIN_MAX_RETRIES=2
 ```
 
 ---

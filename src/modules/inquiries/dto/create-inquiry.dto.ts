@@ -139,4 +139,16 @@ export class CreateInquiryDto {
     typeof value === 'string' ? value.trim() : value,
   )
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: '90259175',
+    description: 'Contracted partner 8-digit IATA / secret verification code',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  partnerCode?: string;
 }

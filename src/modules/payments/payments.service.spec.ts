@@ -11,7 +11,6 @@ import {
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { CommissionsService } from '../commissions/commissions.service';
-import { ConfigService } from '@nestjs/config';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -34,6 +33,7 @@ describe('PaymentsService', () => {
               ),
             booking: {
               findUnique: jest.fn(),
+              findUniqueOrThrow: jest.fn(),
               update: jest.fn(),
             },
             processedWebhookEvent: {
@@ -42,6 +42,7 @@ describe('PaymentsService', () => {
             },
             payment: {
               findUnique: jest.fn(),
+              findUniqueOrThrow: jest.fn(),
               findFirst: jest.fn(),
               findMany: jest.fn(),
               count: jest.fn().mockResolvedValue(0),
@@ -52,12 +53,14 @@ describe('PaymentsService', () => {
             refundRecord: {
               findUnique: jest.fn(),
               findUniqueOrThrow: jest.fn(),
+              aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
               create: jest.fn(),
               update: jest.fn(),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
             invoice: {
               update: jest.fn(),
+              updateMany: jest.fn(),
             },
             bookingActivityLog: {
               create: jest.fn(),
@@ -87,6 +90,8 @@ describe('PaymentsService', () => {
             createSession: jest.fn(),
             verifyAndParseWebhook: jest.fn(),
             refund: jest.fn(),
+            checkStatus: jest.fn(),
+            verifyCallback: jest.fn(),
             expireSession: jest.fn(),
             getProviderName: jest.fn().mockReturnValue('GETPAYIN'),
             getReadiness: jest.fn().mockReturnValue({
@@ -110,16 +115,7 @@ describe('PaymentsService', () => {
           useValue: {
             createCommissionForBooking: jest.fn().mockResolvedValue(null),
             reverseCommissionForBooking: jest.fn().mockResolvedValue(null),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            getOrThrow: jest.fn((key: string) =>
-              key === 'frontendUrl'
-                ? 'https://www.dunastravel.com'
-                : 'https://api.example.test',
-            ),
+            adjustCommissionForPartialRefund: jest.fn().mockResolvedValue(null),
           },
         },
       ],
@@ -161,25 +157,37 @@ describe('PaymentsService', () => {
         .mockResolvedValue(mockBooking as never);
       jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
-        transactionId: 'session-123',
-        url: 'https://hosted.getpayin.example/123',
+        providerInvoiceId: '40506',
+        url: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        expiresAt: new Date('2026-09-01T00:00:00Z'),
       });
-      jest.spyOn(prisma.payment, 'create').mockResolvedValue({} as never);
+      const paymentRow = {
+        id: 'payment-123',
+        bookingId: 'bkg-123',
+        idempotencyKey: 'checkout:payment-123',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        status: 'PENDING',
+        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        transactionId: '40506',
+        providerPaymentId: '40506',
+        expiresAt: new Date('2026-09-01T00:00:00Z'),
+        createdAt: new Date(),
+      };
+      jest.spyOn(prisma.payment, 'create').mockResolvedValue(paymentRow as never);
+      jest
+        .spyOn(prisma.payment, 'findUniqueOrThrow')
+        .mockResolvedValue(paymentRow as never);
 
       const result = await service.initiatePayment('bkg-123', 'usr-123');
 
-      expect(result.url).toBe('https://hosted.getpayin.example/123');
+      expect(result.url).toContain('pay.getpayin.com');
       expect(gatewayMock.createSession).toHaveBeenCalledWith(
         expect.objectContaining({
           bookingId: 'bkg-123',
           referenceCode: 'REF-123',
-          amount: 100,
+          amount: '100.00',
           currency: 'USD',
-          successUrl: expect.stringMatching(
-            /^https:\/\/www\.dunastravel\.com\/payment\/return\?payment_id=[0-9a-f-]+$/,
-          ),
-          cancelUrl: expect.stringContaining('/payment/cancel?payment_id='),
-          webhookUrl: 'https://api.example.test/api/payments/webhook/getpayin',
         }),
       );
       expect(
@@ -187,7 +195,7 @@ describe('PaymentsService', () => {
       ).toBeGreaterThan(0);
     });
 
-    it('should allow guest token initiation when guest token matches hash', async () => {
+    it('rejects legacy guest-token payment initiation', async () => {
       const rawToken = 'valid-guest-secret-token';
       const tokenHash = crypto
         .createHash('sha256')
@@ -218,19 +226,10 @@ describe('PaymentsService', () => {
         .spyOn(prisma.booking, 'findUnique')
         .mockResolvedValue(mockGuestBooking as never);
       jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
-        transactionId: 'session-guest',
-        url: 'https://hosted.getpayin.example/guest',
-      });
-      jest.spyOn(prisma.payment, 'create').mockResolvedValue({} as never);
-
-      const result = await service.initiatePayment(
-        'bkg-guest',
-        undefined,
-        rawToken,
-      );
-
-      expect(result.url).toBe('https://hosted.getpayin.example/guest');
+      await expect(
+        service.initiatePayment('bkg-guest', undefined),
+      ).rejects.toThrow(NotFoundException);
+      expect(gatewayMock.createSession).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException (404) for foreign user initiation without leaking existence', async () => {
@@ -248,7 +247,7 @@ describe('PaymentsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('expires an orphan hosted-checkout session when a concurrent request wins', async () => {
+    it('reuses the database winner idempotency key when initiation races', async () => {
       const mockRaceBooking = {
         id: 'bkg-race',
         status: 'PENDING',
@@ -272,17 +271,28 @@ describe('PaymentsService', () => {
         .spyOn(prisma.booking, 'findUnique')
         .mockResolvedValue(mockRaceBooking as never);
 
+      const winningPayment = {
+        id: 'payment-winning',
+        bookingId: 'bkg-race',
+        idempotencyKey: 'checkout:payment-winning',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        status: 'PENDING',
+        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40507',
+        transactionId: '40507',
+        providerPaymentId: '40507',
+        expiresAt: new Date('2026-09-01T00:00:00Z'),
+        createdAt: new Date(),
+      };
       jest
         .spyOn(prisma.payment, 'findFirst')
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          sessionUrl: 'https://hosted.getpayin.example/winning',
-          transactionId: 'session-winning',
-        } as never);
+        .mockResolvedValueOnce(winningPayment as never);
 
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
-        transactionId: 'session-losing',
-        url: 'https://hosted.getpayin.example/losing',
+        providerInvoiceId: '40507',
+        url: 'https://pay.getpayin.com/integration/checkout?invoice_id=40507',
+        expiresAt: new Date('2026-09-01T00:00:00Z'),
       });
 
       const p2002Err = new Error('Unique constraint failed') as {
@@ -290,13 +300,16 @@ describe('PaymentsService', () => {
       };
       p2002Err.code = 'P2002';
       jest.spyOn(prisma.payment, 'create').mockRejectedValue(p2002Err);
+      jest
+        .spyOn(prisma.payment, 'findUniqueOrThrow')
+        .mockResolvedValue(winningPayment as never);
 
       const result = await service.initiatePayment('bkg-race', 'usr-123');
 
-      expect((gatewayMock.expireSession as jest.Mock).mock.calls).toEqual([
-        ['session-losing'],
-      ]);
-      expect(result.url).toBe('https://hosted.getpayin.example/winning');
+      expect(gatewayMock.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({ bookingId: 'bkg-race' }),
+      );
+      expect(result.providerInvoiceId).toBe('40507');
     });
   });
 
@@ -313,10 +326,9 @@ describe('PaymentsService', () => {
     it('marks a matching open payment as failed and keeps the booking retryable', async () => {
       jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
         eventId: 'evt-failed-1',
-        paymentId: 'provider-payment-1',
-        bookingId: 'bkg-123',
-        amountUsd: 100,
-        currency: 'USD',
+        event: 'invoice.not_paid',
+        providerInvoiceId: '40506',
+        providerStatus: 'UNPAID',
         status: 'FAILED',
         rawEvent: {},
       });
@@ -329,7 +341,9 @@ describe('PaymentsService', () => {
         amount: new Prisma.Decimal(100),
         currency: 'USD',
         method: 'GETPAYIN',
-        transactionId: 'provider-payment-1',
+        provider: 'GETPAYIN',
+        providerPaymentId: '40506',
+        transactionId: '40506',
         status: 'PENDING',
         isRefund: false,
         createdAt: new Date(),
@@ -353,13 +367,67 @@ describe('PaymentsService', () => {
       expect(prisma.booking.update).not.toHaveBeenCalled();
     });
 
-    it('should reject webhook with amount mismatch', async () => {
-      jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
-        eventId: 'evt-mismatch',
-        paymentId: 'session-123',
-        bookingId: 'bkg-123',
-        amountUsd: 999, // Mismatched amount
+    it('atomically captures a matching invoice.paid event once', async () => {
+      const pendingPayment = {
+        id: 'payment-paid-1',
+        bookingId: 'bkg-paid-1',
+        amount: new Prisma.Decimal(100),
         currency: 'USD',
+        method: 'GETPAYIN',
+        provider: 'GETPAYIN',
+        providerPaymentId: '40506',
+        transactionId: '40506',
+        status: 'PENDING',
+        isRefund: false,
+        createdAt: new Date(),
+      };
+      jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
+        eventId: 'paylink:paid-fixture',
+        event: 'invoice.paid',
+        providerInvoiceId: '40506',
+        providerStatus: 'PAID',
+        status: 'COMPLETED',
+        rawEvent: {},
+      });
+      jest.spyOn(prisma.processedWebhookEvent, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(pendingPayment as never);
+      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue({
+        id: 'bkg-paid-1',
+        totalAmountUsd: new Prisma.Decimal(100),
+        invoice: { id: 'invoice-1' },
+      } as never);
+      jest.spyOn(prisma.payment, 'update').mockResolvedValue({
+        ...pendingPayment,
+        status: 'CAPTURED',
+      } as never);
+      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
+        { amount: new Prisma.Decimal(100) },
+      ] as never);
+
+      await expect(
+        service.handleWebhook(
+          'GETPAYIN',
+          { headers: {} } as unknown as import('express').Request,
+          Buffer.from('{}'),
+        ),
+      ).resolves.toEqual({ received: true });
+      expect(prisma.payment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'payment-paid-1' },
+          data: expect.objectContaining({ status: 'CAPTURED', providerStatus: 'PAID' }),
+        }),
+      );
+      expect(prisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'CONFIRMED' }) }),
+      );
+    });
+
+    it('rejects a validly signed event for an unknown PayLink invoice', async () => {
+      jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
+        eventId: 'evt-unknown',
+        event: 'invoice.paid',
+        providerInvoiceId: '999999',
+        providerStatus: 'PAID',
         status: 'COMPLETED',
         rawEvent: {},
       });
@@ -367,21 +435,7 @@ describe('PaymentsService', () => {
       jest
         .spyOn(prisma.processedWebhookEvent, 'findUnique')
         .mockResolvedValue(null);
-      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue({
-        id: 'bkg-123',
-        totalAmountUsd: new Prisma.Decimal(100),
-      } as never);
-
-      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue({
-        id: 'pmt-123',
-        amount: new Prisma.Decimal(100),
-        currency: 'USD',
-        method: 'GETPAYIN',
-        transactionId: 'session-123',
-        status: 'PENDING',
-        createdAt: new Date(),
-        bookingId: 'bkg-123',
-      } as never);
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
 
       const reqMock = { headers: {} } as unknown as import('express').Request;
       await expect(
@@ -392,10 +446,9 @@ describe('PaymentsService', () => {
     it('should gracefully handle duplicate eventId without re-processing', async () => {
       jest.spyOn(gatewayMock, 'verifyAndParseWebhook').mockResolvedValue({
         eventId: 'dup-123',
-        paymentId: 'session-123',
-        bookingId: 'bkg-123',
-        amountUsd: 100,
-        currency: 'USD',
+        event: 'invoice.paid',
+        providerInvoiceId: '40506',
+        providerStatus: 'PAID',
         status: 'COMPLETED',
         rawEvent: {},
       });
@@ -416,16 +469,122 @@ describe('PaymentsService', () => {
     });
   });
 
+  describe('PayLink callback reconciliation', () => {
+    it('recovers a missed paid webhook from server-side checkStatus', async () => {
+      const pendingPayment = {
+        id: 'payment-reconcile-1',
+        bookingId: 'bkg-reconcile-1',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        method: 'GETPAYIN',
+        provider: 'GETPAYIN',
+        providerPaymentId: '40506',
+        transactionId: '40506',
+        status: 'PENDING',
+        isRefund: false,
+        createdAt: new Date(),
+      };
+      jest.spyOn(gatewayMock, 'verifyCallback').mockReturnValue('40506');
+      jest.spyOn(gatewayMock, 'checkStatus').mockResolvedValue({
+        providerInvoiceId: '40506',
+        providerStatus: 'PAID',
+        authCode: '831000',
+      });
+      jest
+        .spyOn(prisma.payment, 'findFirst')
+        .mockResolvedValueOnce({
+          id: pendingPayment.id,
+          booking: { userId: 'usr-123' },
+        } as never)
+        .mockResolvedValueOnce(pendingPayment as never)
+        .mockResolvedValueOnce(pendingPayment as never);
+      jest.spyOn(prisma.payment, 'findUniqueOrThrow').mockResolvedValue(pendingPayment as never);
+      jest.spyOn(prisma.processedWebhookEvent, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue({
+        id: pendingPayment.bookingId,
+        totalAmountUsd: new Prisma.Decimal(100),
+        invoice: { id: 'invoice-reconcile-1' },
+      } as never);
+      jest.spyOn(prisma.payment, 'update').mockResolvedValue({
+        ...pendingPayment,
+        status: 'CAPTURED',
+      } as never);
+      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
+        { amount: new Prisma.Decimal(100) },
+      ] as never);
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        ...pendingPayment,
+        status: 'CAPTURED',
+        updatedAt: new Date(),
+        booking: {
+          id: pendingPayment.bookingId,
+          userId: 'usr-123',
+          referenceCode: 'DUNAS-1',
+          status: 'CONFIRMED',
+          guestTokenHash: null,
+          invoice: { invoiceNumber: 'INV-1' },
+        },
+      } as never);
+
+      await expect(
+        service.reconcilePayLinkCallback(
+          {
+            success: 1,
+            invoice_id: 40506,
+            invoice_status: 'PAID',
+            message: 'Invoice Paid',
+            signature: 'verified-by-adapter',
+          },
+          'usr-123',
+        ),
+      ).resolves.toMatchObject({
+        paymentId: pendingPayment.id,
+        status: 'CAPTURED',
+      });
+      expect(gatewayMock.checkStatus).toHaveBeenCalledWith('40506');
+      expect(gatewayMock.verifyCallback).toHaveBeenCalledWith(
+        expect.objectContaining({ invoice_id: 40506 }),
+      );
+      expect(prisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'CONFIRMED' }) }),
+      );
+    });
+  });
+
   describe('refundPayment', () => {
-    it('should reject partial refunds explicitly', async () => {
+    it('issues a partial refund while preserving the captured payment', async () => {
       jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
         id: 'payment-123',
         amount: new Prisma.Decimal(100),
         currency: 'USD',
+        method: 'GETPAYIN',
+        transactionId: '40506',
         status: 'CAPTURED',
         bookingId: 'bkg-123',
+        booking: {
+          id: 'bkg-123',
+          status: 'CONFIRMED',
+          totalAmountUsd: new Prisma.Decimal(100),
+          paidAmountUsd: new Prisma.Decimal(100),
+        },
         invoices: [],
       } as never);
+      jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
+      jest
+        .spyOn(prisma.payment, 'findMany')
+        .mockResolvedValue([
+          { id: 'payment-123', amount: new Prisma.Decimal(100) },
+        ] as never);
+      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
+        id: 'rf-partial-1',
+        status: 'PENDING',
+      } as never);
+      jest.spyOn(gatewayMock, 'refund').mockResolvedValue({
+        providerInvoiceId: '40506',
+        providerStatus: 'PARTIALLY_REFUNDED',
+        authCode: '831000',
+        refundAmount: '50.00',
+      });
 
       await expect(
         service.refundPayment(
@@ -435,7 +594,24 @@ describe('PaymentsService', () => {
           'refund-partial-1',
           { id: 'super-admin-1', role: 'SUPER_ADMIN' },
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).resolves.toMatchObject({
+        success: true,
+        refundId: 'rf-partial-1',
+        status: 'PARTIALLY_REFUNDED',
+      });
+      expect(gatewayMock.refund).toHaveBeenCalledWith(
+        '40506',
+        '50.00',
+        'refund-partial-1',
+      );
+      expect(prisma.payment.updateMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'CAPTURED',
+            isRefund: false,
+          }),
+        }),
+      );
     });
 
     it('should issue full refund, record RefundRecord, and update status atomically', async () => {
@@ -471,7 +647,12 @@ describe('PaymentsService', () => {
       } as never);
       jest
         .spyOn(gatewayMock, 'refund')
-        .mockResolvedValue({ refundId: 'rf-getpayin-123' });
+        .mockResolvedValue({
+          providerInvoiceId: '40506',
+          providerStatus: 'REFUNDED',
+          authCode: '831000',
+          refundAmount: '100.00',
+        });
 
       const result = await service.refundPayment(
         'payment-123',

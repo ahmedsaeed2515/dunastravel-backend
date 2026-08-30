@@ -72,6 +72,32 @@ export class InquiriesService {
       );
     }
 
+    let matchedCompanyId: string | null = null;
+    let matchedPartnerCode: string | null = null;
+
+    if (dto.partnerCode) {
+      const cleanPartnerCode = dto.partnerCode.trim();
+      const company = await this.prisma.company.findFirst({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          OR: [
+            { taxId: { equals: cleanPartnerCode, mode: 'insensitive' } },
+            { referenceCode: { equals: cleanPartnerCode, mode: 'insensitive' } },
+            { referenceCode: { endsWith: cleanPartnerCode, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true, taxId: true, referenceCode: true },
+      });
+
+      if (company) {
+        matchedCompanyId = company.id;
+        matchedPartnerCode = company.taxId || cleanPartnerCode;
+      } else {
+        matchedPartnerCode = cleanPartnerCode;
+      }
+    }
+
     const newInquiry = await this.prisma.tailorMadeInquiry.create({
       data: {
         referenceCode,
@@ -90,6 +116,8 @@ export class InquiriesService {
             : null,
         budgetCurrency: dto.budgetCurrency || null,
         notes: sanitizeString(dto.notes || '') || null,
+        partnerCode: matchedPartnerCode,
+        companyId: matchedCompanyId,
         status: TailorMadeInquiryStatus.NEWLY_RECEIVED,
       },
     });
@@ -247,6 +275,8 @@ export class InquiriesService {
       budgetAmount: record.budgetAmount ? record.budgetAmount.toString() : null,
       budgetCurrency: record.budgetCurrency,
       notes: record.notes,
+      partnerCode: record.partnerCode,
+      companyId: record.companyId,
       status: record.status,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),

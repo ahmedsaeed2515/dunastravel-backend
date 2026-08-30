@@ -83,6 +83,10 @@ export class DashboardService {
   }
 
   async getExecutiveSummary(query: DashboardQueryDto) {
+    const cacheKey = `dashboard:summary:${JSON.stringify(query)}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
     const { from, to, prevFrom, prevTo } = this.parseDates(query);
 
     const [
@@ -362,7 +366,7 @@ export class DashboardService {
       return Number((((curr - prev) / prev) * 100).toFixed(1));
     };
 
-    return {
+    const result = {
       revenue: {
         grossRevenue,
         prevGrossRevenue,
@@ -407,9 +411,16 @@ export class DashboardService {
         prevTo: prevTo.toISOString(),
       },
     };
+
+    await this.cacheManager.set(cacheKey, result, 30_000);
+    return result;
   }
 
   async getRevenueTrend(query: DashboardQueryDto) {
+    const cacheKey = `dashboard:revenue-trend:${JSON.stringify(query)}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
     const { from, to, prevFrom, prevTo } = this.parseDates(query);
     const bucket = this.getTrendBucket(query);
     const isAr = query.locale === 'ar';
@@ -547,13 +558,20 @@ export class DashboardService {
       peakMonth,
     };
 
-    return {
+    const result = {
       trend,
       analytics,
     };
+
+    await this.cacheManager.set(cacheKey, result, 30_000);
+    return result;
   }
 
   async getBookingsTrend(query: DashboardQueryDto) {
+    const cacheKey = `dashboard:bookings-trend:${JSON.stringify(query)}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
     const { from, to } = this.parseDates(query);
     const bucket = this.getTrendBucket(query);
     const rows = await this.prisma.$queryRaw<
@@ -583,16 +601,23 @@ export class DashboardService {
       ORDER BY 1 ASC
     `);
 
-    return rows.map((row) => ({
+    const result = rows.map((row) => ({
       period: row.period.toISOString(),
       total: Number(row.total),
       confirmed: Number(row.confirmed),
       pending: Number(row.pending),
       cancelled: Number(row.cancelled),
     }));
+
+    await this.cacheManager.set(cacheKey, result, 30_000);
+    return result;
   }
 
   async getTourPerformance(query: DashboardQueryDto) {
+    const cacheKey = `dashboard:tour-performance:${JSON.stringify(query)}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
     const { from, to } = this.parseDates(query);
 
     const [tours, bookingGroups, capacityGroups, tourEvents] =
@@ -785,7 +810,7 @@ export class DashboardService {
       .filter((t) => t.occupancyRate >= 80)
       .sort((a, b) => b.occupancyRate - a.occupancyRate);
 
-    return {
+    const result = {
       all: performanceList,
       rankings: {
         mostBooked,
@@ -794,6 +819,9 @@ export class DashboardService {
         capacityAlerts,
       },
     };
+
+    await this.cacheManager.set(cacheKey, result, 30_000);
+    return result;
   }
 
   async getInterfacePerformance(query: DashboardQueryDto) {

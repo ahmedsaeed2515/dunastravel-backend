@@ -1,43 +1,271 @@
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ServiceUnavailableException } from '@nestjs/common';
+import crypto from 'node:crypto';
 import { GetPayInGatewayAdapter } from './getpayin-gateway.adapter';
 
-describe('GetPayInGatewayAdapter', () => {
-  it('reports missing merchant onboarding configuration without exposing values', () => {
-    const config = { get: jest.fn().mockReturnValue(undefined) };
-    const adapter = new GetPayInGatewayAdapter(
-      config as unknown as ConfigService,
-    );
+describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
+  const values: Record<string, unknown> = {
+    'payments.provider': 'GETPAYIN',
+    GETPAYIN_MODE: 'sandbox',
+    GETPAYIN_BASE_URL: 'https://pay.getpayin.com',
+    GETPAYIN_AUTH_TOKEN: 'auth-token',
+    GETPAYIN_HASH_TOKEN: 'hash-token',
+    GETPAYIN_REDIRECT_URL: 'https://www.dunastravel.com/payment/return',
+    GETPAYIN_WEBHOOK_URL:
+      'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
+    GETPAYIN_MAX_RETRIES: 0,
+    GETPAYIN_TIMEOUT_MS: 5000,
+  };
 
-    expect(adapter.getReadiness()).toEqual(
+  const config = (overrides: Record<string, unknown> = {}) =>
+    ({
+      get: jest.fn((key: string) => ({ ...values, ...overrides })[key]),
+    }) as unknown as ConfigService;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('reports only real missing PayLink settings and never their values', () => {
+    const adapter = new GetPayInGatewayAdapter(
+      config({ GETPAYIN_AUTH_TOKEN: '', GETPAYIN_HASH_TOKEN: '' }),
+    );
+    const readiness = adapter.getReadiness();
+
+    expect(readiness).toEqual(
       expect.objectContaining({
         provider: 'GETPAYIN',
-        enabled: false,
+        enabled: true,
         configured: false,
         mode: 'sandbox',
         supportedCurrencies: ['USD', 'EUR', 'EGP'],
       }),
     );
-    expect(adapter.getReadiness().missingConfiguration).toContain(
-      'GETPAYIN_API_KEY',
+    expect(readiness.missingConfiguration).toEqual([
+      'GETPAYIN_AUTH_TOKEN',
+      'GETPAYIN_HASH_TOKEN',
+    ]);
+    expect(JSON.stringify(readiness)).not.toContain('auth-token');
+  });
+
+  it('maps hosted checkout through SDK v2 with exact amount and idempotency', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (_url, init) => {
+        expect(String(_url)).toBe('https://pay.getpayin.com/api/v2/integration/init');
+        const body = JSON.parse(String(init?.body)) as Record<string, string>;
+        expect(body).toEqual(
+          expect.objectContaining({
+            token: 'auth-token',
+            first_name: 'Ahmed',
+            last_name: 'Saeed',
+            order_amount: '250.00',
+            currency: 'USD',
+            redirection_url:
+              'https://www.dunastravel.com/payment/return',
+            webhook_url:
+              'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
+            order_details: 'payment:payment-1',
+          }),
+        );
+        expect(body.signature).toMatch(/^[A-Za-z0-9+/]+=*$/);
+        expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
+          'checkout:payment-1',
+        );
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              checkout_url:
+                'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+              invoice_id: 40506,
+              expires_at: '2026-08-30T12:30:00.000Z',
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      });
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    await expect(
+      adapter.createSession({
+        paymentId: 'payment-1',
+        bookingId: 'booking-1',
+        referenceCode: 'DUNAS-1',
+        amount: '250.00',
+        currency: 'USD',
+        customer: {
+          fullName: 'Ahmed Saeed',
+          email: 'ahmed@example.com',
+          phone: '+201000000000',
+          country: 'EG',
+          address: 'Cairo',
+          city: 'Cairo',
+        },
+        idempotencyKey: 'checkout:payment-1',
+      }),
+    ).resolves.toEqual({
+      url: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+      providerInvoiceId: '40506',
+      expiresAt: new Date('2026-08-30T12:30:00.000Z'),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects checkout URLs outside the configured PayLink origin', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            checkout_url: 'https://evil.example/checkout',
+            invoice_id: 40506,
+            expires_at: '2026-08-30T12:30:00.000Z',
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    await expect(
+      adapter.createSession({
+        paymentId: 'payment-1',
+        bookingId: 'booking-1',
+        referenceCode: 'DUNAS-1',
+        amount: '250.00',
+        currency: 'USD',
+        customer: {
+          fullName: 'Ahmed Saeed',
+          email: 'ahmed@example.com',
+          phone: '',
+        },
+        idempotencyKey: 'checkout:payment-1',
+      }),
+    ).rejects.toThrow(ServiceUnavailableException);
+  });
+
+  it('verifies body signature and builds lifecycle-aware replay fingerprint', async () => {
+    const body = {
+      event: 'invoice.paid',
+      event_triggered_at: '2026-07-22T13:46:06+00:00',
+      timezone: 'UTC',
+      success: 1,
+      invoice_id: 40506,
+      invoice_status: 'PAID',
+      message: 'Invoice Paid',
+      signature: crypto
+        .createHmac('sha256', 'hash-token')
+        .update('140506PAIDInvoice Paid')
+        .digest('base64'),
+    };
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    const parsed = await adapter.verifyAndParseWebhook(
+      {} as never,
+      Buffer.from(JSON.stringify(body)),
+    );
+    expect(parsed).toEqual(
+      expect.objectContaining({
+        event: 'invoice.paid',
+        providerInvoiceId: '40506',
+        providerStatus: 'PAID',
+        status: 'COMPLETED',
+        eventId: expect.stringMatching(/^paylink:[a-f0-9]{64}$/),
+      }),
     );
   });
 
-  it('fails closed even when environment values exist until the official contract is installed', async () => {
-    const config = {
-      get: jest.fn((key: string) =>
-        key === 'GETPAYIN_MODE' ? 'sandbox' : 'configured-value',
+  it('rejects invalid webhook signatures without returning provider data', async () => {
+    const adapter = new GetPayInGatewayAdapter(config());
+    await expect(
+      adapter.verifyAndParseWebhook(
+        {} as never,
+        Buffer.from(
+          JSON.stringify({
+            event: 'invoice.paid',
+            success: 1,
+            invoice_id: 40506,
+            invoice_status: 'PAID',
+            message: 'Invoice Paid',
+            signature: 'invalid',
+          }),
+        ),
       ),
-    };
-    const adapter = new GetPayInGatewayAdapter(
-      config as unknown as ConfigService,
-    );
+    ).rejects.toThrow(BadRequestException);
+  });
 
-    expect(adapter.getReadiness().missingConfiguration).toEqual([
-      'GETPAYIN_OFFICIAL_API_CONTRACT',
-    ]);
-    await expect(adapter.createSession({} as never)).rejects.toThrow(
-      ServiceUnavailableException,
-    );
+  it('verifies the signed browser callback with a timing-safe server check', () => {
+    const adapter = new GetPayInGatewayAdapter(config());
+    const signature = crypto
+      .createHmac('sha256', 'hash-token')
+      .update('140506PAIDInvoice Paid')
+      .digest('base64');
+
+    expect(
+      adapter.verifyCallback({
+        success: 1,
+        invoice_id: 40506,
+        invoice_status: 'PAID',
+        message: 'Invoice Paid',
+        signature,
+      }),
+    ).toBe('40506');
+    expect(() =>
+      adapter.verifyCallback({
+        success: 1,
+        invoice_id: 40506,
+        invoice_status: 'PAID',
+        message: 'Invoice Paid',
+        signature: 'invalid',
+      }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('maps PayLink check-status and partial-refund responses without inventing IDs', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
+      const path = new URL(String(url)).pathname;
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(body.token).toBe('auth-token');
+      expect(body.invoice_id).toBe('40506');
+      expect(body.signature).toEqual(expect.any(String));
+      if (path.endsWith('/check-status')) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: { invoice_id: 40506, paid_status: 'PAID', auth_code: '831000' },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      expect(path).toBe('/api/integration/refund');
+      expect(body.amount).toBe('50.00');
+      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('refund:1');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            invoice_id: 40506,
+            paid_status: 'PARTIALLY_REFUNDED',
+            auth_code: '831000',
+            refund_amount: '50.00',
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    await expect(adapter.checkStatus('40506')).resolves.toEqual({
+      providerInvoiceId: '40506',
+      providerStatus: 'PAID',
+      authCode: '831000',
+    });
+    await expect(adapter.refund('40506', '50.00', 'refund:1')).resolves.toEqual({
+      providerInvoiceId: '40506',
+      providerStatus: 'PARTIALLY_REFUNDED',
+      authCode: '831000',
+      refundAmount: '50.00',
+    });
   });
 });

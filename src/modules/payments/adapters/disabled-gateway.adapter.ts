@@ -17,6 +17,7 @@ export class DisabledPaymentGatewayAdapter implements IPaymentGatewayPort {
   getReadiness(): PaymentGatewayReadiness {
     return {
       provider: this.getProviderName(),
+      state: 'DISABLED',
       enabled: false,
       configured: false,
       mode: 'disabled',
@@ -38,7 +39,15 @@ export class DisabledPaymentGatewayAdapter implements IPaymentGatewayPort {
     return this.unavailable();
   }
 
-  async refund(): Promise<{ refundId: string }> {
+  async refund(): Promise<never> {
+    return this.unavailable();
+  }
+
+  async checkStatus(): Promise<never> {
+    return this.unavailable();
+  }
+
+  verifyCallback(): never {
     return this.unavailable();
   }
 

@@ -1,6 +1,8 @@
-# GetPayIn vendor contract
+# GetPayIn PayLink vendor contract
 
-Place sanitized official merchant API and webhook documentation here. Never
-commit API keys, webhook secrets, merchant credentials, customer card data, or
-unredacted provider support exports.
+Authoritative local provider material:
 
+- `../../../PayLink_Payment_Integration.postman_collection.json`
+- installed and pinned `@getpayin/paylink@0.1.1`
+
+The selected Dunas integration is hosted checkout. VCC/raw-card, saved-card tokenization, and recurring endpoints in the collection are intentionally out of scope. Never commit credentials, card data, CVV, or unredacted provider exports.

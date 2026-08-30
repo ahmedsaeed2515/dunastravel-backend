@@ -45,6 +45,11 @@ import {
   AddCustomerDocumentDto,
   CreateCustomerCrmDto,
 } from './dto/customer-crm.dto';
+import {
+  SuspendUserDto,
+  AddUserMonitoringNoteDto,
+  ListActivityStreamQueryDto,
+} from './dto/user-monitoring.dto';
 import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
 import { assertStrongPassword } from '../../common/utils/password-policy.util';
@@ -178,11 +183,27 @@ export class UsersController {
     return this.userService.addCustomerDocument(id, dto, user.id);
   }
 
-  // ─── LEGACY USERS ENDPOINTS ────────────────────────────────────
+  // ─── USER MONITORING & ACTIVITY HUB ─────────────────────────────
+
+  @Get('monitoring/overview')
+  @ApiOperation({ summary: 'Get global user monitoring metrics and analytics overview.' })
+  @ApiOkResponse({ description: 'Aggregated user monitoring metrics' })
+  async getMonitoringOverview() {
+    return this.userService.getMonitoringOverview();
+  }
+
+  @Get('monitoring/live-stream')
+  @ApiOperation({ summary: 'Get real-time / recent user activity stream across platform.' })
+  @ApiOkResponse({ description: 'Paginated live activity items' })
+  async getLiveActivityStream(@Query() query: ListActivityStreamQueryDto) {
+    return this.userService.getLiveActivityStream(query);
+  }
+
+  // ─── USERS DIRECTORY & MANAGEMENT ENDPOINTS ───────────────────
 
   @Get()
-  @ApiOperation({ summary: 'List all users with pagination and filtering.' })
-  @ApiOkResponse({ description: 'Paginated list of users' })
+  @ApiOperation({ summary: 'List all users with advanced monitoring filters and pagination.' })
+  @ApiOkResponse({ description: 'Paginated list of users with summary counts' })
   async listUsers(@Query() query: ListUsersQueryDto) {
     const page = query.page || 1;
     const limit = query.limit || 10;
@@ -191,6 +212,10 @@ export class UsersController {
       limit,
       search: query.search,
       role: query.role,
+      status: query.status,
+      isVerified: query.isVerified,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
     });
 
     return {
@@ -202,6 +227,70 @@ export class UsersController {
         totalPages: Math.ceil(result.total / limit),
       },
     };
+  }
+
+  @Get(':id/monitoring')
+  @ApiOperation({ summary: 'Get comprehensive user monitoring profile, deep activity timeline, and relations.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ description: 'Full user monitoring payload and timeline' })
+  async getUserMonitoringDetail(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.userService.getUserMonitoringDetail(id);
+  }
+
+  @Post(':id/suspend')
+  @ApiOperation({ summary: 'Suspend a user account with reason and audit log.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: SuspendUserDto })
+  @ApiOkResponse({ description: 'User account suspended' })
+  async suspendUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: SuspendUserDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    await this.assertCanManageTarget(actor, id, undefined, false, false);
+    return this.userService.suspendUser(id, dto.reason, actor.id, actor.role, req.ip);
+  }
+
+  @Post(':id/activate')
+  @ApiOperation({ summary: 'Reactivate a suspended user account.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ description: 'User account activated' })
+  async activateUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    await this.assertCanManageTarget(actor, id, undefined, false, false);
+    return this.userService.activateUser(id, actor.id, actor.role, req.ip);
+  }
+
+  @Post(':id/revoke-sessions')
+  @ApiOperation({ summary: 'Invalidate all active sessions for a user.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ description: 'User sessions invalidated' })
+  async revokeSessions(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    await this.assertCanManageTarget(actor, id, undefined, false, false);
+    return this.userService.revokeSessionsAdmin(id, actor.id, req.ip);
+  }
+
+  @Post(':id/notes')
+  @ApiOperation({ summary: 'Add an admin monitoring / investigation note to a user.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: AddUserMonitoringNoteDto })
+  @ApiOkResponse({ description: 'Monitoring note added successfully' })
+  async addUserMonitoringNote(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: AddUserMonitoringNoteDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.userService.addUserMonitoringNote(id, dto, actor.id);
   }
 
   @Get(':id')

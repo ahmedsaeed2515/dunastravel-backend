@@ -12,7 +12,7 @@ Last Updated: 2026-07-26
 | **GATE-04** | SUPER_ADMIN Immunity Test | `ADMIN` role cannot delete/suspend `SUPER_ADMIN` | `NOT RUN — USER REQUEST` | Enforced in `AdminService` & `AgentsService`. |
 | **GATE-05** | Session Invalidation Test | Reset/change password invalidates existing refresh sessions | `NOT RUN — USER REQUEST` | Enforced via `sessionVersion` increment logic. |
 | **GATE-06** | CSRF Double-Submit Test | Cookie-authenticated mutations require valid `X-CSRF-Token` | `NOT RUN — USER REQUEST` | Enforced via double-submit cookie pattern middleware. |
-| **GATE-07** | GetPayIn signature test | Invalid GetPayIn webhook signature is rejected according to its official contract | `BLOCKED — MERCHANT CONTRACT REQUIRED` | The adapter is fail-closed until official signature fixtures are supplied. |
+| **GATE-07** | GetPayIn signature test | Invalid GetPayIn webhook signature is rejected according to its official contract | `UNIT VERIFIED` | Official SDK body-signature verification and a Postman-shaped `invoice.paid` fixture pass; sandbox delivery remains external. |
 | **GATE-08** | Idempotency Replay Test | Repeated request with same `Idempotency-Key` returns existing record without duplicate DB write | `NOT RUN — USER REQUEST` | Enforced in `bookings.service.ts` & `transportation.service.ts`. |
 | **GATE-09** | Stored XSS Mitigation Test | Payload containing `<script>` or event handlers is sanitized | `NOT RUN — USER REQUEST` | Enforced in `content-sanitizer.util.ts`. |
 | **GATE-10** | TypeScript Typecheck & Build | Zero compile errors | `NOT RUN — USER REQUEST` | Pending user permission for execution. |

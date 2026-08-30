@@ -4,6 +4,7 @@ import { TourCatalogToolService } from './services/tour-catalog-tool.service';
 import { RagRetrievalService } from './services/rag-retrieval.service';
 import { AiKeyPoolService } from './services/ai-key-pool.service';
 import { UniversalAiProvider } from './providers/universal-ai.provider';
+import { ModelRegistryService } from './services/model-registry.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException } from '@nestjs/common';
 
@@ -202,6 +203,7 @@ describe('GuideR AI Concierge — Wave 2 Enterprise Specification & Stress Test'
         RagRetrievalService,
         AiKeyPoolService,
         UniversalAiProvider,
+        ModelRegistryService,
         { provide: PrismaService, useValue: mockPrisma },
       ],
     }).compile();

@@ -1,42 +1,20 @@
-# Payments Module
+# Payments module
 
-The payments module handles checkout initiation, webhook processing, refund handling, and payment state management via Domain-Driven Design (DDD).
+The NestJS payments module owns server-authoritative hosted checkout, PayLink webhook processing, callback reconciliation, refunds, and payment state transitions. `IPaymentGatewayPort` keeps provider types at the adapter boundary; `GetPayInGatewayAdapter` uses the official `@getpayin/paylink` SDK.
 
-## Architecture & Integration
+## PayLink flow
 
-The module uses a Ports and Adapters boundary, but **GetPayIn is the only
-supported online provider**. The boundary isolates provider HTTP and webhook
-details from booking business logic; it is not a provider selector. The
-GetPayIn adapter remains fail-closed until the official Direct API contract is
-stored under `docs/vendor/getpayin/`.
+1. An authenticated booking owner calls `POST /api/payments/initiate` with only a booking UUID.
+2. The backend validates ownership and its immutable Dunas invoice, creates or reuses one local payment attempt, and sends a decimal string to `invoices.create()`.
+3. The PayLink `invoice_id`, allowlisted hosted URL, and provider `expires_at` are persisted.
+4. Browser callback fields are posted to `POST /api/payments/callback/getpayin`. Their signature is verified server-side, then `payments.checkStatus()` supplies financial truth.
+5. Signed provider webhooks at `POST /api/payments/webhook/getpayin` atomically update Payment, Booking, Dunas Invoice, and the lifecycle-aware event fingerprint.
+6. A SUPER_ADMIN may issue full or partial refunds. Every refund calls `payments.refund()` with a stable idempotency key and is persisted in `RefundRecord`.
 
-## Payment Entity State Machine
+## State and idempotency
 
-The strict state transition diagram managed by `PaymentEntity` (`src/modules/payments/domain/payment.entity.ts`):
+Payment attempts preserve history (`PENDING`, `CAPTURED`, `FAILED`, `EXPIRED`, `REFUND_PENDING`, `REFUNDED`). The database permits one pending attempt per booking, one local idempotency key, and one `(provider, providerPaymentId)` identity. PayLink webhook deduplication hashes provider, invoice, event, status, and signature so `paid` followed by `refunded` remains valid while exact replays have one logical effect.
 
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING: initiatePayment
-    PENDING --> AUTHORIZED: Auth Only
-    PENDING --> CAPTURED: Direct Capture
-    AUTHORIZED --> CAPTURED: Capture Auth
-    PENDING --> FAILED: Webhook Failed
-    AUTHORIZED --> FAILED: Webhook Failed
-    PENDING --> EXPIRED: Cron (30m timeout)
-    CAPTURED --> REFUNDED: API Refund
-```
-*Note: Invalid transitions explicitly throw an `InvalidPaymentTransitionException`.*
+Partial refunds keep the original payment captured, record the refunded amount separately, expose `PARTIALLY_REFUNDED` as provider state, and proportionally reduce B2B commission. A cumulative full refund closes the payment, booking, invoice, promotion redemption, and commission.
 
-## Idempotency & Concurrency Safety
-
-Webhook idempotency is guaranteed via the `ProcessedWebhookEvent` table. Webhooks are processed within a Prisma `$transaction` using the **`Serializable`** isolation level to protect against concurrent webhook deliveries.
-
-If two identical webhooks arrive simultaneously, exactly one will commit and the other will fail safely, returning `200 OK` without duplicating side-effects.
-
-## Current Limitations
-- **Partial Refunds**: Not currently supported. The `Payment` schema does not track `amountRefunded`. Calling `POST /payments/:id/refund` with a partial amount will throw a `BadRequestException`.
-
-## Payment Webhook Testing
-
-Payment webhooks are processed at `POST /payments/webhook/getpayin`.
-The system validates signatures and records transactions idempotently in the `ProcessedWebhookEvent` table.
+The ordinary customer flow never collects card data and never loads the PayLink SDK or credentials in a browser.

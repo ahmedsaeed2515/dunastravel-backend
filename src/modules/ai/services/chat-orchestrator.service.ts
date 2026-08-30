@@ -227,16 +227,23 @@ const INJECTION_PATTERNS = [
 ];
 
 const FINOPS_MODEL_PRICING: Record<string, { inputPer1M: number; outputPer1M: number }> = {
-  'claude-3-5-sonnet-20241022': { inputPer1M: 3.00, outputPer1M: 15.00 },
-  'claude-3-7-sonnet-20250219': { inputPer1M: 3.00, outputPer1M: 15.00 },
-  'claude-3-5-haiku-20241022': { inputPer1M: 0.80, outputPer1M: 4.00 },
-  'gpt-4o': { inputPer1M: 2.50, outputPer1M: 10.00 },
-  'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.60 },
   'gemini-2.0-flash': { inputPer1M: 0.10, outputPer1M: 0.40 },
-  'gemini-2.5-flash': { inputPer1M: 0.15, outputPer1M: 0.60 },
+  'gemini-2.0-flash-lite': { inputPer1M: 0.075, outputPer1M: 0.30 },
+  'gemini-1.5-flash': { inputPer1M: 0.075, outputPer1M: 0.30 },
+  'gemini-1.5-pro': { inputPer1M: 1.25, outputPer1M: 5.00 },
+  'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.60 },
+  'gpt-4o': { inputPer1M: 2.50, outputPer1M: 10.00 },
+  'o3-mini': { inputPer1M: 1.10, outputPer1M: 4.40 },
+  'grok-3-mini': { inputPer1M: 0.30, outputPer1M: 0.50 },
+  'grok-3': { inputPer1M: 3.00, outputPer1M: 15.00 },
   'deepseek-chat': { inputPer1M: 0.14, outputPer1M: 0.28 },
-  'deepseek/deepseek-chat': { inputPer1M: 0.14, outputPer1M: 0.28 },
-  'default': { inputPer1M: 2.00, outputPer1M: 8.00 },
+  'deepseek/deepseek-chat-v3-0324': { inputPer1M: 0.14, outputPer1M: 0.28 },
+  'deepseek/deepseek-r1': { inputPer1M: 0.55, outputPer1M: 2.19 },
+  'google/gemini-2.0-flash-001': { inputPer1M: 0.10, outputPer1M: 0.40 },
+  'qwen/qwen-2.5-72b-instruct': { inputPer1M: 0.35, outputPer1M: 0.40 },
+  'claude-3-5-sonnet-20241022': { inputPer1M: 3.00, outputPer1M: 15.00 },
+  'claude-3-5-haiku-20241022': { inputPer1M: 0.80, outputPer1M: 4.00 },
+  'default': { inputPer1M: 0.10, outputPer1M: 0.40 },
 };
 
 @Injectable()
@@ -961,8 +968,8 @@ CRITICAL EXECUTION RULES:
     let outputTokens = 0;
     let latencyMs = 0;
     let isError = false;
-    let usedProvider = config.provider || 'anthropic';
-    let usedModel = config.model || 'claude-3-5-sonnet-20241022';
+    let usedProvider = config.provider || 'google';
+    let usedModel = config.model || 'gemini-2.0-flash';
 
     const providerStart = Date.now();
     try {

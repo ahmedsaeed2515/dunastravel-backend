@@ -29,6 +29,18 @@ export class AdminTailorMadeQueryDto {
   @IsOptional()
   @IsEnum(TailorMadeInquiryStatus)
   status?: TailorMadeInquiryStatus;
+
+  @IsOptional()
+  @IsString()
+  referenceCode?: string;
+
+  @IsOptional()
+  @IsString()
+  partnerCode?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 export class UpdateTailorMadeStatusDto {

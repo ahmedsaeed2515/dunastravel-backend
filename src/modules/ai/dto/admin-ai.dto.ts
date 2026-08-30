@@ -1,13 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber, Min, Max, IsArray, IsObject } from 'class-validator';
+import {
+  IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber,
+  Min, Max, IsArray, IsObject, IsIn, ValidateIf,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+
+// ============================================================
+// VALID PROVIDER IDS (server-side enumeration)
+// ============================================================
+const VALID_PROVIDER_IDS = ['google', 'openai', 'xai', 'openrouter', 'deepseek', 'custom', 'anthropic'];
 
 export class UpdateAiConfigDto {
-  @ApiPropertyOptional({ example: 'anthropic' })
+  @ApiPropertyOptional({ example: 'google', enum: VALID_PROVIDER_IDS })
   @IsString()
   @IsOptional()
+  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
   provider?: string;
 
-  @ApiPropertyOptional({ example: 'claude-3-5-sonnet-20241022' })
+  @ApiPropertyOptional({ example: 'gemini-2.0-flash' })
   @IsString()
   @IsOptional()
   model?: string;
@@ -22,12 +32,12 @@ export class UpdateAiConfigDto {
   @IsOptional()
   isPublicEnabled?: boolean;
 
-  @ApiPropertyOptional({ example: true, description: 'Enable direct in-chat booking flow for GuideR' })
+  @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()
   isInChatBookingEnabled?: boolean;
 
-  @ApiPropertyOptional({ example: 'sk-ant-api03-...' })
+  @ApiPropertyOptional({ description: 'Write-only API key — only stored encrypted, never returned' })
   @IsString()
   @IsOptional()
   apiKey?: string;
@@ -35,7 +45,7 @@ export class UpdateAiConfigDto {
   @ApiPropertyOptional({ example: 0.7 })
   @IsNumber()
   @Min(0)
-  @Max(1)
+  @Max(2)
   @IsOptional()
   temperature?: number;
 
@@ -85,18 +95,136 @@ export class UpdateAiConfigDto {
   suggestedQuestions?: Record<string, string[]>;
 }
 
-export class TestProviderConnectionDto {
-  @ApiPropertyOptional({ example: 'anthropic' })
+// ============================================================
+// ADD PROVIDER CREDENTIAL DTO
+// ============================================================
+
+export class AddProviderCredentialDto {
+  @ApiProperty({
+    example: 'google',
+    enum: VALID_PROVIDER_IDS,
+    description: 'Provider ID from the official registry',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
+  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
+  provider!: string;
+
+  @ApiProperty({
+    example: 'AIza...',
+    description: 'Write-only API key. Stored encrypted. Never returned.',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'API key is required.' })
+  apiKey!: string;
+
+  @ApiPropertyOptional({
+    example: 'gemini-2.0-flash',
+    description: 'Default model for this credential. Must belong to the selected provider.',
+  })
   @IsString()
   @IsOptional()
+  model?: string;
+
+  @ApiPropertyOptional({ example: 'Production Gemini Key' })
+  @IsString()
+  @IsOptional()
+  label?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://my-proxy.example.com/v1',
+    description: 'Custom base URL. Only applicable for provider=custom.',
+  })
+  @IsString()
+  @IsOptional()
+  @ValidateIf((o) => o.provider === 'custom')
+  baseUrl?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  priority?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+// ============================================================
+// UPDATE PROVIDER CREDENTIAL DTO
+// ============================================================
+
+export class UpdateProviderCredentialDto {
+  @ApiPropertyOptional({ enum: VALID_PROVIDER_IDS })
+  @IsString()
+  @IsOptional()
+  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
+  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
   provider?: string;
 
-  @ApiPropertyOptional({ example: 'claude-3-5-sonnet-20241022' })
+  @ApiPropertyOptional({
+    description: 'New API key. Leave blank to keep existing key.',
+  })
+  @IsString()
+  @IsOptional()
+  apiKey?: string;
+
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   model?: string;
 
   @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  label?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  baseUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  priority?: number;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+// ============================================================
+// TEST PROVIDER CONNECTION DTO
+// ============================================================
+
+export class TestProviderConnectionDto {
+  @ApiPropertyOptional({
+    example: 'google',
+    enum: VALID_PROVIDER_IDS,
+    description: 'Provider to test. If omitted, uses the configured primary provider.',
+  })
+  @IsString()
+  @IsOptional()
+  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
+  provider?: string;
+
+  @ApiPropertyOptional({
+    example: 'gemini-2.0-flash',
+    description: 'Model to test with. Must belong to the specified provider.',
+  })
+  @IsString()
+  @IsOptional()
+  model?: string;
+
+  @ApiPropertyOptional({
+    description: 'API key to test. If omitted, uses the stored key for this provider.',
+  })
   @IsString()
   @IsOptional()
   apiKey?: string;

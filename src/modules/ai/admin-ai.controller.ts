@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -7,13 +7,14 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
-import { UniversalAiProvider } from './providers/universal-ai.provider';
+import { UniversalAiProvider, ProviderError } from './providers/universal-ai.provider';
 import { AiKeyPoolService } from './services/ai-key-pool.service';
 import { AgentRegistryService, CreateAgentDto, UpdateAgentDto } from './services/agent-registry.service';
-import { ModelRegistryService } from './services/model-registry.service';
+import { ModelRegistryService, PROVIDER_REGISTRY } from './services/model-registry.service';
+import { ModelRoutingService } from './services/model-routing.service';
 import { PromptEngineService } from './services/prompt-engine.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { UpdateAiConfigDto, TestProviderConnectionDto } from './dto/admin-ai.dto';
+import { UpdateAiConfigDto, TestProviderConnectionDto, AddProviderCredentialDto, UpdateProviderCredentialDto } from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
 import {
   decryptSensitiveField,
@@ -33,6 +34,7 @@ export class AdminAiController {
     private readonly keyPoolService: AiKeyPoolService,
     private readonly agentRegistry: AgentRegistryService,
     private readonly modelRegistry: ModelRegistryService,
+    private readonly modelRouting: ModelRoutingService,
     private readonly promptEngine: PromptEngineService,
     private readonly hybridRagEngine: HybridRagEngineService,
   ) {}
@@ -216,104 +218,148 @@ export class AdminAiController {
     return this.chatOrchestrator.getFeedbackList(pageNum, limitNum);
   }
 
+  // --- Provider Registry Endpoints (NEW) ---
+
+  @Get('providers')
+  @ApiOperation({ summary: 'Get the official provider registry with setup instructions and API key links' })
+  async getProviderRegistry() {
+    return {
+      providers: this.modelRegistry.getAvailableProviders(),
+      routingTable: this.modelRouting.getRoutingTable(),
+    };
+  }
+
+  @Get('providers/:id/models')
+  @ApiOperation({ summary: 'Get models available for a specific provider' })
+  async getProviderModels(@Param('id') id: string) {
+    const provider = this.modelRegistry.getProvider(id);
+    if (!provider) {
+      throw new BadRequestException(`Unknown provider '${id}'.`);
+    }
+    return {
+      provider: {
+        id: provider.id,
+        displayName: provider.displayName,
+        officialBaseUrl: provider.officialBaseUrl,
+        apiKeyUrl: provider.apiKeyUrl,
+        setupInstructions: provider.setupInstructions,
+        allowCustomBaseUrl: provider.allowCustomBaseUrl,
+      },
+      models: this.modelRegistry.getPrimaryModelsForProvider(id),
+    };
+  }
+
+  @Get('routing')
+  @ApiOperation({ summary: 'Get the current GuideR model routing policy (Economy/Normal/Complex/Fallback)' })
+  async getRoutingPolicy() {
+    return {
+      table: this.modelRouting.getRoutingTable(),
+      agentPolicies: this.modelRouting.getAgentPolicies(),
+    };
+  }
+
   // --- API Key Pool Management Endpoints ---
 
   @Get('keys')
-  @ApiOperation({ summary: 'Get all configured API keys in the multi-provider pool (masked)' })
+  @ApiOperation({ summary: 'Get all configured provider credentials (keys masked)' })
   async getKeyPool() {
     return this.keyPoolService.getKeyPool();
   }
 
   @Post('keys')
-  @ApiOperation({ summary: 'Add a new API key to the failover pool' })
-  async addKeyToPool(
-    @Body()
-    body: {
-      provider: string;
-      model: string;
-      apiKey: string;
-      baseUrl?: string;
-      label?: string;
-      priority?: number;
-      isActive?: boolean;
-    },
-  ) {
+  @ApiOperation({ summary: 'Add a new provider credential. Provider/model pair is validated server-side.' })
+  async addKeyToPool(@Body() body: AddProviderCredentialDto) {
     return this.keyPoolService.addKey(body);
   }
 
   @Put('keys/reorder')
-  @ApiOperation({ summary: 'Reorder API keys priority sequentially' })
-  async reorderKeysInPool(
-    @Body() body: { orderedIds: string[] },
-  ) {
+  @ApiOperation({ summary: 'Reorder credential priority sequentially' })
+  async reorderKeysInPool(@Body() body: { orderedIds: string[] }) {
     return this.keyPoolService.reorderKeys(body.orderedIds || []);
   }
 
   @Put('keys/:id')
-  @ApiOperation({ summary: 'Update an existing API key entry or toggle status' })
-  async updateKeyInPool(
-    @Param('id') id: string,
-    @Body()
-    body: {
-      provider?: string;
-      model?: string;
-      apiKey?: string;
-      baseUrl?: string;
-      label?: string;
-      priority?: number;
-      isActive?: boolean;
-    },
-  ) {
+  @ApiOperation({ summary: 'Update a credential. Leave apiKey blank to keep existing key.' })
+  async updateKeyInPool(@Param('id') id: string, @Body() body: UpdateProviderCredentialDto) {
     return this.keyPoolService.updateKey(id, body);
   }
 
   @Delete('keys/:id')
-  @ApiOperation({ summary: 'Delete an API key from the pool' })
+  @ApiOperation({ summary: 'Remove a provider credential' })
   async deleteKeyFromPool(@Param('id') id: string) {
     return this.keyPoolService.deleteKey(id);
   }
 
   @Post('keys/:id/test')
-  @ApiOperation({ summary: 'Test health, connectivity, and latency of a specific API key in the pool' })
+  @ApiOperation({ summary: 'Test a credential — returns structured error code, not just success/failed' })
   async testSpecificKey(@Param('id') id: string) {
     return this.keyPoolService.testKey(id);
   }
 
   @Post('config/test')
-  @ApiOperation({ summary: 'Safely test connection to configured AI provider or custom key' })
+  @ApiOperation({ summary: 'Test a provider connection with a specific key. Validates provider/model pair first.' })
   async testConnection(@Body() dto: TestProviderConnectionDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
-    const providerName = dto.provider || currentConfig.provider || 'anthropic';
-    const model = dto.model || currentConfig.model;
+    const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
+    const model = dto.model || currentConfig.model || 'gemini-2.0-flash';
+
+    // Validate provider/model pair BEFORE calling the provider
+    if (model) {
+      const validation = this.modelRegistry.validateProviderModelPair(providerName, model);
+      if (!validation.valid) {
+        return {
+          success: false,
+          code: 'INVALID_CONFIGURATION',
+          provider: providerName,
+          model,
+          error: validation.reason,
+          diagnosis: `Provider/model mismatch detected before making any API call. ${validation.reason}`,
+        };
+      }
+    }
+
     const key =
       dto.apiKey && !dto.apiKey.includes('••')
         ? dto.apiKey
         : decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
 
     if (!key) {
-      return { success: false, message: `No API key provided or configured for provider '${providerName}'.` };
+      return {
+        success: false,
+        code: 'INVALID_KEY',
+        provider: providerName,
+        model,
+        error: `No API key provided for provider '${providerName}'.`,
+        diagnosis: 'Provide an API key or save a credential for this provider first.',
+      };
     }
 
     try {
       const res = await this.universalProvider.generateCompletion(
-        'Say "Connection verified successfully!" in 4 words.',
-        {
-          provider: providerName,
-          model,
-          maxTokens: 30,
-          timeoutMs: 12_000,
-        },
+        'Say "Connection verified" in exactly 2 words.',
+        { provider: providerName, model, maxTokens: 30, timeoutMs: 12_000 },
         key,
       );
       return {
         success: true,
+        code: 'SUCCESS',
         provider: providerName,
         model,
         latencyMs: res.latencyMs,
         message: res.text,
       };
     } catch (err: any) {
-      return { success: false, error: err.message };
+      const code = err instanceof ProviderError ? err.code : 'UNKNOWN_ERROR';
+      return {
+        success: false,
+        code,
+        provider: providerName,
+        model,
+        error: err.message,
+        diagnosis: err instanceof ProviderError
+          ? `[${code}] ${err.message}`
+          : 'Unexpected error during connection test.',
+      };
     }
   }
 
@@ -459,11 +505,12 @@ export class AdminAiController {
   // --- Model Registry ---
 
   @Get('models')
-  @ApiOperation({ summary: 'Get full list of supported LLM models with capabilities & pricing' })
+  @ApiOperation({ summary: 'Get full model registry with capabilities, pricing, and provider info' })
   async getAllModels() {
     return {
       models: this.modelRegistry.getAllModels(),
       providers: this.modelRegistry.getAvailableProviders(),
+      routingTable: this.modelRouting.getRoutingTable(),
     };
   }
 
@@ -489,8 +536,8 @@ export class AdminAiController {
     const agentSlug = body.agentSlug || 'guider';
     const agent = await this.agentRegistry.getAgentBySlug(agentSlug, locale);
 
-    const modelId = body.model || agent.primaryModel || 'claude-3-5-sonnet-20241022';
-    const providerName = body.provider || agent.provider || 'anthropic';
+    const modelId = body.model || agent.primaryModel || 'gemini-2.0-flash';
+    const providerName = body.provider || agent.provider || 'google';
 
     // 1. RAG & Live Structured Retrieval
     let retrievalContext = null;

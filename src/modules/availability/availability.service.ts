@@ -344,12 +344,25 @@ export class AvailabilityService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async releaseExpiredHolds(holdDurationMinutes: number = 15): Promise<number> {
     const cutoffDate = new Date(Date.now() - holdDurationMinutes * 60 * 1000);
+    const now = new Date();
     return this.prisma.$transaction(async (tx) => {
       const expiredBookings = await tx.booking.findMany({
         where: {
           status: 'PENDING',
           createdAt: { lt: cutoffDate },
           availabilityId: { not: null },
+          // Never release a booking while its hosted checkout is still valid.
+          // PayLink's authoritative expires_at wins over the generic hold TTL.
+          payments: {
+            none: {
+              status: 'PENDING',
+              isRefund: false,
+              OR: [
+                { expiresAt: { gt: now } },
+                { expiresAt: null, createdAt: { gte: cutoffDate } },
+              ],
+            },
+          },
         },
       });
 

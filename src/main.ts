@@ -88,7 +88,7 @@ async function bootstrap(): Promise<void> {
     express.json({
       limit: '1mb',
       verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
-        if (req.originalUrl.includes('/payments/webhook/')) {
+        if (req.originalUrl.includes('webhook')) {
           req.rawBody = Buffer.from(buf);
         }
       },
@@ -128,7 +128,6 @@ async function bootstrap(): Promise<void> {
   // ─── Global Prefix ────────────────────────────────────────────────────────
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI });
-
   // ─── Global Validation Pipe ───────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({

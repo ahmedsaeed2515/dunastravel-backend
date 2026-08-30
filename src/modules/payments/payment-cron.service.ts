@@ -1,7 +1,8 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
+import { PaymentsService } from './payments.service';
 
 @Injectable()
 export class PaymentCronService {
@@ -11,6 +12,8 @@ export class PaymentCronService {
     private readonly prisma: PrismaService,
     @Inject(IPaymentGatewayPort)
     private readonly paymentGateway: IPaymentGatewayPort,
+    @Inject(forwardRef(() => PaymentsService))
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   @Cron('*/15 * * * *')
@@ -23,9 +26,10 @@ export class PaymentCronService {
       where: {
         status: 'PENDING',
         isRefund: false,
-        createdAt: {
-          lt: thresholdDate,
-        },
+        OR: [
+          { expiresAt: { lte: new Date() } },
+          { expiresAt: null, createdAt: { lt: thresholdDate } },
+        ],
       },
       orderBy: { createdAt: 'asc' },
       take: 500,
@@ -45,12 +49,21 @@ export class PaymentCronService {
       try {
         if (paymentData.transactionId) {
           try {
-            await this.paymentGateway.expireSession(
+            const providerState = await this.paymentGateway.checkStatus(
               paymentData.transactionId,
             );
+            if (providerState.providerStatus.toUpperCase() === 'PAID') {
+              this.logger.log(
+                `Payment ${paymentData.id} found PAID on PayLink during expiry check. Reconciling...`,
+              );
+              await this.paymentsService.reconcilePaymentByProviderInvoiceId(
+                paymentData.transactionId,
+              );
+              continue;
+            }
           } catch {
             this.logger.warn(
-              'Gateway session could not be expired; internal payment state was left unchanged',
+              `PayLink status could not be checked for paymentId=${paymentData.id}; internal state was left unchanged`,
             );
             continue;
           }
@@ -62,7 +75,10 @@ export class PaymentCronService {
               id: paymentData.id,
               status: 'PENDING',
               isRefund: false,
-              createdAt: { lt: thresholdDate },
+              OR: [
+                { expiresAt: { lte: new Date() } },
+                { expiresAt: null, createdAt: { lt: thresholdDate } },
+              ],
             },
             data: { status: 'EXPIRED', expiresAt: new Date() },
           });
@@ -97,5 +113,73 @@ export class PaymentCronService {
     }
 
     this.logger.log(`Successfully expired ${expiredCount} stale payments.`);
+  }
+
+  @Cron('*/10 * * * *')
+  async reconcilePendingPayments() {
+    // Bounded check for open pending payments created at least 5 minutes ago
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    const pending = await this.prisma.payment.findMany({
+      where: {
+        status: 'PENDING',
+        isRefund: false,
+        transactionId: { not: null },
+        createdAt: { lt: fiveMinutesAgo, gte: thirtyMinutesAgo },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+    });
+
+    if (pending.length === 0) return;
+
+    this.logger.log(`Reconciling ${pending.length} pending payments with PayLink...`);
+    for (const p of pending) {
+      if (!p.transactionId) continue;
+      try {
+        await this.paymentsService.reconcilePaymentByProviderInvoiceId(p.transactionId);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to reconcile payment ${p.id} (tx: ${p.transactionId}): ${msg}`);
+      }
+    }
+  }
+
+  @Cron('*/10 * * * *')
+  async reconcileStuckRefunds() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+    const stuckRefunds = await this.prisma.payment.findMany({
+      where: {
+        status: 'REFUND_PENDING',
+        updatedAt: { lt: fiveMinutesAgo },
+      },
+      take: 50,
+    });
+
+    if (stuckRefunds.length === 0) return;
+
+    this.logger.log(`Reconciling ${stuckRefunds.length} stuck REFUND_PENDING payments with PayLink...`);
+    for (const p of stuckRefunds) {
+      const transactionId = p.providerPaymentId || p.transactionId;
+      if (!transactionId) continue;
+      try {
+        const providerState = await this.paymentGateway.checkStatus(transactionId);
+        const statusUpper = providerState.providerStatus.toUpperCase();
+        if (['REFUNDED', 'VOIDED', 'REVERSED'].includes(statusUpper)) {
+          this.logger.log(
+            `Payment ${p.id} verified as ${statusUpper} on PayLink. Finalizing local refund state...`,
+          );
+          await this.paymentsService.reconcilePaymentByProviderInvoiceId(transactionId, {
+            id: p.id,
+            bookingId: p.bookingId,
+          });
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to reconcile stuck refund for payment ${p.id}: ${msg}`);
+      }
+    }
   }
 }

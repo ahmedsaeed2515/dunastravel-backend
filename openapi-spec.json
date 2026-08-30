@@ -862,7 +862,7 @@
     },
     "/api/admin/users/{id}/suspend": {
       "post": {
-        "operationId": "AdminController_suspendUser",
+        "operationId": "UsersController_suspendUser",
         "parameters": [
           {
             "name": "id",
@@ -885,13 +885,7 @@
         },
         "responses": {
           "200": {
-            "description": "User suspended"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden: Requires ADMIN role"
+            "description": "User account suspended"
           }
         },
         "security": [
@@ -899,15 +893,15 @@
             "bearer": []
           }
         ],
-        "summary": "Suspend a user account.",
+        "summary": "Suspend a user account with reason and audit log.",
         "tags": [
-          "Admin"
+          "Admin Users & CRM"
         ]
       }
     },
     "/api/admin/users/{id}/activate": {
       "post": {
-        "operationId": "AdminController_activateUser",
+        "operationId": "UsersController_activateUser",
         "parameters": [
           {
             "name": "id",
@@ -920,13 +914,7 @@
         ],
         "responses": {
           "200": {
-            "description": "User activated"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden: Requires ADMIN role"
+            "description": "User account activated"
           }
         },
         "security": [
@@ -934,9 +922,9 @@
             "bearer": []
           }
         ],
-        "summary": "Activate a suspended user account.",
+        "summary": "Reactivate a suspended user account.",
         "tags": [
-          "Admin"
+          "Admin Users & CRM"
         ]
       }
     },
@@ -3677,6 +3665,54 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/payments/callback/getpayin": {
+      "post": {
+        "operationId": "PaymentsController_handlePayLinkCallback[0]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayLinkCallbackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/admin/payments/callback/getpayin": {
+      "post": {
+        "operationId": "PaymentsController_handlePayLinkCallback[1]",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayLinkCallbackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -7181,6 +7217,94 @@
         ]
       }
     },
+    "/api/admin/users/monitoring/overview": {
+      "get": {
+        "operationId": "UsersController_getMonitoringOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Aggregated user monitoring metrics"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get global user monitoring metrics and analytics overview.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
+    "/api/admin/users/monitoring/live-stream": {
+      "get": {
+        "operationId": "UsersController_getLiveActivityStream",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category (AUTH, BOOKING, INQUIRY, REVIEW, ADMIN, ALL)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by target User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated live activity items"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get real-time / recent user activity stream across platform.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
     "/api/admin/users": {
       "get": {
         "operationId": "UsersController_listUsers",
@@ -7230,11 +7354,47 @@
                 "AGENT"
               ]
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status (ACTIVE, SUSPENDED, etc.)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isVerified",
+            "required": false,
+            "in": "query",
+            "description": "Filter by verification status",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "required": false,
+            "in": "query",
+            "description": "Start date ISO string",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "required": false,
+            "in": "query",
+            "description": "End date ISO string",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Paginated list of users"
+            "description": "Paginated list of users with summary counts"
           }
         },
         "security": [
@@ -7242,7 +7402,7 @@
             "bearer": []
           }
         ],
-        "summary": "List all users with pagination and filtering.",
+        "summary": "List all users with advanced monitoring filters and pagination.",
         "tags": [
           "Admin Users & CRM"
         ]
@@ -7271,6 +7431,103 @@
           }
         ],
         "summary": "Create a new user.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
+    "/api/admin/users/{id}/monitoring": {
+      "get": {
+        "operationId": "UsersController_getUserMonitoringDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full user monitoring payload and timeline"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get comprehensive user monitoring profile, deep activity timeline, and relations.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
+    "/api/admin/users/{id}/revoke-sessions": {
+      "post": {
+        "operationId": "UsersController_revokeSessions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User sessions invalidated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invalidate all active sessions for a user.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
+    "/api/admin/users/{id}/notes": {
+      "post": {
+        "operationId": "UsersController_addUserMonitoringNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserMonitoringNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Monitoring note added successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an admin monitoring / investigation note to a user.",
         "tags": [
           "Admin Users & CRM"
         ]
@@ -9363,9 +9620,9 @@
         ]
       }
     },
-    "/api/admin/ai/keys": {
+    "/api/admin/ai/providers": {
       "get": {
-        "operationId": "AdminAiController_getKeyPool",
+        "operationId": "AdminAiController_getProviderRegistry",
         "parameters": [],
         "responses": {
           "200": {
@@ -9377,53 +9634,15 @@
             "bearer": []
           }
         ],
-        "summary": "Get all configured API keys in the multi-provider pool (masked)",
-        "tags": [
-          "Admin - AI Command Center"
-        ]
-      },
-      "post": {
-        "operationId": "AdminAiController_addKeyToPool",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Add a new API key to the failover pool",
+        "summary": "Get the official provider registry with setup instructions and API key links",
         "tags": [
           "Admin - AI Command Center"
         ]
       }
     },
-    "/api/admin/ai/keys/reorder": {
-      "put": {
-        "operationId": "AdminAiController_reorderKeysInPool",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Reorder API keys priority sequentially",
-        "tags": [
-          "Admin - AI Command Center"
-        ]
-      }
-    },
-    "/api/admin/ai/keys/{id}": {
-      "put": {
-        "operationId": "AdminAiController_updateKeyInPool",
+    "/api/admin/ai/providers/{id}/models": {
+      "get": {
+        "operationId": "AdminAiController_getProviderModels",
         "parameters": [
           {
             "name": "id",
@@ -9444,7 +9663,134 @@
             "bearer": []
           }
         ],
-        "summary": "Update an existing API key entry or toggle status",
+        "summary": "Get models available for a specific provider",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/routing": {
+      "get": {
+        "operationId": "AdminAiController_getRoutingPolicy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the current GuideR model routing policy (Economy/Normal/Complex/Fallback)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys": {
+      "get": {
+        "operationId": "AdminAiController_getKeyPool",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all configured provider credentials (keys masked)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAiController_addKeyToPool",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddProviderCredentialDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a new provider credential. Provider/model pair is validated server-side.",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys/reorder": {
+      "put": {
+        "operationId": "AdminAiController_reorderKeysInPool",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder credential priority sequentially",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys/{id}": {
+      "put": {
+        "operationId": "AdminAiController_updateKeyInPool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderCredentialDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a credential. Leave apiKey blank to keep existing key.",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -9471,7 +9817,7 @@
             "bearer": []
           }
         ],
-        "summary": "Delete an API key from the pool",
+        "summary": "Remove a provider credential",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -9500,7 +9846,7 @@
             "bearer": []
           }
         ],
-        "summary": "Test health, connectivity, and latency of a specific API key in the pool",
+        "summary": "Test a credential — returns structured error code, not just success/failed",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -9530,7 +9876,7 @@
             "bearer": []
           }
         ],
-        "summary": "Safely test connection to configured AI provider or custom key",
+        "summary": "Test a provider connection with a specific key. Validates provider/model pair first.",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -9776,6 +10122,238 @@
         ]
       }
     },
+    "/api/admin/ai/agents": {
+      "get": {
+        "operationId": "AdminAiController_getAgents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all AI Agents in registry",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAiController_createAgent",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create new AI Agent in registry",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/agents/{slug}": {
+      "get": {
+        "operationId": "AdminAiController_getAgentBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get AI Agent detail by slug",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/agents/{id}": {
+      "put": {
+        "operationId": "AdminAiController_updateAgent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update AI Agent configuration",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminAiController_deleteAgent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete AI Agent from registry",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/models": {
+      "get": {
+        "operationId": "AdminAiController_getAllModels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get full model registry with capabilities, pricing, and provider info",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/simulator/trace": {
+      "post": {
+        "operationId": "AdminAiController_runSimulatorTrace",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Run diagnostic test query returning full inspection trace (intent, agent, model, RAG chunks, live DB calls, cost)",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/canonical-entities": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getCanonicalEntities",
+        "parameters": [
+          {
+            "name": "category",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "aiStatus",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "syncStatus",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Knowledge grouped by canonical entities (Tours, Hotels, Policies) with multi-lingual completeness",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
     "/api/admin/ai/knowledge": {
       "get": {
         "operationId": "AdminKnowledgeController_getKnowledgeItems",
@@ -9823,9 +10401,9 @@
             "bearer": []
           }
         ],
-        "summary": "List Knowledge Base documents with search & filters",
+        "summary": "List individual localized Knowledge Base records",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       },
       "post": {
@@ -9853,11 +10431,38 @@
         ],
         "summary": "Create new Knowledge Base document",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
     "/api/admin/ai/knowledge/{id}": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeItemDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Knowledge Base document by ID",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      },
       "put": {
         "operationId": "AdminKnowledgeController_updateKnowledgeItem",
         "parameters": [
@@ -9892,7 +10497,7 @@
         ],
         "summary": "Update existing Knowledge Base document",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       },
       "delete": {
@@ -9919,13 +10524,147 @@
         ],
         "summary": "Delete Knowledge Base document",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
-    "/api/admin/ai/knowledge/index": {
+    "/api/admin/ai/knowledge/{id}/toggle-ai": {
+      "patch": {
+        "operationId": "AdminKnowledgeController_toggleAiActivation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One-click toggle AI activation (Enable/Disable for GuideR)",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/canonical/{canonicalId}/toggle-ai": {
       "post": {
-        "operationId": "AdminKnowledgeController_reindexKnowledge",
+        "operationId": "AdminKnowledgeController_toggleCanonicalAiActivation",
+        "parameters": [
+          {
+            "name": "canonicalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Toggle AI activation for all languages of a canonical entity",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/canonical/{canonicalId}/override": {
+      "put": {
+        "operationId": "AdminKnowledgeController_updateCanonicalAiOverride",
+        "parameters": [
+          {
+            "name": "canonicalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create/update AI Knowledge Override for a canonical entity",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminKnowledgeController_clearCanonicalAiOverride",
+        "parameters": [
+          {
+            "name": "canonicalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clear AI Knowledge Override and restore canonical database facts",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/problems/summary": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeProblems",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get actionable issues (missing translations, expired overrides, sync errors)",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/bulk-action": {
+      "post": {
+        "operationId": "AdminKnowledgeController_executeBulkAction",
         "parameters": [],
         "responses": {
           "201": {
@@ -9937,9 +10676,75 @@
             "bearer": []
           }
         ],
-        "summary": "Re-index all published Knowledge Base documents",
+        "summary": "Execute bulk action on multiple knowledge documents",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/{id}/versions": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeVersions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get version history for a knowledge item",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/{id}/restore-version/{versionId}": {
+      "post": {
+        "operationId": "AdminKnowledgeController_restoreKnowledgeVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a previous version snapshot",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
@@ -9957,9 +10762,9 @@
             "bearer": []
           }
         ],
-        "summary": "Sync active database Tours & Destinations into RAG Knowledge Base",
+        "summary": "Sync active database Tours & Destinations into Knowledge Base",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
@@ -9979,7 +10784,7 @@
         ],
         "summary": "Auto-generate and translate article into 5 languages (AR, EN, ES, PT, IT) with AI",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
@@ -9999,13 +10804,33 @@
         ],
         "summary": "Save all 5 localized language versions of an article",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
-    "/api/admin/ai/knowledge/upload": {
+    "/api/admin/ai/knowledge/health": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Knowledge Base and RAG health diagnostics",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/test-retrieval": {
       "post": {
-        "operationId": "AdminKnowledgeController_uploadKnowledgeDocument",
+        "operationId": "AdminKnowledgeController_testRetrieval",
         "parameters": [],
         "responses": {
           "201": {
@@ -10017,9 +10842,9 @@
             "bearer": []
           }
         ],
-        "summary": "Upload custom document or text into Knowledge Base",
+        "summary": "Test multi-lingual hybrid RAG retrieval against live catalog and knowledge chunks",
         "tags": [
-          "Admin - Knowledge Base"
+          "Admin - Guider Knowledge Center V5"
         ]
       }
     },
@@ -12469,6 +13294,69 @@
         ]
       }
     },
+    "/api/agencies/verify-partner/{code}": {
+      "get": {
+        "operationId": "AgenciesController_verifyPartner",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Instant verification for 8-digit IATA / Partner Code",
+        "tags": [
+          "Agencies"
+        ]
+      }
+    },
+    "/api/agencies/verify-iata/{code}": {
+      "get": {
+        "operationId": "AgenciesController_verifyIata",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Alias for verifying 8-digit IATA code",
+        "tags": [
+          "Agencies"
+        ]
+      }
+    },
+    "/api/agencies/verify-partner": {
+      "post": {
+        "operationId": "AgenciesController_verifyPartnerBody",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Post-body partner verification",
+        "tags": [
+          "Agencies"
+        ]
+      }
+    },
     "/api/agencies/register": {
       "post": {
         "operationId": "AgenciesController_register",
@@ -14346,7 +15234,8 @@
         "properties": {
           "reason": {
             "type": "string",
-            "description": "Reason for suspension"
+            "description": "Reason for suspending the user",
+            "example": "Suspicious activity detected"
           }
         },
         "required": [
@@ -15310,6 +16199,10 @@
         "properties": {}
       },
       "CreatePaymentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PayLinkCallbackDto": {
         "type": "object",
         "properties": {}
       },
@@ -16282,6 +17175,30 @@
           "title"
         ]
       },
+      "AddUserMonitoringNoteDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Note content",
+            "example": "Customer called regarding VIP custom tour."
+          },
+          "noteType": {
+            "type": "string",
+            "description": "Note type",
+            "default": "MONITORING",
+            "example": "MONITORING"
+          },
+          "isPinned": {
+            "type": "boolean",
+            "description": "Whether the note is pinned",
+            "default": false
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
       "CreateUserDto": {
         "type": "object",
         "properties": {
@@ -16479,6 +17396,11 @@
           "notes": {
             "type": "string",
             "example": "We want a family friendly trip with lots of history."
+          },
+          "partnerCode": {
+            "type": "string",
+            "example": "90259175",
+            "description": "Contracted partner 8-digit IATA / secret verification code"
           }
         },
         "required": [
@@ -17192,11 +18114,20 @@
         "properties": {
           "provider": {
             "type": "string",
-            "example": "anthropic"
+            "example": "google",
+            "enum": [
+              "google",
+              "openai",
+              "xai",
+              "openrouter",
+              "deepseek",
+              "custom",
+              "anthropic"
+            ]
           },
           "model": {
             "type": "string",
-            "example": "claude-3-5-sonnet-20241022"
+            "example": "gemini-2.5-flash"
           },
           "isEnabled": {
             "type": "boolean",
@@ -17208,12 +18139,11 @@
           },
           "isInChatBookingEnabled": {
             "type": "boolean",
-            "example": true,
-            "description": "Enable direct in-chat booking flow for GuideR"
+            "example": true
           },
           "apiKey": {
             "type": "string",
-            "example": "sk-ant-api03-..."
+            "description": "Write-only API key — only stored encrypted, never returned"
           },
           "temperature": {
             "type": "number",
@@ -17250,19 +18180,117 @@
           }
         }
       },
+      "AddProviderCredentialDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "example": "google",
+            "enum": [
+              "google",
+              "openai",
+              "xai",
+              "openrouter",
+              "deepseek",
+              "custom",
+              "anthropic"
+            ],
+            "description": "Provider ID from the official registry"
+          },
+          "apiKey": {
+            "type": "string",
+            "example": "AIza...",
+            "description": "Write-only API key. Stored encrypted. Never returned."
+          },
+          "model": {
+            "type": "string",
+            "example": "gemini-2.5-flash",
+            "description": "Default model for this credential. Must belong to the selected provider."
+          },
+          "label": {
+            "type": "string",
+            "example": "Production Gemini Key"
+          },
+          "baseUrl": {
+            "type": "string",
+            "example": "https://my-proxy.example.com/v1",
+            "description": "Custom base URL. Only applicable for provider=custom."
+          },
+          "priority": {
+            "type": "number",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "provider",
+          "apiKey"
+        ]
+      },
+      "UpdateProviderCredentialDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "openai",
+              "xai",
+              "openrouter",
+              "deepseek",
+              "custom",
+              "anthropic"
+            ]
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "New API key. Leave blank to keep existing key."
+          },
+          "model": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "TestProviderConnectionDto": {
         "type": "object",
         "properties": {
           "provider": {
             "type": "string",
-            "example": "anthropic"
+            "example": "google",
+            "enum": [
+              "google",
+              "openai",
+              "xai",
+              "openrouter",
+              "deepseek",
+              "custom",
+              "anthropic"
+            ],
+            "description": "Provider to test. If omitted, uses the configured primary provider."
           },
           "model": {
             "type": "string",
-            "example": "claude-3-5-sonnet-20241022"
+            "example": "gemini-2.5-flash",
+            "description": "Model to test with. Must belong to the specified provider."
           },
           "apiKey": {
-            "type": "string"
+            "type": "string",
+            "description": "API key to test. If omitted, uses the stored key for this provider."
           }
         }
       },

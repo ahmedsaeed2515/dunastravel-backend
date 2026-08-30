@@ -216,6 +216,10 @@ export class ToursService {
 
   async findBySlug(slug: string, lang: string): Promise<TourDetailResponse> {
     this.toursCounter.inc();
+    const cacheKey = `tour:detail:${slug}:${lang}`;
+    const cached = await this.cacheManager.get<TourDetailResponse>(cacheKey);
+    if (cached) return cached;
+
     const tour = await this.prisma.tour.findFirst({
       where: {
         slug,
@@ -248,6 +252,7 @@ export class ToursService {
     this.logger.debug(`Tour detail queried | slug=${slug} lang=${lang}`);
 
     const response = this.toTourDetailResponse(tour, lang);
+    await this.cacheManager.set(cacheKey, response, 60_000);
 
     return response;
   }
@@ -380,12 +385,10 @@ export class ToursService {
       where: { slug },
       data,
     });
-    // Invalidate cache immediately after update
-    // We should ideally clear all langs, but we don't know which ones are cached.
-    // For now, we'll clear the known ones or just use a pattern if supported.
-    // cache-manager-redis-yet doesn't support wildcard del by default, but we can clear specific ones.
+    // Invalidate detail and list cache immediately after update
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const l of langs) {
+      await this.cacheManager.del(`tour:detail:${slug}:${l}`);
       await this.cacheManager.del(`tour:${slug}:${l}`);
     }
     return updated;
@@ -397,6 +400,7 @@ export class ToursService {
     });
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const l of langs) {
+      await this.cacheManager.del(`tour:detail:${slug}:${l}`);
       await this.cacheManager.del(`tour:${slug}:${l}`);
     }
     return deleted;

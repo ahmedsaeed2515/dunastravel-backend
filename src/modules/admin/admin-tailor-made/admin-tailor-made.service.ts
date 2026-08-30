@@ -43,6 +43,8 @@ export class AdminTailorMadeService {
     internalNote: true,
     quotedAmountUsd: true,
     bookingId: true,
+    partnerCode: true,
+    companyId: true,
     status: true,
     createdAt: true,
     updatedAt: true,
@@ -63,6 +65,17 @@ export class AdminTailorMadeService {
         totalAmountUsd: true,
         paidAmountUsd: true,
         createdAt: true,
+      },
+    },
+    company: {
+      select: {
+        id: true,
+        name: true,
+        referenceCode: true,
+        taxId: true,
+        tier: true,
+        companyType: true,
+        commissionRate: true,
       },
     },
   } satisfies Prisma.TailorMadeInquirySelect;
@@ -114,6 +127,9 @@ export class AdminTailorMadeService {
       page?: number;
       limit?: number;
       status?: TailorMadeInquiryStatus;
+      referenceCode?: string;
+      partnerCode?: string;
+      search?: string;
     },
     assigneeId?: string,
   ) {
@@ -124,6 +140,19 @@ export class AdminTailorMadeService {
     const where: Prisma.TailorMadeInquiryWhereInput = {};
     if (query.status) where.status = query.status;
     if (assigneeId) where.assigneeId = assigneeId;
+    if (query.partnerCode) where.partnerCode = query.partnerCode;
+    if (query.referenceCode) {
+      where.referenceCode = { contains: query.referenceCode, mode: 'insensitive' };
+    }
+    if (query.search) {
+      where.OR = [
+        { fullName: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { phone: { contains: query.search, mode: 'insensitive' } },
+        { referenceCode: { contains: query.search, mode: 'insensitive' } },
+        { partnerCode: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
 
     const [total, records] = await this.prisma.$transaction([
       this.prisma.tailorMadeInquiry.count({ where }),
@@ -139,14 +168,19 @@ export class AdminTailorMadeService {
     return paginate(records, total, page, limit);
   }
 
-  private async getInquiry(id: string) {
-    const record = await this.prisma.tailorMadeInquiry.findUnique({
-      where: { id },
+  private async getInquiry(idOrRef: string) {
+    const record = await this.prisma.tailorMadeInquiry.findFirst({
+      where: {
+        OR: [
+          { id: idOrRef },
+          { referenceCode: idOrRef },
+        ],
+      },
       select: this.inquirySelect,
     });
     if (!record) {
       throw new NotFoundException(
-        `Tailor-made inquiry with ID ${id} not found`,
+        `Tailor-made inquiry with identifier ${idOrRef} not found`,
       );
     }
     return record;

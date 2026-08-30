@@ -24,6 +24,7 @@ describe('PaymentsController (HTTP Contract)', () => {
           useValue: {
             initiatePayment: initiatePaymentMock,
             handleWebhook: jest.fn(),
+            reconcilePayLinkCallback: jest.fn(),
             refundPayment: jest.fn(),
             getPaymentStatus: jest.fn(),
             getReadiness: jest.fn().mockReturnValue({
@@ -85,7 +86,7 @@ describe('PaymentsController (HTTP Contract)', () => {
     it('should return sessionUrl, URL, provider transaction and internal payment IDs', async () => {
       initiatePaymentMock.mockResolvedValue({
         url: 'https://hosted.getpayin.example/test-session',
-        transactionId: 'cs_test_123',
+        providerInvoiceId: '40506',
         paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
 
@@ -100,7 +101,7 @@ describe('PaymentsController (HTTP Contract)', () => {
       expect(resBody.data).toMatchObject({
         sessionUrl: 'https://hosted.getpayin.example/test-session',
         url: 'https://hosted.getpayin.example/test-session',
-        transactionId: 'cs_test_123',
+        transactionId: '40506',
         paymentId: '1b75ef8c-5b72-4f8a-a9cb-03c7403282d5',
       });
     });

@@ -262,16 +262,59 @@ export class HybridRagEngineService {
       groundedTransportation = await this.liveCatalogRetriever.getLiveTransportation();
     }
 
-    // 5. Build Grounded Summary Text for AI System Prompt Injection
+    // 5. Query active AI Overrides for grounded entities
+    const now = new Date();
+    const entityIds = [
+      ...groundedTours.map((t) => t.id),
+      ...topChunks.map((c) => c.canonicalEntityId.split(':')[1]).filter(Boolean),
+    ];
+
+    const activeOverrides = await (this.prisma as any).knowledgeBaseItem.findMany({
+      where: {
+        sourceEntityId: { in: entityIds },
+        isManuallyOverridden: true,
+        isExcludedFromAi: false,
+        OR: [
+          { validityEnd: null },
+          { validityEnd: { gte: now } },
+        ],
+      },
+      select: {
+        sourceEntityId: true,
+        aiOverrideInstructions: true,
+        isRecommendationAllowed: true,
+      },
+    });
+
+    const overrideMap = new Map<string, { instructions?: string; isRecommendationAllowed: boolean }>();
+    activeOverrides.forEach((ov: any) => {
+      if (ov.sourceEntityId && !overrideMap.has(ov.sourceEntityId)) {
+        overrideMap.set(ov.sourceEntityId, {
+          instructions: ov.aiOverrideInstructions,
+          isRecommendationAllowed: ov.isRecommendationAllowed ?? true,
+        });
+      }
+    });
+
+    // 6. Build Grounded Summary Text for AI System Prompt Injection
     const summaryLines: string[] = [];
 
     if (groundedTours.length > 0) {
       summaryLines.push(`[GROUNDED_LIVE_TOURS]`);
       groundedTours.forEach((t) => {
+        const ov = overrideMap.get(t.id);
         const availStr = (t.upcomingAvailabilities && t.upcomingAvailabilities.length > 0)
           ? `Next Departures: ${t.upcomingAvailabilities.map((a) => `${a.startDate} (${a.availableSeats} seats left)`).join(', ')}`
           : 'Departures: Available on request daily';
-        summaryLines.push(`- Tour: "${t.title}" | Slug: ${t.slug} | Duration: ${t.durationDays} Days | Base Price: $${t.basePriceUsd} ${t.currency} | ${availStr} | URL: ${t.publicUrl}`);
+        
+        let tourLine = `- Tour: "${t.title}" | Slug: ${t.slug} | Duration: ${t.durationDays} Days | Base Price: $${t.basePriceUsd} ${t.currency} | ${availStr} | URL: ${t.publicUrl}`;
+        if (ov?.instructions) {
+          tourLine += `\n  [GUIDER SPECIAL INSTRUCTION FOR THIS TOUR]: ${ov.instructions}`;
+        }
+        if (ov && ov.isRecommendationAllowed === false) {
+          tourLine += `\n  [NOTE: Only answer if traveler specifically asks about this tour; DO NOT proactively recommend.]`;
+        }
+        summaryLines.push(tourLine);
       });
     }
 

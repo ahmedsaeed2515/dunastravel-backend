@@ -54,8 +54,8 @@ Adhere strictly to these principles:
 2. Ground all dynamic facts (prices, dates, availability) in live structured data.
 3. Respond in the exact language the traveler used (Arabic, English, Spanish, Portuguese, Italian).
 4. For custom multi-day plans, provide structured day-by-day itineraries with private transfers, 5-star accommodations, and private Egyptologist guides.`,
-    primaryModel: 'claude-3-5-sonnet-20241022',
-    fallbackModels: ['gemini-2.5-flash', 'gpt-4o-mini'],
+    primaryModel: 'gemini-2.0-flash',
+    fallbackModels: ['gemini-1.5-pro', 'gemini-1.5-flash'],
     temperature: 0.7,
     maxTokens: 1200,
     allowedSources: ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
@@ -88,8 +88,8 @@ Adhere strictly to these principles:
     systemPrompt: `You are the Booking & Reservations Specialist for Dunas Travel.
 Your responsibility is validating traveler arrival dates, guest counts (adults, children), and creating verified booking reservations.
 Never state a booking is completed unless backend invoice/booking reference has been issued.`,
-    primaryModel: 'gemini-2.5-flash',
-    fallbackModels: ['gpt-4o-mini', 'claude-3-5-haiku-20241022'],
+    primaryModel: 'gemini-2.0-flash',
+    fallbackModels: ['gemini-2.0-flash-lite', 'gemini-1.5-flash'],
     temperature: 0.3,
     maxTokens: 800,
     allowedSources: ['tours', 'policies', 'transportation'],
@@ -121,8 +121,8 @@ Never state a booking is completed unless backend invoice/booking reference has 
     personalityGuidelines: 'Focus on high-ticket custom offerings: private dahabiyas (e.g. 5-cabin private yacht charters), presidential palace hotel suites, private archaeological permits.',
     systemPrompt: `You are the VIP & Tailor-Made Sales Consultant for Dunas Travel.
 You curate bespoke journeys for high-net-worth individuals, families, and delegations seeking uncompromised privacy and elegance.`,
-    primaryModel: 'claude-3-7-sonnet-20250219',
-    fallbackModels: ['claude-3-5-sonnet-20241022', 'gpt-4o'],
+    primaryModel: 'gemini-1.5-pro',
+    fallbackModels: ['gemini-2.0-flash', 'gemini-1.5-flash'],
     temperature: 0.7,
     maxTokens: 1500,
     allowedSources: ['tours', 'destinations', 'hotels', 'transportation'],
@@ -154,8 +154,8 @@ You curate bespoke journeys for high-net-worth individuals, families, and delega
     personalityGuidelines: 'Answer policy questions transparently using official policy documents. If traveler requests urgent cancellation or refund dispute, smoothly initiate human staff escalation.',
     systemPrompt: `You are the Customer Care & Policy Advisor for Dunas Travel.
 You provide clear, accurate guidance on official Dunas Travel booking terms, GetPayIn hosted payment checkout, deposit schedules, and cancellation policies.`,
-    primaryModel: 'gpt-4o-mini',
-    fallbackModels: ['gemini-2.0-flash', 'claude-3-5-haiku-20241022'],
+    primaryModel: 'gemini-2.0-flash-lite',
+    fallbackModels: ['gemini-2.0-flash', 'gemini-1.5-flash'],
     temperature: 0.2,
     maxTokens: 800,
     allowedSources: ['policies', 'transportation'],
@@ -179,7 +179,7 @@ You provide clear, accurate guidance on official Dunas Travel booking terms, Get
       ar: 'أسرار الحضارة المصرية القديمة، فك شفرات الهيروغليفية، وتاريخ معابد الفراعنة والمتحف الكبير.',
       es: 'Misterios de los faraones, jeroglíficos y tumbas sagradas de Egipto.',
       pt: 'Histórias arqueológicas, hieróglifos e segredos do Antigo Egito.',
-      it: 'Storia archeologica, geroglifici e segreti dell\'Antico Egitto.',
+      it: 'Storia archeologica, geroglifici e segreti dell\'Antigo Egitto.',
     },
     role: 'Historian & Egyptologist',
     avatar: '📜',
@@ -187,8 +187,8 @@ You provide clear, accurate guidance on official Dunas Travel booking terms, Get
     personalityGuidelines: 'Bring 5,000 years of civilization alive. Share historical depth about Karnak, Valley of the Kings, Abu Simbel, and connecting historical wonders to Dunas Travel guided tours.',
     systemPrompt: `You are the Resident Egyptologist for Dunas Travel.
 You illuminate the monuments of Egypt with scholarly accuracy, storytelling mastery, and cultural reverence.`,
-    primaryModel: 'claude-3-5-sonnet-20241022',
-    fallbackModels: ['gemini-2.5-pro', 'gpt-4o'],
+    primaryModel: 'gemini-1.5-pro',
+    fallbackModels: ['gemini-2.0-flash', 'gemini-1.5-flash'],
     temperature: 0.7,
     maxTokens: 1200,
     allowedSources: ['destinations', 'tours'],
@@ -201,56 +201,61 @@ You illuminate the monuments of Egypt with scholarly accuracy, storytelling mast
 ];
 
 @Injectable()
-export class AgentRegistryService {
+export class AgentRegistryService implements OnModuleInit {
   private readonly logger = new Logger(AgentRegistryService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAllAgents(locale: string = 'en') {
-    await this.ensureDefaultAgentsSeeded();
-    const loc = (locale || 'en').toLowerCase().split('-')[0];
+  async onModuleInit() {
+    try {
+      await this.ensureDefaultAgentsSeeded();
+    } catch (err: any) {
+      this.logger.warn(`Failed to seed AI agent presets (non-fatal): ${err.message}`);
+    }
+  }
 
-    const agents = await (this.prisma as any).aiAgent.findMany({
+  async getAllAgents(locale = 'en') {
+    const rows = await (this.prisma as any).aiAgent.findMany({
       orderBy: { createdAt: 'asc' },
     });
 
-    return agents.map((agent: any) => {
-      const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
-      const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
-
-      return {
-        ...agent,
-        displayName: nameMap[loc] || nameMap.en || agent.slug,
-        displayDescription: descMap[loc] || descMap.en || '',
-      };
-    });
+    return rows.map((agent: any) => ({
+      id: agent.id,
+      slug: agent.slug,
+      name: agent.nameJsonb?.[locale] || agent.nameJsonb?.en || agent.slug,
+      nameJsonb: agent.nameJsonb,
+      description: agent.descriptionJsonb?.[locale] || agent.descriptionJsonb?.en || '',
+      descriptionJsonb: agent.descriptionJsonb,
+      role: agent.role,
+      avatar: agent.avatar,
+      tone: agent.tone,
+      personalityGuidelines: agent.personalityGuidelines,
+      systemPrompt: agent.systemPrompt,
+      primaryModel: agent.primaryModel,
+      fallbackModels: agent.fallbackModels,
+      temperature: agent.temperature,
+      maxTokens: agent.maxTokens,
+      allowedSources: agent.allowedSources,
+      allowedTools: agent.allowedTools,
+      supportedLanguages: agent.supportedLanguages,
+      defaultLanguage: agent.defaultLanguage,
+      isActive: agent.isActive,
+      isPublic: agent.isPublic,
+      totalConversations: agent.totalConversations || 0,
+      averageRating: agent.averageRating || 5.0,
+      createdAt: agent.createdAt?.toISOString(),
+      updatedAt: agent.updatedAt?.toISOString(),
+    }));
   }
 
-  async getAgentBySlug(slug: string, locale: string = 'en') {
-    await this.ensureDefaultAgentsSeeded();
-    const loc = (locale || 'en').toLowerCase().split('-')[0];
-
+  async getAgentBySlug(slug: string) {
     const agent = await (this.prisma as any).aiAgent.findUnique({
       where: { slug },
     });
-
     if (!agent) {
-      // Fallback to default guider agent
-      const fallback = await (this.prisma as any).aiAgent.findFirst({
-        where: { slug: 'guider' },
-      });
-      if (fallback) return fallback;
       throw new NotFoundException(`AI Agent with slug '${slug}' not found.`);
     }
-
-    const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
-    const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
-
-    return {
-      ...agent,
-      displayName: nameMap[loc] || nameMap.en || agent.slug,
-      displayDescription: descMap[loc] || descMap.en || '',
-    };
+    return agent;
   }
 
   async createAgent(dto: CreateAgentDto) {
@@ -264,8 +269,8 @@ export class AgentRegistryService {
         systemPrompt: dto.systemPrompt,
         personalityGuidelines: dto.personalityGuidelines,
         tone: dto.tone || 'Refined & Professional',
-        primaryModel: dto.primaryModel || 'claude-3-5-sonnet-20241022',
-        fallbackModels: dto.fallbackModels || ['gemini-2.0-flash', 'gpt-4o-mini'],
+        primaryModel: dto.primaryModel || 'gemini-2.0-flash',
+        fallbackModels: dto.fallbackModels || ['gemini-1.5-pro', 'gemini-1.5-flash'],
         temperature: dto.temperature ?? 0.7,
         maxTokens: dto.maxTokens ?? 1024,
         allowedSources: dto.allowedSources || ['tours', 'destinations', 'policies'],
