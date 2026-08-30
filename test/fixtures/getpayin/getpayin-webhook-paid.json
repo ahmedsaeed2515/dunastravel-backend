@@ -1,0 +1,23 @@
+{
+  "eventId": "evt_gpi_paid_001",
+  "event": "invoice.paid",
+  "createdAt": "2026-08-30T11:05:00.000Z",
+  "data": {
+    "id": "gpi_inv_987654321",
+    "transactionId": "gpi_tx_123456789",
+    "merchantReference": "BKG-A4X7Z2",
+    "status": "PAID",
+    "amount": "3700.00",
+    "currency": "USD",
+    "paidAt": "2026-08-30T11:04:55.000Z",
+    "paymentMethod": "VISA",
+    "customer": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "metadata": {
+      "bookingId": "bkg-123",
+      "invoiceNumber": "INV-2026-0001"
+    }
+  }
+}

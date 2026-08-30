@@ -1,0 +1,927 @@
+[
+  {
+    "id": "6d62b9cd-1d4f-4ab5-8de1-bdef4598ada6",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-UFLOZ5",
+    "message": "Booking #BKG-UFLOZ5 placed by Dr. Alejandro Martinez (Passion of Turkey)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-UFLOZ5",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2550",
+      "referenceCode": "BKG-UFLOZ5"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:25:23.859Z",
+    "updatedAt": "2026-08-23T11:25:23.859Z"
+  },
+  {
+    "id": "ef414997-e417-47de-9645-032bfaae0e4f",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-UFLOZ5",
+    "message": "Booking #BKG-UFLOZ5 placed by Dr. Alejandro Martinez (Passion of Turkey)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-UFLOZ5",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2550",
+      "referenceCode": "BKG-UFLOZ5"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:25:23.859Z",
+    "updatedAt": "2026-08-23T11:25:23.859Z"
+  },
+  {
+    "id": "ccc0234c-3093-48a4-8f0d-da1f314fc663",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-UFLOZ5",
+    "message": "Booking #BKG-UFLOZ5 placed by Dr. Alejandro Martinez (Passion of Turkey)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-UFLOZ5",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2550",
+      "referenceCode": "BKG-UFLOZ5"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:25:23.859Z",
+    "updatedAt": "2026-08-23T11:25:23.859Z"
+  },
+  {
+    "id": "e03e11e0-34be-446c-97b8-9e09eb13be53",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-UFLOZ5",
+    "message": "Booking #BKG-UFLOZ5 placed by Dr. Alejandro Martinez (Passion of Turkey)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-UFLOZ5",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2550",
+      "referenceCode": "BKG-UFLOZ5"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:25:23.859Z",
+    "updatedAt": "2026-08-23T11:25:23.859Z"
+  },
+  {
+    "id": "ac9cbd2f-5735-4fe6-aadd-2fdf096b7f98",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-UFLOZ5",
+    "message": "Booking #BKG-UFLOZ5 placed by Dr. Alejandro Martinez (Passion of Turkey)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-UFLOZ5",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2550",
+      "referenceCode": "BKG-UFLOZ5"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:25:23.859Z",
+    "updatedAt": "2026-08-23T11:25:23.859Z"
+  },
+  {
+    "id": "8165a551-359f-4876-933f-15f635485a31",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-ADAHRL",
+    "message": "Booking #BKG-ADAHRL placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-ADAHRL",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-ADAHRL"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:27:54.354Z",
+    "updatedAt": "2026-08-23T11:27:54.354Z"
+  },
+  {
+    "id": "f066e67d-b699-44a8-9439-7711faf4f095",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-ADAHRL",
+    "message": "Booking #BKG-ADAHRL placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-ADAHRL",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-ADAHRL"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:27:54.354Z",
+    "updatedAt": "2026-08-23T11:27:54.354Z"
+  },
+  {
+    "id": "4c197aaa-e583-4949-acd3-1122c929bbf8",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-ADAHRL",
+    "message": "Booking #BKG-ADAHRL placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-ADAHRL",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-ADAHRL"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:27:54.354Z",
+    "updatedAt": "2026-08-23T11:27:54.354Z"
+  },
+  {
+    "id": "664dfc8f-3f4d-4864-924c-e6229abfb0ab",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-ADAHRL",
+    "message": "Booking #BKG-ADAHRL placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-ADAHRL",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-ADAHRL"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:27:54.354Z",
+    "updatedAt": "2026-08-23T11:27:54.354Z"
+  },
+  {
+    "id": "71739552-7f46-4112-a772-dc5ac1e7e30e",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-ADAHRL",
+    "message": "Booking #BKG-ADAHRL placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-ADAHRL",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-ADAHRL"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:27:54.354Z",
+    "updatedAt": "2026-08-23T11:27:54.354Z"
+  },
+  {
+    "id": "011f85fc-188e-44e9-9479-5f5cd959e367",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-VWM8FD",
+    "message": "Booking #BKG-VWM8FD placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-VWM8FD",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-VWM8FD"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:30.113Z",
+    "updatedAt": "2026-08-23T11:30:30.113Z"
+  },
+  {
+    "id": "f4dda7a2-4dfe-4d3d-8cea-c39be3a4f349",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-VWM8FD",
+    "message": "Booking #BKG-VWM8FD placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-VWM8FD",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-VWM8FD"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:30.113Z",
+    "updatedAt": "2026-08-23T11:30:30.113Z"
+  },
+  {
+    "id": "e543ac7e-4047-4b94-9bf6-2540738d9f5a",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-VWM8FD",
+    "message": "Booking #BKG-VWM8FD placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-VWM8FD",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-VWM8FD"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:30.113Z",
+    "updatedAt": "2026-08-23T11:30:30.113Z"
+  },
+  {
+    "id": "1a564d44-6a72-44f6-a048-fa743e5bd3c2",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-VWM8FD",
+    "message": "Booking #BKG-VWM8FD placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-VWM8FD",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-VWM8FD"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:30.113Z",
+    "updatedAt": "2026-08-23T11:30:30.113Z"
+  },
+  {
+    "id": "69f388fd-2f65-4989-b847-a064e94adaef",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-9OKDWE",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-9OKDWE",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-9OKDWE"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:42.166Z",
+    "updatedAt": "2026-08-23T11:30:42.166Z"
+  },
+  {
+    "id": "25804a40-4c51-4c17-8ef3-8f5c37dd7b5c",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-9OKDWE",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-9OKDWE",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-9OKDWE"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:42.166Z",
+    "updatedAt": "2026-08-23T11:30:42.166Z"
+  },
+  {
+    "id": "29e3d6b2-e943-4242-a2ee-9930fd457ce6",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-9OKDWE",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-9OKDWE",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-9OKDWE"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:42.166Z",
+    "updatedAt": "2026-08-23T11:30:42.166Z"
+  },
+  {
+    "id": "1d6b0d42-fc8b-4409-a778-26bd0b5e4e74",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-9OKDWE",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-9OKDWE",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-9OKDWE"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:42.166Z",
+    "updatedAt": "2026-08-23T11:30:42.166Z"
+  },
+  {
+    "id": "0a40ac94-4158-4897-9496-e006d06975ab",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-9OKDWE",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-9OKDWE",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-9OKDWE"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:30:42.166Z",
+    "updatedAt": "2026-08-23T11:30:42.166Z"
+  },
+  {
+    "id": "b779bfb2-606a-4f3b-a69a-866a6085cd8b",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-P1IBPR",
+    "message": "Booking #BKG-P1IBPR placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-P1IBPR",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-P1IBPR"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:32.831Z",
+    "updatedAt": "2026-08-23T11:31:32.831Z"
+  },
+  {
+    "id": "408429aa-aa99-434d-9b91-81e937be11c4",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-P1IBPR",
+    "message": "Booking #BKG-P1IBPR placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-P1IBPR",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-P1IBPR"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:32.831Z",
+    "updatedAt": "2026-08-23T11:31:32.831Z"
+  },
+  {
+    "id": "6ba63ced-e445-480a-a402-6962fd8e49f3",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-P1IBPR",
+    "message": "Booking #BKG-P1IBPR placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-P1IBPR",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-P1IBPR"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:32.831Z",
+    "updatedAt": "2026-08-23T11:31:32.831Z"
+  },
+  {
+    "id": "82b68021-0d95-4ea7-ba74-ff7484b64ebb",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-P1IBPR",
+    "message": "Booking #BKG-P1IBPR placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-P1IBPR",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-P1IBPR"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:32.831Z",
+    "updatedAt": "2026-08-23T11:31:32.831Z"
+  },
+  {
+    "id": "8c163529-98ea-456e-b487-9aa005777b67",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-P1IBPR",
+    "message": "Booking #BKG-P1IBPR placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-P1IBPR",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-P1IBPR"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:32.831Z",
+    "updatedAt": "2026-08-23T11:31:32.831Z"
+  },
+  {
+    "id": "09714f27-073d-4839-9a3a-a3d83991d484",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-HF4LXP",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-HF4LXP",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-HF4LXP"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:44.498Z",
+    "updatedAt": "2026-08-23T11:31:44.498Z"
+  },
+  {
+    "id": "0da4e1be-3d59-45e2-b2f1-96f1d2b79bcd",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-HF4LXP",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-HF4LXP",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-HF4LXP"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:44.498Z",
+    "updatedAt": "2026-08-23T11:31:44.498Z"
+  },
+  {
+    "id": "dd38216e-9f59-44b5-b45f-68230b440e6b",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-HF4LXP",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-HF4LXP",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-HF4LXP"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:44.498Z",
+    "updatedAt": "2026-08-23T11:31:44.498Z"
+  },
+  {
+    "id": "933eca8b-7b7a-48d5-a78b-6663b18f52de",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-HF4LXP",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-HF4LXP",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-HF4LXP"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:44.498Z",
+    "updatedAt": "2026-08-23T11:31:44.498Z"
+  },
+  {
+    "id": "f0237572-4753-4828-bd07-47bdd8e46fef",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-HF4LXP",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-HF4LXP",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-HF4LXP"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:31:44.498Z",
+    "updatedAt": "2026-08-23T11:31:44.498Z"
+  },
+  {
+    "id": "845b0f28-c470-4b38-8613-66c2fe9a8a23",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-8N1AAK",
+    "message": "Booking #BKG-8N1AAK placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-8N1AAK",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-8N1AAK"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:08.179Z",
+    "updatedAt": "2026-08-23T11:32:08.179Z"
+  },
+  {
+    "id": "3c95a42c-f6fa-4d53-aa55-cbbfba04dd4d",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-8N1AAK",
+    "message": "Booking #BKG-8N1AAK placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-8N1AAK",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-8N1AAK"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:08.179Z",
+    "updatedAt": "2026-08-23T11:32:08.179Z"
+  },
+  {
+    "id": "b377237d-1fbf-4556-b277-6c95a4f36e24",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-8N1AAK",
+    "message": "Booking #BKG-8N1AAK placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-8N1AAK",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-8N1AAK"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:08.179Z",
+    "updatedAt": "2026-08-23T11:32:08.179Z"
+  },
+  {
+    "id": "c2464e32-d389-4042-b88e-3c73fd65b2bc",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-8N1AAK",
+    "message": "Booking #BKG-8N1AAK placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-8N1AAK",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-8N1AAK"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:08.179Z",
+    "updatedAt": "2026-08-23T11:32:08.179Z"
+  },
+  {
+    "id": "af7c1db6-0038-4f24-8e05-6bca2e01d814",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-8N1AAK",
+    "message": "Booking #BKG-8N1AAK placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-8N1AAK",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-8N1AAK"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:08.179Z",
+    "updatedAt": "2026-08-23T11:32:08.179Z"
+  },
+  {
+    "id": "e66b0d43-7581-4cfb-9262-94eca4856aba",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-5T2F1X",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-5T2F1X",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-5T2F1X"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:20.889Z",
+    "updatedAt": "2026-08-23T11:32:20.889Z"
+  },
+  {
+    "id": "4217815f-8ba9-4510-9d17-4fb819850cb6",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-5T2F1X",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-5T2F1X",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-5T2F1X"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:20.889Z",
+    "updatedAt": "2026-08-23T11:32:20.889Z"
+  },
+  {
+    "id": "f5408f0b-2012-4213-b749-5bb45f2d6568",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-5T2F1X",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-5T2F1X",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-5T2F1X"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:20.889Z",
+    "updatedAt": "2026-08-23T11:32:20.889Z"
+  },
+  {
+    "id": "850d4938-e5b8-4864-85d6-1e96edefb909",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-5T2F1X",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-5T2F1X",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-5T2F1X"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-23T11:32:20.889Z",
+    "updatedAt": "2026-08-23T11:32:20.889Z"
+  },
+  {
+    "id": "b40c38d8-68a5-42a4-b49f-aa99b16d5e31",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-VWM8FD",
+    "message": "Booking #BKG-VWM8FD placed by Dr. Alejandro Martinez (Wonders of Egypt)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-VWM8FD",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "2018.75",
+      "referenceCode": "BKG-VWM8FD"
+    },
+    "isRead": true,
+    "readAt": "2026-08-23T18:35:48.855Z",
+    "createdAt": "2026-08-23T11:30:30.113Z",
+    "updatedAt": "2026-08-23T18:35:48.856Z"
+  },
+  {
+    "id": "8cd9ab2e-1198-4ae4-9794-83bde3c2edd7",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "INQUIRY",
+    "priority": "HIGH",
+    "title": "New Inquiry #INQ-5T2F1X",
+    "message": "Tailor-made travel inquiry from Sir Richard Branson (richard@virginluxury.com)",
+    "targetApp": "ADMIN",
+    "entityType": "INQUIRY",
+    "entityId": "INQ-5T2F1X",
+    "deepLink": "/admin/crm/inquiries",
+    "metadata": {
+      "referenceCode": "INQ-5T2F1X"
+    },
+    "isRead": true,
+    "readAt": "2026-08-23T19:54:27.969Z",
+    "createdAt": "2026-08-23T11:32:20.889Z",
+    "updatedAt": "2026-08-23T19:54:27.971Z"
+  },
+  {
+    "id": "482b4010-1fb9-49e1-b4e7-1f56d2a553d9",
+    "userId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "d1348f86-ed15-4cef-846a-fa4f554f7cbe",
+    "userId": "dfddbc33-7a3b-4dc3-8609-1e33db0077d2",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "3587c28e-916d-4e28-855b-883b93baa360",
+    "userId": "43b67906-c35e-4715-b191-701868a19c76",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "2a8e4af8-32f5-4cb0-befa-efc5e8c56813",
+    "userId": "4024f268-9818-4a5d-9c59-bea40e6bf8fa",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "bc11e1e6-31d2-4d53-9067-e0ea397b3f4a",
+    "userId": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "9146717c-8c64-48c2-80ea-a04eef25be62",
+    "userId": "10b89a79-2bec-41e0-b10e-ad39259bce2c",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  },
+  {
+    "id": "877d7108-1fbe-4e77-88b6-a67c8e0c4d99",
+    "userId": "7e22b719-84ea-4fcf-95f8-0b5261c22f11",
+    "category": "BOOKING",
+    "priority": "HIGH",
+    "title": "New Booking #BKG-X1TNP3",
+    "message": "Booking #BKG-X1TNP3 placed by Dody Moubark (روائع دبي وتركيا)",
+    "targetApp": "ADMIN",
+    "entityType": "BOOKING",
+    "entityId": "BKG-X1TNP3",
+    "deepLink": "/admin/bookings",
+    "metadata": {
+      "totalAmount": "1750",
+      "referenceCode": "BKG-X1TNP3"
+    },
+    "isRead": false,
+    "readAt": null,
+    "createdAt": "2026-08-30T00:49:00.815Z",
+    "updatedAt": "2026-08-30T00:49:00.815Z"
+  }
+]

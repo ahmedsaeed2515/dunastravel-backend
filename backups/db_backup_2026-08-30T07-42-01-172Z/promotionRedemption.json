@@ -1,0 +1,52 @@
+[
+  {
+    "id": "8282262f-7ced-4055-b822-3651df2ea7d8",
+    "promotionId": "b7426a0b-dadc-4626-b420-955e1f7274ed",
+    "bookingId": "a88106a4-9630-4ce5-b368-2e3368fc2c57",
+    "userId": null,
+    "discount": "450",
+    "status": "ACTIVE",
+    "reversedAt": null,
+    "createdAt": "2026-08-23T11:25:23.134Z"
+  },
+  {
+    "id": "714f6567-40b2-4662-9015-0612025c29d6",
+    "promotionId": "ee4c2042-1ff4-44dc-9e80-0bcd1bf0ba4e",
+    "bookingId": "ce201354-e203-43d5-815b-65fa6b5eb656",
+    "userId": null,
+    "discount": "356.25",
+    "status": "ACTIVE",
+    "reversedAt": null,
+    "createdAt": "2026-08-23T11:27:53.665Z"
+  },
+  {
+    "id": "d25a9880-df5d-4afa-b7e9-2958e221a1c6",
+    "promotionId": "7fec1ac6-4652-4d25-940e-d2f4a4600d2c",
+    "bookingId": "58500fa9-f49c-4791-b737-40478611c30b",
+    "userId": null,
+    "discount": "356.25",
+    "status": "REVERSED",
+    "reversedAt": "2026-08-23T11:30:36.801Z",
+    "createdAt": "2026-08-23T11:30:29.426Z"
+  },
+  {
+    "id": "9ed6f01a-fe44-479b-a3f5-ac751063d4df",
+    "promotionId": "a5e26eee-bd52-4885-9251-3b8c9169279c",
+    "bookingId": "1d022b6e-be5c-41d0-8829-74d82cb6c497",
+    "userId": null,
+    "discount": "356.25",
+    "status": "REVERSED",
+    "reversedAt": "2026-08-23T11:31:39.538Z",
+    "createdAt": "2026-08-23T11:31:32.139Z"
+  },
+  {
+    "id": "1d694d37-2d48-4e9a-bf71-cbe2ea6bdf08",
+    "promotionId": "778171cf-73e4-4417-9da2-37450ec84f3d",
+    "bookingId": "5066156a-95bd-4fd6-bad5-65da14656271",
+    "userId": null,
+    "discount": "356.25",
+    "status": "REVERSED",
+    "reversedAt": "2026-08-23T11:32:14.836Z",
+    "createdAt": "2026-08-23T11:32:07.503Z"
+  }
+]

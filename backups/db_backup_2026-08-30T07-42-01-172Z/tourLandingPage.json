@@ -1,0 +1,287 @@
+[
+  {
+    "id": "82fbe3ce-b8a4-425c-8ef9-a1485079f447",
+    "slug": "greece",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "اليونان",
+      "en": "Greece",
+      "es": "Grecia",
+      "it": "Grecia",
+      "pt": "Grécia"
+    },
+    "subtitleJsonb": {
+      "ar": "مهد الحضارة",
+      "en": "Cradle of Civilization"
+    },
+    "descriptionJsonb": {
+      "ar": "أثينا وسانتوريني",
+      "en": "Athens and Santorini"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814521/dunas-travel/catalog/a2b17bd28e98d5f59ae3b5cbe99856bde1275849d21206174973ce980ed568ec.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 5,
+    "createdAt": "2026-08-23T11:15:03.500Z",
+    "updatedAt": "2026-08-27T07:18:41.155Z",
+    "deletedAt": null
+  },
+  {
+    "id": "70c6b3a8-430c-4aa8-8514-bf160d9e4d86",
+    "slug": "dubai",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "دبي",
+      "en": "Dubai",
+      "es": "Dubái",
+      "it": "Dubai",
+      "pt": "Dubai"
+    },
+    "subtitleJsonb": {
+      "ar": "مدينة المستقبل",
+      "en": "City of the Future"
+    },
+    "descriptionJsonb": {
+      "ar": "فخامة المستقبل",
+      "en": "Ultra-modern luxury"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814528/dunas-travel/catalog/116c2584c5993096452bfe630d8ba3fbc1541bdacd6a2403657d293239550130.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 6,
+    "createdAt": "2026-08-23T11:15:03.918Z",
+    "updatedAt": "2026-08-27T07:18:41.289Z",
+    "deletedAt": null
+  },
+  {
+    "id": "920417af-df39-4614-823b-435693c9201e",
+    "slug": "multi-country",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "رحلات متعددة الدول",
+      "en": "Multi-Country Tours"
+    },
+    "subtitleJsonb": {
+      "ar": "رحلات شاملة",
+      "en": "Grand Expeditions"
+    },
+    "descriptionJsonb": {
+      "ar": "رحلات تجمع بين مصر والأردن وتركيا",
+      "en": "Egypt, Jordan, Turkey Combo"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814547/dunas-travel/catalog/36d51ab3fddd428a0e780616c5024ebda71d0c525b3893c31a073599ba9d22ff.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 7,
+    "createdAt": "2026-08-23T11:15:04.499Z",
+    "updatedAt": "2026-08-27T07:18:41.422Z",
+    "deletedAt": null
+  },
+  {
+    "id": "7d19aff6-053c-4c16-9253-41d3d7452102",
+    "slug": "egypt",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "مصر",
+      "en": "Egypt",
+      "es": "Egipto",
+      "it": "Egitto",
+      "pt": "Egito"
+    },
+    "subtitleJsonb": {
+      "ar": "أرض الفراعنة",
+      "en": "Land of the Pharaohs"
+    },
+    "descriptionJsonb": {
+      "ar": "أهرامات الجيزة والبحر الأحمر",
+      "en": "Timeless Pyramids and Red Sea"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814537/dunas-travel/catalog/3adfd6a58cc559aaa7280b3507a9e87024ebe213c100395cae819d6a13211657.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-23T11:14:59.266Z",
+    "updatedAt": "2026-08-27T07:18:40.594Z",
+    "deletedAt": null
+  },
+  {
+    "id": "cf28421c-96ff-4e42-9993-d8ba5b8e7645",
+    "slug": "turkey",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "تركيا",
+      "en": "Turkey",
+      "es": "Turquía",
+      "it": "Turchia",
+      "pt": "Turquia"
+    },
+    "subtitleJsonb": {
+      "ar": "حيث يلتقي الشرق بالغرب",
+      "en": "Where East meets West"
+    },
+    "descriptionJsonb": {
+      "ar": "من إسطنبول إلى كابادوكيا وساحل بحر إيجة",
+      "en": "From Istanbul to Cappadocia and the Aegean coast"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814504/dunas-travel/catalog/e9d135ddba981fd8c8736c27f2c5758194491641af57ec18c983ab074cf34de0.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-23T11:15:01.674Z",
+    "updatedAt": "2026-08-27T07:18:40.751Z",
+    "deletedAt": null
+  },
+  {
+    "id": "f89deea5-1367-430e-9b81-613218570905",
+    "slug": "morocco",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "المغرب",
+      "en": "Morocco",
+      "es": "Marruecos",
+      "it": "Marocco",
+      "pt": "Marrocos"
+    },
+    "subtitleJsonb": {
+      "ar": "أرض الألوان والتوابل",
+      "en": "Land of Colors & Spices"
+    },
+    "descriptionJsonb": {
+      "ar": "مراكش والصحراء",
+      "en": "Marrakech and Sahara"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814513/dunas-travel/catalog/6fffe8c390e4acec73e2241a73631a6666684046d8e4bac3382407cee689f4d3.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 4,
+    "createdAt": "2026-08-23T11:15:03.079Z",
+    "updatedAt": "2026-08-27T07:18:41.021Z",
+    "deletedAt": null
+  },
+  {
+    "id": "8022369f-754c-4676-b73b-2b5612a9a26b",
+    "slug": "religious",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "رحلات دينية",
+      "en": "Religious Tours"
+    },
+    "subtitleJsonb": {
+      "ar": "مسارات مقدسة",
+      "en": "Sacred Footsteps"
+    },
+    "descriptionJsonb": {
+      "ar": "رحلات إيمانية",
+      "en": "Holy Land Pilgrimages"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787814553/dunas-travel/catalog/de8501a3acfffe17a3b15533da58d079c4a1f86ed60d98f958e1cecbefa5de81.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 8,
+    "createdAt": "2026-08-23T11:15:06.041Z",
+    "updatedAt": "2026-08-27T07:18:41.556Z",
+    "deletedAt": null
+  },
+  {
+    "id": "8111ec2a-70f5-4a9b-874d-4181223e4a00",
+    "slug": "jordan",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "الأردن",
+      "en": "Jordan",
+      "es": "Jordania",
+      "it": "Giordania",
+      "pt": "Jordânia"
+    },
+    "subtitleJsonb": {
+      "ar": "مملكة العجائب",
+      "en": "Kingdom of Wonder"
+    },
+    "descriptionJsonb": {
+      "ar": "البتراء والبحر الميت",
+      "en": "Petra and Dead Sea"
+    },
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787822635/dunas-travel/catalog/5010b536947d7181c9794d00665003699b1da4b268eaafa9b613ebdb513ec447.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 3,
+    "createdAt": "2026-08-23T11:15:02.514Z",
+    "updatedAt": "2026-08-27T09:23:55.461Z",
+    "deletedAt": null
+  },
+  {
+    "id": "9a5c8961-24b1-4c18-91e0-0e1c080a12cb",
+    "slug": "tunisia",
+    "type": "DESTINATION",
+    "titleJsonb": {
+      "ar": "تونس",
+      "en": "Tunisia",
+      "es": "Túnez",
+      "it": "Tunisia",
+      "pt": "Tunísia"
+    },
+    "subtitleJsonb": null,
+    "descriptionJsonb": null,
+    "briefJsonb": null,
+    "heroImageUrl": "https://res.cloudinary.com/u7xf91gp/image/upload/v1787822639/dunas-travel/catalog/c9ce3c3d68b91e179af0a068a032d59d560ef09f0568631b948474c7acde4921.webp",
+    "heroVideoUrl": null,
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "seoKeywordsJsonb": null,
+    "sectionsJsonb": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 0,
+    "createdAt": "2026-08-26T17:38:03.738Z",
+    "updatedAt": "2026-08-27T09:23:59.101Z",
+    "deletedAt": null
+  }
+]

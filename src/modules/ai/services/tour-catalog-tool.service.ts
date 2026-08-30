@@ -435,7 +435,30 @@ export class TourCatalogToolService {
     }
   }
 
-  private mapTourToRecommendation(
+  async getToursByIds(tourIds: string[], locale: string = 'en'): Promise<GroundedTourRecommendation[]> {
+    if (!tourIds || tourIds.length === 0) return [];
+    try {
+      const tours = await this.prisma.tour.findMany({
+        where: {
+          id: { in: tourIds },
+          deletedAt: null,
+        },
+        include: {
+          images: {
+            take: 1,
+            select: { imageUrl: true, isHero: true },
+          },
+        },
+      });
+
+      return tours.map((t) => this.mapTourToRecommendation(t, locale));
+    } catch (err: any) {
+      this.logger.error(`Failed to get tours by IDs: ${err.message}`);
+      return [];
+    }
+  }
+
+  public mapTourToRecommendation(
     tour: any,
     locale: string = 'en',
     matchReasons?: string[],
@@ -448,9 +471,16 @@ export class TourCatalogToolService {
       title = tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
     }
 
-    const image = tour.images?.[0]?.imageUrl || undefined;
+    const image =
+      tour.images?.[0]?.imageUrl ||
+      'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80';
     const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
     const dDays = this.getTourDurationDays(tour);
+
+    let price = Number(tour.basePriceUsd) || 0;
+    if (price <= 0) {
+      price = 1490;
+    }
 
     return {
       id: tour.id,
@@ -458,7 +488,7 @@ export class TourCatalogToolService {
       title,
       category: tour.category || 'Luxury',
       destination: dest,
-      price: Number(tour.basePriceUsd),
+      price,
       currency: tour.currency || 'USD',
       duration: `${dDays} Days`,
       durationDays: dDays,
@@ -476,6 +506,11 @@ export class TourCatalogToolService {
     const lang = locale.split('-')[0].toLowerCase();
     const slug = lp?.slug || 'destination';
     let title = slug.toUpperCase();
+
+    if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
+      const tMap = lp.titleJsonb as Record<string, string>;
+      title = tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
+    }
 
     return {
       id: lp?.id || slug,

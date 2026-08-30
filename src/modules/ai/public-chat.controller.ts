@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
-import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto } from './dto/public-chat.dto';
+import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto, BookTourChatDto } from './dto/public-chat.dto';
 import { Response } from 'express';
 import {
   IsInt,
@@ -55,6 +55,12 @@ export class RecordFeedbackRequestDto {
 export class PublicChatController {
   constructor(private readonly chatOrchestrator: ChatOrchestratorService) {}
 
+  @Get('personas')
+  @ApiOperation({ summary: 'Get available AI Concierge personas & conversational styles' })
+  async getPersonas(@Query('locale') locale?: string) {
+    return this.chatOrchestrator.getActivePersonas(locale);
+  }
+
   @Get('config')
   @ApiOperation({ summary: 'Get public AI chatbot welcome configuration & suggestions' })
   async getChatConfig(@Query('locale') locale?: string) {
@@ -63,11 +69,15 @@ export class PublicChatController {
     const welcome = (config.welcomeMessages as any)?.[lang] || (config.welcomeMessages as any)?.en || config.fallbackMessage;
     const suggestions = (config.suggestedQuestions as any)?.[lang] || (config.suggestedQuestions as any)?.en || [];
 
+    const tourSettings = (config.tourSettings as any) || {};
+
     return {
       welcomeMessage: welcome,
       suggestedQuestions: suggestions,
       isPublicEnabled: config.isPublicEnabled,
+      isInChatBookingEnabled: tourSettings.isInChatBookingEnabled !== false,
       salesPersonality: config.salesPersonality,
+      personas: this.chatOrchestrator.getActivePersonas(locale),
     };
   }
 
@@ -82,6 +92,13 @@ export class PublicChatController {
   @ApiOkResponse({ description: 'Structured AI assistant reply with grounded tour & destination recommendations' })
   async sendMessage(@Body() dto: SendChatMessageDto) {
     return this.chatOrchestrator.processVisitorMessage(dto);
+  }
+
+  @Post('book')
+  @ApiOperation({ summary: 'Create an instant luxury tour booking directly from the chatbot' })
+  @ApiOkResponse({ description: 'Confirmed booking reservation reference with invoice' })
+  async bookTour(@Body() dto: BookTourChatDto) {
+    return this.chatOrchestrator.bookTourFromChat(dto);
   }
 
   @Post('stream')

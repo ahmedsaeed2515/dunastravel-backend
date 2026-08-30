@@ -1,0 +1,15 @@
+[
+  {
+    "id": "0e244148-ca7c-4f52-84f2-68e60abdeba5",
+    "versionNumber": 1,
+    "name": "test",
+    "systemPrompt": "test",
+    "status": "PUBLISHED",
+    "changeNote": "test",
+    "createdById": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "publishedById": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "publishedAt": "2026-08-29T21:34:32.489Z",
+    "createdAt": "2026-08-27T22:18:05.810Z",
+    "updatedAt": "2026-08-29T21:34:32.492Z"
+  }
+]

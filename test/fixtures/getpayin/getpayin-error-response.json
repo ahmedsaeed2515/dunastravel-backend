@@ -1,0 +1,6 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Invalid merchant reference or currency not supported for this account",
+  "code": "INVALID_REQUEST"
+}

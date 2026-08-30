@@ -1,0 +1,18 @@
+{
+  "amount": "3700.00",
+  "currency": "USD",
+  "merchantReference": "BKG-A4X7Z2",
+  "description": "Luxurious Nile Cruise & Pyramids Discovery",
+  "customer": {
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "phone": "+201000000000"
+  },
+  "callbackUrl": "https://api.dunastravel.com/api/payments/webhook/getpayin",
+  "returnUrl": "https://dunastravel.com/payment/return?payment_id=f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "cancelUrl": "https://dunastravel.com/payment/cancel?payment_id=f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "metadata": {
+    "bookingId": "bkg-123",
+    "invoiceNumber": "INV-2026-0001"
+  }
+}

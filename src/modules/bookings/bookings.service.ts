@@ -7,6 +7,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  UnauthorizedException,
   Inject,
 } from '@nestjs/common';
 
@@ -179,6 +180,12 @@ export class BookingsService {
     idempotencyKey?: string,
   ): Promise<BookingCreatedResponse> {
     this.logger.log(`Initiating booking creation | tourId=${dto.tourId}`);
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Authentication is required to create a booking',
+      );
+    }
 
     if (!idempotencyKey) {
       throw new BadRequestException('Idempotency key is required');
@@ -485,18 +492,12 @@ export class BookingsService {
           // 6. Create booking, passengers, billing, redemption, invoice
           const referenceCode = await this.generateUniqueReferenceCode(tx);
           const bookingId = crypto.randomUUID();
-          const guestToken = !userId
-            ? this.generateGuestToken(bookingId, referenceCode)
-            : null;
-          const guestTokenHash = guestToken
-            ? crypto.createHash('sha256').update(guestToken).digest('hex')
-            : null;
 
           const booking = await tx.booking.create({
             data: {
               id: bookingId,
               referenceCode,
-              userId: userId ?? null,
+              userId: userId,
               tourId: tour.id,
               availabilityId: availIdToStore,
               arrivalDate: arrivalDateObj,
@@ -507,7 +508,7 @@ export class BookingsService {
               totalAmountUsd: finalTotalAmountUsd,
               idempotencyKey: idempotencyKey || null,
               requestHash,
-              guestTokenHash,
+              guestTokenHash: null,
             },
           });
 
@@ -661,7 +662,7 @@ export class BookingsService {
             invoiceNumber,
             passengers,
             tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
-            guestToken,
+            guestToken: null,
           };
         });
 

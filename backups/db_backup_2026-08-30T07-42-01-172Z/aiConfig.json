@@ -1,0 +1,63 @@
+[
+  {
+    "id": "40d19a41-7f4b-4e10-b2a7-6420e1a54268",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "isEnabled": true,
+    "isPublicEnabled": true,
+    "encryptedApiKey": null,
+    "temperature": 0.7,
+    "maxTokens": 1024,
+    "requestTimeoutMs": 15000,
+    "retryCount": 2,
+    "defaultLanguage": "en",
+    "supportedLanguages": [
+      "en",
+      "ar",
+      "es",
+      "pt",
+      "it"
+    ],
+    "systemInstructions": "test",
+    "salesPersonality": null,
+    "toneOfVoice": null,
+    "safetyInstructions": null,
+    "fallbackMessage": "I'd be delighted to assist you! Would you like me to connect you with our senior travel team or help you customize a private itinerary?",
+    "escalationMessage": "I have notified our senior travel team. A dedicated travel specialist will contact you shortly!",
+    "welcomeMessages": null,
+    "suggestedQuestions": null,
+    "leadCaptureRules": null,
+    "humanHandoffRules": null,
+    "knowledgeSettings": null,
+    "tourSettings": {
+      "apiKeysPool": [
+        {
+          "id": "key-1788039333684-4ersn",
+          "label": "BDB",
+          "model": "gemini-2.0-flash",
+          "isActive": true,
+          "priority": 1,
+          "provider": "google",
+          "failCount": 2,
+          "lastStatus": "FAILED",
+          "encryptedKey": "enc:v1:s1Bdsi8_YEfdrWHt:NU7sbuLVJhrt7KcIzyV2Hw:RdVKlOHqaIvJuOOGcu31Aw",
+          "lastTestedAt": "2026-08-29T21:37:06.963Z"
+        },
+        {
+          "id": "key-1788039344834-h2262",
+          "label": "dfgh",
+          "model": "gemini-2.0-flash",
+          "isActive": true,
+          "priority": 2,
+          "provider": "google",
+          "failCount": 2,
+          "lastStatus": "FAILED",
+          "encryptedKey": "enc:v1:Temo81frfcAUy-Zw:v_Xpc4pWcmbDnu_i-HKb8A:vVNEpg",
+          "lastTestedAt": "2026-08-29T21:37:09.630Z"
+        }
+      ]
+    },
+    "createdAt": "2026-08-17T20:17:05.631Z",
+    "updatedAt": "2026-08-30T07:37:45.171Z"
+  }
+]

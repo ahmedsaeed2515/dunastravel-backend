@@ -10,12 +10,16 @@ import {
   StructuredTourComparison,
 } from './tour-catalog-tool.service';
 import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util';
+import { generateReferenceCode } from '../../../common/utils/identifiers.util';
 import { Response } from 'express';
+import { BookTourChatDto } from '../dto/public-chat.dto';
 
 export interface ProcessChatMessageDto {
   message: string;
   sessionId: string;
   locale?: string;
+  personaCode?: string;
+  promptVersionId?: string;
   pageContext?: {
     tourSlug?: string;
     destinationSlug?: string;
@@ -33,6 +37,139 @@ export interface ProcessChatMessageDto {
   };
   idempotencyKey?: string;
 }
+
+export interface AiPersona {
+  code: string;
+  icon: string;
+  name: { [locale: string]: string };
+  tagline: { [locale: string]: string };
+  tone: string;
+  personalityGuidelines: string;
+  systemPromptAddendum: string;
+}
+
+export const AI_PERSONAS: AiPersona[] = [
+  {
+    code: 'luxury_concierge',
+    icon: '👑',
+    name: {
+      en: 'Royal Luxury Concierge',
+      ar: 'الكونسيرج الملكي الفاخر',
+      es: 'Conserje Real de Lujo',
+      pt: 'Concierge Real de Luxo',
+      it: 'Concierge Reale di Lusso',
+    },
+    tagline: {
+      en: 'Executive white-glove service & signature VIP experiences',
+      ar: 'خدمة فندقية راقية وتجارب VIP حصرية لا مثيل لها',
+      es: 'Servicio ejecutivo de guante blanco y experiencias VIP',
+      pt: 'Serviço executivo refinado e experiências VIP exclusivas',
+      it: 'Servizio impeccabile e itinerari VIP esclusivi',
+    },
+    tone: 'Sophisticated, Ultra-Polite, Executive & Refined',
+    personalityGuidelines: 'Speak with effortless elegance, like a chief concierge at Four Seasons or St. Regis. Highlight private Dahabiyas, presidential suites, private jets, and VIP fast-track transfers.',
+    systemPromptAddendum: `PERSONA MODE: ROYAL LUXURY CONCIERGE (👑)
+- Demeanor: Exquisitely refined, deeply respectful, executive hospitality.
+- Vocabulary: Bespoke, signature, premier, uncompromised luxury, private chauffeur, five-star deluxe.
+- Focus: Highlight high-end comfort, luxury amenities, private Nile cruises, and seamless VIP logistics.`,
+  },
+  {
+    code: 'egyptologist',
+    icon: '📜',
+    name: {
+      en: 'Historian & Egyptologist',
+      ar: 'خبير الآثار والمؤرخ المصري',
+      es: 'Historiador y Egiptólogo',
+      pt: 'Historiador e Egiptólogo',
+      it: 'Storico ed Egittologo',
+    },
+    tagline: {
+      en: 'Deep historical storytelling, hieroglyphics & hidden tombs',
+      ar: 'أسرار الفراعنة، فك شفرات الهيروغليفية، والمقابر الخفية',
+      es: 'Misterios de los faraones, jeroglíficos y tumbas secretas',
+      pt: 'Segredos dos faraós, hieróglifos e tumbas históricas',
+      it: 'Segreti dei faraoni, geroglifici e tombe storiche',
+    },
+    tone: 'Passionate, Scholarly, Engaging Storyteller',
+    personalityGuidelines: 'Bring 5,000 years of ancient Egyptian civilization alive. Share fascinating historical anecdotes about Ramesses II, Hatshepsut, Tutankhamun, Karnak Temple, and the Grand Egyptian Museum (GEM).',
+    systemPromptAddendum: `PERSONA MODE: HISTORIAN & EGYPTOLOGIST (📜)
+- Demeanor: Intellectual passion, engaging narrative flow, historical depth.
+- Vocabulary: Dynasties, pharaonic legacy, sacred cartouches, timeless monuments, archaeological discovery.
+- Focus: Provide fascinating historical context to temples and monuments while connecting them to Dunas Travel's guided heritage tours.`,
+  },
+  {
+    code: 'practical_budget',
+    icon: '💰',
+    name: {
+      en: 'Smart Value & Best Price',
+      ar: 'المستشار الاقتصادي الذكي',
+      es: 'Planificador de Mejor Valor',
+      pt: 'Planejador de Melhor Custo-Benefício',
+      it: 'Consulente Miglior Valore',
+    },
+    tagline: {
+      en: 'Maximum luxury value, smart pacing & transparent pricing',
+      ar: 'أفضل قيمة مقابل السعر، خطط توفير ذكية، وأسعار شفافة',
+      es: 'Máximo valor de lujo, ahorro inteligente y precios claros',
+      pt: 'Máximo custo-benefício em luxo e tarifas transparentes',
+      it: 'Miglior rapporto qualità-prezzo e massima trasparenza',
+    },
+    tone: 'Pragmatic, Transparent, Helpful & Cost-Conscious',
+    personalityGuidelines: 'Help travelers get the absolute best value for their investment. Compare package durations, explain seasonal pricing advantages, suggest high-value inclusions, and prevent hidden fees.',
+    systemPromptAddendum: `PERSONA MODE: SMART VALUE & BEST PRICE (💰)
+- Demeanor: Practical, clear, transparent, value-maximizing.
+- Vocabulary: Best value, cost optimization, seasonal offers, inclusive package, high ROI vacation.
+- Focus: Emphasize what is included for the price, transparent USD breakdowns, and smart itinerary combinations to avoid unnecessary expenses.`,
+  },
+  {
+    code: 'family_adventure',
+    icon: '👨‍👩‍👧‍👦',
+    name: {
+      en: 'Family & Kids Adventurer',
+      ar: 'مرشد العائلات والمغامرات',
+      es: 'Guía de Familias y Aventura',
+      pt: 'Guia Familiar e Aventura',
+      it: 'Guida per Famiglie e Avventure',
+    },
+    tagline: {
+      en: 'Comfortable pacing, kid-friendly fun & safe adventures',
+      ar: 'وتيرة مريحة تناسب الصغار، أنشطة ممتعة، وأمان عائلي تام',
+      es: 'Ritmo cómodo para niños, diversión segura y aventuras familiares',
+      pt: 'Ritmo confortável para crianças e passeios seguros em família',
+      it: 'Ritmo rilassato per bambini e avventure familiari sicure',
+    },
+    tone: 'Warm, Cheerful, Reassuring & Engaging',
+    personalityGuidelines: 'Prioritize family comfort, safety, relaxed schedules with minimal fatigue, child-friendly excursions (camel rides at the Pyramids, sailing feluccas, snorkeling in Red Sea lagoons), and spacious family suites.',
+    systemPromptAddendum: `PERSONA MODE: FAMILY & KIDS ADVENTURER (👨‍👩‍👧‍👦)
+- Demeanor: Friendly, encouraging, safety-conscious, family-oriented.
+- Vocabulary: Family-friendly, relaxed pacing, interactive fun, safe memories, spacious comfort.
+- Focus: Highlight tours with balanced schedules, child entertainment, family discounts, and private comfortable vans.`,
+  },
+  {
+    code: 'romantic_honeymoon',
+    icon: '💖',
+    name: {
+      en: 'Romantic & Honeymoon Specialist',
+      ar: 'مستشار شهر العسل والرومانسية',
+      es: 'Especialista en Lunas de Miel',
+      pt: 'Especialista em Lua de Mel',
+      it: 'Specialista in Viaggi di Nozze',
+    },
+    tagline: {
+      en: 'Candlelit Nile dinners, sunset feluccas & luxury escapes',
+      ar: 'عشاء رومانسي على ضوء الشموع، إبحار عند الغروب، وفيلات شاطئية',
+      es: 'Cenas a la luz de las velas en el Nilo, atardeceres y villas románticas',
+      pt: 'Jantares românticos no Nilo, pôr do sol e vilas exclusivas',
+      it: 'Cene a lume di candela sul Nilo, tramonti magici e resort esclusivi',
+    },
+    tone: 'Poetic, Dreamy, Attentive & Romantic',
+    personalityGuidelines: 'Curate idyllic memories for couples: private sunset sails on the Nile, couple spa treatments at Old Cataract, intimate dinner overlooking Luxor temple by night, and secluded Red Sea overwater villas.',
+    systemPromptAddendum: `PERSONA MODE: ROMANTIC & HONEYMOON SPECIALIST (💖)
+- Demeanor: Passionate, enchanting, meticulous about intimacy and romance.
+- Vocabulary: Unforgettable memories, sunset serenity, private candlelit moments, breathtaking horizons, romantic bliss.
+- Focus: Suggest private couple experiences, honeymoon perks, romantic cruises, and tranquil luxury resorts.`,
+  },
+];
 
 export interface TripProposalDay {
   dayNumber: number;
@@ -158,6 +295,216 @@ export class ChatOrchestratorService {
     return this.keyPoolService.getAiConfig();
   }
 
+  getActivePersonas(locale: string = 'en') {
+    const loc = (locale || 'en').toLowerCase().split('-')[0];
+    return AI_PERSONAS.map((p) => ({
+      code: p.code,
+      icon: p.icon,
+      name: p.name[loc] || p.name.en || p.name.ar,
+      tagline: p.tagline[loc] || p.tagline.en || p.tagline.ar,
+      tone: p.tone,
+      personalityGuidelines: p.personalityGuidelines,
+    }));
+  }
+
+  async bookTourFromChat(dto: BookTourChatDto) {
+    const config = await this.getOrCreateConfig();
+    const tourSettings = (config.tourSettings as any) || {};
+    const isInChatBookingEnabled = tourSettings.isInChatBookingEnabled !== false;
+
+    const isArabic = (dto.locale || '').startsWith('ar');
+
+    if (!isInChatBookingEnabled) {
+      throw new BadRequestException(
+        isArabic
+          ? 'عذراً، ميزة الحجز المباشر عبر الشات بوت معطلة حالياً. يمكنك تصفح تفاصيل الرحلة وإتمام الحجز عبر الموقع أو التواصل مع مستشار السفر.'
+          : 'In-chat booking is currently disabled. Please explore the tour details on our website or contact our travel concierge.'
+      );
+    }
+
+    if (!dto.sessionId || !dto.tourId || !dto.email || !dto.fullName || !dto.arrivalDate) {
+      throw new BadRequestException(
+        isArabic
+          ? 'يرجى إكمال جميع بيانات الحجز المطلوبة (رقم الجلسة، الرحلة، الاسم، البريد، وتاريخ الوصول).'
+          : 'Missing required booking details: sessionId, tourId, email, fullName, arrivalDate'
+      );
+    }
+
+    const arrivalDateObj = new Date(dto.arrivalDate);
+    if (isNaN(arrivalDateObj.getTime())) {
+      throw new BadRequestException(
+        isArabic ? 'تاريخ الوصول غير صالح.' : 'Invalid arrival date format.'
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (arrivalDateObj < today) {
+      throw new BadRequestException(
+        isArabic ? 'تاريخ الوصول يجب أن يكون في المستقبل.' : 'Arrival date must be in the future.'
+      );
+    }
+
+    const tour = await (this.prisma as any).tour.findFirst({
+      where: {
+        OR: [{ id: dto.tourId }, { slug: dto.tourId }],
+        deletedAt: null,
+      },
+      include: {
+        images: { where: { isHero: true }, take: 1 },
+      },
+    });
+
+    if (!tour) {
+      throw new NotFoundException(
+        isArabic ? 'الرحلة المحددة غير موجودة أو غير متاحة حالياً.' : 'Selected tour could not be found'
+      );
+    }
+
+    const adults = Math.max(1, Number(dto.adults) || 1);
+    const children = Math.max(0, Number(dto.children) || 0);
+    const infants = Math.max(0, Number(dto.infants) || 0);
+
+    const basePrice = Number(tour.basePriceUsd) || 1490;
+    const adultTotal = basePrice * adults;
+    const childTotal = (basePrice * 0.5) * children;
+    const totalAmount = adultTotal + childTotal;
+    const currency = tour.currency || 'USD';
+
+    let user = await (this.prisma as any).user.findUnique({
+      where: { email: dto.email.trim().toLowerCase() },
+    });
+
+    if (!user) {
+      user = await (this.prisma as any).user.create({
+        data: {
+          email: dto.email.trim().toLowerCase(),
+          name: dto.fullName.trim(),
+          phone: dto.phone?.trim() || null,
+          role: 'GUEST',
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    const referenceCode = generateReferenceCode('BKG');
+    const invoiceNumber = generateReferenceCode('INV');
+
+    const booking = await (this.prisma as any).$transaction(async (tx: any) => {
+      const createdBooking = await tx.booking.create({
+        data: {
+          referenceCode,
+          userId: user.id,
+          tourId: tour.id,
+          arrivalDate: arrivalDateObj,
+          adults,
+          children,
+          infants,
+          totalAmountUsd: totalAmount,
+          currency,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+          notes: dto.notes?.trim() || null,
+          language: dto.locale || 'en',
+          transportChoice: dto.transportChoice || 'Standard Luxury Transfer',
+          idempotencyKey: `chat-booking-${Date.now()}-${referenceCode}`,
+        },
+      });
+
+      await tx.billingInfo.create({
+        data: {
+          bookingId: createdBooking.id,
+          fullName: dto.fullName.trim(),
+          email: dto.email.trim().toLowerCase(),
+          phone: dto.phone?.trim() || 'N/A',
+          country: dto.nationality || 'Egypt',
+          invoiceType: 'PERSONAL',
+        },
+      });
+
+      await tx.invoice.create({
+        data: {
+          bookingId: createdBooking.id,
+          invoiceNumber,
+          type: 'STANDARD',
+          amount: totalAmount,
+          currency,
+          status: 'PENDING',
+          customerName: dto.fullName.trim(),
+          customerEmail: dto.email.trim().toLowerCase(),
+        },
+      });
+
+      return createdBooking;
+    });
+
+    const conversation = await (this.prisma as any).chatConversation.findUnique({
+      where: { publicSessionId: dto.sessionId },
+    });
+
+    const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? tour.titleJsonb : {};
+    const tourTitle = isArabic ? (tMap.ar || tMap.en || tour.slug) : (tMap.en || tMap.ar || tour.slug);
+    const heroImage = tour.images?.[0]?.imageUrl || '/imgs/Brazil/Treasures of Egypt with Alexandria.jpg';
+
+    const confirmationCard = {
+      type: 'booking_confirmation',
+      booking: {
+        id: booking.id,
+        referenceCode: booking.referenceCode,
+        invoiceNumber,
+        tourId: tour.id,
+        tourTitle,
+        tourSlug: tour.slug,
+        image: heroImage,
+        destination: [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt',
+        arrivalDate: dto.arrivalDate,
+        adults,
+        children,
+        infants,
+        totalAmount,
+        currency,
+        status: 'PENDING',
+        leadName: dto.fullName.trim(),
+        email: dto.email.trim(),
+        phone: dto.phone?.trim(),
+        checkoutUrl: `/booking-success?ref=${booking.referenceCode}`,
+      },
+    };
+
+    if (conversation) {
+      await (this.prisma as any).chatConversation.update({
+        where: { id: conversation.id },
+        data: {
+          visitorName: dto.fullName.trim(),
+          visitorEmail: dto.email.trim().toLowerCase(),
+          visitorPhone: dto.phone?.trim(),
+          leadStatus: 'CONVERTED',
+          updatedAt: new Date(),
+        },
+      });
+
+      const replyText = isArabic
+        ? `🎉 تم تأكيد طلب حجزك بنجاح لرحلة "${tourTitle}"!\n\nرقم الحجز المرجعي الخاص بك هو: **${referenceCode}**\nالمبلغ الإجمالي: $${totalAmount} ${currency}\nتاريخ الوصول: ${dto.arrivalDate} (${adults} بالغين${children > 0 ? ` + ${children} أطفال` : ''}).\n\nلقد تم إرسال تفاصيل الحجز إلى بريدك الإلكتروني (${dto.email}). وسيقوم مستشار السفر الخاص بك بالتواصل معك عبر الواتساب لتأكيد موعد الاستقبال في المطار.`
+        : `🎉 Your luxury booking reservation for "${tourTitle}" has been confirmed!\n\nYour Booking Reference: **${referenceCode}**\nTotal Price: $${totalAmount} ${currency}\nArrival Date: ${dto.arrivalDate} (${adults} Adults${children > 0 ? `, ${children} Children` : ''}).\n\nBooking confirmation has been dispatched to ${dto.email}. Your dedicated travel concierge will reach out via WhatsApp for VIP airport arrival coordination.`;
+
+      await (this.prisma as any).chatMessage.create({
+        data: {
+          conversationId: conversation.id,
+          role: 'assistant',
+          textContent: replyText,
+          structuredContent: confirmationCard,
+          locale: dto.locale || 'en',
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: isArabic ? 'تم تأكيد الحجز بنجاح' : 'Booking created successfully',
+      ...confirmationCard.booking,
+    };
+  }
+
   async getConversationHistory(sessionId: string) {
     if (!sessionId) return { messages: [] };
 
@@ -172,20 +519,49 @@ export class ChatOrchestratorService {
 
     if (!conversation) return { messages: [] };
 
+    // Collect tour IDs that need hydration if structured tours not stored directly
+    const allTourIdsToHydrate: string[] = [];
+    conversation.messages.forEach((m: any) => {
+      const structTours = m.structuredContent?.tours;
+      if (!structTours || !Array.isArray(structTours) || structTours.length === 0) {
+        if (m.recommendedTourIds && Array.isArray(m.recommendedTourIds) && m.recommendedTourIds.length > 0) {
+          allTourIdsToHydrate.push(...m.recommendedTourIds);
+        }
+      }
+    });
+
+    const hydratedToursMap = new Map<string, GroundedTourRecommendation>();
+    if (allTourIdsToHydrate.length > 0) {
+      const tourRecords = await this.tourCatalogTool.getToursByIds(
+        Array.from(new Set(allTourIdsToHydrate)),
+        conversation.locale || 'en',
+      );
+      tourRecords.forEach((t) => hydratedToursMap.set(t.id, t));
+    }
+
     return {
       conversationId: conversation.id,
       status: conversation.status,
       leadStatus: conversation.leadStatus,
       travelPreferences: conversation.travelPreferences,
-      messages: conversation.messages.map((m: any) => ({
-        id: m.id,
-        role: m.role,
-        content: m.textContent,
-        structuredContent: m.structuredContent,
-        createdAt: m.createdAt,
-        tours: m.recommendedTourIds,
-        sources: m.knowledgeSources,
-      })),
+      messages: conversation.messages.map((m: any) => {
+        let tours = m.structuredContent?.tours || [];
+        if ((!tours || !Array.isArray(tours) || tours.length === 0) && m.recommendedTourIds && Array.isArray(m.recommendedTourIds)) {
+          tours = m.recommendedTourIds.map((id: string) => hydratedToursMap.get(id)).filter(Boolean);
+        }
+
+        return {
+          id: m.id,
+          role: m.role,
+          content: m.textContent,
+          structuredContent: m.structuredContent,
+          createdAt: m.createdAt,
+          tours,
+          sources: m.knowledgeSources,
+          proposal: m.structuredContent?.proposal || null,
+          comparison: m.structuredContent?.comparison || null,
+        };
+      }),
     };
   }
 
@@ -555,10 +931,14 @@ export class ChatOrchestratorService {
       .map((m: any) => `${m.role.toUpperCase()}: ${m.textContent}`)
       .join('\n');
 
+    const selectedPersona = AI_PERSONAS.find((p) => p.code === dto.personaCode) || AI_PERSONAS[0];
+
     const fullSystemPrompt = `${config.systemInstructions}
 
 SALES PERSONALITY: ${config.salesPersonality || 'Elite Luxury Concierge'}
-TONE OF VOICE: ${config.toneOfVoice || 'Warm, Executive, Knowledgeable'}
+TONE OF VOICE: ${selectedPersona.tone || config.toneOfVoice || 'Warm, Executive, Knowledgeable'}
+
+${selectedPersona.systemPromptAddendum}
 
 ${ragContext}
 
@@ -604,7 +984,7 @@ CRITICAL EXECUTION RULES:
       isError = true;
       latencyMs = Date.now() - providerStart;
 
-      // Intelligent Local Synthesis
+      // Intelligent Local Synthesis adapted to selected Persona
       if (tourComparison) {
         if (isArabic) {
           assistantReply = `يسعدني مقارنة رحلاتنا المميزة لك! إليك مقارنة تفصيلية بين "${tourComparison.tours[0].title}" و "${tourComparison.tours[1].title}":\n\n${tourComparison.summaryRecommendation}`;
@@ -620,9 +1000,19 @@ CRITICAL EXECUTION RULES:
       } else if (recommendedTours.length > 0) {
         const topTour = recommendedTours[0];
         if (isArabic) {
-          assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.`;
+          if (dto.personaCode === 'egyptologist') {
+            assistantReply = `أهلاً بك يا باحث التاريخ والحضارة العريقة! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} لاكتشاف عظمة الفراعنة والمعابد الخالدة بسعر يبدأ من $${topTour.price} ${topTour.currency}. يمكنك استعراض البرنامج بالأسفل وحجزه مباشرة.`;
+          } else if (dto.personaCode === 'practical_budget') {
+            assistantReply = `أهلاً بك! بأعلى قيمة استثمارية وأفضل سعر، نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. استعرض التفاصيل والشمولية بالأسفل.`;
+          } else if (dto.personaCode === 'family_adventure') {
+            assistantReply = `أهلاً وسهلاً بك وبعائلتك الكريمة! لتجربة عائلية مريحة وممتعة للجميع، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}.`;
+          } else if (dto.personaCode === 'romantic_honeymoon') {
+            assistantReply = `أهلاً بكما! لقضاء عطلة رومانسية ساحرة وسط أروع الأجواء، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}.`;
+          } else {
+            assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.`;
+          }
         } else {
-          assistantReply = `Hello! Based on your request, I highly recommend our signature luxury tour "${topTour.title}" in ${topTour.destination}, starting from $${topTour.price} ${topTour.currency}. Click the tour card below for the full itinerary!`;
+          assistantReply = `Hello! Based on your request, I highly recommend our signature tour "${topTour.title}" in ${topTour.destination}, starting from $${topTour.price} ${topTour.currency}. Click the tour card below for full details or to book directly!`;
         }
       } else if (sources.length > 0) {
         assistantReply = isArabic
@@ -636,11 +1026,16 @@ CRITICAL EXECUTION RULES:
     }
 
     // 9. Structured Payload Serialization
-    let structuredContentPayload: any = null;
+    const structuredContentPayload: any = {
+      tours: recommendedTours,
+      destinations: recommendedDestinations,
+    };
     if (tourComparison) {
-      structuredContentPayload = { type: 'tour_comparison', comparison: tourComparison };
+      structuredContentPayload.type = 'tour_comparison';
+      structuredContentPayload.comparison = tourComparison;
     } else if (structuredProposal) {
-      structuredContentPayload = { type: 'itinerary_proposal', proposal: structuredProposal };
+      structuredContentPayload.type = 'itinerary_proposal';
+      structuredContentPayload.proposal = structuredProposal;
     }
 
     // 10. Race condition guard: if conversation transitioned to HUMAN_ACTIVE while waiting for provider

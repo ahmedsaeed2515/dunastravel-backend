@@ -1,0 +1,13 @@
+[
+  {
+    "id": "af7b8071-4844-4893-ac68-912a076ac729",
+    "name": "Welcome Email 1783976311356",
+    "subject": "Welcome to Dunas Travel",
+    "bodyHtml": "<h1>Welcome {{name}}</h1><p>Thanks for joining!</p>",
+    "variables": [
+      "name"
+    ],
+    "createdAt": "2026-07-13T20:58:31.357Z",
+    "updatedAt": "2026-07-13T20:58:31.357Z"
+  }
+]

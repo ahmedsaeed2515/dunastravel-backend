@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
@@ -316,7 +317,7 @@ describe('BookingsService', () => {
     });
 
     it('should always recalculate total server-side (ignores client)', async () => {
-      await service.createBooking(baseDto, undefined, 'test-idem-total');
+      await service.createBooking(baseDto, 'user-1', 'test-idem-total');
       const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
         data: { totalAmountUsd: Prisma.Decimal };
       }>;
@@ -324,13 +325,19 @@ describe('BookingsService', () => {
       expect(createdData.totalAmountUsd.toString()).toBe('250');
     });
 
-    it('should support guest checkout (userId=null)', async () => {
-      await service.createBooking(baseDto, undefined, 'test-idem-guest');
+    it('should reject unauthenticated booking creation (AUTH-001)', async () => {
+      await expect(
+        service.createBooking(baseDto, undefined, 'test-idem-unauth'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should link new booking directly to authenticated userId', async () => {
+      await service.createBooking(baseDto, 'user-1', 'test-idem-auth');
       const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
         data: { userId: string | null };
       }>;
       const createdData = firstCall[0].data;
-      expect(createdData.userId).toBeNull();
+      expect(createdData.userId).toBe('user-1');
     });
 
     it('should throw UnprocessableEntityException when tour missing', async () => {

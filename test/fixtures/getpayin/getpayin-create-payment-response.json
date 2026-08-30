@@ -1,0 +1,11 @@
+{
+  "id": "gpi_inv_987654321",
+  "transactionId": "gpi_tx_123456789",
+  "status": "PENDING",
+  "amount": "3700.00",
+  "currency": "USD",
+  "merchantReference": "BKG-A4X7Z2",
+  "paymentUrl": "https://pay.getpayin.com/checkout/gpi_inv_987654321",
+  "expiresAt": "2026-08-30T11:30:00.000Z",
+  "createdAt": "2026-08-30T11:00:00.000Z"
+}

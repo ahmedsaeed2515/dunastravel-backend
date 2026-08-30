@@ -1,11 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  UnauthorizedException,
+  NotFoundException,
+  ExecutionContext,
+} from '@nestjs/common';
 import request from 'supertest';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { TransformInterceptor } from '../../common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
-import { NotFoundException } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -17,6 +24,29 @@ interface ApiResponse<T = unknown> {
 describe('Bookings HTTP API Contract (Supertest)', () => {
   let app: INestApplication;
   let bookingsServiceMock: jest.Mocked<Partial<BookingsService>>;
+
+  const mockJwtAuthGuard = {
+    canActivate: jest.fn((context: ExecutionContext) => {
+      const req = context.switchToHttp().getRequest();
+      const auth = req.headers['authorization'];
+      if (auth && auth.startsWith('Bearer ')) {
+        req.user = { id: 'usr-1', email: 'jane@example.com', role: 'USER' };
+        return true;
+      }
+      throw new UnauthorizedException();
+    }),
+  };
+
+  const mockOptionalJwtAuthGuard = {
+    canActivate: jest.fn((context: ExecutionContext) => {
+      const req = context.switchToHttp().getRequest();
+      const auth = req.headers['authorization'];
+      if (auth && auth.startsWith('Bearer ')) {
+        req.user = { id: 'usr-1', email: 'jane@example.com', role: 'USER' };
+      }
+      return true;
+    }),
+  };
 
   const mockBookingResponse = {
     id: 'bkg-123',
@@ -42,7 +72,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       city: null,
       country: null,
     },
-    guestToken: 'guest-secret-token-123',
+    guestToken: null,
   };
 
   const mockCalculatedPriceResponse = {
@@ -64,7 +94,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       findByReferenceCode: jest
         .fn()
         .mockImplementation((ref: string, _user?: string, token?: string) => {
-          if (token === 'valid-guest-token') {
+          if (token === 'valid-guest-token' || _user === 'usr-1') {
             return Promise.resolve({
               id: 'bkg-123',
               referenceCode: ref,
@@ -105,7 +135,12 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
           useValue: bookingsServiceMock,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockJwtAuthGuard)
+      .overrideGuard(OptionalJwtAuthGuard)
+      .useValue(mockOptionalJwtAuthGuard)
+      .compile();
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
@@ -156,28 +191,39 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
   });
 
   describe('POST /api/bookings', () => {
-    it('creates booking with valid DTO (201 Created)', async () => {
-      const payload = {
-        type: 'booking',
-        tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-        arrivalDate: '2026-09-01',
-        adults: 2,
-        fullName: 'Jane Doe',
-        email: 'jane@example.com',
-        phone: '+1234567890',
-        language: 'en',
-      };
+    const validPayload = {
+      type: 'booking',
+      tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      arrivalDate: '2026-09-01',
+      adults: 2,
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      phone: '+1234567890',
+      language: 'en',
+    };
 
+    it('rejects unauthenticated booking creation with 401 Unauthorized (AUTH-001)', async () => {
       const res = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
         .post('/api/bookings')
+        .set('Idempotency-Key', 'idem-key-unauth')
+        .send(validPayload)
+        .expect(401);
+
+      const body = res.body as ApiResponse;
+      expect(body.success).toBe(false);
+    });
+
+    it('creates booking with valid DTO and JWT authentication (201 Created)', async () => {
+      const res = await request(
+        app.getHttpServer() as Parameters<typeof request>[0],
+      )
+        .post('/api/bookings')
+        .set('Authorization', 'Bearer valid-jwt-token')
         .set('Idempotency-Key', 'idem-key-12345')
-        .send(payload);
-      if (res.status !== 201) {
-        console.error('BOOKING CREATE ERROR BODY:', JSON.stringify(res.body));
-      }
-      expect(res.status).toBe(201);
+        .send(validPayload)
+        .expect(201);
 
       const body = res.body as ApiResponse<typeof mockBookingResponse>;
       expect(body.success).toBe(true);
@@ -188,7 +234,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
           tourId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           arrivalDate: '2026-09-01',
         }),
-        undefined,
+        'usr-1',
         'idem-key-12345',
       );
     });
@@ -202,6 +248,8 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
         app.getHttpServer() as Parameters<typeof request>[0],
       )
         .post('/api/bookings')
+        .set('Authorization', 'Bearer valid-jwt-token')
+        .set('Idempotency-Key', 'idem-key-bad-dto')
         .send(payload)
         .expect(400);
 
@@ -224,6 +272,8 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
         app.getHttpServer() as Parameters<typeof request>[0],
       )
         .post('/api/bookings')
+        .set('Authorization', 'Bearer valid-jwt-token')
+        .set('Idempotency-Key', 'idem-key-malicious')
         .send(payload)
         .expect(400);
 

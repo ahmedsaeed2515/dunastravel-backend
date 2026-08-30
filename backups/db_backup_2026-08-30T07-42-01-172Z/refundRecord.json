@@ -1,0 +1,47 @@
+[
+  {
+    "id": "50c512fe-638e-4824-8849-f1ed7cf71cc4",
+    "idempotencyKey": "refund-valid-1787484633890",
+    "paymentId": "9ed3d67b-e647-4a70-9eb2-d4f6afb64b6e",
+    "amount": "2018.75",
+    "currency": "USD",
+    "providerRefundId": "re_1787484635778_txn_1787484632280_cn3u8f0",
+    "status": "COMPLETED",
+    "actorId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "actorRole": "SUPER_ADMIN",
+    "reason": "Customer requested cancellation with full refund",
+    "failureReason": null,
+    "createdAt": "2026-08-23T11:30:35.485Z",
+    "updatedAt": "2026-08-23T11:30:36.511Z"
+  },
+  {
+    "id": "5dc3e0ea-f628-427f-805b-668fc3359eb0",
+    "idempotencyKey": "refund-valid-1787484696462",
+    "paymentId": "5456549e-5f4e-4bba-821a-238449803153",
+    "amount": "2018.75",
+    "currency": "USD",
+    "providerRefundId": "re_1787484698572_txn_1787484695187_sjzsm85",
+    "status": "COMPLETED",
+    "actorId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "actorRole": "SUPER_ADMIN",
+    "reason": "Customer requested cancellation with full refund",
+    "failureReason": null,
+    "createdAt": "2026-08-23T11:31:38.294Z",
+    "updatedAt": "2026-08-23T11:31:39.259Z"
+  },
+  {
+    "id": "536248de-9870-4817-b303-478035158185",
+    "idempotencyKey": "refund-valid-1787484731495",
+    "paymentId": "a336e113-adaf-4ef6-a942-efe4ec8ac638",
+    "amount": "2018.75",
+    "currency": "USD",
+    "providerRefundId": "re_1787484733886_txn_1787484730248_imjjkhp",
+    "status": "COMPLETED",
+    "actorId": "39591401-b835-49a2-a018-df0df7405c5b",
+    "actorRole": "SUPER_ADMIN",
+    "reason": "Customer requested cancellation with full refund",
+    "failureReason": null,
+    "createdAt": "2026-08-23T11:32:13.300Z",
+    "updatedAt": "2026-08-23T11:32:14.564Z"
+  }
+]

@@ -1,0 +1,642 @@
+[
+  {
+    "id": "d97cafa0-16f6-4c12-845d-8ce4e1603ce0",
+    "invoiceNumber": "INV-BKG-2026-003",
+    "bookingId": "59e8baa1-0da3-449a-b9ad-330fbeb5c3e8",
+    "issuedAt": "2026-07-13T20:50:02.788Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "8d8d01e4-75d4-4807-832a-12a2071f64ec",
+    "invoiceNumber": "INV-BKG-2026-006",
+    "bookingId": "286fd0ad-e16c-47da-a6ac-b50e3b1988e5",
+    "issuedAt": "2026-07-13T20:50:06.568Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "09364e42-dd19-4f4a-91bf-10635acc5f27",
+    "invoiceNumber": "INV-BKG-2026-009",
+    "bookingId": "2859b186-73c0-45a0-b235-171e1d6ff5ae",
+    "issuedAt": "2026-07-13T20:50:09.852Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "05fa6314-b4ed-4f13-a6b8-88755ab1231c",
+    "invoiceNumber": "INV-BKG-COMP-5ZG0EG",
+    "bookingId": "f1b620f4-3b2c-4321-8a19-d7bde520a7fe",
+    "issuedAt": "2026-07-13T20:58:34.679Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "400ca6a8-c582-4bd6-95cd-fb7c684c56db",
+    "invoiceNumber": "INV-BKG-COMP-K37CLH",
+    "bookingId": "6cb0c49f-dc9f-45e5-b8d5-36e9301e45a3",
+    "issuedAt": "2026-07-13T20:58:35.990Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "a40a6fd8-cdd6-4edb-851d-30a9c835c5a2",
+    "invoiceNumber": "INV-BKG-COMP-EXHFSB",
+    "bookingId": "de8513cb-9d4f-45bd-a2f9-f1826c8be840",
+    "issuedAt": "2026-07-13T20:58:52.790Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "0e1e2a39-f4a1-45eb-97a8-8b7c664a1c70",
+    "invoiceNumber": "INV-BKG-COMP-4IIFO7",
+    "bookingId": "1a086e2e-edb9-4e0a-b81e-d77ecf3d3be5",
+    "issuedAt": "2026-07-13T20:58:55.270Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "0c8f6fd2-7fd8-43ca-8d83-63072c3fa58d",
+    "invoiceNumber": "INV-BKG-COMP-OQXY9M",
+    "bookingId": "ba74d604-5c7e-4c06-8c20-e13558fa68aa",
+    "issuedAt": "2026-07-13T20:58:56.577Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "dd187117-2b7e-4784-b145-8992d68305d3",
+    "invoiceNumber": "INV-BKG-COMP-HWSYRD",
+    "bookingId": "33ed12da-9565-42a2-9fa9-d81da8007ae9",
+    "issuedAt": "2026-07-13T20:58:58.907Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "59b07301-ba9e-41c9-ae23-8209a7bd6945",
+    "invoiceNumber": "INV-BKG-COMP-X5TGUA",
+    "bookingId": "d49c09cd-d1d8-462b-a1f7-9109cfb2c374",
+    "issuedAt": "2026-07-13T20:59:01.365Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "506f2179-5b0b-40a8-9832-e45de35176f6",
+    "invoiceNumber": "INV-BKG-COMP-NZUFXM",
+    "bookingId": "d2132f7c-45a3-4ea8-bfa0-cc075174d53c",
+    "issuedAt": "2026-07-13T20:59:02.811Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "bfc8f051-52f8-4253-b297-b780df612516",
+    "invoiceNumber": "INV-BKG-COMP-RWECUO",
+    "bookingId": "e084b0e7-5c34-4164-8a99-63be71f3706a",
+    "issuedAt": "2026-07-13T20:59:05.120Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "7ca41533-c0be-4daa-97b7-cc695bf6d468",
+    "invoiceNumber": "INV-BKG-COMP-DQRENL",
+    "bookingId": "d79ed78d-2097-4cdb-af80-204d8d752b5a",
+    "issuedAt": "2026-07-13T20:59:09.610Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "e3cd1c80-09ca-44f6-9c5d-2fe65318d5ca",
+    "invoiceNumber": "INV-BKG-COMP-XCWBWS",
+    "bookingId": "43012a10-6162-432e-a2bc-850afaa27c9b",
+    "issuedAt": "2026-07-13T20:59:11.924Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "ec0e3766-5681-425c-8f8e-872bec46dbea",
+    "invoiceNumber": "INV-BKG-COMP-S7HCDL",
+    "bookingId": "387c762b-c69e-4420-a4b1-63f34ae9f5b4",
+    "issuedAt": "2026-07-13T20:59:13.223Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "9a6b75ab-7caa-4dda-979d-2a8a6373cf5d",
+    "invoiceNumber": "INV-BKG-COMP-1J0H4R",
+    "bookingId": "0523161d-683a-494f-95c0-568d66685f42",
+    "issuedAt": "2026-07-13T20:59:16.879Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "2006a5ed-bf95-4566-8970-7a76cc7dc5fa",
+    "invoiceNumber": "INV-BKG-COMP-UVCXLS",
+    "bookingId": "1e0a61a0-2182-4597-9b84-9d9a0c3f3ded",
+    "issuedAt": "2026-07-13T20:59:21.682Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "38e201ee-aa11-4f0f-9231-a70145a5dcb9",
+    "invoiceNumber": "INV-BKG-COMP-FE5RUV",
+    "bookingId": "7c79c3ec-53d4-4846-9b9b-6c2c70b359d1",
+    "issuedAt": "2026-07-13T20:59:26.169Z",
+    "status": "DRAFT",
+    "subtotal": "0",
+    "tax": "0",
+    "total": "0",
+    "currency": "USD",
+    "snapshotJsonb": null,
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "49435ea2-faa4-4c09-b3f4-3e0db634f682",
+    "invoiceNumber": "INV-2026-0001",
+    "bookingId": "a88106a4-9630-4ce5-b368-2e3368fc2c57",
+    "issuedAt": "2026-08-23T11:25:22.987Z",
+    "status": "SENT",
+    "subtotal": "3000",
+    "tax": "0",
+    "total": "2550",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "2550.00",
+      "adults": 2,
+      "tourId": "8107e85a-cc31-4d69-9ae8-6a848e1c3ac3",
+      "infants": 0,
+      "version": 1,
+      "children": 1,
+      "currency": "USD",
+      "tourSlug": "passion-of-turkey",
+      "discounts": [
+        {
+          "code": "QA0085",
+          "name": "Promo Code: QA0085",
+          "amount": "450.00"
+        }
+      ],
+      "tourTitle": "Passion of Turkey",
+      "adultTotal": "2400.00",
+      "childTotal": "600.00",
+      "passengers": [
+        {
+          "fullName": "Dr. Alejandro Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Elena Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Lucas Martinez",
+          "passengerType": "CHILD"
+        }
+      ],
+      "arrivalDate": "2026-08-28",
+      "baseSubtotal": "3000.00",
+      "departureDate": null,
+      "billingRecipient": {
+        "city": null,
+        "email": "alejandro.martinez@luxurytravel.com",
+        "phone": "+34 612 345 678",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dr. Alejandro Martinez",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  },
+  {
+    "id": "172de98a-7ef1-4582-8d6d-693322b8df6b",
+    "invoiceNumber": "INV-2026-0002",
+    "bookingId": "ce201354-e203-43d5-815b-65fa6b5eb656",
+    "issuedAt": "2026-08-23T11:27:53.530Z",
+    "status": "PAID",
+    "subtotal": "2375",
+    "tax": "0",
+    "total": "2018.75",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "2018.75",
+      "adults": 2,
+      "tourId": "3dd498e9-f5ff-4b32-a9d8-631709c699df",
+      "infants": 0,
+      "version": 1,
+      "children": 1,
+      "currency": "USD",
+      "tourSlug": "wonders-of-egypt",
+      "discounts": [
+        {
+          "code": "QA0761",
+          "name": "Promo Code: QA0761",
+          "amount": "356.25"
+        }
+      ],
+      "tourTitle": "Wonders of Egypt",
+      "adultTotal": "1900.00",
+      "childTotal": "475.00",
+      "passengers": [
+        {
+          "fullName": "Dr. Alejandro Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Elena Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Lucas Martinez",
+          "passengerType": "CHILD"
+        }
+      ],
+      "arrivalDate": "2026-08-28",
+      "baseSubtotal": "2375.00",
+      "departureDate": null,
+      "billingRecipient": {
+        "city": null,
+        "email": "alejandro.martinez@luxurytravel.com",
+        "phone": "+34 612 345 678",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dr. Alejandro Martinez",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": "4ba0da0e-25f2-4f2e-abbf-8059fbe5b38e"
+  },
+  {
+    "id": "cde8ec3f-83c0-4601-ab44-c78ad05ec226",
+    "invoiceNumber": "INV-2026-0003",
+    "bookingId": "58500fa9-f49c-4791-b737-40478611c30b",
+    "issuedAt": "2026-08-23T11:30:29.286Z",
+    "status": "CREDIT_NOTE",
+    "subtotal": "2375",
+    "tax": "0",
+    "total": "2018.75",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "2018.75",
+      "adults": 2,
+      "tourId": "3dd498e9-f5ff-4b32-a9d8-631709c699df",
+      "infants": 0,
+      "version": 1,
+      "children": 1,
+      "currency": "USD",
+      "tourSlug": "wonders-of-egypt",
+      "discounts": [
+        {
+          "code": "QA6524",
+          "name": "Promo Code: QA6524",
+          "amount": "356.25"
+        }
+      ],
+      "tourTitle": "Wonders of Egypt",
+      "adultTotal": "1900.00",
+      "childTotal": "475.00",
+      "passengers": [
+        {
+          "fullName": "Dr. Alejandro Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Elena Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Lucas Martinez",
+          "passengerType": "CHILD"
+        }
+      ],
+      "arrivalDate": "2026-08-28",
+      "baseSubtotal": "2375.00",
+      "departureDate": null,
+      "billingRecipient": {
+        "city": null,
+        "email": "alejandro.martinez@luxurytravel.com",
+        "phone": "+34 612 345 678",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dr. Alejandro Martinez",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": "9ed3d67b-e647-4a70-9eb2-d4f6afb64b6e"
+  },
+  {
+    "id": "2245e4ce-7d4b-4c68-b19d-701352d51556",
+    "invoiceNumber": "INV-2026-0004",
+    "bookingId": "1d022b6e-be5c-41d0-8829-74d82cb6c497",
+    "issuedAt": "2026-08-23T11:31:32.000Z",
+    "status": "CREDIT_NOTE",
+    "subtotal": "2375",
+    "tax": "0",
+    "total": "2018.75",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "2018.75",
+      "adults": 2,
+      "tourId": "3dd498e9-f5ff-4b32-a9d8-631709c699df",
+      "infants": 0,
+      "version": 1,
+      "children": 1,
+      "currency": "USD",
+      "tourSlug": "wonders-of-egypt",
+      "discounts": [
+        {
+          "code": "QA9220",
+          "name": "Promo Code: QA9220",
+          "amount": "356.25"
+        }
+      ],
+      "tourTitle": "Wonders of Egypt",
+      "adultTotal": "1900.00",
+      "childTotal": "475.00",
+      "passengers": [
+        {
+          "fullName": "Dr. Alejandro Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Elena Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Lucas Martinez",
+          "passengerType": "CHILD"
+        }
+      ],
+      "arrivalDate": "2026-08-28",
+      "baseSubtotal": "2375.00",
+      "departureDate": null,
+      "billingRecipient": {
+        "city": null,
+        "email": "alejandro.martinez@luxurytravel.com",
+        "phone": "+34 612 345 678",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dr. Alejandro Martinez",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": "5456549e-5f4e-4bba-821a-238449803153"
+  },
+  {
+    "id": "bd72dfe1-33a3-4e6e-a771-3fba1ee3a70a",
+    "invoiceNumber": "INV-2026-0005",
+    "bookingId": "5066156a-95bd-4fd6-bad5-65da14656271",
+    "issuedAt": "2026-08-23T11:32:07.368Z",
+    "status": "CREDIT_NOTE",
+    "subtotal": "2375",
+    "tax": "0",
+    "total": "2018.75",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "2018.75",
+      "adults": 2,
+      "tourId": "3dd498e9-f5ff-4b32-a9d8-631709c699df",
+      "infants": 0,
+      "version": 1,
+      "children": 1,
+      "currency": "USD",
+      "tourSlug": "wonders-of-egypt",
+      "discounts": [
+        {
+          "code": "QA4614",
+          "name": "Promo Code: QA4614",
+          "amount": "356.25"
+        }
+      ],
+      "tourTitle": "Wonders of Egypt",
+      "adultTotal": "1900.00",
+      "childTotal": "475.00",
+      "passengers": [
+        {
+          "fullName": "Dr. Alejandro Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Elena Martinez",
+          "passengerType": "ADULT"
+        },
+        {
+          "fullName": "Lucas Martinez",
+          "passengerType": "CHILD"
+        }
+      ],
+      "arrivalDate": "2026-08-28",
+      "baseSubtotal": "2375.00",
+      "departureDate": null,
+      "billingRecipient": {
+        "city": null,
+        "email": "alejandro.martinez@luxurytravel.com",
+        "phone": "+34 612 345 678",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dr. Alejandro Martinez",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": "a336e113-adaf-4ef6-a942-efe4ec8ac638"
+  },
+  {
+    "id": "91235b91-fb56-4482-ac34-1d4545f1f7e0",
+    "invoiceNumber": "INV-2026-0006",
+    "bookingId": "3887cd90-d2e6-4894-876d-502185389c94",
+    "issuedAt": "2026-08-30T00:49:00.553Z",
+    "status": "SENT",
+    "subtotal": "1750",
+    "tax": "0",
+    "total": "1750",
+    "currency": "USD",
+    "snapshotJsonb": {
+      "tax": "0.00",
+      "total": "1750.00",
+      "adults": 1,
+      "tourId": "90820392-7635-499a-adc6-05deb4e470be",
+      "infants": 0,
+      "version": 1,
+      "children": 0,
+      "currency": "USD",
+      "tourSlug": "marvels-of-dubai-and-turkey-14-days",
+      "discounts": [],
+      "tourTitle": "روائع دبي وتركيا",
+      "adultTotal": "1750.00",
+      "childTotal": "0.00",
+      "passengers": [
+        {
+          "fullName": "Dina",
+          "passengerType": "ADULT"
+        }
+      ],
+      "arrivalDate": "2026-08-30",
+      "baseSubtotal": "1750.00",
+      "departureDate": "2026-08-31",
+      "billingRecipient": {
+        "city": null,
+        "email": "dodymoubark53@gmail.com",
+        "phone": "01004146843",
+        "taxId": null,
+        "address": null,
+        "country": null,
+        "fullName": "Dody Moubark",
+        "companyName": null,
+        "invoiceType": "PERSONAL"
+      },
+      "seasonalAdjustment": "0.00"
+    },
+    "dueDate": null,
+    "pdfUrl": null,
+    "paymentId": null
+  }
+]

@@ -1,0 +1,894 @@
+[
+  {
+    "id": "marriott-mena-house-cairo-deluxe-pyramid-view",
+    "hotelId": "marriott-mena-house-cairo",
+    "slug": "deluxe-pyramid-view",
+    "nameJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة الأهرامات",
+      "en": "Deluxe Pyramid View Room",
+      "es": "Habitación Deluxe Vista Pirámides",
+      "it": "Camera Deluxe Vista Piramidi",
+      "pt": "Quarto Deluxe Vista Pirâmides"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة الأهرامات",
+      "en": "Deluxe Pyramid View Room",
+      "es": "Habitación Deluxe Vista Pirámides",
+      "it": "Camera Deluxe Vista Piramidi",
+      "pt": "Quarto Deluxe Vista Pirâmides"
+    },
+    "ratePerNight": "290",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 2,
+    "inventory": 20,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:04.830Z",
+    "updatedAt": "2026-08-29T15:00:04.830Z",
+    "deletedAt": null
+  },
+  {
+    "id": "marriott-mena-house-cairo-palace-executive-suite",
+    "hotelId": "marriott-mena-house-cairo",
+    "slug": "palace-executive-suite",
+    "nameJsonb": {
+      "ar": "جناح القصر التنفيذي",
+      "en": "Palace Executive Suite",
+      "es": "Suite Ejecutiva Palacio",
+      "it": "Suite Esecutiva Palazzo",
+      "pt": "Suíte Executiva Palácio"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح القصر التنفيذي",
+      "en": "Palace Executive Suite",
+      "es": "Suite Ejecutiva Palacio",
+      "it": "Suite Esecutiva Palazzo",
+      "pt": "Suíte Executiva Palácio"
+    },
+    "ratePerNight": "580",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board",
+      "en": "Half Board",
+      "es": "Half Board",
+      "it": "Half Board",
+      "pt": "Half Board"
+    },
+    "maxOccupancy": 3,
+    "inventory": 8,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:04.978Z",
+    "updatedAt": "2026-08-29T15:00:04.978Z",
+    "deletedAt": null
+  },
+  {
+    "id": "ciragan-palace-kempinski-istanbul-bosphorus-view-grand-deluxe",
+    "hotelId": "ciragan-palace-kempinski-istanbul",
+    "slug": "bosphorus-view-grand-deluxe",
+    "nameJsonb": {
+      "ar": "غراند ديلوكس بإطلالة البوسفور",
+      "en": "Grand Deluxe Bosphorus View",
+      "es": "Grand Deluxe Vista Bósforo",
+      "it": "Grand Deluxe Vista Bosforo",
+      "pt": "Grand Deluxe Vista Bósforo"
+    },
+    "descriptionJsonb": {
+      "ar": "غراند ديلوكس بإطلالة البوسفور",
+      "en": "Grand Deluxe Bosphorus View",
+      "es": "Grand Deluxe Vista Bósforo",
+      "it": "Grand Deluxe Vista Bosforo",
+      "pt": "Grand Deluxe Vista Bósforo"
+    },
+    "ratePerNight": "520",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Buffet",
+      "en": "Breakfast Buffet",
+      "es": "Breakfast Buffet",
+      "it": "Breakfast Buffet",
+      "pt": "Breakfast Buffet"
+    },
+    "maxOccupancy": 2,
+    "inventory": 12,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:05.418Z",
+    "updatedAt": "2026-08-29T15:00:05.418Z",
+    "deletedAt": null
+  },
+  {
+    "id": "ciragan-palace-kempinski-istanbul-palace-bosphorus-suite",
+    "hotelId": "ciragan-palace-kempinski-istanbul",
+    "slug": "palace-bosphorus-suite",
+    "nameJsonb": {
+      "ar": "جناح القصر الملكي على البوسفور",
+      "en": "Palace Bosphorus Suite",
+      "es": "Suite Palacio Bósforo",
+      "it": "Suite Palazzo Bosforo",
+      "pt": "Suíte Palácio Bósforo"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح القصر الملكي على البوسفور",
+      "en": "Palace Bosphorus Suite",
+      "es": "Suite Palacio Bósforo",
+      "it": "Suite Palazzo Bosforo",
+      "pt": "Suíte Palácio Bósforo"
+    },
+    "ratePerNight": "950",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board VIP",
+      "en": "Half Board VIP",
+      "es": "Half Board VIP",
+      "it": "Half Board VIP",
+      "pt": "Half Board VIP"
+    },
+    "maxOccupancy": 3,
+    "inventory": 5,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:05.568Z",
+    "updatedAt": "2026-08-29T15:00:05.568Z",
+    "deletedAt": null
+  },
+  {
+    "id": "museum-hotel-cappadocia-deluxe-cave-room",
+    "hotelId": "museum-hotel-cappadocia",
+    "slug": "deluxe-cave-room",
+    "nameJsonb": {
+      "ar": "غرفة كهفية ديلوكس فاخرة",
+      "en": "Deluxe Cave Room",
+      "es": "Habitación Cueva Deluxe",
+      "it": "Camera Grotta Deluxe",
+      "pt": "Quarto Caverna Deluxe"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة كهفية ديلوكس فاخرة",
+      "en": "Deluxe Cave Room",
+      "es": "Habitación Cueva Deluxe",
+      "it": "Camera Grotta Deluxe",
+      "pt": "Quarto Caverna Deluxe"
+    },
+    "ratePerNight": "410",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Gourmet Breakfast",
+      "en": "Gourmet Breakfast",
+      "es": "Gourmet Breakfast",
+      "it": "Gourmet Breakfast",
+      "pt": "Gourmet Breakfast"
+    },
+    "maxOccupancy": 2,
+    "inventory": 8,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:06.007Z",
+    "updatedAt": "2026-08-29T15:00:06.007Z",
+    "deletedAt": null
+  },
+  {
+    "id": "museum-hotel-cappadocia-imperial-cave-suite",
+    "hotelId": "museum-hotel-cappadocia",
+    "slug": "imperial-cave-suite",
+    "nameJsonb": {
+      "ar": "الجناح الكهفي الإمبراطوري مع جاكوزي",
+      "en": "Imperial Cave Suite with Jacuzzi",
+      "es": "Suite Imperial Cueva con Jacuzzi",
+      "it": "Suite Imperiale Grotta con Idromassaggio",
+      "pt": "Suíte Imperial Caverna com Jacuzzi"
+    },
+    "descriptionJsonb": {
+      "ar": "الجناح الكهفي الإمبراطوري مع جاكوزي",
+      "en": "Imperial Cave Suite with Jacuzzi",
+      "es": "Suite Imperial Cueva con Jacuzzi",
+      "it": "Suite Imperiale Grotta con Idromassaggio",
+      "pt": "Suíte Imperial Caverna com Jacuzzi"
+    },
+    "ratePerNight": "780",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board",
+      "en": "Half Board",
+      "es": "Half Board",
+      "it": "Half Board",
+      "pt": "Half Board"
+    },
+    "maxOccupancy": 3,
+    "inventory": 4,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:06.155Z",
+    "updatedAt": "2026-08-29T15:00:06.155Z",
+    "deletedAt": null
+  },
+  {
+    "id": "kempinski-hotel-ishtar-dead-sea-ishtar-superior-sea-view",
+    "hotelId": "kempinski-hotel-ishtar-dead-sea",
+    "slug": "ishtar-superior-sea-view",
+    "nameJsonb": {
+      "ar": "غرفة عشتار سوبيريور بإطلالة البحر",
+      "en": "Ishtar Superior Sea View Room",
+      "es": "Habitación Ishtar Superior Vista Mar",
+      "it": "Camera Ishtar Superior Vista Mare",
+      "pt": "Quarto Ishtar Superior Vista Mar"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة عشتار سوبيريور بإطلالة البحر",
+      "en": "Ishtar Superior Sea View Room",
+      "es": "Habitación Ishtar Superior Vista Mar",
+      "it": "Camera Ishtar Superior Vista Mare",
+      "pt": "Quarto Ishtar Superior Vista Mar"
+    },
+    "ratePerNight": "260",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 2,
+    "inventory": 25,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:06.593Z",
+    "updatedAt": "2026-08-29T15:00:06.593Z",
+    "deletedAt": null
+  },
+  {
+    "id": "kempinski-hotel-ishtar-dead-sea-ishtar-royal-villa",
+    "hotelId": "kempinski-hotel-ishtar-dead-sea",
+    "slug": "ishtar-royal-villa",
+    "nameJsonb": {
+      "ar": "فيلا عشتار الملكية الشاطئية",
+      "en": "Ishtar Royal Beach Villa",
+      "es": "Villa Real Ishtar en la Playa",
+      "it": "Villa Reale Ishtar sulla Spiaggia",
+      "pt": "Vila Real Ishtar na Praia"
+    },
+    "descriptionJsonb": {
+      "ar": "فيلا عشتار الملكية الشاطئية",
+      "en": "Ishtar Royal Beach Villa",
+      "es": "Villa Real Ishtar en la Playa",
+      "it": "Villa Reale Ishtar sulla Spiaggia",
+      "pt": "Vila Real Ishtar na Praia"
+    },
+    "ratePerNight": "890",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board Deluxe",
+      "en": "Half Board Deluxe",
+      "es": "Half Board Deluxe",
+      "it": "Half Board Deluxe",
+      "pt": "Half Board Deluxe"
+    },
+    "maxOccupancy": 4,
+    "inventory": 3,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:06.752Z",
+    "updatedAt": "2026-08-29T15:00:06.752Z",
+    "deletedAt": null
+  },
+  {
+    "id": "sol-pyramid-hotel-triple-room",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "triple-room",
+    "nameJsonb": {
+      "ar": "غرفة ثلاثية (تريبل)",
+      "en": "Triple Room",
+      "es": "Habitación Triple",
+      "it": "Camera Tripla",
+      "pt": "Quarto Triplo"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة ثلاثية واسعة مثالية للعائلات أو المجموعات حتى 3 ضيوف.",
+      "en": "Spacious triple room ideal for families or groups of 3 guests.",
+      "es": "Amplia habitación triple ideal para familias o grupos de 3 huéspedes.",
+      "it": "Spaziosa camera tripla ideale per famiglie o gruppi di 3 ospiti.",
+      "pt": "Espaçoso quarto triplo ideal para famílias ou grupos de 3 hóspedes."
+    },
+    "ratePerNight": "0",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 3,
+    "inventory": 10,
+    "isActive": true,
+    "sortOrder": 3,
+    "createdAt": "2026-08-29T15:00:03.889Z",
+    "updatedAt": "2026-08-29T19:24:20.182Z",
+    "deletedAt": null
+  },
+  {
+    "id": "sol-pyramid-hotel-twin-room",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "twin-room",
+    "nameJsonb": {
+      "ar": "غرفة بسريرين منفصلين",
+      "en": "Twin Room",
+      "es": "Habitación Twin",
+      "it": "Camera Twin",
+      "pt": "Quarto Twin"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة بسريرين منفصلين",
+      "en": "Twin Room",
+      "es": "Habitación Twin",
+      "it": "Camera Twin",
+      "pt": "Quarto Twin"
+    },
+    "ratePerNight": "85",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 2,
+    "inventory": 15,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:03.741Z",
+    "updatedAt": "2026-08-29T15:00:03.741Z",
+    "deletedAt": null
+  },
+  {
+    "id": "movenpick-resort-petra-classic-king-petra",
+    "hotelId": "movenpick-resort-petra",
+    "slug": "classic-king-petra",
+    "nameJsonb": {
+      "ar": "غرفة كلاسيك كينج",
+      "en": "Classic King Room",
+      "es": "Habitación Classic King",
+      "it": "Camera Classic King",
+      "pt": "Quarto Classic King"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة كلاسيك كينج",
+      "en": "Classic King Room",
+      "es": "Habitación Classic King",
+      "it": "Camera Classic King",
+      "pt": "Quarto Classic King"
+    },
+    "ratePerNight": "210",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Buffet",
+      "en": "Breakfast Buffet",
+      "es": "Breakfast Buffet",
+      "it": "Breakfast Buffet",
+      "pt": "Breakfast Buffet"
+    },
+    "maxOccupancy": 2,
+    "inventory": 20,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:07.211Z",
+    "updatedAt": "2026-08-29T15:00:07.211Z",
+    "deletedAt": null
+  },
+  {
+    "id": "movenpick-resort-petra-junior-suite-petra",
+    "hotelId": "movenpick-resort-petra",
+    "slug": "junior-suite-petra",
+    "nameJsonb": {
+      "ar": "جناح جونيور بإطلالة الجبال",
+      "en": "Junior Mountain Suite",
+      "es": "Junior Suite Vista Montaña",
+      "it": "Junior Suite Vista Montagna",
+      "pt": "Suíte Júnior Vista Montanha"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح جونيور بإطلالة الجبال",
+      "en": "Junior Mountain Suite",
+      "es": "Junior Suite Vista Montaña",
+      "it": "Junior Suite Vista Montagna",
+      "pt": "Suíte Júnior Vista Montanha"
+    },
+    "ratePerNight": "390",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Buffet",
+      "en": "Breakfast Buffet",
+      "es": "Breakfast Buffet",
+      "it": "Breakfast Buffet",
+      "pt": "Breakfast Buffet"
+    },
+    "maxOccupancy": 3,
+    "inventory": 6,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:07.358Z",
+    "updatedAt": "2026-08-29T15:00:07.358Z",
+    "deletedAt": null
+  },
+  {
+    "id": "burj-al-arab-jumeirah-dubai-deluxe-one-bedroom-suite",
+    "hotelId": "burj-al-arab-jumeirah-dubai",
+    "slug": "deluxe-one-bedroom-suite",
+    "nameJsonb": {
+      "ar": "جناح ديلوكس دوبلكس بغرفة نوم وإطلالة المارينا",
+      "en": "Deluxe Marina One-Bedroom Duplex Suite",
+      "es": "Suite Dúplex Deluxe de 1 Dormitorio",
+      "it": "Suite Duplex Deluxe con 1 Camera",
+      "pt": "Suíte Duplex Deluxe de 1 Quarto"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح ديلوكس دوبلكس بغرفة نوم وإطلالة المارينا",
+      "en": "Deluxe Marina One-Bedroom Duplex Suite",
+      "es": "Suite Dúplex Deluxe de 1 Dormitorio",
+      "it": "Suite Duplex Deluxe con 1 Camera",
+      "pt": "Suíte Duplex Deluxe de 1 Quarto"
+    },
+    "ratePerNight": "1450",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Royal Breakfast & Rolls Royce Chauffeur",
+      "en": "Royal Breakfast & Rolls Royce Chauffeur",
+      "es": "Royal Breakfast & Rolls Royce Chauffeur",
+      "it": "Royal Breakfast & Rolls Royce Chauffeur",
+      "pt": "Royal Breakfast & Rolls Royce Chauffeur"
+    },
+    "maxOccupancy": 2,
+    "inventory": 10,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:07.803Z",
+    "updatedAt": "2026-08-29T15:00:07.803Z",
+    "deletedAt": null
+  },
+  {
+    "id": "burj-al-arab-jumeirah-dubai-panoramic-two-bedroom-suite",
+    "hotelId": "burj-al-arab-jumeirah-dubai",
+    "slug": "panoramic-two-bedroom-suite",
+    "nameJsonb": {
+      "ar": "جناح بانورامي بغرفتي نوم وإطلالة المحيط",
+      "en": "Panoramic Two-Bedroom Ocean Suite",
+      "es": "Suite Panorámica de 2 Dormitorios",
+      "it": "Suite Panoramica con 2 Camere",
+      "pt": "Suíte Panorâmica de 2 Quartos"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح بانورامي بغرفتي نوم وإطلالة المحيط",
+      "en": "Panoramic Two-Bedroom Ocean Suite",
+      "es": "Suite Panorámica de 2 Dormitorios",
+      "it": "Suite Panoramica con 2 Camere",
+      "pt": "Suíte Panorâmica de 2 Quartos"
+    },
+    "ratePerNight": "2800",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "All-Inclusive VIP",
+      "en": "All-Inclusive VIP",
+      "es": "All-Inclusive VIP",
+      "it": "All-Inclusive VIP",
+      "pt": "All-Inclusive VIP"
+    },
+    "maxOccupancy": 4,
+    "inventory": 4,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:07.960Z",
+    "updatedAt": "2026-08-29T15:00:07.960Z",
+    "deletedAt": null
+  },
+  {
+    "id": "atlantis-the-royal-dubai-seascape-king-room",
+    "hotelId": "atlantis-the-royal-dubai",
+    "slug": "seascape-king-room",
+    "nameJsonb": {
+      "ar": "غرفة سيسكيب كينج مع شرفة بحرية",
+      "en": "Seascape King Room with Balcony",
+      "es": "Habitación Seascape King con Balcón",
+      "it": "Camera Seascape King con Balcone",
+      "pt": "Quarto Seascape King com Varanda"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة سيسكيب كينج مع شرفة بحرية",
+      "en": "Seascape King Room with Balcony",
+      "es": "Habitación Seascape King con Balcón",
+      "it": "Camera Seascape King con Balcone",
+      "pt": "Quarto Seascape King com Varanda"
+    },
+    "ratePerNight": "680",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 2,
+    "inventory": 18,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:08.420Z",
+    "updatedAt": "2026-08-29T15:00:08.420Z",
+    "deletedAt": null
+  },
+  {
+    "id": "atlantis-the-royal-dubai-sky-pool-villa",
+    "hotelId": "atlantis-the-royal-dubai",
+    "slug": "sky-pool-villa",
+    "nameJsonb": {
+      "ar": "فيلا سكاي بول مع مسبح إنفينيتي خاص",
+      "en": "Sky Pool Villa with Private Infinity Pool",
+      "es": "Sky Pool Villa con Piscina Privada",
+      "it": "Sky Pool Villa con Piscina Privata",
+      "pt": "Sky Pool Villa com Piscina Privada"
+    },
+    "descriptionJsonb": {
+      "ar": "فيلا سكاي بول مع مسبح إنفينيتي خاص",
+      "en": "Sky Pool Villa with Private Infinity Pool",
+      "es": "Sky Pool Villa con Piscina Privada",
+      "it": "Sky Pool Villa con Piscina Privata",
+      "pt": "Sky Pool Villa com Piscina Privada"
+    },
+    "ratePerNight": "2100",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board VIP",
+      "en": "Half Board VIP",
+      "es": "Half Board VIP",
+      "it": "Half Board VIP",
+      "pt": "Half Board VIP"
+    },
+    "maxOccupancy": 4,
+    "inventory": 3,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:08.589Z",
+    "updatedAt": "2026-08-29T15:00:08.589Z",
+    "deletedAt": null
+  },
+  {
+    "id": "la-mamounia-marrakech-deluxe-park-room",
+    "hotelId": "la-mamounia-marrakech",
+    "slug": "deluxe-park-room",
+    "nameJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة على الحدائق",
+      "en": "Deluxe Park View Room",
+      "es": "Habitación Deluxe Vista Parque",
+      "it": "Camera Deluxe Vista Parco",
+      "pt": "Quarto Deluxe Vista Parque"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة على الحدائق",
+      "en": "Deluxe Park View Room",
+      "es": "Habitación Deluxe Vista Parque",
+      "it": "Camera Deluxe Vista Parco",
+      "pt": "Quarto Deluxe Vista Parque"
+    },
+    "ratePerNight": "460",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Moroccan Breakfast",
+      "en": "Moroccan Breakfast",
+      "es": "Moroccan Breakfast",
+      "it": "Moroccan Breakfast",
+      "pt": "Moroccan Breakfast"
+    },
+    "maxOccupancy": 2,
+    "inventory": 15,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:09.026Z",
+    "updatedAt": "2026-08-29T15:00:09.026Z",
+    "deletedAt": null
+  },
+  {
+    "id": "la-mamounia-marrakech-riad-mamounia",
+    "hotelId": "la-mamounia-marrakech",
+    "slug": "riad-mamounia",
+    "nameJsonb": {
+      "ar": "رياض المامونية الخاص مع مسبح",
+      "en": "Private Luxury Riad with Pool",
+      "es": "Riad Privado con Piscina",
+      "it": "Riad Privato con Piscina",
+      "pt": "Riad Privado com Piscina"
+    },
+    "descriptionJsonb": {
+      "ar": "رياض المامونية الخاص مع مسبح",
+      "en": "Private Luxury Riad with Pool",
+      "es": "Riad Privado con Piscina",
+      "it": "Riad Privato con Piscina",
+      "pt": "Riad Privado com Piscina"
+    },
+    "ratePerNight": "1650",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Full Board VIP",
+      "en": "Full Board VIP",
+      "es": "Full Board VIP",
+      "it": "Full Board VIP",
+      "pt": "Full Board VIP"
+    },
+    "maxOccupancy": 6,
+    "inventory": 2,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:09.173Z",
+    "updatedAt": "2026-08-29T15:00:09.173Z",
+    "deletedAt": null
+  },
+  {
+    "id": "canaves-oia-santorini-caldera-infinity-suite",
+    "hotelId": "canaves-oia-santorini",
+    "slug": "caldera-infinity-suite",
+    "nameJsonb": {
+      "ar": "جناح الكالديرا مع مسبح إنفينيتي خاص",
+      "en": "Caldera Infinity Pool Suite",
+      "es": "Suite Caldera con Piscina Infinity",
+      "it": "Suite Caldera con Piscina Infinity",
+      "pt": "Suíte Caldeira com Piscina Infinity"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح الكالديرا مع مسبح إنفينيتي خاص",
+      "en": "Caldera Infinity Pool Suite",
+      "es": "Suite Caldera con Piscina Infinity",
+      "it": "Suite Caldera con Piscina Infinity",
+      "pt": "Suíte Caldeira com Piscina Infinity"
+    },
+    "ratePerNight": "690",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Champagne Breakfast on Balcony",
+      "en": "Champagne Breakfast on Balcony",
+      "es": "Champagne Breakfast on Balcony",
+      "it": "Champagne Breakfast on Balcony",
+      "pt": "Champagne Breakfast on Balcony"
+    },
+    "maxOccupancy": 2,
+    "inventory": 8,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:09.611Z",
+    "updatedAt": "2026-08-29T15:00:09.611Z",
+    "deletedAt": null
+  },
+  {
+    "id": "canaves-oia-santorini-presidential-cave-suite",
+    "hotelId": "canaves-oia-santorini",
+    "slug": "presidential-cave-suite",
+    "nameJsonb": {
+      "ar": "الجناح الرئاسي الكهفي المطل على الغروب",
+      "en": "Presidential Cave Suite",
+      "es": "Suite Cueva Presidencial",
+      "it": "Suite Grotta Presidenziale",
+      "pt": "Suíte Caverna Presidencial"
+    },
+    "descriptionJsonb": {
+      "ar": "الجناح الرئاسي الكهفي المطل على الغروب",
+      "en": "Presidential Cave Suite",
+      "es": "Suite Cueva Presidencial",
+      "it": "Suite Grotta Presidenziale",
+      "pt": "Suíte Caverna Presidencial"
+    },
+    "ratePerNight": "1250",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board",
+      "en": "Half Board",
+      "es": "Half Board",
+      "it": "Half Board",
+      "pt": "Half Board"
+    },
+    "maxOccupancy": 4,
+    "inventory": 3,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:09.757Z",
+    "updatedAt": "2026-08-29T15:00:09.757Z",
+    "deletedAt": null
+  },
+  {
+    "id": "anantara-sahara-tozeur-resort-deluxe-sahara-view-room",
+    "hotelId": "anantara-sahara-tozeur-resort",
+    "slug": "deluxe-sahara-view-room",
+    "nameJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة على رمال الصحراء",
+      "en": "Deluxe Sahara View Room",
+      "es": "Habitación Deluxe Vista Sáhara",
+      "it": "Camera Deluxe Vista Sahara",
+      "pt": "Quarto Deluxe Vista Saara"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة ديلوكس بإطلالة على رمال الصحراء",
+      "en": "Deluxe Sahara View Room",
+      "es": "Habitación Deluxe Vista Sáhara",
+      "it": "Camera Deluxe Vista Sahara",
+      "pt": "Quarto Deluxe Vista Saara"
+    },
+    "ratePerNight": "280",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Oasis Breakfast Buffet",
+      "en": "Oasis Breakfast Buffet",
+      "es": "Oasis Breakfast Buffet",
+      "it": "Oasis Breakfast Buffet",
+      "pt": "Oasis Breakfast Buffet"
+    },
+    "maxOccupancy": 2,
+    "inventory": 16,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:10.191Z",
+    "updatedAt": "2026-08-29T15:00:10.191Z",
+    "deletedAt": null
+  },
+  {
+    "id": "anantara-sahara-tozeur-resort-one-bedroom-desert-pool-villa",
+    "hotelId": "anantara-sahara-tozeur-resort",
+    "slug": "one-bedroom-desert-pool-villa",
+    "nameJsonb": {
+      "ar": "فيلا صحراوية بغرفة نوم ومسبح خاص",
+      "en": "One-Bedroom Desert Pool Villa",
+      "es": "Villa Desierto de 1 Dormitorio con Piscina",
+      "it": "Villa Deserto con 1 Camera e Piscina",
+      "pt": "Vila Deserto de 1 Quarto com Piscina"
+    },
+    "descriptionJsonb": {
+      "ar": "فيلا صحراوية بغرفة نوم ومسبح خاص",
+      "en": "One-Bedroom Desert Pool Villa",
+      "es": "Villa Desierto de 1 Dormitorio con Piscina",
+      "it": "Villa Deserto con 1 Camera e Piscina",
+      "pt": "Vila Deserto de 1 Quarto com Piscina"
+    },
+    "ratePerNight": "620",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Half Board Bedouin Experience",
+      "en": "Half Board Bedouin Experience",
+      "es": "Half Board Bedouin Experience",
+      "it": "Half Board Bedouin Experience",
+      "pt": "Half Board Bedouin Experience"
+    },
+    "maxOccupancy": 3,
+    "inventory": 5,
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:10.339Z",
+    "updatedAt": "2026-08-29T15:00:10.339Z",
+    "deletedAt": null
+  },
+  {
+    "id": "c48e3428-dc5e-41cc-9569-0bbc83c5883a",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "single-room",
+    "nameJsonb": {
+      "ar": "غرفة مفردة (سينجل)",
+      "en": "Single Room",
+      "es": "Habitación Individual",
+      "it": "Camera Singola",
+      "pt": "Quarto Individual"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة مفردة مريحة مزودة بكافة وسائل الراحة الحديثة وإنترنت سريع.",
+      "en": "Cozy single room with modern amenities and high-speed Wi-Fi.",
+      "es": "Acogedora habitación individual con modernas comodidades y Wi-Fi de alta velocidad.",
+      "it": "Accogliente camera singola con comfort moderni e Wi-Fi ad alta velocità.",
+      "pt": "Aconchegante quarto individual com comodidades modernas e Wi-Fi de alta velocidade."
+    },
+    "ratePerNight": "0",
+    "currency": "USD",
+    "mealPlanJsonb": null,
+    "maxOccupancy": 1,
+    "inventory": 0,
+    "isActive": true,
+    "sortOrder": 0,
+    "createdAt": "2026-08-29T19:24:19.892Z",
+    "updatedAt": "2026-08-29T19:24:19.892Z",
+    "deletedAt": null
+  },
+  {
+    "id": "sol-pyramid-hotel-double-room",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "double-room",
+    "nameJsonb": {
+      "ar": "غرفة مزدوجة (دبل)",
+      "en": "Double Room",
+      "es": "Habitación Doble",
+      "it": "Camera Doppia",
+      "pt": "Quarto Duplo"
+    },
+    "descriptionJsonb": {
+      "ar": "غرفة دبل أنيقة بإطلالة مباشرة على الأهرامات وسرير ملكي.",
+      "en": "Elegant double room with Pyramids view and 1 King Bed.",
+      "es": "Elegante habitación doble con vistas a las Pirámides y 1 cama King.",
+      "it": "Elegante camera doppia con vista sulle Piramidi e 1 letto King.",
+      "pt": "Elegante quarto duplo com vista para as Pirâmides e 1 cama King."
+    },
+    "ratePerNight": "0",
+    "currency": "USD",
+    "mealPlanJsonb": {
+      "ar": "Breakfast Included",
+      "en": "Breakfast Included",
+      "es": "Breakfast Included",
+      "it": "Breakfast Included",
+      "pt": "Breakfast Included"
+    },
+    "maxOccupancy": 2,
+    "inventory": 15,
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:03.592Z",
+    "updatedAt": "2026-08-29T19:24:20.039Z",
+    "deletedAt": null
+  },
+  {
+    "id": "c8109fc1-3b50-4707-8b80-1be4f432bbc1",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "executive-suite",
+    "nameJsonb": {
+      "ar": "جناح تنفيذي (إكزكتيف سويت)",
+      "en": "Executive Suite",
+      "es": "Suite Ejecutiva",
+      "it": "Suite Executive",
+      "pt": "Suíte Executiva"
+    },
+    "descriptionJsonb": {
+      "ar": "جناح تنفيذي فاخر يتميز بصالة جلوس منفصلة وإطلالة بانورامية ساحرة على الأهرامات.",
+      "en": "Luxurious executive suite featuring a separate lounge and panoramic Pyramids view.",
+      "es": "Lujosa suite ejecutiva con sala de estar independiente y vista panorámica a las Pirámides.",
+      "it": "Lussuosa suite executive con salotto separato e vista panoramica sulle Piramidi.",
+      "pt": "Luxuosa suíte executiva com sala de estar separada e vista panorâmica das Pirâmides."
+    },
+    "ratePerNight": "0",
+    "currency": "USD",
+    "mealPlanJsonb": null,
+    "maxOccupancy": 3,
+    "inventory": 0,
+    "isActive": true,
+    "sortOrder": 0,
+    "createdAt": "2026-08-29T19:24:20.326Z",
+    "updatedAt": "2026-08-29T19:24:20.326Z",
+    "deletedAt": null
+  },
+  {
+    "id": "b81db1b6-6663-4b7c-b1f5-47870beb3a97",
+    "hotelId": "sol-pyramid-hotel",
+    "slug": "royal-pyramid-view-suite",
+    "nameJsonb": {
+      "ar": "الجناح الملكي بإطلالة الأهرامات",
+      "en": "Royal Pyramid View Suite",
+      "es": "Suite Real con Vista a las Pirámides",
+      "it": "Suite Reale con Vista sulle Piramidi",
+      "pt": "Suíte Real com Vista para as Pirâmides"
+    },
+    "descriptionJsonb": {
+      "ar": "درة التاج الفندقية، توفر أقصى درجات الفخامة وإطلالة مباشرة في الصف الأول على أهرامات الجيزة.",
+      "en": "The crown jewel suite offering supreme comfort and front-row views of the Giza Pyramids.",
+      "es": "La joya de la corona con supremo confort y vistas de primera fila a las Pirámides de Giza.",
+      "it": "Il fiore all’occhiello che offre massimo comfort e vista in prima fila sulle Piramidi di Giza.",
+      "pt": "A jóia da coroa oferecendo conforto supremo e vista privilegiada das Pirâmides de Gizé."
+    },
+    "ratePerNight": "0",
+    "currency": "USD",
+    "mealPlanJsonb": null,
+    "maxOccupancy": 4,
+    "inventory": 0,
+    "isActive": true,
+    "sortOrder": 0,
+    "createdAt": "2026-08-29T19:24:21.197Z",
+    "updatedAt": "2026-08-29T19:24:21.197Z",
+    "deletedAt": null
+  }
+]

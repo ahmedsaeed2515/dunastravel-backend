@@ -1,0 +1,765 @@
+[
+  {
+    "id": "b51f1891-4344-4ee4-b990-0ecd26facbe3",
+    "conversationId": "ffcab704-084c-4d7f-b424-fa0091713212",
+    "role": "user",
+    "textContent": "Recommend top Nile Cruise packages",
+    "structuredContent": null,
+    "locale": "en",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-17T20:17:05.702Z"
+  },
+  {
+    "id": "60c0a4f2-e341-4652-bdc0-91868961e439",
+    "conversationId": "ffcab704-084c-4d7f-b424-fa0091713212",
+    "role": "assistant",
+    "textContent": "Hello! Based on your request, I highly recommend our signature luxury tour \"Classic Egypt II: Cairo + Nile Cruise\" in Egypt, starting from $2490 USD. Click the tour card below for the full itinerary!",
+    "structuredContent": null,
+    "locale": "en",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 18,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "tour-kb-en-d7141501-8cf6-42d4-8ddf-3a5400b8603a",
+        "score": 68,
+        "title": "[Tour Package] Classic Egypt: Cairo + Nile Cruise",
+        "content": "Tour Package: Classic Egypt: Cairo + Nile Cruise\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2190 USD\nCategory: Brasil\nPublic URL: /tours/egito-classico-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-f06017ce-323b-4f38-82ab-0627cb730e8a",
+        "score": 68,
+        "title": "[Tour Package] Classic Egypt II: Cairo + Nile Cruise",
+        "content": "Tour Package: Classic Egypt II: Cairo + Nile Cruise\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2490 USD\nCategory: Brasil\nPublic URL: /tours/egito-classico-ii-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-789997e7-7d79-4902-bd86-57f68e123c9e",
+        "score": 53,
+        "title": "[Tour Package] Historic Egypt: Cairo + Cruise + Red Sea",
+        "content": "Tour Package: Historic Egypt: Cairo + Cruise + Red Sea\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2790 USD\nCategory: Brasil\nPublic URL: /tours/egito-historico-10d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-9134e779-81a0-48fb-8f9f-e6f66e0faa39",
+        "score": 53,
+        "title": "[Tour Package] Cairo with Cruise + Sharm El Sheikh",
+        "content": "Tour Package: Cairo with Cruise + Sharm El Sheikh\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $3090 USD\nCategory: Brasil\nPublic URL: /tours/cairo-cruzeiro-sharm-11d",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "f06017ce-323b-4f38-82ab-0627cb730e8a",
+      "d7141501-8cf6-42d4-8ddf-3a5400b8603a",
+      "9134e779-81a0-48fb-8f9f-e6f66e0faa39"
+    ],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-17T20:17:05.864Z"
+  },
+  {
+    "id": "31fdfe69-2981-453e-94d7-7cd629c0e8c4",
+    "conversationId": "ffcab704-084c-4d7f-b424-fa0091713212",
+    "role": "user",
+    "textContent": "Book a tour now",
+    "structuredContent": null,
+    "locale": "en",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-17T20:17:13.965Z"
+  },
+  {
+    "id": "74c072f4-2728-4544-a2a1-07091f1ed956",
+    "conversationId": "ffcab704-084c-4d7f-b424-fa0091713212",
+    "role": "assistant",
+    "textContent": "Hello! Based on your request, I highly recommend our signature luxury tour \"Cairo with Cruise + Sharm El Sheikh\" in Egypt, starting from $3090 USD. Click the tour card below for the full itinerary!",
+    "structuredContent": null,
+    "locale": "en",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 6,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "tour-kb-en-23266376-5193-4c4b-a6ad-91acbabb3cbf",
+        "score": 53,
+        "title": "[Tour Package] completoEgypt.title",
+        "content": "Tour Package: completoEgypt.title\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Global\nPublic URL: /tours/complete-egypt-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-2343624e-0550-4d9e-8742-3122a1dc0f12",
+        "score": 53,
+        "title": "[Tour Package] Egypt and Dubai 13 Days",
+        "content": "Tour Package: Egypt and Dubai 13 Days\nDestination: Middle East\nDuration: 5 Days\nStarting Price: $1290 USD\nCategory: Multi-Country\nPublic URL: /tours/egypt-and-dubai-13-days",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3576a346-4c7d-4efe-a8e5-6a089a0f953e",
+        "score": 53,
+        "title": "[Tour Package] The Best of Greece – 09 Days",
+        "content": "Tour Package: The Best of Greece – 09 Days\nDestination: greece\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/lo-mejor-de-grecia-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3dd498e9-f5ff-4b32-a9d8-631709c699df",
+        "score": 53,
+        "title": "[Tour Package] Wonders of Egypt",
+        "content": "Tour Package: Wonders of Egypt\nDestination: Egypt & Middle East\nDuration: 5 Days\nStarting Price: $950 USD\nCategory: egypt\nPublic URL: /tours/wonders-of-egypt",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "9134e779-81a0-48fb-8f9f-e6f66e0faa39",
+      "f06017ce-323b-4f38-82ab-0627cb730e8a",
+      "d7141501-8cf6-42d4-8ddf-3a5400b8603a"
+    ],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-17T20:17:14.011Z"
+  },
+  {
+    "id": "8e673542-d15a-4aec-9f98-6bf906a1b2ce",
+    "conversationId": "a6f8675b-92e8-436a-b3eb-63e3548757a7",
+    "role": "user",
+    "textContent": "امل اي",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-18T17:51:45.815Z"
+  },
+  {
+    "id": "634b3b44-fb22-4740-b302-ece2b02be9ca",
+    "conversationId": "a6f8675b-92e8-436a-b3eb-63e3548757a7",
+    "role": "assistant",
+    "textContent": "أهلاً بك! نقترح عليك رحلة \"مصر كاملة\" في Egypt بسعر يبدأ من $2890 USD. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 13,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "kb-guide-vip-ar",
+        "score": 50,
+        "title": "[خدمة] تصميم الرحلات المخصصة وباقات VIP الفاخرة",
+        "content": "توفر شركة دوناس ترافيل خدمة تصميم الرحلات السياحية الفاخرة والمخصصة بالكامل (Tailor-Made) للعائلات والأفراد وكبار الشخصيات VIP، مع مرشدين خاصين، دهبيات نيلية خاصة، حجوزات فنادق 5 نجوم، وسيارات فارهة. يمكن طلب برنامج مخصص عبر الرابط /tailor-a-tour أو التواصل مع مستشارينا.",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-1dd10b8c-dd77-4526-aed2-3cc84cbc707e",
+        "score": 45,
+        "title": "[رحلة سياحية] تركيا الأسطورية بقطار فائق السرعة",
+        "content": "رحلة سياحية: تركيا الأسطورية بقطار فائق السرعة\nDestination: Turkey\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/turquia-legendaria-11d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-23266376-5193-4c4b-a6ad-91acbabb3cbf",
+        "score": 45,
+        "title": "[رحلة سياحية] مصر كاملة",
+        "content": "رحلة سياحية: مصر كاملة\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Global\nPublic URL: /tours/complete-egypt-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-3dd498e9-f5ff-4b32-a9d8-631709c699df",
+        "score": 45,
+        "title": "[رحلة سياحية] عجائب مصر",
+        "content": "رحلة سياحية: عجائب مصر\nDestination: Egypt & Middle East\nDuration: 5 Days\nStarting Price: $950 USD\nCategory: egypt\nPublic URL: /tours/wonders-of-egypt",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "23266376-5193-4c4b-a6ad-91acbabb3cbf",
+      "e360ad1b-b48b-42c0-9b0d-0ba440c2697c",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2"
+    ],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-18T17:51:45.956Z"
+  },
+  {
+    "id": "6db65472-78d4-4ed9-abf8-f774dfd1789e",
+    "conversationId": "a6f8675b-92e8-436a-b3eb-63e3548757a7",
+    "role": "user",
+    "textContent": "انت اي",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-18T17:52:01.434Z"
+  },
+  {
+    "id": "231d395e-1ec4-42d9-86ba-842bb29dd3be",
+    "conversationId": "a6f8675b-92e8-436a-b3eb-63e3548757a7",
+    "role": "assistant",
+    "textContent": "أهلاً بك! نقترح عليك رحلة \"مصر كاملة\" في Egypt بسعر يبدأ من $2890 USD. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 7,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "kb-guide-vip-ar",
+        "score": 47,
+        "title": "[خدمة] تصميم الرحلات المخصصة وباقات VIP الفاخرة",
+        "content": "توفر شركة دوناس ترافيل خدمة تصميم الرحلات السياحية الفاخرة والمخصصة بالكامل (Tailor-Made) للعائلات والأفراد وكبار الشخصيات VIP، مع مرشدين خاصين، دهبيات نيلية خاصة، حجوزات فنادق 5 نجوم، وسيارات فارهة. يمكن طلب برنامج مخصص عبر الرابط /tailor-a-tour أو التواصل مع مستشارينا.",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-1dd10b8c-dd77-4526-aed2-3cc84cbc707e",
+        "score": 45,
+        "title": "[رحلة سياحية] تركيا الأسطورية بقطار فائق السرعة",
+        "content": "رحلة سياحية: تركيا الأسطورية بقطار فائق السرعة\nDestination: Turkey\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/turquia-legendaria-11d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-3dd498e9-f5ff-4b32-a9d8-631709c699df",
+        "score": 45,
+        "title": "[رحلة سياحية] عجائب مصر",
+        "content": "رحلة سياحية: عجائب مصر\nDestination: Egypt & Middle East\nDuration: 5 Days\nStarting Price: $950 USD\nCategory: egypt\nPublic URL: /tours/wonders-of-egypt",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-90820392-7635-499a-adc6-05deb4e470be",
+        "score": 45,
+        "title": "[رحلة سياحية] روائع دبي وتركيا",
+        "content": "رحلة سياحية: روائع دبي وتركيا\nDestination: Middle East\nDuration: 5 Days\nStarting Price: $1290 USD\nCategory: Multi-Country\nPublic URL: /tours/marvels-of-dubai-and-turkey-14-days",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "23266376-5193-4c4b-a6ad-91acbabb3cbf",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "e360ad1b-b48b-42c0-9b0d-0ba440c2697c"
+    ],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-18T17:52:01.487Z"
+  },
+  {
+    "id": "d2b4c122-732e-4304-9423-8fe213fb6371",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "user",
+    "textContent": "Recomende os melhores cruzeiros no Nilo",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-27T21:12:09.977Z"
+  },
+  {
+    "id": "1378afa4-e00a-4401-a3dc-5d910ad428ce",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "assistant",
+    "textContent": "Hello! Based on your request, I highly recommend our signature luxury tour \"Egito Clássico: Cairo + Cruzeiro no Nilo\" in Cairo, Luxor & Aswan, Egypt, starting from $2190 USD. Click the tour card below for the full itinerary!",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 9,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "tour-kb-pt-d7141501-8cf6-42d4-8ddf-3a5400b8603a",
+        "score": 60,
+        "title": "[Pacote Turístico] Egito Clássico: Cairo + Cruzeiro no Nilo",
+        "content": "Pacote Turístico: Egito Clássico: Cairo + Cruzeiro no Nilo\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2190 USD\nCategory: Brasil\nPublic URL: /tours/egito-classico-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-pt-f06017ce-323b-4f38-82ab-0627cb730e8a",
+        "score": 60,
+        "title": "[Pacote Turístico] Egito Clássico II: Cairo + Cruzeiro no Nilo",
+        "content": "Pacote Turístico: Egito Clássico II: Cairo + Cruzeiro no Nilo\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2490 USD\nCategory: Brasil\nPublic URL: /tours/egito-classico-ii-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-pt-4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+        "score": 53,
+        "title": "[Pacote Turístico] Tesouros do Egito com Alexandria",
+        "content": "Pacote Turístico: Tesouros do Egito com Alexandria\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Brasil\nPublic URL: /tours/tesouros-egipto-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+        "score": 49,
+        "title": "[Tour Package] Treasures of Egypt with Alexandria",
+        "content": "Tour Package: Treasures of Egypt with Alexandria\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Brasil\nPublic URL: /tours/tesouros-egipto-9d",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "d7141501-8cf6-42d4-8ddf-3a5400b8603a",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "789997e7-7d79-4902-bd86-57f68e123c9e"
+    ],
+    "recommendedDestinations": [
+      "destination"
+    ],
+    "createdAt": "2026-08-27T21:12:10.172Z"
+  },
+  {
+    "id": "011fac8b-90be-4c1a-a640-5c4c078bf77c",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "user",
+    "textContent": "Book a tour now",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-27T21:12:27.129Z"
+  },
+  {
+    "id": "a758ab3e-a325-43aa-b0f1-df623042d974",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "assistant",
+    "textContent": "Hello! Based on your request, I highly recommend our signature luxury tour \"Egito Completo\" in Egypt, starting from $2890 USD. Click the tour card below for the full itinerary!",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 7,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "tour-kb-en-23266376-5193-4c4b-a6ad-91acbabb3cbf",
+        "score": 53,
+        "title": "[Tour Package] completoEgypt.title",
+        "content": "Tour Package: completoEgypt.title\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Global\nPublic URL: /tours/complete-egypt-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-2343624e-0550-4d9e-8742-3122a1dc0f12",
+        "score": 53,
+        "title": "[Tour Package] Egypt and Dubai 13 Days",
+        "content": "Tour Package: Egypt and Dubai 13 Days\nDestination: Middle East\nDuration: 5 Days\nStarting Price: $1290 USD\nCategory: Multi-Country\nPublic URL: /tours/egypt-and-dubai-13-days",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3576a346-4c7d-4efe-a8e5-6a089a0f953e",
+        "score": 53,
+        "title": "[Tour Package] The Best of Greece – 09 Days",
+        "content": "Tour Package: The Best of Greece – 09 Days\nDestination: greece\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/lo-mejor-de-grecia-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3dd498e9-f5ff-4b32-a9d8-631709c699df",
+        "score": 53,
+        "title": "[Tour Package] Wonders of Egypt",
+        "content": "Tour Package: Wonders of Egypt\nDestination: Egypt & Middle East\nDuration: 5 Days\nStarting Price: $950 USD\nCategory: egypt\nPublic URL: /tours/wonders-of-egypt",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "23266376-5193-4c4b-a6ad-91acbabb3cbf",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "e360ad1b-b48b-42c0-9b0d-0ba440c2697c"
+    ],
+    "recommendedDestinations": [
+      "destination",
+      "destination"
+    ],
+    "createdAt": "2026-08-27T21:12:27.198Z"
+  },
+  {
+    "id": "2a36b8ea-4e31-406e-80d9-49aaeb57a3f1",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "user",
+    "textContent": "Book a tour now",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-27T21:27:00.029Z"
+  },
+  {
+    "id": "bded69ea-1829-478f-a5fe-c1838342ce34",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "assistant",
+    "textContent": "Hello! Based on your request, I highly recommend our signature luxury tour \"Egito Completo\" in Egypt, starting from $2890 USD. Click the tour card below for the full itinerary!",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 8,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "tour-kb-en-23266376-5193-4c4b-a6ad-91acbabb3cbf",
+        "score": 53,
+        "title": "[Tour Package] completoEgypt.title",
+        "content": "Tour Package: completoEgypt.title\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Global\nPublic URL: /tours/complete-egypt-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-2343624e-0550-4d9e-8742-3122a1dc0f12",
+        "score": 53,
+        "title": "[Tour Package] Egypt and Dubai 13 Days",
+        "content": "Tour Package: Egypt and Dubai 13 Days\nDestination: Middle East\nDuration: 5 Days\nStarting Price: $1290 USD\nCategory: Multi-Country\nPublic URL: /tours/egypt-and-dubai-13-days",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3576a346-4c7d-4efe-a8e5-6a089a0f953e",
+        "score": 53,
+        "title": "[Tour Package] The Best of Greece – 09 Days",
+        "content": "Tour Package: The Best of Greece – 09 Days\nDestination: greece\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/lo-mejor-de-grecia-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-en-3dd498e9-f5ff-4b32-a9d8-631709c699df",
+        "score": 53,
+        "title": "[Tour Package] Wonders of Egypt",
+        "content": "Tour Package: Wonders of Egypt\nDestination: Egypt & Middle East\nDuration: 5 Days\nStarting Price: $950 USD\nCategory: egypt\nPublic URL: /tours/wonders-of-egypt",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "23266376-5193-4c4b-a6ad-91acbabb3cbf",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "e360ad1b-b48b-42c0-9b0d-0ba440c2697c"
+    ],
+    "recommendedDestinations": [
+      "destination",
+      "destination"
+    ],
+    "createdAt": "2026-08-27T21:27:00.249Z"
+  },
+  {
+    "id": "1acb0a64-c7a2-49de-be94-101989a307b5",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "user",
+    "textContent": "Customize a luxury itinerary",
+    "structuredContent": null,
+    "locale": "pt",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-27T21:27:07.620Z"
+  },
+  {
+    "id": "4b3d4a54-a84e-4b97-9eb5-405e787a2142",
+    "conversationId": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "role": "assistant",
+    "textContent": "I am delighted to curate this bespoke itinerary for you! Based on your preferences, I have crafted a 9-day luxury journey across Cairo & Luxor & Aswan. Review the day-by-day plan below!",
+    "structuredContent": {
+      "type": "itinerary_proposal",
+      "proposal": {
+        "id": "prop-1787866027625",
+        "days": [
+          {
+            "meals": "Welcome Dinner",
+            "title": "Arrival in Cairo & VIP Welcome",
+            "dayNumber": 1,
+            "activities": [
+              "VIP Airport Transfer",
+              "Hotel Check-in"
+            ],
+            "description": "Arrival at Cairo International Airport, executive meet-and-assist by Dunas Travel concierge, and private transfer to 5-star hotel."
+          },
+          {
+            "meals": "Breakfast + Gourmet Lunch",
+            "title": "Giza Pyramids, Saqqara & Grand Egyptian Museum",
+            "dayNumber": 2,
+            "activities": [
+              "Giza Pyramids",
+              "Saqqara",
+              "GEM"
+            ],
+            "description": "Private Egyptologist-led expedition to the Great Pyramids of Giza, Sphinx, Djoser Step Pyramid in Saqqara, and Grand Egyptian Museum (GEM)."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Flight to Aswan & Nile Cruise Embarkation",
+            "dayNumber": 3,
+            "activities": [
+              "Philae Temple",
+              "High Dam",
+              "Nile Sailing"
+            ],
+            "description": "Domestic flight to Aswan, embarkation on luxury Nile Cruise / private Dahabiya, visit to Philae Temple, High Dam, and sunset felucca ride."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Kom Ombo & Edfu Temples Navigation",
+            "dayNumber": 4,
+            "activities": [
+              "Kom Ombo",
+              "Edfu Temple"
+            ],
+            "description": "Sail north to the dual Temple of Kom Ombo and Crocodile Museum, followed by chariot excursion to Horus Temple in Edfu."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Luxor: Valley of the Kings & Karnak Temples",
+            "dayNumber": 5,
+            "activities": [
+              "Valley of the Kings",
+              "Karnak Temple"
+            ],
+            "description": "Arrival in Luxor, private exploration of Valley of the Kings, Hatshepsut Temple, and grand Karnak & Luxor Temples illuminated by night."
+          },
+          {
+            "meals": "Breakfast",
+            "title": "Cairo Return & International Departure",
+            "dayNumber": 9,
+            "activities": [
+              "Airport Transfer & Departure"
+            ],
+            "description": "Breakfast, private transfer to Cairo International Airport, VIP exit assistance, and international flight departure."
+          }
+        ],
+        "tier": "ULTRA_VIP",
+        "title": "Custom 9-Day Itinerary: Cairo + Luxor + Aswan",
+        "currency": "USD",
+        "highlights": [
+          "5-Star luxury accommodations with premier views",
+          "Dedicated private Egyptologist guide",
+          "Private Mercedes fleet transfers & VIP airport concierge",
+          "Full-board signature Nile Cruise sailing"
+        ],
+        "inclusions": [
+          "All luxury hotel & cruise accommodations",
+          "All historical site entrance permits",
+          "All domestic flights & private ground transfers",
+          "24/7 dedicated travel designer concierge support"
+        ],
+        "destinations": [
+          "Cairo",
+          "Luxor",
+          "Aswan"
+        ],
+        "durationDays": 9,
+        "isCustomTailored": true,
+        "estimatedPricePerPerson": 2490,
+        "requiresHumanConfirmation": true
+      }
+    },
+    "locale": "pt",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 6,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "kb-guide-vip-en",
+        "score": 55,
+        "title": "[Service] Custom Tailor-Made & VIP Tour Planning",
+        "content": "Dunas Travel provides bespoke tailor-made luxury tour planning for families, couples, and VIP groups. Visitors can request custom private itineraries, dedicated guides, private luxury Nile dahabiyas, private jets, and 5-star luxury hotel arrangements by visiting /tailor-a-tour or contacting our concierge team.",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-1dd10b8c-dd77-4526-aed2-3cc84cbc707e",
+        "score": 46,
+        "title": "[رحلة سياحية] تركيا الأسطورية بقطار فائق السرعة",
+        "content": "رحلة سياحية: تركيا الأسطورية بقطار فائق السرعة\nDestination: Turkey\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/turquia-legendaria-11d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-23266376-5193-4c4b-a6ad-91acbabb3cbf",
+        "score": 46,
+        "title": "[رحلة سياحية] مصر كاملة",
+        "content": "رحلة سياحية: مصر كاملة\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2890 USD\nCategory: Global\nPublic URL: /tours/complete-egypt-8d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-2343624e-0550-4d9e-8742-3122a1dc0f12",
+        "score": 46,
+        "title": "[رحلة سياحية] مصر ودبي 13 يوماً",
+        "content": "رحلة سياحية: مصر ودبي 13 يوماً\nDestination: Middle East\nDuration: 5 Days\nStarting Price: $1290 USD\nCategory: Multi-Country\nPublic URL: /tours/egypt-and-dubai-13-days",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "23266376-5193-4c4b-a6ad-91acbabb3cbf",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "e360ad1b-b48b-42c0-9b0d-0ba440c2697c"
+    ],
+    "recommendedDestinations": [
+      "9a5c8961-24b1-4c18-91e0-0e1c080a12cb",
+      "7d19aff6-053c-4c16-9253-41d3d7452102"
+    ],
+    "createdAt": "2026-08-27T21:27:07.684Z"
+  },
+  {
+    "id": "b127603e-f2fc-4558-b501-67a22f152e59",
+    "conversationId": "54e6094e-113a-4962-82a2-db43a9c1514a",
+    "role": "user",
+    "textContent": "اقترح علي أفضل رحلات النايل كروز الفاخرة",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": null,
+    "model": null,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 0,
+    "isError": false,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": null,
+    "recommendedTourIds": [],
+    "recommendedDestinations": [],
+    "createdAt": "2026-08-30T07:37:44.776Z"
+  },
+  {
+    "id": "3840dee1-3033-44de-b60f-b5abe8d5c69b",
+    "conversationId": "54e6094e-113a-4962-82a2-db43a9c1514a",
+    "role": "assistant",
+    "textContent": "أهلاً بك! نقترح عليك رحلة \"القاهرة مع كروز + شرم الشيخ\" في Cairo, Nile Cruise & Sharm El Sheikh, Egypt بسعر يبدأ من $0 USD. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.",
+    "structuredContent": null,
+    "locale": "ar",
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 124,
+    "isError": true,
+    "errorCategory": null,
+    "moderationStatus": "PASSED",
+    "knowledgeSources": [
+      {
+        "id": "kb-guide-vip-ar",
+        "score": 92,
+        "title": "[خدمة] تصميم الرحلات المخصصة وباقات VIP الفاخرة",
+        "content": "توفر شركة دوناس ترافيل خدمة تصميم الرحلات السياحية الفاخرة والمخصصة بالكامل (Tailor-Made) للعائلات والأفراد وكبار الشخصيات VIP، مع مرشدين خاصين، دهبيات نيلية خاصة، حجوزات فنادق 5 نجوم، وسيارات فارهة. يمكن طلب برنامج مخصص عبر الرابط /tailor-a-tour أو التواصل مع مستشارينا.",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-3576a346-4c7d-4efe-a8e5-6a089a0f953e",
+        "score": 45,
+        "title": "[رحلة سياحية] أفضل ما في اليونان – 09 أيام",
+        "content": "رحلة سياحية: أفضل ما في اليونان – 09 أيام\nDestination: greece\nDuration: 5 Days\nStarting Price: $1490 USD\nCategory: España\nPublic URL: /tours/lo-mejor-de-grecia-9d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-9134e779-81a0-48fb-8f9f-e6f66e0faa39",
+        "score": 45,
+        "title": "[رحلة سياحية] القاهرة مع كروز + شرم الشيخ",
+        "content": "رحلة سياحية: القاهرة مع كروز + شرم الشيخ\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $3090 USD\nCategory: Brasil\nPublic URL: /tours/cairo-cruzeiro-sharm-11d",
+        "category": "CUSTOM_TOURS"
+      },
+      {
+        "id": "tour-kb-ar-d7141501-8cf6-42d4-8ddf-3a5400b8603a",
+        "score": 45,
+        "title": "[رحلة سياحية] كلاسيك مصر: القاهرة + رحلة نيلية",
+        "content": "رحلة سياحية: كلاسيك مصر: القاهرة + رحلة نيلية\nDestination: Egypt\nDuration: 5 Days\nStarting Price: $2190 USD\nCategory: Brasil\nPublic URL: /tours/egito-classico-8d",
+        "category": "CUSTOM_TOURS"
+      }
+    ],
+    "recommendedTourIds": [
+      "9134e779-81a0-48fb-8f9f-e6f66e0faa39",
+      "4547471b-8be7-4ba4-83c6-4abb900ff3f2",
+      "789997e7-7d79-4902-bd86-57f68e123c9e"
+    ],
+    "recommendedDestinations": [
+      "destination",
+      "destination"
+    ],
+    "createdAt": "2026-08-30T07:37:45.174Z"
+  }
+]

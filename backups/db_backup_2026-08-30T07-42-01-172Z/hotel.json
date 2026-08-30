@@ -1,0 +1,592 @@
+[
+  {
+    "id": "ciragan-palace-kempinski-istanbul",
+    "slug": "ciragan-palace-kempinski-istanbul",
+    "nameJsonb": {
+      "ar": "فندق قصر سيراجان كمبينسكي اسطنبول",
+      "en": "Çırağan Palace Kempinski Istanbul",
+      "es": "Çırağan Palace Kempinski Estambul",
+      "it": "Çırağan Palace Kempinski Istanbul",
+      "pt": "Çırağan Palace Kempinski Istambul"
+    },
+    "descriptionJsonb": {
+      "ar": "قصر إمبراطوري عثماني أصيل من القرن التاسع عشر يقع مباشرة على ضفاف البوسفور الأوروبية، مقدماً قمة الفخامة والترف الملكي.",
+      "en": "An authentic 19th-century Ottoman imperial palace situated directly on the European shores of the Bosphorus, offering pure imperial luxury.",
+      "es": "Un auténtico palacio imperial otomano del siglo XIX situado a orillas del Bósforo.",
+      "it": "Un autentico palazzo imperiale ottomano del XIX secolo situato sulle rive del Bosforo.",
+      "pt": "Um autêntico palácio imperial otomano do século XIX às margens do Bósforo."
+    },
+    "destinationSlug": "turkey",
+    "city": "Istanbul",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "شارع سيراجان 32، بشكتاش، اسطنبول، تركيا",
+      "en": "Çırağan Caddesi 32, Beşiktaş, Istanbul, Turkey",
+      "es": "Çırağan Caddesi 32, Beşiktaş, Estambul, Turquía",
+      "it": "Çırağan Caddesi 32, Beşiktaş, Istanbul, Turchia",
+      "pt": "Çırağan Caddesi 32, Beşiktaş, Istambul, Turquia"
+    },
+    "phone": "+90 212 326 4646",
+    "email": "reservation.ciraganpalace@kempinski.com",
+    "website": "https://www.kempinski.com/ciraganpalace",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "wifi": true,
+      "butler": true,
+      "rooftop": true,
+      "concierge": true,
+      "infinityPool": true
+    },
+    "policiesJsonb": {
+      "checkIn": "14:00",
+      "checkOut": "12:00",
+      "cancellation": "Flexible 24h prior"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:05.126Z",
+    "updatedAt": "2026-08-29T15:00:05.126Z",
+    "deletedAt": null
+  },
+  {
+    "id": "museum-hotel-cappadocia",
+    "slug": "museum-hotel-cappadocia",
+    "nameJsonb": {
+      "ar": "فندق المتحف كابادوكيا (ريليه آند شاتو)",
+      "en": "Museum Hotel Cappadocia (Relais & Châteaux)",
+      "es": "Museum Hotel Capadocia",
+      "it": "Museum Hotel Cappadocia",
+      "pt": "Museum Hotel Capadócia"
+    },
+    "descriptionJsonb": {
+      "ar": "الفندق الوحيد التابع لسلسلة ريليه آند شاتو العالمية في تركيا، تصميم كهفي مذهل يضم قطعاً أثرية نادرة مع إطلالة بانورامية ساحرة على مناطيد كابادوكيا.",
+      "en": "The only Relais & Châteaux hotel in Turkey, stunning cave architecture with priceless registered historic antiques and panoramic hot air balloon views.",
+      "es": "El único hotel Relais & Châteaux en Turquía, impresionante arquitectura de cuevas con antigüedades históricas y vistas a globos aerostáticos.",
+      "it": "L'unico hotel Relais & Châteaux in Turchia, splendida architettura rupestre con vista panoramica sulle mongolfiere.",
+      "pt": "O único hotel Relais & Châteaux na Turquia, arquitetura de caverna deslumbrante com antiguidades históricas e vista para balões."
+    },
+    "destinationSlug": "turkey",
+    "city": "Cappadocia",
+    "stars": 5,
+    "rating": "4.9",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "حي تيكيلي رقم 1، أوتشيسار، كابادوكيا، تركيا",
+      "en": "Tekeli Mah. No:1, Uçhisar, Nevşehir, Turkey",
+      "es": "Tekeli Mah. No:1, Uçhisar, Capadocia, Turquía",
+      "it": "Tekeli Mah. No:1, Uçhisar, Cappadocia, Turchia",
+      "pt": "Tekeli Mah. No:1, Uçhisar, Capadócia, Turquia"
+    },
+    "phone": "+90 384 219 2220",
+    "email": "info@museumhotel.com.tr",
+    "website": "https://www.museumhotel.com.tr",
+    "amenitiesJsonb": {
+      "spa": true,
+      "wifi": true,
+      "concierge": true,
+      "heatedPool": true,
+      "restaurant": true,
+      "roomService": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Strict boutique policy"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:05.716Z",
+    "updatedAt": "2026-08-29T15:00:05.716Z",
+    "deletedAt": null
+  },
+  {
+    "id": "marriott-mena-house-cairo",
+    "slug": "marriott-mena-house-cairo",
+    "nameJsonb": {
+      "ar": "فندق ماريوت مينا هاوس القاهرة",
+      "en": "Marriott Mena House Cairo",
+      "es": "Marriott Mena House El Cairo",
+      "it": "Marriott Mena House Il Cairo",
+      "pt": "Marriott Mena House Cairo"
+    },
+    "descriptionJsonb": {
+      "ar": "فندق تاريخي فاخر 5 نجوم يقع وسط 40 فداناً من حدائق الياسمين الغناء، ويطل مباشرة على أهرامات الجيزة بتراث ملكي وأناقة لا تضاهى.",
+      "en": "Historic 5-star luxury hotel set in 40 acres of lush jasmine gardens, gazing directly upon the Great Pyramids of Giza with royal legacy and unparalleled elegance.",
+      "es": "Histórico hotel de 5 estrellas de lujo rodeado de 40 acres de exuberantes jardines de jazmín con vistas directas a las Pirámides.",
+      "it": "Storico hotel di lusso a 5 stelle immerso in 40 acri di rigogliosi giardini con vista diretta sulle Piramidi di Giza.",
+      "pt": "Hotel histórico de luxo 5 estrelas em 40 acres de jardins exuberantes com vista direta para as Pirâmides de Gizé."
+    },
+    "destinationSlug": "egypt",
+    "city": "Cairo",
+    "stars": 5,
+    "rating": "4.9",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "6 شارع الأهرام، الجيزة، القاهرة، مصر",
+      "en": "6 Pyramids Road, Giza, Cairo, Egypt",
+      "es": "6 Pyramids Road, Guiza, El Cairo, Egipto",
+      "it": "6 Pyramids Road, Giza, Il Cairo, Egitto",
+      "pt": "6 Pyramids Road, Gizé, Cairo, Egito"
+    },
+    "phone": "+20 2 33773222",
+    "email": "menahouse@marriott.com",
+    "website": "https://www.marriott.com",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "pool": true,
+      "wifi": true,
+      "concierge": true,
+      "restaurant": true,
+      "valetParking": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Free cancellation up to 48h before arrival"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:04.534Z",
+    "updatedAt": "2026-08-29T15:00:04.534Z",
+    "deletedAt": null
+  },
+  {
+    "id": "kempinski-hotel-ishtar-dead-sea",
+    "slug": "kempinski-hotel-ishtar-dead-sea",
+    "nameJsonb": {
+      "ar": "فندق كمبينسكي عشتار البحر الميت",
+      "en": "Kempinski Hotel Ishtar Dead Sea",
+      "es": "Kempinski Hotel Ishtar Mar Muerto",
+      "it": "Kempinski Hotel Ishtar Mar Morto",
+      "pt": "Kempinski Hotel Ishtar Mar Morto"
+    },
+    "descriptionJsonb": {
+      "ar": "تحفة معمارية مستوحاة من حدائق بابل المعلقة على شواطئ البحر الميت مباشرة، يضم 9 مسابح إنفينيتي وشاطئاً خاصاً وسبا عشتار الصحي العالمي.",
+      "en": "Babylonian-inspired architecture nestled right on the shores of the Dead Sea with 9 infinity freshwater pools, private beach, and world-class Ishtar Spa.",
+      "es": "Arquitectura de inspiración babilónica en las orillas del Mar Muerto con 9 piscinas infinitas y spa de clase mundial.",
+      "it": "Architettura di ispirazione babilonese situata direttamente sulle rive del Mar Morto.",
+      "pt": "Arquitetura de inspiração babilônica às margens do Mar Morto com 9 piscinas de borda infinita."
+    },
+    "destinationSlug": "jordan",
+    "city": "Dead Sea",
+    "stars": 5,
+    "rating": "4.9",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "السويمة، طريق البحر الميت، الأردن",
+      "en": "Sowayma, Dead Sea Road, Jordan",
+      "es": "Sowayma, Dead Sea Road, Jordania",
+      "it": "Sowayma, Dead Sea Road, Giordania",
+      "pt": "Sowayma, Dead Sea Road, Jordânia"
+    },
+    "phone": "+962 5 356 8888",
+    "email": "ishtar.deadsea@kempinski.com",
+    "website": "https://www.kempinski.com/deadsea",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "wifi": true,
+      "beach": true,
+      "restaurant": true,
+      "infinityPool": true,
+      "valetParking": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Free cancellation up to 48h"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:06.302Z",
+    "updatedAt": "2026-08-29T15:00:06.302Z",
+    "deletedAt": null
+  },
+  {
+    "id": "movenpick-resort-petra",
+    "slug": "movenpick-resort-petra",
+    "nameJsonb": {
+      "ar": "منتجع موفنبيك البتراء",
+      "en": "Mövenpick Resort Petra",
+      "es": "Mövenpick Resort Petra",
+      "it": "Mövenpick Resort Petra",
+      "pt": "Mövenpick Resort Petra"
+    },
+    "descriptionJsonb": {
+      "ar": "يقع مباشرة عند المدخل الرئيسي لمدينة البتراء الوردية التاريخية، بتصميم شرقي فاخر وتطعيمات خشبية وحديقة علوية وضيافة سويسرية متميزة.",
+      "en": "Located directly at the entrance to the historic rose-red city of Petra with lavish oriental craftsmanship, rooftop garden, and signature Swiss hospitality.",
+      "es": "Ubicado directamente en la entrada de la histórica ciudad rosa de Petra.",
+      "it": "Situato direttamente all'ingresso della storica città rupestre di Petra.",
+      "pt": "Localizado diretamente na entrada da histórica cidade de Petra."
+    },
+    "destinationSlug": "jordan",
+    "city": "Petra",
+    "stars": 5,
+    "rating": "4.8",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "شارع السياحة، وادي موسى، البتراء، الأردن",
+      "en": "Tourism Street, Wadi Musa, Petra, Jordan",
+      "es": "Tourism Street, Wadi Musa, Petra, Jordania",
+      "it": "Tourism Street, Wadi Musa, Petra, Giordania",
+      "pt": "Tourism Street, Wadi Musa, Petra, Jordânia"
+    },
+    "phone": "+962 3 215 7111",
+    "email": "resort.petra@movenpick.com",
+    "website": "https://movenpick.accor.com",
+    "amenitiesJsonb": {
+      "pool": true,
+      "wifi": true,
+      "rooftop": true,
+      "concierge": true,
+      "restaurant": true,
+      "roomService": true
+    },
+    "policiesJsonb": {
+      "checkIn": "14:00",
+      "checkOut": "12:00",
+      "cancellation": "Flexible cancellation"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:06.914Z",
+    "updatedAt": "2026-08-29T15:00:06.914Z",
+    "deletedAt": null
+  },
+  {
+    "id": "burj-al-arab-jumeirah-dubai",
+    "slug": "burj-al-arab-jumeirah-dubai",
+    "nameJsonb": {
+      "ar": "فندق برج العرب جميرا دبي",
+      "en": "Burj Al Arab Jumeirah Dubai",
+      "es": "Burj Al Arab Jumeirah Dubái",
+      "it": "Burj Al Arab Jumeirah Dubai",
+      "pt": "Burj Al Arab Jumeirah Dubai"
+    },
+    "descriptionJsonb": {
+      "ar": "أيقونة الفخامة العالمية الفائقة 7 نجوم، يقف على جزيرته الخاصة في الخليج العربي بأجنحة ملكية دوبلكس وخدمة خادم شخصي ومطاعم حاصلة على نجوم ميشلان.",
+      "en": "The world's most iconic 7-star ultra-luxury hotel, standing on its own private island with duplex suites, private butler service, and Michelin-starred dining.",
+      "es": "El hotel de ultra lujo más emblemático del mundo en su propia isla privada.",
+      "it": "L'hotel ultra-lusso più iconico al mondo situato sulla sua isola privata.",
+      "pt": "O hotel de ultra luxo mais emblemático do mundo em sua própria ilha particular."
+    },
+    "destinationSlug": "dubai",
+    "city": "Dubai",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "طريق شاطئ جميرا، أم سقيم 3، دبي، الإمارات",
+      "en": "Jumeirah Beach Road, Umm Suqeim 3, Dubai, UAE",
+      "es": "Jumeirah Beach Road, Dubái, EAU",
+      "it": "Jumeirah Beach Road, Dubai, EAU",
+      "pt": "Jumeirah Beach Road, Dubai, EAU"
+    },
+    "phone": "+971 4 301 7777",
+    "email": "baainfo@jumeirah.com",
+    "website": "https://www.jumeirah.com/burj-al-arab",
+    "amenitiesJsonb": {
+      "spa": true,
+      "wifi": true,
+      "beach": true,
+      "butler": true,
+      "rooftop": true,
+      "infinityPool": true,
+      "airportShuttle": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "VIP cancellation terms"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:07.512Z",
+    "updatedAt": "2026-08-29T15:00:07.512Z",
+    "deletedAt": null
+  },
+  {
+    "id": "atlantis-the-royal-dubai",
+    "slug": "atlantis-the-royal-dubai",
+    "nameJsonb": {
+      "ar": "فندق أتلانتس ذا رويال دبي",
+      "en": "Atlantis The Royal Dubai",
+      "es": "Atlantis The Royal Dubái",
+      "it": "Atlantis The Royal Dubai",
+      "pt": "Atlantis The Royal Dubai"
+    },
+    "descriptionJsonb": {
+      "ar": "المنتجع فائق الفخامة الأحدث على نخلة جميرا دبي، مع مسبح إنفينيتي معلق على ارتفاع 90 متراً، ومطاعم يديرها أشهر طهاة العالم.",
+      "en": "Dubai's ultra-luxury destination resort on Palm Jumeirah with 90-meter high infinity sky pool, celebrity chef restaurants, and world-class luxury architecture.",
+      "es": "El resort de ultra lujo más espectacular de Dubái en Palm Jumeirah.",
+      "it": "Il resort ultra-lusso più spettacolare di Dubai su Palm Jumeirah.",
+      "pt": "O resort de ultra luxo mais espetacular de Dubai em Palm Jumeirah."
+    },
+    "destinationSlug": "dubai",
+    "city": "Dubai",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "طريق الهلال، نخلة جميرا، دبي، الإمارات",
+      "en": "Crescent Road, Palm Jumeirah, Dubai, UAE",
+      "es": "Crescent Road, Palm Jumeirah, Dubái, EAU",
+      "it": "Crescent Road, Palm Jumeirah, Dubai, EAU",
+      "pt": "Crescent Road, Palm Jumeirah, Dubai, EAU"
+    },
+    "phone": "+971 4 426 3000",
+    "email": "info@atlantistheroyal.com",
+    "website": "https://www.atlantis.com/atlantis-the-royal",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "wifi": true,
+      "beach": true,
+      "rooftop": true,
+      "infinityPool": true,
+      "valetParking": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Free cancellation up to 7 days before check-in"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 2,
+    "createdAt": "2026-08-29T15:00:08.107Z",
+    "updatedAt": "2026-08-29T15:00:08.107Z",
+    "deletedAt": null
+  },
+  {
+    "id": "la-mamounia-marrakech",
+    "slug": "la-mamounia-marrakech",
+    "nameJsonb": {
+      "ar": "فندق المامونية مراكش",
+      "en": "La Mamounia Marrakech",
+      "es": "La Mamounia Marrakech",
+      "it": "La Mamounia Marrakech",
+      "pt": "La Mamounia Marrakech"
+    },
+    "descriptionJsonb": {
+      "ar": "قصر تاريخي أيقوني في مراكش يقع بين الأسوار التاريخية للقرن الثاني عشر وحدائق الملوك المعمرة، يجمع بين البذخ الأندلسي والفخامة العالمية.",
+      "en": "Iconic palace hotel in Marrakech built within 12th-century ramparts and centuries-old royal gardens, blending Moorish opulence with modern luxury.",
+      "es": "Icónico hotel palacio en Marrakech dentro de jardines reales centenarios.",
+      "it": "Iconico hotel palazzo a Marrakech immerso in giardini reali secolari.",
+      "pt": "Icônico hotel palácio em Marrakech dentro de jardins reais centenários."
+    },
+    "destinationSlug": "morocco",
+    "city": "Marrakech",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "شارع باب جديد، مراكش، المغرب",
+      "en": "Avenue Bab Jdid, Marrakech, Morocco",
+      "es": "Avenue Bab Jdid, Marrakech, Marruecos",
+      "it": "Avenue Bab Jdid, Marrakech, Marocco",
+      "pt": "Avenue Bab Jdid, Marrakech, Marrocos"
+    },
+    "phone": "+212 524 388 600",
+    "email": "informations@mamounia.com",
+    "website": "https://www.mamounia.com",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "pool": true,
+      "wifi": true,
+      "concierge": true,
+      "restaurant": true,
+      "valetParking": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Flexible 48h"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:08.735Z",
+    "updatedAt": "2026-08-29T15:00:08.735Z",
+    "deletedAt": null
+  },
+  {
+    "id": "canaves-oia-santorini",
+    "slug": "canaves-oia-santorini",
+    "nameJsonb": {
+      "ar": "أجنحة كانافيس أويا سانتوريني",
+      "en": "Canaves Oia Suites Santorini",
+      "es": "Canaves Oia Suites Santorini",
+      "it": "Canaves Oia Suites Santorini",
+      "pt": "Canaves Oia Suites Santorini"
+    },
+    "descriptionJsonb": {
+      "ar": "منحوت في المنحدرات الصخرية الخلابة لقرية أويا المطلة على بحر إيجة والكالديرا، مع مسابح خاصة بيضاء ناصعة وإطلالات غروب الشمس الأشهر عالمياً.",
+      "en": "Carved into the dramatic cliffside of Oia overlooking the Aegean Sea and caldera with private plunge pools, whitewashed elegance, and world-famous sunset vistas.",
+      "es": "Tallado en el acantilado de Oia con vistas a la caldera y piscinas privadas.",
+      "it": "Scavato nella scogliera di Oia con vista sulla caldera e piscine private.",
+      "pt": "Esculpido nas falésias de Oia com vista para a caldeira e piscinas privadas."
+    },
+    "destinationSlug": "greece",
+    "city": "Santorini",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "أويا، سانتوريني، سيكلاديز، اليونان",
+      "en": "Oia, Santorini, Cyclades, Greece",
+      "es": "Oia, Santorini, Cícladas, Grecia",
+      "it": "Oia, Santorini, Cicladi, Grecia",
+      "pt": "Oia, Santorini, Cíclades, Grécia"
+    },
+    "phone": "+30 2286 071844",
+    "email": "info@canaves.com",
+    "website": "https://www.canaves.com",
+    "amenitiesJsonb": {
+      "spa": true,
+      "wifi": true,
+      "concierge": true,
+      "restaurant": true,
+      "roomService": true,
+      "infinityPool": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "11:00",
+      "cancellation": "Boutique luxury policy"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:09.319Z",
+    "updatedAt": "2026-08-29T15:00:09.319Z",
+    "deletedAt": null
+  },
+  {
+    "id": "anantara-sahara-tozeur-resort",
+    "slug": "anantara-sahara-tozeur-resort",
+    "nameJsonb": {
+      "ar": "منتجع وفيلات أنانتارا صحراء توزر",
+      "en": "Anantara Sahara Tozeur Resort & Villas",
+      "es": "Anantara Sahara Tozeur Resort & Villas",
+      "it": "Anantara Sahara Tozeur Resort & Villas",
+      "pt": "Anantara Sahara Tozeur Resort & Villas"
+    },
+    "descriptionJsonb": {
+      "ar": "ملاذ صحراوي فاخر على أطراف الصحراء الكبرى وبحيرة شط الجريد، يضم فيلات بمسابح خاصة وجلسات عشاء بربرية تحت النجوم وسبا الواحات.",
+      "en": "A desert sanctuary on the edge of the Sahara and Chott el Djerid salt flats with luxury pool villas, Berber dining under the stars, and oasis wellness.",
+      "es": "Un santuario en el desierto al borde del Sáhara con villas de lujo y piscinas privadas.",
+      "it": "Un santuario nel deserto ai margini del Sahara con ville di lusso e piscine private.",
+      "pt": "Um santuário no deserto na borda do Saara com vilas de luxo e piscinas privativas."
+    },
+    "destinationSlug": "tunisia",
+    "city": "Tozeur",
+    "stars": 5,
+    "rating": "4.9",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "مراح لحوار، توزر، تونس",
+      "en": "Mrah Lahwar, Tozeur, Tunisia",
+      "es": "Mrah Lahwar, Tozeur, Túnez",
+      "it": "Mrah Lahwar, Tozeur, Tunisia",
+      "pt": "Mrah Lahwar, Tozeur, Tunísia"
+    },
+    "phone": "+216 70 100 800",
+    "email": "tozeur@anantara.com",
+    "website": "https://www.anantara.com/tozeur",
+    "amenitiesJsonb": {
+      "gym": true,
+      "spa": true,
+      "pool": true,
+      "wifi": true,
+      "concierge": true,
+      "restaurant": true
+    },
+    "policiesJsonb": {
+      "checkIn": "15:00",
+      "checkOut": "12:00",
+      "cancellation": "Flexible 48h"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-29T15:00:09.902Z",
+    "updatedAt": "2026-08-29T15:00:09.902Z",
+    "deletedAt": null
+  },
+  {
+    "id": "sol-pyramid-hotel",
+    "slug": "sol-pyramid-hotel",
+    "nameJsonb": {
+      "ar": "فندق سول بيراميدز",
+      "en": "Sol Pyramid Hotel",
+      "es": "Hotel Sol Pyramid",
+      "it": "Hotel Sol Pyramid",
+      "pt": "Hotel Sol Pyramid"
+    },
+    "descriptionJsonb": {
+      "ar": "فندق سول بيراميدز هو منشأة عصرية 3 نجوم شُيدت في 2025، صُممت للمسافرين الراغبين في استكشاف أعظم معالم مصر. يقع على بُعد خطوات من أهرامات الجيزة مع إطلالات بانورامية خلابة.",
+      "en": "Solpyramid Hotel is a modern 3-star boutique establishment built in 2025, designed for travellers who want to explore Egypt’s greatest sights. Located steps away from the Pyramids of Giza with breathtaking panoramic views.",
+      "es": "El Hotel Sol Pyramid es un moderno establecimiento de 3 estrellas construido en 2025, ubicado a pocos pasos de las Pirámides de Guiza.",
+      "it": "Sol Pyramid Hotel è una moderna struttura a 3 stelle costruita nel 2025, situata a pochi passi dalle Piramidi di Giza.",
+      "pt": "O Sol Pyramid Hotel é um moderno estabelecimento de 3 estrelas construído em 2025, localizado a poucos passos das Pirâmides de Gizé."
+    },
+    "destinationSlug": "egypt",
+    "city": "Giza",
+    "stars": 5,
+    "rating": "5",
+    "currency": "USD",
+    "addressJsonb": {
+      "ar": "05 روضة الأهرام، خلف فندق لو ميريديان بيراميدز، حدائق الأهرام - الجيزة - مصر",
+      "en": "05 Rawdet al Ahram, Behind Le Meridien Pyramids, Giza, Egypt",
+      "es": "05 Rawdet al Ahram, Haram, Guiza, Egipto",
+      "it": "05 Rawdet al Ahram, Haram, Giza, Egitto",
+      "pt": "05 Rawdet al Ahram, Haram, Gizé, Egito"
+    },
+    "phone": "+2 02 33775511",
+    "email": "info@solpyramid-egypt.com",
+    "website": "https://www.solpyramid-egypt.com/",
+    "amenitiesJsonb": {
+      "ac": true,
+      "wifi": true,
+      "safeBox": true,
+      "giftShop": true,
+      "restaurant": true,
+      "roomService": true
+    },
+    "policiesJsonb": {
+      "pets": "Not allowed",
+      "checkIn": "3:00 PM",
+      "smoking": "Non-smoking throughout",
+      "checkOut": "12:00 PM"
+    },
+    "heroMediaId": null,
+    "status": "PUBLISHED",
+    "isActive": true,
+    "sortOrder": 1,
+    "createdAt": "2026-08-27T10:58:48.215Z",
+    "updatedAt": "2026-08-29T19:24:19.730Z",
+    "deletedAt": null
+  }
+]

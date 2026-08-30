@@ -1,0 +1,53 @@
+[
+  {
+    "id": "bac1abfe-c878-4ff1-a9d7-bd00a6c6419d",
+    "questionJsonb": {
+      "ar": "ما هي دفعة الحجز المطلوبة؟",
+      "en": "What is the deposit required for booking?"
+    },
+    "answerJsonb": {
+      "ar": "دفعة 25% لتأكيد الحجز والباقي قبل 30 يوماً من السفر.",
+      "en": "A 25% deposit secures your reservation, balance due 30 days before departure."
+    },
+    "category": "Booking & Deposit",
+    "sortOrder": 1,
+    "isPublished": true,
+    "deletedAt": null,
+    "createdAt": "2026-08-23T11:15:06.320Z",
+    "updatedAt": "2026-08-23T11:15:06.320Z"
+  },
+  {
+    "id": "175145e2-5e92-49ac-b417-44a59b9d3081",
+    "questionJsonb": {
+      "ar": "هل تقدمون مساعدة في التأشيرات؟",
+      "en": "Do you provide visa assistance?"
+    },
+    "answerJsonb": {
+      "ar": "نعم، نقدم خطابات دعوة رسمية وتسهيل إجراءات التأشيرة لكافة الضيوف.",
+      "en": "Yes, official invitation letters and visa support are provided for all guests."
+    },
+    "category": "Visa Assistance",
+    "sortOrder": 2,
+    "isPublished": true,
+    "deletedAt": null,
+    "createdAt": "2026-08-23T11:15:06.320Z",
+    "updatedAt": "2026-08-23T11:15:06.320Z"
+  },
+  {
+    "id": "079e6461-9fb0-427c-b44f-01df470ea252",
+    "questionJsonb": {
+      "ar": "هل الرحلات بمرشدين خاصين؟",
+      "en": "Are tours conducted with private guides?"
+    },
+    "answerJsonb": {
+      "ar": "كافة الجولات الفاخرة تشمل مرشدين سياحيين مرخصين ومتعددي اللغات.",
+      "en": "All luxury tours include licensed, multilingual private guides."
+    },
+    "category": "Private Guides",
+    "sortOrder": 3,
+    "isPublished": true,
+    "deletedAt": null,
+    "createdAt": "2026-08-23T11:15:06.320Z",
+    "updatedAt": "2026-08-23T11:15:06.320Z"
+  }
+]

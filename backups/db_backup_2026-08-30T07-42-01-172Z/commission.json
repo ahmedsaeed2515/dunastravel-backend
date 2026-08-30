@@ -1,0 +1,112 @@
+[
+  {
+    "id": "1a061afa-fbda-471a-b480-1eeb9378165d",
+    "companyId": "955ad5ce-0899-4e18-9d4c-781a4a7dd290",
+    "bookingId": "273beb29-7e59-4ec3-a458-00cba8cbd4a4",
+    "rate": "17.95",
+    "amount": "0",
+    "currency": "USD",
+    "status": "APPROVED",
+    "createdAt": "2026-07-13T20:58:37.156Z",
+    "updatedAt": "2026-07-13T20:58:37.156Z"
+  },
+  {
+    "id": "be76ffe7-d32f-41f7-92a2-3b99011234f7",
+    "companyId": "ae755c5b-6e77-4ef9-8ae1-4f087fc5caed",
+    "bookingId": "fd4fb125-bf55-4ecf-a8ed-527c7d1b4b40",
+    "rate": "19.27",
+    "amount": "0",
+    "currency": "USD",
+    "status": "APPROVED",
+    "createdAt": "2026-07-13T20:58:39.699Z",
+    "updatedAt": "2026-07-13T20:58:39.699Z"
+  },
+  {
+    "id": "41eb7f9a-4c87-46e6-8041-3e36017bb748",
+    "companyId": "955ad5ce-0899-4e18-9d4c-781a4a7dd290",
+    "bookingId": "b96157c8-33f0-4817-977a-8b79f40498b7",
+    "rate": "17.95",
+    "amount": "0",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:58:50.458Z",
+    "updatedAt": "2026-07-13T20:58:50.458Z"
+  },
+  {
+    "id": "77a7eaa3-c24f-47aa-b973-6f0aa2189ffa",
+    "companyId": "36a1b9a5-dcd9-4feb-a3e3-c26fb89c47b5",
+    "bookingId": "de8513cb-9d4f-45bd-a2f9-f1826c8be840",
+    "rate": "8.49",
+    "amount": "253",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:58:52.937Z",
+    "updatedAt": "2026-07-13T20:58:52.937Z"
+  },
+  {
+    "id": "8b103b3d-aa00-4b11-96bd-dadc02686a7a",
+    "companyId": "39008fd5-276e-4e86-9a2c-3f1e4840b59e",
+    "bookingId": "33ed12da-9565-42a2-9fa9-d81da8007ae9",
+    "rate": "8.96",
+    "amount": "553.73",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:58:59.053Z",
+    "updatedAt": "2026-07-13T20:58:59.053Z"
+  },
+  {
+    "id": "122843fe-6b52-4773-a2eb-59121cdfc19a",
+    "companyId": "955ad5ce-0899-4e18-9d4c-781a4a7dd290",
+    "bookingId": "d49c09cd-d1d8-462b-a1f7-9109cfb2c374",
+    "rate": "17.95",
+    "amount": "1787.82",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:59:01.511Z",
+    "updatedAt": "2026-07-13T20:59:01.511Z"
+  },
+  {
+    "id": "f5bac3bf-93c3-423d-a588-39f282e0b87a",
+    "companyId": "628c6c86-f132-40c7-a753-074f462662f2",
+    "bookingId": "c75332d8-3a2a-47c2-a0d1-cf43e8965771",
+    "rate": "6.6",
+    "amount": "0",
+    "currency": "USD",
+    "status": "APPROVED",
+    "createdAt": "2026-07-13T20:59:06.272Z",
+    "updatedAt": "2026-07-13T20:59:06.272Z"
+  },
+  {
+    "id": "7ad29232-861e-4bc7-97d4-86882a371365",
+    "companyId": "36a1b9a5-dcd9-4feb-a3e3-c26fb89c47b5",
+    "bookingId": "713d3353-dbe3-43cf-95ae-2d7add725453",
+    "rate": "8.49",
+    "amount": "203.76",
+    "currency": "USD",
+    "status": "PAID",
+    "createdAt": "2026-07-13T20:59:14.381Z",
+    "updatedAt": "2026-07-13T20:59:14.381Z"
+  },
+  {
+    "id": "44f081d6-5176-42d9-8481-07f02aa5313e",
+    "companyId": "e6b9fb7f-6c07-41f1-ad80-6a872221ef8a",
+    "bookingId": "e30987a6-2e17-4e71-b562-6eb04fe3a90d",
+    "rate": "17.4",
+    "amount": "191.4",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:59:19.052Z",
+    "updatedAt": "2026-07-13T20:59:19.052Z"
+  },
+  {
+    "id": "cff1814a-9abb-42a9-84e2-47828b504115",
+    "companyId": "e6b9fb7f-6c07-41f1-ad80-6a872221ef8a",
+    "bookingId": "c7d9033e-1379-4fb8-9b1a-2d0c1f15ff00",
+    "rate": "17.4",
+    "amount": "365.4",
+    "currency": "USD",
+    "status": "PENDING",
+    "createdAt": "2026-07-13T20:59:23.846Z",
+    "updatedAt": "2026-07-13T20:59:23.846Z"
+  }
+]

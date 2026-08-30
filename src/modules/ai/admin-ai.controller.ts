@@ -85,8 +85,10 @@ export class AdminAiController {
   @ApiOperation({ summary: 'Get AI chatbot configuration' })
   async getConfig() {
     const config = await this.chatOrchestrator.getOrCreateConfig();
+    const tourSettings = (config.tourSettings as any) || {};
     return {
       ...config,
+      isInChatBookingEnabled: tourSettings.isInChatBookingEnabled !== false,
       encryptedApiKey: config.encryptedApiKey ? '••••••••••••••••' : null,
     };
   }
@@ -95,6 +97,11 @@ export class AdminAiController {
   @ApiOperation({ summary: 'Update AI chatbot configuration' })
   async updateConfig(@Body() dto: UpdateAiConfigDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
+    const tourSettings = { ...((currentConfig.tourSettings as any) || {}) };
+
+    if (dto.isInChatBookingEnabled !== undefined) {
+      tourSettings.isInChatBookingEnabled = dto.isInChatBookingEnabled;
+    }
 
     const dataToUpdate: any = {
       provider: dto.provider ?? currentConfig.provider,
@@ -111,6 +118,7 @@ export class AdminAiController {
       escalationMessage: dto.escalationMessage ?? currentConfig.escalationMessage,
       welcomeMessages: dto.welcomeMessages ?? currentConfig.welcomeMessages,
       suggestedQuestions: dto.suggestedQuestions ?? currentConfig.suggestedQuestions,
+      tourSettings,
     };
 
     if (dto.apiKey && dto.apiKey.trim().length > 0 && !dto.apiKey.includes('••')) {
@@ -124,6 +132,7 @@ export class AdminAiController {
 
     return {
       ...updated,
+      isInChatBookingEnabled: (updated.tourSettings as any)?.isInChatBookingEnabled !== false,
       encryptedApiKey: updated.encryptedApiKey ? '••••••••••••••••' : null,
     };
   }

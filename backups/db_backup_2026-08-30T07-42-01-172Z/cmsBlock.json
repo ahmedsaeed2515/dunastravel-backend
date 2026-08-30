@@ -1,0 +1,104 @@
+[
+  {
+    "id": "60ad809c-7abd-457a-8f7f-2fcd399adb33",
+    "key": "homepage-hero",
+    "content": {
+      "ar": "مرحباً بكم في دوناس ترافيل للرحلات الفاخرة",
+      "en": "Welcome to Dunas Travel Luxury Expeditions"
+    },
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": null,
+    "updatedAt": "2026-08-23T11:14:57.968Z",
+    "createdAt": "2026-07-13T11:50:47.624Z"
+  },
+  {
+    "id": "b8266049-0b2d-4df1-8112-01ccf4b7c812",
+    "key": "footer-info",
+    "content": {
+      "ar": "© 2026 دوناس ترافيل. جميع الحقوق محفوظة.",
+      "en": "© 2026 Dunas Travel. All rights reserved."
+    },
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": null,
+    "updatedAt": "2026-08-23T11:14:58.108Z",
+    "createdAt": "2026-07-13T11:50:47.898Z"
+  },
+  {
+    "id": "e29d3d1f-4148-493e-8a23-92591b1736f3",
+    "key": "holiday_packages",
+    "content": [],
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": null,
+    "updatedAt": "2026-08-25T09:15:43.844Z",
+    "createdAt": "2026-08-23T11:13:20.495Z"
+  },
+  {
+    "id": "18c136bf-2970-4806-a3ce-41efc6c7fffa",
+    "key": "transportation_fleet",
+    "content": [],
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "updatedAt": "2026-08-25T09:15:44.117Z",
+    "createdAt": "2026-08-23T11:13:20.636Z"
+  },
+  {
+    "id": "bde3ba39-3b25-4508-b532-10ecfdb61656",
+    "key": "home_banner",
+    "content": {
+      "heading": "",
+      "helpCenter": ""
+    },
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "production-bootstrap",
+    "updatedAt": "2026-08-25T09:15:42.534Z",
+    "createdAt": "2026-08-25T09:15:42.534Z"
+  },
+  {
+    "id": "50fe021d-feac-4de2-a050-71aca30284da",
+    "key": "faq_page",
+    "content": {
+      "heading": "Frequently Asked Questions",
+      "helpCenter": "HELP CENTER"
+    },
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "production-bootstrap",
+    "updatedAt": "2026-08-25T09:15:43.571Z",
+    "createdAt": "2026-08-25T09:15:43.571Z"
+  },
+  {
+    "id": "00d786a3-15f4-4044-85f1-408b26e77667",
+    "key": "about",
+    "content": {},
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "production-bootstrap",
+    "updatedAt": "2026-08-25T09:15:43.708Z",
+    "createdAt": "2026-08-25T09:15:43.708Z"
+  },
+  {
+    "id": "95d3952d-893d-4f01-9b18-b246cc6fc4aa",
+    "key": "hotels_catalog",
+    "content": [],
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "updatedAt": "2026-08-25T09:15:43.981Z",
+    "createdAt": "2026-08-23T11:13:20.351Z"
+  },
+  {
+    "id": "2a4366ed-e1e3-47e4-823c-312942d9ff51",
+    "key": "homepage.hero",
+    "content": {},
+    "status": "PUBLISHED",
+    "version": 1,
+    "lastUpdatedBy": "production-bootstrap",
+    "updatedAt": "2026-08-25T09:15:44.253Z",
+    "createdAt": "2026-08-25T09:15:44.253Z"
+  }
+]

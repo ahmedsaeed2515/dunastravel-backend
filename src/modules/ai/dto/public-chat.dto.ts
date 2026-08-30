@@ -27,6 +27,11 @@ export class SendChatMessageDto {
     pathname?: string;
   };
 
+  @ApiPropertyOptional({ description: 'Selected AI Concierge persona code (e.g. luxury_concierge, egyptologist, practical_budget, family_adventure, romantic_honeymoon)' })
+  @IsString()
+  @IsOptional()
+  personaCode?: string;
+
   @ApiPropertyOptional({ description: 'Visitor voluntarily supplied contact information' })
   @IsObject()
   @IsOptional()
@@ -36,6 +41,69 @@ export class SendChatMessageDto {
     phone?: string;
     nationality?: string;
   };
+}
+
+export class BookTourChatDto {
+  @ApiProperty({ description: 'Public session identifier' })
+  @IsString()
+  @IsNotEmpty()
+  sessionId!: string;
+
+  @ApiProperty({ description: 'Tour ID or slug to book' })
+  @IsString()
+  @IsNotEmpty()
+  tourId!: string;
+
+  @ApiProperty({ description: 'Arrival date (YYYY-MM-DD)', example: '2026-10-15' })
+  @IsString()
+  @IsNotEmpty()
+  arrivalDate!: string;
+
+  @ApiProperty({ description: 'Number of adult travelers', example: 2 })
+  adults!: number;
+
+  @ApiPropertyOptional({ description: 'Number of children (under 12)', example: 0 })
+  @IsOptional()
+  children?: number;
+
+  @ApiPropertyOptional({ description: 'Number of infants', example: 0 })
+  @IsOptional()
+  infants?: number;
+
+  @ApiProperty({ description: 'Lead traveler full name', example: 'Ahmed Saeed' })
+  @IsString()
+  @IsNotEmpty()
+  fullName!: string;
+
+  @ApiProperty({ description: 'Lead traveler email address', example: 'ahmed@example.com' })
+  @IsString()
+  @IsNotEmpty()
+  email!: string;
+
+  @ApiPropertyOptional({ description: 'Lead traveler phone / WhatsApp number', example: '+201012345678' })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ description: 'Nationality or country of residence', example: 'Egypt' })
+  @IsString()
+  @IsOptional()
+  nationality?: string;
+
+  @ApiPropertyOptional({ description: 'Preferred transportation type', example: 'Private VIP Mercedes' })
+  @IsString()
+  @IsOptional()
+  transportChoice?: string;
+
+  @ApiPropertyOptional({ description: 'Special notes or dietary requirements' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'Language / locale', example: 'ar' })
+  @IsString()
+  @IsOptional()
+  locale?: string;
 }
 
 export class SubmitLeadDto {

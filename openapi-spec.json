@@ -4750,7 +4750,12 @@
             "description": "Tour not available"
           }
         },
-        "summary": "Create a tour booking",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create an authenticated tour booking",
         "tags": [
           "Bookings"
         ]
@@ -8827,6 +8832,30 @@
         ]
       }
     },
+    "/api/ai/chat/personas": {
+      "get": {
+        "operationId": "PublicChatController_getPersonas",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get available AI Concierge personas & conversational styles",
+        "tags": [
+          "Public AI Chatbot"
+        ]
+      }
+    },
     "/api/ai/chat/config": {
       "get": {
         "operationId": "PublicChatController_getChatConfig",
@@ -8895,6 +8924,31 @@
           }
         },
         "summary": "Send message to AI travel chatbot",
+        "tags": [
+          "Public AI Chatbot"
+        ]
+      }
+    },
+    "/api/ai/chat/book": {
+      "post": {
+        "operationId": "PublicChatController_bookTour",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookTourChatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmed booking reservation reference with invoice"
+          }
+        },
+        "summary": "Create an instant luxury tour booking directly from the chatbot",
         "tags": [
           "Public AI Chatbot"
         ]
@@ -16998,6 +17052,10 @@
             "type": "object",
             "description": "Context of the page currently viewed by visitor"
           },
+          "personaCode": {
+            "type": "string",
+            "description": "Selected AI Concierge persona code (e.g. luxury_concierge, egyptologist, practical_budget, family_adventure, romantic_honeymoon)"
+          },
           "visitorInfo": {
             "type": "object",
             "description": "Visitor voluntarily supplied contact information"
@@ -17006,6 +17064,81 @@
         "required": [
           "message",
           "sessionId"
+        ]
+      },
+      "BookTourChatDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Public session identifier"
+          },
+          "tourId": {
+            "type": "string",
+            "description": "Tour ID or slug to book"
+          },
+          "arrivalDate": {
+            "type": "string",
+            "description": "Arrival date (YYYY-MM-DD)",
+            "example": "2026-10-15"
+          },
+          "adults": {
+            "type": "number",
+            "description": "Number of adult travelers",
+            "example": 2
+          },
+          "children": {
+            "type": "number",
+            "description": "Number of children (under 12)",
+            "example": 0
+          },
+          "infants": {
+            "type": "number",
+            "description": "Number of infants",
+            "example": 0
+          },
+          "fullName": {
+            "type": "string",
+            "description": "Lead traveler full name",
+            "example": "Ahmed Saeed"
+          },
+          "email": {
+            "type": "string",
+            "description": "Lead traveler email address",
+            "example": "ahmed@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Lead traveler phone / WhatsApp number",
+            "example": "+201012345678"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nationality or country of residence",
+            "example": "Egypt"
+          },
+          "transportChoice": {
+            "type": "string",
+            "description": "Preferred transportation type",
+            "example": "Private VIP Mercedes"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Special notes or dietary requirements"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Language / locale",
+            "example": "ar"
+          }
+        },
+        "required": [
+          "sessionId",
+          "tourId",
+          "arrivalDate",
+          "adults",
+          "fullName",
+          "email"
         ]
       },
       "RecordFeedbackRequestDto": {
@@ -17072,6 +17205,11 @@
           "isPublicEnabled": {
             "type": "boolean",
             "example": true
+          },
+          "isInChatBookingEnabled": {
+            "type": "boolean",
+            "example": true,
+            "description": "Enable direct in-chat booking flow for GuideR"
           },
           "apiKey": {
             "type": "string",

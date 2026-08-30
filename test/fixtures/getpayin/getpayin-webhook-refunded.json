@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_gpi_refund_003",
+  "event": "invoice.refunded",
+  "createdAt": "2026-08-30T11:15:00.000Z",
+  "data": {
+    "id": "gpi_inv_987654321",
+    "transactionId": "gpi_tx_123456789",
+    "refundId": "gpi_ref_555666777",
+    "merchantReference": "BKG-A4X7Z2",
+    "status": "REFUNDED",
+    "amountRefunded": "3700.00",
+    "currency": "USD",
+    "refundedAt": "2026-08-30T11:14:50.000Z",
+    "reason": "Customer requested itinerary cancellation"
+  }
+}

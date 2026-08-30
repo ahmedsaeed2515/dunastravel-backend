@@ -1,0 +1,239 @@
+[
+  {
+    "id": "ffcab704-084c-4d7f-b424-fa0091713212",
+    "publicSessionId": "session-1786997818310-xk3gq02ky",
+    "userId": null,
+    "customerId": "a19d78a6-b4ca-40e9-bbfc-4ff47105bc61",
+    "locale": "en",
+    "channel": "web",
+    "status": "ACTIVE",
+    "assignedStaffId": null,
+    "visitorName": "وىتاترلا",
+    "visitorEmail": "ahmedsaeed2515@gmail.com",
+    "visitorPhone": null,
+    "visitorNationality": null,
+    "travelPreferences": {
+      "country": "Egypt",
+      "nileCruiseRequired": true
+    },
+    "budgetRange": null,
+    "paxCount": null,
+    "childrenCount": null,
+    "preferredDestinations": [],
+    "travelDates": null,
+    "tripDuration": null,
+    "summary": null,
+    "leadScore": 90,
+    "leadStatus": "QUALIFIED",
+    "consentGiven": false,
+    "utmSource": null,
+    "utmMedium": null,
+    "utmCampaign": null,
+    "referrer": null,
+    "currentPage": "/",
+    "createdAt": "2026-08-17T20:17:05.665Z",
+    "updatedAt": "2026-08-17T20:17:26.116Z",
+    "closedAt": null,
+    "handedOffAt": null
+  },
+  {
+    "id": "a6f8675b-92e8-436a-b3eb-63e3548757a7",
+    "publicSessionId": "admin-sim-1787075469996",
+    "userId": null,
+    "customerId": null,
+    "locale": "ar",
+    "channel": "web",
+    "status": "ACTIVE",
+    "assignedStaffId": null,
+    "visitorName": null,
+    "visitorEmail": null,
+    "visitorPhone": null,
+    "visitorNationality": null,
+    "travelPreferences": {
+      "country": "Egypt"
+    },
+    "budgetRange": null,
+    "paxCount": null,
+    "childrenCount": null,
+    "preferredDestinations": [],
+    "travelDates": null,
+    "tripDuration": null,
+    "summary": null,
+    "leadScore": 0,
+    "leadStatus": "NEW",
+    "consentGiven": false,
+    "utmSource": null,
+    "utmMedium": null,
+    "utmCampaign": null,
+    "referrer": null,
+    "currentPage": null,
+    "createdAt": "2026-08-18T17:51:45.782Z",
+    "updatedAt": "2026-08-18T17:52:01.451Z",
+    "closedAt": null,
+    "handedOffAt": null
+  },
+  {
+    "id": "573c7161-177a-4e6c-bc7f-f9b4e1c1ea89",
+    "publicSessionId": "session-1787593752321-e9qohefjw",
+    "userId": null,
+    "customerId": "b894abd3-3770-4c0f-89ea-89a22ffc3dd5",
+    "locale": "pt",
+    "channel": "web",
+    "status": "ACTIVE",
+    "assignedStaffId": null,
+    "visitorName": "تتسي",
+    "visitorEmail": "dldh@ggg.kj",
+    "visitorPhone": null,
+    "visitorNationality": null,
+    "travelPreferences": {
+      "country": "Egypt",
+      "currentProposal": {
+        "id": "prop-1787866027625",
+        "days": [
+          {
+            "meals": "Welcome Dinner",
+            "title": "Arrival in Cairo & VIP Welcome",
+            "dayNumber": 1,
+            "activities": [
+              "VIP Airport Transfer",
+              "Hotel Check-in"
+            ],
+            "description": "Arrival at Cairo International Airport, executive meet-and-assist by Dunas Travel concierge, and private transfer to 5-star hotel."
+          },
+          {
+            "meals": "Breakfast + Gourmet Lunch",
+            "title": "Giza Pyramids, Saqqara & Grand Egyptian Museum",
+            "dayNumber": 2,
+            "activities": [
+              "Giza Pyramids",
+              "Saqqara",
+              "GEM"
+            ],
+            "description": "Private Egyptologist-led expedition to the Great Pyramids of Giza, Sphinx, Djoser Step Pyramid in Saqqara, and Grand Egyptian Museum (GEM)."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Flight to Aswan & Nile Cruise Embarkation",
+            "dayNumber": 3,
+            "activities": [
+              "Philae Temple",
+              "High Dam",
+              "Nile Sailing"
+            ],
+            "description": "Domestic flight to Aswan, embarkation on luxury Nile Cruise / private Dahabiya, visit to Philae Temple, High Dam, and sunset felucca ride."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Kom Ombo & Edfu Temples Navigation",
+            "dayNumber": 4,
+            "activities": [
+              "Kom Ombo",
+              "Edfu Temple"
+            ],
+            "description": "Sail north to the dual Temple of Kom Ombo and Crocodile Museum, followed by chariot excursion to Horus Temple in Edfu."
+          },
+          {
+            "meals": "Full Board",
+            "title": "Luxor: Valley of the Kings & Karnak Temples",
+            "dayNumber": 5,
+            "activities": [
+              "Valley of the Kings",
+              "Karnak Temple"
+            ],
+            "description": "Arrival in Luxor, private exploration of Valley of the Kings, Hatshepsut Temple, and grand Karnak & Luxor Temples illuminated by night."
+          },
+          {
+            "meals": "Breakfast",
+            "title": "Cairo Return & International Departure",
+            "dayNumber": 9,
+            "activities": [
+              "Airport Transfer & Departure"
+            ],
+            "description": "Breakfast, private transfer to Cairo International Airport, VIP exit assistance, and international flight departure."
+          }
+        ],
+        "tier": "ULTRA_VIP",
+        "title": "Custom 9-Day Itinerary: Cairo + Luxor + Aswan",
+        "currency": "USD",
+        "highlights": [
+          "5-Star luxury accommodations with premier views",
+          "Dedicated private Egyptologist guide",
+          "Private Mercedes fleet transfers & VIP airport concierge",
+          "Full-board signature Nile Cruise sailing"
+        ],
+        "inclusions": [
+          "All luxury hotel & cruise accommodations",
+          "All historical site entrance permits",
+          "All domestic flights & private ground transfers",
+          "24/7 dedicated travel designer concierge support"
+        ],
+        "destinations": [
+          "Cairo",
+          "Luxor",
+          "Aswan"
+        ],
+        "durationDays": 9,
+        "isCustomTailored": true,
+        "estimatedPricePerPerson": 2490,
+        "requiresHumanConfirmation": true
+      },
+      "nileCruiseRequired": true
+    },
+    "budgetRange": null,
+    "paxCount": null,
+    "childrenCount": null,
+    "preferredDestinations": [],
+    "travelDates": null,
+    "tripDuration": null,
+    "summary": null,
+    "leadScore": 90,
+    "leadStatus": "QUALIFIED",
+    "consentGiven": false,
+    "utmSource": null,
+    "utmMedium": null,
+    "utmCampaign": null,
+    "referrer": null,
+    "currentPage": "/transportation",
+    "createdAt": "2026-08-27T21:12:09.946Z",
+    "updatedAt": "2026-08-27T22:17:33.277Z",
+    "closedAt": null,
+    "handedOffAt": null
+  },
+  {
+    "id": "54e6094e-113a-4962-82a2-db43a9c1514a",
+    "publicSessionId": "session-1788075459352-kxjzcrmu5",
+    "userId": null,
+    "customerId": null,
+    "locale": "ar",
+    "channel": "web",
+    "status": "ACTIVE",
+    "assignedStaffId": null,
+    "visitorName": null,
+    "visitorEmail": null,
+    "visitorPhone": null,
+    "visitorNationality": null,
+    "travelPreferences": {
+      "country": "Egypt",
+      "nileCruiseRequired": true
+    },
+    "budgetRange": null,
+    "paxCount": null,
+    "childrenCount": null,
+    "preferredDestinations": [],
+    "travelDates": null,
+    "tripDuration": null,
+    "summary": null,
+    "leadScore": 0,
+    "leadStatus": "NEW",
+    "consentGiven": false,
+    "utmSource": null,
+    "utmMedium": null,
+    "utmCampaign": null,
+    "referrer": null,
+    "currentPage": "/",
+    "createdAt": "2026-08-30T07:37:44.735Z",
+    "updatedAt": "2026-08-30T07:37:44.814Z",
+    "closedAt": null,
+    "handedOffAt": null
+  }
+]

@@ -1,0 +1,302 @@
+[
+  {
+    "id": "28073c1f-9d66-484d-a565-7c3f1231c9c4",
+    "referenceCode": "COMP-DFOGAU",
+    "name": "Bayer, Bayer and Blanda",
+    "companyType": "CORPORATE",
+    "status": "INACTIVE",
+    "email": "Katherine61@yahoo.com",
+    "phone": "816.263.6772 x89205",
+    "website": "https://diligent-sandbar.org",
+    "taxId": "042154529",
+    "address": {
+      "city": "Maple Grove",
+      "country": "Niger"
+    },
+    "primaryContact": null,
+    "commissionRate": "15.54",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Music",
+      "Health"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:33.893Z",
+    "updatedAt": "2026-07-13T20:57:33.893Z",
+    "deletedAt": null
+  },
+  {
+    "id": "d00fb80d-1864-482f-ba46-01fbbf95a034",
+    "referenceCode": "COMP-IR6VIG",
+    "name": "Rippin, Kuhn and Ankunding",
+    "companyType": "AGENCY",
+    "status": "INACTIVE",
+    "email": "Keagan.Kihn64@gmail.com",
+    "phone": "(985) 358-3793 x01789",
+    "website": "https://winged-roundabout.name/",
+    "taxId": "101094795",
+    "address": {
+      "city": "Encinitas",
+      "country": "Cuba"
+    },
+    "primaryContact": null,
+    "commissionRate": "14.86",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Movies",
+      "Jewelry"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:36.505Z",
+    "updatedAt": "2026-07-13T20:57:36.505Z",
+    "deletedAt": null
+  },
+  {
+    "id": "955ad5ce-0899-4e18-9d4c-781a4a7dd290",
+    "referenceCode": "COMP-0NT1WN",
+    "name": "Wolf, Ledner and Steuber",
+    "companyType": "CORPORATE",
+    "status": "ACTIVE",
+    "email": "Green59@hotmail.com",
+    "phone": "(718) 772-3218 x1199",
+    "website": "https://worst-marten.com/",
+    "taxId": "043255511",
+    "address": {
+      "city": "Hartmannhaven",
+      "country": "Japan"
+    },
+    "primaryContact": null,
+    "commissionRate": "17.95",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Sports",
+      "Outdoors"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:36.934Z",
+    "updatedAt": "2026-07-13T20:57:36.934Z",
+    "deletedAt": null
+  },
+  {
+    "id": "628c6c86-f132-40c7-a753-074f462662f2",
+    "referenceCode": "COMP-UFY3QS",
+    "name": "Sporer, Torp and O'Connell",
+    "companyType": "AGENCY",
+    "status": "ACTIVE",
+    "email": "Davon79@gmail.com",
+    "phone": "(906) 950-7525 x822",
+    "website": "https://troubled-metabolite.info",
+    "taxId": "121308652",
+    "address": {
+      "city": "Sheboygan",
+      "country": "Andorra"
+    },
+    "primaryContact": null,
+    "commissionRate": "6.6",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Jewelry",
+      "Tools"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:37.370Z",
+    "updatedAt": "2026-07-13T20:57:37.370Z",
+    "deletedAt": null
+  },
+  {
+    "id": "2ae194a9-45c0-4ca4-8f52-ba7e43bcc727",
+    "referenceCode": "COMP-AV5M90",
+    "name": "Terry, Wiegand and Windler",
+    "companyType": "CORPORATE",
+    "status": "ACTIVE",
+    "email": "Kristina72@yahoo.com",
+    "phone": "(491) 632-2813 x97329",
+    "website": "https://impolite-guide.com",
+    "taxId": "101150066",
+    "address": {
+      "city": "Lake Tyroneboro",
+      "country": "Vanuatu"
+    },
+    "primaryContact": null,
+    "commissionRate": "8.42",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Baby",
+      "Tools"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:37.849Z",
+    "updatedAt": "2026-07-13T20:57:37.849Z",
+    "deletedAt": null
+  },
+  {
+    "id": "e6b9fb7f-6c07-41f1-ad80-6a872221ef8a",
+    "referenceCode": "COMP-I60MYJ",
+    "name": "Rodriguez Inc",
+    "companyType": "AGENCY",
+    "status": "ACTIVE",
+    "email": "Desiree50@yahoo.com",
+    "phone": "(344) 285-3433 x42921",
+    "website": "https://parched-premium.com/",
+    "taxId": "066056522",
+    "address": {
+      "city": "Perryboro",
+      "country": "Iraq"
+    },
+    "primaryContact": null,
+    "commissionRate": "17.4",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Outdoors",
+      "Home"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:38.287Z",
+    "updatedAt": "2026-07-13T20:57:38.287Z",
+    "deletedAt": null
+  },
+  {
+    "id": "ae755c5b-6e77-4ef9-8ae1-4f087fc5caed",
+    "referenceCode": "COMP-YBR3LO",
+    "name": "Ondricka, Powlowski and Yost",
+    "companyType": "CORPORATE",
+    "status": "ACTIVE",
+    "email": "Pearl86@gmail.com",
+    "phone": "(609) 510-4764",
+    "website": "https://heavenly-shadowbox.info",
+    "taxId": "123255981",
+    "address": {
+      "city": "San Jose",
+      "country": "Democratic People's Republic of Korea"
+    },
+    "primaryContact": null,
+    "commissionRate": "19.27",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Garden",
+      "Shoes"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:38.722Z",
+    "updatedAt": "2026-07-13T20:57:38.722Z",
+    "deletedAt": null
+  },
+  {
+    "id": "2f99b923-36aa-4372-ab88-cd9982950eec",
+    "referenceCode": "COMP-INHILU",
+    "name": "Vandervort, Goodwin and Carter",
+    "companyType": "CORPORATE",
+    "status": "ACTIVE",
+    "email": "Liam_Rowe68@gmail.com",
+    "phone": "(391) 732-2890 x9223",
+    "website": "https://tired-interchange.biz",
+    "taxId": "075095040",
+    "address": {
+      "city": "Luthercester",
+      "country": "United Kingdom"
+    },
+    "primaryContact": null,
+    "commissionRate": "12.88",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Beauty",
+      "Home"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:39.150Z",
+    "updatedAt": "2026-07-13T20:57:39.150Z",
+    "deletedAt": null
+  },
+  {
+    "id": "36a1b9a5-dcd9-4feb-a3e3-c26fb89c47b5",
+    "referenceCode": "COMP-WWJRRB",
+    "name": "Cartwright Group",
+    "companyType": "AGENCY",
+    "status": "ACTIVE",
+    "email": "Tonya.Barton0@yahoo.com",
+    "phone": "1-965-794-3370 x0906",
+    "website": "https://afraid-bowler.name",
+    "taxId": "042157445",
+    "address": {
+      "city": "Stehrburgh",
+      "country": "Åland Islands"
+    },
+    "primaryContact": null,
+    "commissionRate": "8.49",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Toys",
+      "Jewelry"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:39.592Z",
+    "updatedAt": "2026-07-13T20:57:39.592Z",
+    "deletedAt": null
+  },
+  {
+    "id": "39008fd5-276e-4e86-9a2c-3f1e4840b59e",
+    "referenceCode": "COMP-A0ZHOZ",
+    "name": "Krajcik-Cummings LLC",
+    "companyType": "CORPORATE",
+    "status": "INACTIVE",
+    "email": "Gerald.Bashirian@yahoo.com",
+    "phone": "957-604-3911 x51122",
+    "website": "https://subtle-galoshes.net",
+    "taxId": "051404189",
+    "address": {
+      "city": "Adamsfort",
+      "country": "Falkland Islands (Malvinas)"
+    },
+    "primaryContact": null,
+    "commissionRate": "8.96",
+    "currentBalance": "0",
+    "paymentTerms": "NET_30",
+    "contractStartDate": null,
+    "contractEndDate": null,
+    "tags": [
+      "Shoes",
+      "Toys"
+    ],
+    "segments": [],
+    "tier": null,
+    "createdAt": "2026-07-13T20:57:40.023Z",
+    "updatedAt": "2026-07-13T20:57:40.023Z",
+    "deletedAt": null
+  }
+]

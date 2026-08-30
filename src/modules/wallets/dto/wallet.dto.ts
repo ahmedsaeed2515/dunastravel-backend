@@ -60,10 +60,37 @@ export class CreateWalletTransactionDto {
   status?: WalletTransactionStatus;
 }
 
-export class ManualWalletTransactionDto extends OmitType(
-  CreateWalletTransactionDto,
-  ['referenceType', 'status'] as const,
-) {}
+export class ManualWalletTransactionDto {
+  @ApiProperty({ enum: WalletOwnerType })
+  @IsEnum(WalletOwnerType)
+  ownerType!: WalletOwnerType;
+
+  @ApiProperty()
+  @IsUUID()
+  ownerId!: string;
+
+  @ApiProperty()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(99_999_999.99)
+  amount!: number;
+
+  @ApiProperty({ enum: WalletTransactionType })
+  @IsEnum(WalletTransactionType)
+  type!: WalletTransactionType;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(100)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/)
+  referenceId!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  description?: string;
+}
 
 export class WalletQueryFilters {
   @ApiPropertyOptional()

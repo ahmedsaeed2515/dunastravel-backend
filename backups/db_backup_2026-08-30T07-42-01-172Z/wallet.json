@@ -1,0 +1,312 @@
+[
+  {
+    "id": "1e2c919b-bc62-459a-b670-8fa764678a4f",
+    "ownerType": "USER",
+    "ownerId": "6ddb5104-70a6-4593-a57d-33e6c45d77f6",
+    "currency": "USD",
+    "balance": "500",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:49:59.232Z",
+    "updatedAt": "2026-07-13T20:49:59.232Z"
+  },
+  {
+    "id": "1f462a23-e545-436e-9d93-a8050eafba12",
+    "ownerType": "USER",
+    "ownerId": "72391a94-0918-4926-9702-79904961f620",
+    "currency": "USD",
+    "balance": "2595.41",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:40.597Z",
+    "updatedAt": "2026-07-13T20:57:40.597Z"
+  },
+  {
+    "id": "36e6c3e8-c96f-4a0a-b978-b1c004b73074",
+    "ownerType": "USER",
+    "ownerId": "847aec31-dfbd-48ba-81a8-58ffe77eab6e",
+    "currency": "USD",
+    "balance": "4029.89",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:41.361Z",
+    "updatedAt": "2026-07-13T20:57:41.361Z"
+  },
+  {
+    "id": "0ccfd1f6-297e-4fb8-bca8-1bfe1386fce0",
+    "ownerType": "USER",
+    "ownerId": "63eb59fe-5a72-4f4e-9999-a98a2560132a",
+    "currency": "USD",
+    "balance": "1594.43",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:42.073Z",
+    "updatedAt": "2026-07-13T20:57:42.073Z"
+  },
+  {
+    "id": "26902813-74cd-4837-8f4d-ef1cb3a653db",
+    "ownerType": "USER",
+    "ownerId": "2e91c81f-58d0-4a67-8ed7-7058ea46706e",
+    "currency": "USD",
+    "balance": "1814.48",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:42.785Z",
+    "updatedAt": "2026-07-13T20:57:42.785Z"
+  },
+  {
+    "id": "8c355f4f-b28a-47e9-956d-f95197896972",
+    "ownerType": "USER",
+    "ownerId": "c15ef13d-8d5f-4de6-b20a-2c6d9b714661",
+    "currency": "USD",
+    "balance": "4348.02",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:43.497Z",
+    "updatedAt": "2026-07-13T20:57:43.497Z"
+  },
+  {
+    "id": "10d83858-bdda-4b98-8c84-b91877026071",
+    "ownerType": "USER",
+    "ownerId": "91da6eff-d38e-4744-95f5-b6e0cffe7ee9",
+    "currency": "USD",
+    "balance": "2729.13",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:44.213Z",
+    "updatedAt": "2026-07-13T20:57:44.213Z"
+  },
+  {
+    "id": "2042e449-a806-42ab-b5ef-4a0c58936994",
+    "ownerType": "USER",
+    "ownerId": "6a32c2af-1236-4ebd-bf94-99744f4fec92",
+    "currency": "USD",
+    "balance": "2838.21",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:44.941Z",
+    "updatedAt": "2026-07-13T20:57:44.941Z"
+  },
+  {
+    "id": "a67d79e5-452e-4397-8072-6af437dfcee5",
+    "ownerType": "USER",
+    "ownerId": "76396dfa-b220-4077-9832-6527b5431cc8",
+    "currency": "USD",
+    "balance": "2595.32",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:45.671Z",
+    "updatedAt": "2026-07-13T20:57:45.671Z"
+  },
+  {
+    "id": "e3436efd-dac7-4c92-aa3d-3f664a7f2fcc",
+    "ownerType": "USER",
+    "ownerId": "11213a08-4fa0-4328-85ee-e61f68324077",
+    "currency": "USD",
+    "balance": "939.98",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:46.381Z",
+    "updatedAt": "2026-07-13T20:57:46.381Z"
+  },
+  {
+    "id": "1f154fbb-6f76-41b4-abef-d6802e8beeba",
+    "ownerType": "USER",
+    "ownerId": "06e834bc-4432-48e6-8b5e-265bcb7c5ec0",
+    "currency": "USD",
+    "balance": "171.21",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:47.094Z",
+    "updatedAt": "2026-07-13T20:57:47.094Z"
+  },
+  {
+    "id": "e40c7cf2-a6b9-4f9a-a444-587c5ed63f98",
+    "ownerType": "USER",
+    "ownerId": "2618d06f-0351-4771-9769-1b6891d9d952",
+    "currency": "USD",
+    "balance": "4752.43",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:47.806Z",
+    "updatedAt": "2026-07-13T20:57:47.806Z"
+  },
+  {
+    "id": "1d9584aa-f61c-4e96-9152-561d9cc41703",
+    "ownerType": "USER",
+    "ownerId": "667316b9-23ab-4e09-be79-244daf127f72",
+    "currency": "USD",
+    "balance": "230.43",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:48.548Z",
+    "updatedAt": "2026-07-13T20:57:48.548Z"
+  },
+  {
+    "id": "f09e699c-4390-4334-8330-7ce41139fe71",
+    "ownerType": "USER",
+    "ownerId": "d1b80990-a727-485c-96c1-f17097ee40c2",
+    "currency": "USD",
+    "balance": "743.06",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:49.442Z",
+    "updatedAt": "2026-07-13T20:57:49.442Z"
+  },
+  {
+    "id": "bc37b05e-210b-4f73-955f-7add147527b5",
+    "ownerType": "USER",
+    "ownerId": "12f992bc-e709-49de-82c0-92aea4e77984",
+    "currency": "USD",
+    "balance": "1099.73",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:50.465Z",
+    "updatedAt": "2026-07-13T20:57:50.465Z"
+  },
+  {
+    "id": "6ba4adec-3471-4fd3-8c42-1e987cd8c616",
+    "ownerType": "USER",
+    "ownerId": "ead66c4d-44ef-4455-83cf-0ea4e3b8e00c",
+    "currency": "USD",
+    "balance": "4137.78",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:51.497Z",
+    "updatedAt": "2026-07-13T20:57:51.497Z"
+  },
+  {
+    "id": "585ea06b-2d49-4a35-8835-98dff54c9b42",
+    "ownerType": "USER",
+    "ownerId": "74d719f9-2059-466b-99a8-e455ff182e24",
+    "currency": "USD",
+    "balance": "2077.01",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:52.206Z",
+    "updatedAt": "2026-07-13T20:57:52.206Z"
+  },
+  {
+    "id": "d22bfdac-7395-4441-9b74-3ec3c642c6f4",
+    "ownerType": "USER",
+    "ownerId": "40f3a3b1-2ddd-41ed-8f49-c91838bd8af3",
+    "currency": "USD",
+    "balance": "2502.67",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:52.916Z",
+    "updatedAt": "2026-07-13T20:57:52.916Z"
+  },
+  {
+    "id": "d021397e-9129-4f05-b986-28ec3db774c0",
+    "ownerType": "USER",
+    "ownerId": "1df1292c-9099-4b5b-ac80-6915834d4d6a",
+    "currency": "USD",
+    "balance": "3973.56",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:53.942Z",
+    "updatedAt": "2026-07-13T20:57:53.942Z"
+  },
+  {
+    "id": "130ed9e6-2e5d-49ae-8a03-8b1955c94aff",
+    "ownerType": "USER",
+    "ownerId": "b7909898-afd6-485a-9165-a215dcc3ec5a",
+    "currency": "USD",
+    "balance": "4212.12",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:54.662Z",
+    "updatedAt": "2026-07-13T20:57:54.662Z"
+  },
+  {
+    "id": "ca1293b0-82b0-4cb1-95c4-5c0a411cf333",
+    "ownerType": "USER",
+    "ownerId": "035d14c8-a0ca-484f-952a-c3cf35217c28",
+    "currency": "USD",
+    "balance": "3276.71",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:55.374Z",
+    "updatedAt": "2026-07-13T20:57:55.374Z"
+  },
+  {
+    "id": "4ab10db2-1706-4b96-be33-0ed02b90a227",
+    "ownerType": "USER",
+    "ownerId": "f2c7ad1f-6be0-42b1-81f1-26f2becdcc77",
+    "currency": "USD",
+    "balance": "4004.85",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:56.118Z",
+    "updatedAt": "2026-07-13T20:57:56.118Z"
+  },
+  {
+    "id": "6504d3ca-34b4-4196-b8e7-0e0b50e6a5e7",
+    "ownerType": "USER",
+    "ownerId": "ec778414-74e9-441c-82e8-2b05958b181f",
+    "currency": "USD",
+    "balance": "1887.75",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:56.832Z",
+    "updatedAt": "2026-07-13T20:57:56.832Z"
+  },
+  {
+    "id": "a27faffa-ba0b-4b8b-8e8e-fd121cab1c6f",
+    "ownerType": "USER",
+    "ownerId": "1cb22145-07cc-476c-a79d-79c5c0ff0ab3",
+    "currency": "USD",
+    "balance": "834.83",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:57.545Z",
+    "updatedAt": "2026-07-13T20:57:57.545Z"
+  },
+  {
+    "id": "e77901cd-9548-45a3-b087-fe1894bad890",
+    "ownerType": "USER",
+    "ownerId": "93fea336-fb1a-4020-aedd-8e6245d98f05",
+    "currency": "USD",
+    "balance": "1949.55",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:58.257Z",
+    "updatedAt": "2026-07-13T20:57:58.257Z"
+  },
+  {
+    "id": "1c815f91-e7fc-4049-9c07-7f338835da32",
+    "ownerType": "USER",
+    "ownerId": "84902125-f85d-452c-9274-e5102b367566",
+    "currency": "USD",
+    "balance": "4043.26",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:59.057Z",
+    "updatedAt": "2026-07-13T20:57:59.057Z"
+  },
+  {
+    "id": "581a2da5-2d72-4b5c-b412-c0e0158a092b",
+    "ownerType": "USER",
+    "ownerId": "77c12dc2-12ef-45ba-bca9-2b1cf7b42ea6",
+    "currency": "USD",
+    "balance": "1746.81",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:57:59.768Z",
+    "updatedAt": "2026-07-13T20:57:59.768Z"
+  },
+  {
+    "id": "6c5674b4-02ff-4b06-ac3d-c03b8f192757",
+    "ownerType": "USER",
+    "ownerId": "1e5ff013-d3b8-46b1-9b87-9fd0fce245a8",
+    "currency": "USD",
+    "balance": "4717.49",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:58:00.481Z",
+    "updatedAt": "2026-07-13T20:58:00.481Z"
+  },
+  {
+    "id": "76c9d1b5-c2ad-45f0-9c60-81e91b6d83b1",
+    "ownerType": "USER",
+    "ownerId": "1d7cf748-650d-4cda-b22b-1134b39d617c",
+    "currency": "USD",
+    "balance": "4774.39",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:58:01.283Z",
+    "updatedAt": "2026-07-13T20:58:01.283Z"
+  },
+  {
+    "id": "b01a86e4-1349-454f-8ded-7460c6eeb6ef",
+    "ownerType": "USER",
+    "ownerId": "cb842b44-7ff9-4858-a3bf-790003fc6453",
+    "currency": "USD",
+    "balance": "3392.54",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:58:02.344Z",
+    "updatedAt": "2026-07-13T20:58:02.344Z"
+  },
+  {
+    "id": "87a691ea-9468-4ecb-912a-dbd8ea7e8754",
+    "ownerType": "USER",
+    "ownerId": "ef9278bd-e3b2-4211-b0a4-a23a2aa9b106",
+    "currency": "USD",
+    "balance": "2504.65",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T20:58:03.060Z",
+    "updatedAt": "2026-07-13T20:58:03.060Z"
+  }
+]

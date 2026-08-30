@@ -1,0 +1,15 @@
+{
+  "eventId": "evt_gpi_unpaid_002",
+  "event": "invoice.not_paid",
+  "createdAt": "2026-08-30T11:05:00.000Z",
+  "data": {
+    "id": "gpi_inv_987654321",
+    "transactionId": "gpi_tx_123456789",
+    "merchantReference": "BKG-A4X7Z2",
+    "status": "FAILED",
+    "amount": "3700.00",
+    "currency": "USD",
+    "reason": "INSUFFICIENT_FUNDS",
+    "failedAt": "2026-08-30T11:04:55.000Z"
+  }
+}

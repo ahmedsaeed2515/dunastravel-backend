@@ -1,0 +1,58 @@
+[
+  {
+    "id": "89ac8dda-1a4d-4423-ac98-c29ea75d8824",
+    "slug": "grand-egyptian-museum-guide-2026",
+    "titleJsonb": {
+      "ar": "دليل المتحف المصري الكبير 2026",
+      "en": "Grand Egyptian Museum Guide 2026"
+    },
+    "contentJsonb": {
+      "ar": "<p>استكشف كنوز توت عنخ آمون...</p>",
+      "en": "<p>Discover the treasures of GEM...</p>"
+    },
+    "excerptJsonb": {
+      "ar": "الدليل الشامل لزيارة المتحف الأكبر عالمياً",
+      "en": "Ultimate guide to the GEM near Giza pyramids"
+    },
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "coverImage": "https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=800&q=80",
+    "author": "Dr. Zahi Concierge",
+    "category": "Egypt Travel",
+    "tags": [],
+    "status": "PUBLISHED",
+    "isPublished": true,
+    "publishedAt": "2026-08-23T11:15:06.471Z",
+    "deletedAt": null,
+    "createdAt": "2026-08-23T11:15:06.471Z",
+    "updatedAt": "2026-08-23T11:15:06.471Z"
+  },
+  {
+    "id": "f9a06f25-167e-4e29-a84d-43c1a46e2768",
+    "slug": "luxury-nile-cruise-luxor-aswan",
+    "titleJsonb": {
+      "ar": "أبرز معالم الكروز الفاخر بالأقصر وأسوان",
+      "en": "Luxury Nile Cruise Highlights"
+    },
+    "contentJsonb": {
+      "ar": "<p>استمتع بالرفاهية المطلقة على ضفاف النيل...</p>",
+      "en": "<p>Experience timeless luxury along the Nile...</p>"
+    },
+    "excerptJsonb": {
+      "ar": "رحلة نيلية ملكية بين الأقصر وأسوان",
+      "en": "Sail between Luxor and Aswan in ultimate style"
+    },
+    "seoTitleJsonb": null,
+    "seoDescriptionJsonb": null,
+    "coverImage": "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
+    "author": "Dunas Editorial",
+    "category": "Cruises",
+    "tags": [],
+    "status": "PUBLISHED",
+    "isPublished": true,
+    "publishedAt": "2026-08-23T11:15:06.471Z",
+    "deletedAt": null,
+    "createdAt": "2026-08-23T11:15:06.471Z",
+    "updatedAt": "2026-08-23T11:15:06.471Z"
+  }
+]

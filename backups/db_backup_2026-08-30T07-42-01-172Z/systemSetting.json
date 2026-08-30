@@ -1,0 +1,9 @@
+[
+  {
+    "id": "e2eceea7-3016-4bfe-b031-9c8a82f85942",
+    "key": "AUTH_REQUIRE_EMAIL_VERIFICATION",
+    "value": false,
+    "createdAt": "2026-07-13T13:49:56.225Z",
+    "updatedAt": "2026-08-27T21:29:21.487Z"
+  }
+]

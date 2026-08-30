@@ -22,6 +22,11 @@ export class UpdateAiConfigDto {
   @IsOptional()
   isPublicEnabled?: boolean;
 
+  @ApiPropertyOptional({ example: true, description: 'Enable direct in-chat booking flow for GuideR' })
+  @IsBoolean()
+  @IsOptional()
+  isInChatBookingEnabled?: boolean;
+
   @ApiPropertyOptional({ example: 'sk-ant-api03-...' })
   @IsString()
   @IsOptional()
