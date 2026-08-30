@@ -78,7 +78,7 @@ export class WalletsController {
     ownerType: WalletOwnerType,
     @Param('ownerId', ParseUUIDPipe) ownerId: string,
   ) {
-    return this.walletsService.getWallet(ownerType, ownerId);
+    return this.walletsService.getOrCreateWallet(ownerType, ownerId);
   }
 
   @Get(':walletId/transactions')

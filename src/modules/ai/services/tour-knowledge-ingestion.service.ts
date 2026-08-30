@@ -298,5 +298,45 @@ export class TourKnowledgeIngestionService {
         },
       });
     }
+
+    // Also upsert into AiKnowledgeChunk table for fast multi-lingual hybrid indexing
+    try {
+      await (this.prisma as any).aiKnowledgeChunk.upsert({
+        where: {
+          id: `chunk:${params.sourceKey}`,
+        },
+        create: {
+          id: `chunk:${params.sourceKey}`,
+          canonicalEntityId: `${params.sourceEntityType}:${params.sourceEntityId}`,
+          entityType: params.sourceEntityType,
+          entityId: params.sourceEntityId,
+          locale: params.locale,
+          chunkIndex: 0,
+          title: params.title,
+          content: params.content,
+          contentHash,
+          metadataJsonb: {
+            category: params.category,
+            priority: params.priority,
+            tags: params.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+        update: {
+          title: params.title,
+          content: params.content,
+          contentHash,
+          metadataJsonb: {
+            category: params.category,
+            priority: params.priority,
+            tags: params.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+      });
+    } catch {
+      // Non-blocking fallback
+    }
   }
 }
+

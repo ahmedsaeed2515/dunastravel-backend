@@ -9,6 +9,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { UniversalAiProvider } from './providers/universal-ai.provider';
 import { AiKeyPoolService } from './services/ai-key-pool.service';
+import { AgentRegistryService, CreateAgentDto, UpdateAgentDto } from './services/agent-registry.service';
+import { ModelRegistryService } from './services/model-registry.service';
+import { PromptEngineService } from './services/prompt-engine.service';
+import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
 import { UpdateAiConfigDto, TestProviderConnectionDto } from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
 import {
@@ -27,6 +31,10 @@ export class AdminAiController {
     private readonly chatOrchestrator: ChatOrchestratorService,
     private readonly universalProvider: UniversalAiProvider,
     private readonly keyPoolService: AiKeyPoolService,
+    private readonly agentRegistry: AgentRegistryService,
+    private readonly modelRegistry: ModelRegistryService,
+    private readonly promptEngine: PromptEngineService,
+    private readonly hybridRagEngine: HybridRagEngineService,
   ) {}
 
   @Get('overview')
@@ -415,4 +423,173 @@ export class AdminAiController {
   async runSimulator(@Body() dto: SendChatMessageDto) {
     return this.chatOrchestrator.processVisitorMessage(dto);
   }
+
+  // --- AI Agent Registry Management ---
+
+  @Get('agents')
+  @ApiOperation({ summary: 'Get all AI Agents in registry' })
+  async getAgents(@Query('locale') locale = 'en') {
+    return this.agentRegistry.getAllAgents(locale);
+  }
+
+  @Get('agents/:slug')
+  @ApiOperation({ summary: 'Get AI Agent detail by slug' })
+  async getAgentBySlug(@Param('slug') slug: string, @Query('locale') locale = 'en') {
+    return this.agentRegistry.getAgentBySlug(slug, locale);
+  }
+
+  @Post('agents')
+  @ApiOperation({ summary: 'Create new AI Agent in registry' })
+  async createAgent(@Body() dto: CreateAgentDto) {
+    return this.agentRegistry.createAgent(dto);
+  }
+
+  @Put('agents/:id')
+  @ApiOperation({ summary: 'Update AI Agent configuration' })
+  async updateAgent(@Param('id') id: string, @Body() dto: UpdateAgentDto) {
+    return this.agentRegistry.updateAgent(id, dto);
+  }
+
+  @Delete('agents/:id')
+  @ApiOperation({ summary: 'Delete AI Agent from registry' })
+  async deleteAgent(@Param('id') id: string) {
+    return this.agentRegistry.deleteAgent(id);
+  }
+
+  // --- Model Registry ---
+
+  @Get('models')
+  @ApiOperation({ summary: 'Get full list of supported LLM models with capabilities & pricing' })
+  async getAllModels() {
+    return {
+      models: this.modelRegistry.getAllModels(),
+      providers: this.modelRegistry.getAvailableProviders(),
+    };
+  }
+
+  // --- Testing Lab Diagnostics Trace ---
+
+  @Post('simulator/trace')
+  @ApiOperation({ summary: 'Run diagnostic test query returning full inspection trace (intent, agent, model, RAG chunks, live DB calls, cost)' })
+  async runSimulatorTrace(
+    @Body()
+    body: {
+      message: string;
+      agentSlug?: string;
+      model?: string;
+      provider?: string;
+      locale?: string;
+      promptVersionId?: string;
+      enableRag?: boolean;
+      enableLiveDb?: boolean;
+    },
+  ) {
+    const startTime = Date.now();
+    const locale = body.locale || 'en';
+    const agentSlug = body.agentSlug || 'guider';
+    const agent = await this.agentRegistry.getAgentBySlug(agentSlug, locale);
+
+    const modelId = body.model || agent.primaryModel || 'claude-3-5-sonnet-20241022';
+    const providerName = body.provider || agent.provider || 'anthropic';
+
+    // 1. RAG & Live Structured Retrieval
+    let retrievalContext = null;
+    let retrievalLatency = 0;
+    if (body.enableRag !== false) {
+      const ragStart = Date.now();
+      retrievalContext = await this.hybridRagEngine.retrieveGroundedKnowledge(
+        body.message,
+        locale,
+        agent.allowedSources || ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
+        4,
+      );
+      retrievalLatency = Date.now() - ragStart;
+    }
+
+    // 2. Prompt Compilation
+    const systemPromptBase = agent.systemPrompt || 'You are GuideR, luxury AI concierge for Dunas Travel.';
+    const compiledSystemPrompt = this.promptEngine.renderTemplate(systemPromptBase, {
+      agentName: agent.displayName || agent.slug,
+      visitorLanguage: locale,
+      businessName: 'Dunas Travel',
+      groundedKnowledge: retrievalContext?.groundedSummaryText || 'No extra catalog items.',
+    });
+
+    // 3. Execution via Failover / Universal Provider
+    const keyPool = await this.keyPoolService.getKeyPool();
+    const candidateKey = keyPool.find((k) => k.isActive && k.provider === providerName);
+
+    let llmResponse = null;
+    let providerError = null;
+    try {
+      llmResponse = await this.universalProvider.generateCompletion(
+        body.message,
+        {
+          provider: providerName,
+          model: modelId,
+          systemPrompt: compiledSystemPrompt,
+          temperature: agent.temperature || 0.7,
+          maxTokens: agent.maxTokens || 1024,
+        },
+        candidateKey?.hasKey ? undefined : undefined,
+      );
+    } catch (err: any) {
+      providerError = err.message;
+      // Fallback response for simulator testing
+      llmResponse = {
+        text: `[Grounded Test Output for "${agent.displayName}"]\nBased on Dunas Travel catalog: ${retrievalContext?.groundedTours?.[0]?.title || 'Classic Egypt Tour'} is available with daily luxury departures.`,
+        inputTokens: Math.ceil(compiledSystemPrompt.length / 4) + Math.ceil(body.message.length / 4),
+        outputTokens: 60,
+        latencyMs: Date.now() - startTime - retrievalLatency,
+        provider: providerName,
+        model: modelId,
+      };
+    }
+
+    const totalLatency = Date.now() - startTime;
+    const estimatedCostUsd = this.modelRegistry.calculateCostUsd(
+      modelId,
+      llmResponse.inputTokens,
+      llmResponse.outputTokens,
+    );
+
+    return {
+      traceId: `trace-${Date.now()}`,
+      answer: llmResponse.text,
+      agent: {
+        id: agent.id,
+        slug: agent.slug,
+        name: agent.displayName,
+        role: agent.role,
+        avatar: agent.avatar,
+      },
+      model: {
+        id: modelId,
+        provider: providerName,
+        info: this.modelRegistry.getModelInfo(modelId),
+      },
+      retrieval: {
+        enabled: body.enableRag !== false,
+        latencyMs: retrievalLatency,
+        matchedChunks: retrievalContext?.matchedChunks || [],
+        groundedTours: retrievalContext?.groundedTours || [],
+        groundedHotels: retrievalContext?.groundedHotels || [],
+        groundedTransportation: retrievalContext?.groundedTransportation || [],
+      },
+      prompt: {
+        compiledSystemPrompt,
+        versionId: body.promptVersionId || agent.activePromptVersionId || 'active-v1',
+      },
+      telemetry: {
+        inputTokens: llmResponse.inputTokens,
+        outputTokens: llmResponse.outputTokens,
+        totalTokens: llmResponse.inputTokens + llmResponse.outputTokens,
+        estimatedCostUsd,
+        totalLatencyMs: totalLatency,
+        providerLatencyMs: llmResponse.latencyMs,
+        providerError,
+      },
+    };
+  }
 }
+

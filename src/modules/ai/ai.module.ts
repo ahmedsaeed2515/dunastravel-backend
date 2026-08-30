@@ -16,6 +16,11 @@ import { RagRetrievalService } from './services/rag-retrieval.service';
 import { TourCatalogToolService } from './services/tour-catalog-tool.service';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
 import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
+import { ModelRegistryService } from './services/model-registry.service';
+import { AgentRegistryService } from './services/agent-registry.service';
+import { LiveCatalogRetrieverService } from './services/live-catalog-retriever.service';
+import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
+import { PromptEngineService } from './services/prompt-engine.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule],
@@ -37,6 +42,11 @@ import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingesti
     TourCatalogToolService,
     ChatOrchestratorService,
     TourKnowledgeIngestionService,
+    ModelRegistryService,
+    AgentRegistryService,
+    LiveCatalogRetrieverService,
+    HybridRagEngineService,
+    PromptEngineService,
   ],
   exports: [
     AiService,
@@ -47,6 +57,12 @@ import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingesti
     RagRetrievalService,
     TourCatalogToolService,
     TourKnowledgeIngestionService,
+    ModelRegistryService,
+    AgentRegistryService,
+    LiveCatalogRetrieverService,
+    HybridRagEngineService,
+    PromptEngineService,
   ],
 })
 export class AiModule {}
+

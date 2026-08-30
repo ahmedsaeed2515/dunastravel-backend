@@ -1426,6 +1426,9 @@ model AiPromptVersion {
   systemPrompt  String    @map("system_prompt") @db.Text
   status        String    @default("DRAFT") @db.VarChar(20)
   changeNote    String?   @map("change_note") @db.VarChar(500)
+  agentSlug     String?   @map("agent_slug") @db.VarChar(100)
+  sections      Json?     @map("sections")
+  variables     Json?     @map("variables")
   createdById   String?   @map("created_by_id")
   publishedById String?   @map("published_by_id")
   publishedAt   DateTime? @map("published_at")
@@ -1434,7 +1437,98 @@ model AiPromptVersion {
 
   @@index([status])
   @@index([versionNumber])
+  @@index([agentSlug])
   @@map("ai_prompt_versions")
+}
+
+model AiAgent {
+  id                    String   @id @default(uuid())
+  slug                  String   @unique @db.VarChar(100)
+  nameJsonb             Json     @map("name_jsonb")
+  descriptionJsonb      Json?    @map("description_jsonb")
+  role                  String   @db.VarChar(100)
+  avatar                String?  @db.VarChar(255)
+  systemPrompt          String?  @map("system_prompt") @db.Text
+  personalityGuidelines String?  @map("personality_guidelines") @db.Text
+  tone                  String?  @db.VarChar(100)
+  primaryModel          String   @default("claude-3-5-sonnet-20241022") @map("primary_model") @db.VarChar(100)
+  fallbackModels        String[] @default(["gemini-2.0-flash", "gpt-4o-mini"]) @map("fallback_models")
+  temperature           Float    @default(0.7)
+  maxTokens             Int      @default(1024) @map("max_tokens")
+  allowedSources        String[] @default(["tours", "destinations", "policies", "hotels", "transportation"]) @map("allowed_sources")
+  allowedTools          String[] @default(["search_catalog", "check_availability", "tailor_itinerary", "book_tour"]) @map("allowed_tools")
+  supportedLanguages    String[] @default(["en", "ar", "es", "pt", "it"]) @map("supported_languages")
+  defaultLanguage       String   @default("en") @map("default_language") @db.VarChar(10)
+  isActive              Boolean  @default(true) @map("is_active")
+  isPublic              Boolean  @default(true) @map("is_public")
+  activePromptVersionId String?  @map("active_prompt_version_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("ai_agents")
+}
+
+model AiProviderCredential {
+  id              String    @id @default(uuid())
+  provider        String    @db.VarChar(50)
+  model           String    @db.VarChar(100)
+  label           String?   @db.VarChar(100)
+  encryptedApiKey String    @map("encrypted_api_key") @db.Text
+  baseUrl         String?   @map("base_url") @db.VarChar(255)
+  priority        Int       @default(1)
+  isActive        Boolean   @default(true) @map("is_active")
+  failCount       Int       @default(0) @map("fail_count")
+  lastStatus      String    @default("UNTESTED") @map("last_status") @db.VarChar(50)
+  lastLatencyMs   Int?      @map("last_latency_ms")
+  lastTestedAt    DateTime? @map("last_tested_at")
+  lastUsedAt      DateTime? @map("last_used_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([provider])
+  @@index([priority])
+  @@index([isActive])
+  @@map("ai_provider_credentials")
+}
+
+model AiKnowledgeChunk {
+  id                String   @id @default(uuid())
+  documentId        String?  @map("document_id")
+  canonicalEntityId String   @map("canonical_entity_id") @db.VarChar(150)
+  entityType        String   @map("entity_type") @db.VarChar(50)
+  entityId          String   @map("entity_id") @db.VarChar(100)
+  locale            String   @default("en") @db.VarChar(10)
+  chunkIndex        Int      @default(0) @map("chunk_index")
+  title             String   @db.VarChar(255)
+  content           String   @db.Text
+  contentHash       String?  @map("content_hash") @db.VarChar(64)
+  metadataJsonb     Json?    @map("metadata_jsonb")
+  lastIndexedAt     DateTime @default(now()) @map("last_indexed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([canonicalEntityId])
+  @@index([entityType, entityId])
+  @@index([locale])
+  @@map("ai_knowledge_chunks")
+}
+
+model AiKnowledgeSyncJob {
+  id             String    @id @default(uuid())
+  status         String    @default("PENDING") @db.VarChar(30)
+  entityType     String    @default("ALL") @map("entity_type") @db.VarChar(50)
+  totalCount     Int       @default(0) @map("total_count")
+  processedCount Int       @default(0) @map("processed_count")
+  failedCount    Int       @default(0) @map("failed_count")
+  errorLog       String?   @map("error_log") @db.Text
+  startedAt      DateTime  @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("ai_knowledge_sync_jobs")
 }
 
 model KnowledgeBaseItem {
