@@ -507,8 +507,17 @@ export class AdminAiController {
   @Get('models')
   @ApiOperation({ summary: 'Get full model registry with capabilities, pricing, and provider info' })
   async getAllModels() {
+    const rawModels = this.modelRegistry.getAllModels();
+    const models = rawModels.map((m) => ({
+      ...m,
+      provider: m.providerId,
+      name: m.displayName,
+      nameAr: m.displayNameAr,
+      inputCostPer1M: m.inputPricePerMillion,
+      outputCostPer1M: m.outputPricePerMillion,
+    }));
     return {
-      models: this.modelRegistry.getAllModels(),
+      models,
       providers: this.modelRegistry.getAvailableProviders(),
       routingTable: this.modelRouting.getRoutingTable(),
     };
