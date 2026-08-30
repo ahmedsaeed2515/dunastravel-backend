@@ -207,22 +207,29 @@ export class LiveCatalogRetrieverService {
       const hotels = await (this.prisma as any).hotel.findMany({
         where,
         take: limit,
-        orderBy: { starRating: 'desc' },
+        orderBy: { stars: 'desc' },
       });
 
-      return hotels.map((h: any) => ({
-        id: h.id,
-        slug: h.slug,
-        name: h.name,
-        city: h.city,
-        country: h.country || 'Egypt',
-        starRating: h.starRating || 5,
-        description: h.description || '',
-        amenities: h.amenities || ['Swimming Pool', 'Spa', 'Nile View', 'Fine Dining'],
-        minPriceUsd: Number(h.basePriceUsd || 250),
-        publicUrl: `/hotels/${h.slug}`,
-      }));
-    } catch {
+      return hotels.map((h: any) => {
+        const name = typeof h.nameJsonb === 'object' ? (h.nameJsonb?.en || h.nameJsonb?.ar || h.slug) : (h.name || h.slug);
+        const description = typeof h.descriptionJsonb === 'object' ? (h.descriptionJsonb?.en || h.descriptionJsonb?.ar || '') : '';
+        const amenities = Array.isArray(h.amenitiesJsonb) ? h.amenitiesJsonb : ['Swimming Pool', 'Spa', 'Nile View', 'Fine Dining'];
+
+        return {
+          id: h.id,
+          slug: h.slug,
+          name,
+          city: h.city,
+          country: 'Egypt',
+          starRating: h.stars || 5,
+          description,
+          amenities,
+          minPriceUsd: 250,
+          publicUrl: `/hotels/${h.slug}`,
+        };
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch live hotels: ${err?.message}`);
       return [];
     }
   }
@@ -243,12 +250,14 @@ export class LiveCatalogRetrieverService {
         vehicleType: s.vehicleType || 'Mercedes Luxury Sedan',
         capacity: s.capacity || 4,
         priceUsd: Number(s.basePriceUsd || 75),
-        origin: s.origin || 'Cairo Airport',
-        destination: s.destination || 'Cairo Hotel',
+        origin: s.serviceType === 'AIRPORT' ? 'Cairo Airport' : 'Cairo City',
+        destination: s.serviceType === 'AIRPORT' ? 'Cairo Hotel' : 'Alexandria / Giza',
         isAvailable: true,
       }));
-    } catch {
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch live transportation: ${err?.message}`);
       return [];
     }
   }
 }
+
