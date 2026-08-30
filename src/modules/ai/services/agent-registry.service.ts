@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface CreateAgentDto {
@@ -248,12 +248,22 @@ export class AgentRegistryService implements OnModuleInit {
     }));
   }
 
-  async getAgentBySlug(slug: string) {
+  async getAgentBySlug(slug: string, locale?: string) {
     const agent = await (this.prisma as any).aiAgent.findUnique({
       where: { slug },
     });
     if (!agent) {
       throw new NotFoundException(`AI Agent with slug '${slug}' not found.`);
+    }
+    if (locale) {
+      const loc = (locale || 'en').toLowerCase().split('-')[0];
+      const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
+      const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
+      return {
+        ...agent,
+        displayName: nameMap[loc] || nameMap.en || agent.slug,
+        displayDescription: descMap[loc] || descMap.en || '',
+      };
     }
     return agent;
   }
