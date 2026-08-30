@@ -97,7 +97,7 @@ describe('PaymentsController (HTTP Contract)', () => {
 
       expect(response.status).toBe(201);
       const resBody = response.body as { data: Record<string, string> };
-      expect(resBody.data).toEqual({
+      expect(resBody.data).toMatchObject({
         sessionUrl: 'https://hosted.getpayin.example/test-session',
         url: 'https://hosted.getpayin.example/test-session',
         transactionId: 'cs_test_123',

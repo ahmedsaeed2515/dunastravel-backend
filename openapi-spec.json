@@ -2197,6 +2197,51 @@
         ]
       }
     },
+    "/api/admin/tours/{slug}/move": {
+      "patch": {
+        "operationId": "AdminController_moveTour",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveTourDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tour moved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move a tour between destination landing pages, countries, cities, and categories.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/tours/{slug}/publish": {
       "post": {
         "operationId": "AdminController_publishTour",
@@ -3930,6 +3975,111 @@
           }
         ],
         "summary": "Get global wallet and liability metrics",
+        "tags": [
+          "Admin - Finance & Wallets"
+        ]
+      }
+    },
+    "/api/admin/finance/wallets": {
+      "get": {
+        "operationId": "WalletsController_listWallets",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USER",
+                "COMPANY"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all partner and agent wallets with directory search",
+        "tags": [
+          "Admin - Finance & Wallets"
+        ]
+      }
+    },
+    "/api/admin/finance/wallets/reconcile": {
+      "post": {
+        "operationId": "WalletsController_reconcileWallets",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reconcile wallet balances against transaction ledger",
         "tags": [
           "Admin - Finance & Wallets"
         ]
@@ -6562,6 +6712,36 @@
         ]
       }
     },
+    "/api/admin/users/crm": {
+      "post": {
+        "operationId": "UsersController_createCustomerCrm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerCrmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created customer CRM profile"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new customer profile in CRM.",
+        "tags": [
+          "Admin Users & CRM"
+        ]
+      }
+    },
     "/api/admin/users/crm/metrics": {
       "get": {
         "operationId": "UsersController_getCrmDashboardMetrics",
@@ -9162,6 +9342,26 @@
           }
         ],
         "summary": "Add a new API key to the failover pool",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/keys/reorder": {
+      "put": {
+        "operationId": "AdminAiController_reorderKeysInPool",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder API keys priority sequentially",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -14920,6 +15120,10 @@
           }
         }
       },
+      "MoveTourDto": {
+        "type": "object",
+        "properties": {}
+      },
       "AddTourImageDto": {
         "type": "object",
         "properties": {
@@ -15708,6 +15912,90 @@
           }
         },
         "required": [
+          "email"
+        ]
+      },
+      "CreateCustomerCrmDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Lady Eleanor Vance"
+          },
+          "email": {
+            "type": "string",
+            "example": "eleanor.vance@luxurytravel.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+44 20 7946 0912"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "British"
+          },
+          "isVip": {
+            "type": "boolean",
+            "example": true
+          },
+          "preferredLanguage": {
+            "type": "string",
+            "example": "en"
+          },
+          "preferredCurrency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "preferredDestination": {
+            "type": "string",
+            "example": "Luxor & Aswan Nile Cruise"
+          },
+          "preferredTravelType": {
+            "type": "string",
+            "example": "Luxury Private Dahabiya"
+          },
+          "customerSource": {
+            "type": "string",
+            "enum": [
+              "WEB",
+              "ADMIN",
+              "REFERRAL",
+              "PHONE",
+              "EMAIL",
+              "PARTNER"
+            ],
+            "example": "ADMIN"
+          },
+          "initialNote": {
+            "type": "string",
+            "example": "VIP referral from London concierge"
+          },
+          "tags": {
+            "example": [
+              "VIP",
+              "RepeatClient"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "segments": {
+            "example": [
+              "LuxuryTraveler"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "passportNumber": {
+            "type": "string",
+            "example": "GB987654321"
+          }
+        },
+        "required": [
+          "name",
           "email"
         ]
       },
