@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Param,
   Body,
+  Query,
   UseGuards,
   Headers,
 } from '@nestjs/common';
@@ -12,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { TransportationService } from './transportation.service';
 import { CreateTransportationBookingDto } from './dto/create-transportation-booking.dto';
@@ -27,10 +30,23 @@ export class TransportationController {
 
   @Get(['services', 'search'])
   @Public()
-  @ApiOperation({ summary: 'Get available transportation services' })
+  @ApiOperation({ summary: 'Get available transportation services with optional localization' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ar', 'es', 'pt', 'it'] })
   @ApiOkResponse({ description: 'List of active services' })
-  async getServices() {
-    return this.transportationService.findAllServices();
+  async getServices(@Query('locale') locale?: string) {
+    return this.transportationService.findAllServices(locale || 'en');
+  }
+
+  @Get('services/:id')
+  @Public()
+  @ApiOperation({ summary: 'Get public details for a single transportation service' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ar', 'es', 'pt', 'it'] })
+  @ApiOkResponse({ description: 'Detailed transportation service' })
+  async getServiceById(
+    @Param('id') id: string,
+    @Query('locale') locale?: string,
+  ) {
+    return this.transportationService.findOnePublic(id, locale || 'en');
   }
 
   @Post('bookings')
@@ -61,3 +77,4 @@ export class TransportationController {
     return this.transportationService.findUserBookings(user.id);
   }
 }
+

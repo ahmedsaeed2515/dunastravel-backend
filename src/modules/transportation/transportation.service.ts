@@ -7,6 +7,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTransportationBookingDto } from './dto/create-transportation-booking.dto';
+import {
+  CreateTransportationServiceDto,
+  UpdateTransportationServiceDto,
+  QueryTransportationServiceDto,
+  UpdateTransportationBookingStatusDto,
+} from './dto/transportation-service.dto';
 import { generateReferenceCode } from '../../common/utils';
 import { Prisma } from '@prisma/client';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
@@ -28,6 +34,68 @@ export class TransportationService {
       ...safe
     } = booking;
     return safe;
+  }
+
+  /**
+   * Helper to resolve 5-language localized names, descriptions, features, and media asset URLs.
+   */
+  private resolveLocalizedService(service: any, locale = 'en', mediaById?: Map<string, any>) {
+    const jsonb = (service.featuresJsonb && typeof service.featuresJsonb === 'object' && !Array.isArray(service.featuresJsonb))
+      ? service.featuresJsonb
+      : {};
+
+    const nameJsonb = jsonb.nameJsonb || service.nameJsonb || {
+      en: service.name,
+      ar: service.name,
+      es: service.name,
+      pt: service.name,
+      it: service.name,
+    };
+
+    const descriptionJsonb = jsonb.descriptionJsonb || service.descriptionJsonb || {
+      en: service.description || '',
+      ar: service.description || '',
+      es: service.description || '',
+      pt: service.description || '',
+      it: service.description || '',
+    };
+
+    const rawFeatures = Array.isArray(service.featuresJsonb)
+      ? service.featuresJsonb
+      : Array.isArray(jsonb.features)
+      ? jsonb.features
+      : Array.isArray(service.features)
+      ? service.features
+      : [];
+
+    const localizedName = nameJsonb[locale] || nameJsonb.en || nameJsonb.ar || service.name;
+    const localizedDescription = descriptionJsonb[locale] || descriptionJsonb.en || descriptionJsonb.ar || service.description || '';
+
+    const hero = service.heroMediaId && mediaById ? mediaById.get(service.heroMediaId) : undefined;
+    const resolvedHeroUrl = hero?.secureUrl || hero?.url || service.heroImageUrl || this.getFallbackVehicleImage(service.vehicleCategory);
+
+    return {
+      ...service,
+      name: localizedName,
+      nameAr: nameJsonb.ar || service.name,
+      nameEn: nameJsonb.en || service.name,
+      nameJsonb,
+      description: localizedDescription,
+      descriptionJsonb,
+      basePriceUsd: Number(service.basePriceUsd),
+      features: rawFeatures.filter((item: any): item is string => typeof item === 'string'),
+      featuresJsonb: rawFeatures,
+      heroImageUrl: resolvedHeroUrl,
+      heroImageAlt: hero?.altText || null,
+      isArchived: Boolean(jsonb.isArchived) || !service.isActive,
+    };
+  }
+
+  private getFallbackVehicleImage(category?: string | null): string {
+    const cat = (category || 'bus').toLowerCase();
+    if (cat === 'coaster') return '/imgs/transportation/costar.jpeg';
+    if (cat === 'private' || cat === 'transfer' || cat === 'sedan' || cat === 'suv') return '/imgs/transportation/privte.jpeg';
+    return '/imgs/transportation/bus1.jpeg';
   }
 
   async createBooking(
@@ -161,7 +229,10 @@ export class TransportationService {
     );
   }
 
-  async findAllServices() {
+  // ------------------------------------------------------
+  // PUBLIC FLEET SERVICES
+  // ------------------------------------------------------
+  async findAllServices(locale = 'en') {
     let services = await this.prisma.transportationService.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
@@ -190,7 +261,7 @@ export class TransportationService {
       }
     }
 
-    const mediaIds = services.flatMap((service) => service.heroMediaId ? [service.heroMediaId] : []);
+    const mediaIds = services.flatMap((service) => (service.heroMediaId ? [service.heroMediaId] : []));
     const media = mediaIds.length
       ? await this.prisma.mediaAsset.findMany({
           where: { id: { in: mediaIds }, deletedAt: null },
@@ -198,16 +269,383 @@ export class TransportationService {
         })
       : [];
     const mediaById = new Map(media.map((asset) => [asset.id, asset]));
-    return services.map((service) => {
-      const hero = service.heroMediaId ? mediaById.get(service.heroMediaId) : undefined;
-      return {
-        ...service,
-        basePriceUsd: Number(service.basePriceUsd),
-        features: Array.isArray(service.featuresJsonb) ? service.featuresJsonb.filter((item): item is string => typeof item === 'string') : [],
-        heroImageUrl: hero?.secureUrl || hero?.url || service.heroImageUrl || null,
-        heroImageAlt: hero?.altText || null,
-      };
+
+    return services.map((service) => this.resolveLocalizedService(service, locale, mediaById));
+  }
+
+  async findOnePublic(id: string, locale = 'en') {
+    const service = await this.prisma.transportationService.findUnique({
+      where: { id },
     });
+    if (!service || !service.isActive) {
+      throw new NotFoundException(`Transportation service "${id}" not found`);
+    }
+    const media = service.heroMediaId
+      ? await this.prisma.mediaAsset.findUnique({
+          where: { id: service.heroMediaId },
+          select: { id: true, secureUrl: true, url: true, altText: true },
+        })
+      : null;
+    const mediaById = media ? new Map([[media.id, media]]) : new Map();
+    return this.resolveLocalizedService(service, locale, mediaById);
+  }
+
+  // ------------------------------------------------------
+  // ADMIN FLEET CRUD & LIFECYCLE
+  // ------------------------------------------------------
+  async findAllAdmin(query: QueryTransportationServiceDto) {
+    const { page = 1, limit = 50, search, category, serviceType, status, locale = 'en' } = query;
+    const skip = (Math.max(1, page) - 1) * Math.max(1, limit);
+
+    const where: Prisma.TransportationServiceWhereInput = {};
+
+    if (status === 'ACTIVE') {
+      where.isActive = true;
+    } else if (status === 'INACTIVE' || status === 'ARCHIVED') {
+      where.isActive = false;
+    }
+
+    if (category && category !== 'ALL') {
+      where.vehicleCategory = { equals: category, mode: 'insensitive' };
+    }
+
+    if (serviceType && serviceType !== 'ALL') {
+      where.serviceType = { equals: serviceType, mode: 'insensitive' };
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { vehicleType: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    let [total, services] = await Promise.all([
+      this.prisma.transportationService.count({ where }),
+      this.prisma.transportationService.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    if (total === 0 && (!search && !category && !serviceType && (!status || status === 'ALL'))) {
+      try {
+        await this.autoSeedCanonicalFleet();
+        [total, services] = await Promise.all([
+          this.prisma.transportationService.count({ where }),
+          this.prisma.transportationService.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+          }),
+        ]);
+      } catch (e) {
+        this.logger.warn('Failed to seed canonical fleet during admin list:', e);
+      }
+    }
+
+    const mediaIds = services.flatMap((s) => (s.heroMediaId ? [s.heroMediaId] : []));
+    const media = mediaIds.length
+      ? await this.prisma.mediaAsset.findMany({
+          where: { id: { in: mediaIds }, deletedAt: null },
+          select: { id: true, secureUrl: true, url: true, altText: true },
+        })
+      : [];
+    const mediaById = new Map(media.map((a) => [a.id, a]));
+
+    const items = services.map((service) => this.resolveLocalizedService(service, locale, mediaById));
+
+    return {
+      data: items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  }
+
+  async findOneAdmin(id: string) {
+    const service = await this.prisma.transportationService.findUnique({
+      where: { id },
+      include: {
+        bookings: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!service) {
+      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+    }
+    const media = service.heroMediaId
+      ? await this.prisma.mediaAsset.findUnique({
+          where: { id: service.heroMediaId },
+          select: { id: true, secureUrl: true, url: true, altText: true },
+        })
+      : null;
+    const mediaById = media ? new Map([[media.id, media]]) : new Map();
+    return this.resolveLocalizedService(service, 'en', mediaById);
+  }
+
+  async createAdmin(dto: CreateTransportationServiceDto) {
+    const primaryName = dto.name || dto.nameAr || dto.nameEn || 'New Vehicle Service';
+    const nameJsonb = dto.nameJsonb || {
+      ar: dto.nameAr || primaryName,
+      en: dto.nameEn || primaryName,
+      es: primaryName,
+      pt: primaryName,
+      it: primaryName,
+    };
+
+    const descriptionJsonb = dto.descriptionJsonb || {
+      ar: dto.description || '',
+      en: dto.description || '',
+      es: dto.description || '',
+      pt: dto.description || '',
+      it: dto.description || '',
+    };
+
+    const featuresList = Array.isArray(dto.features) ? dto.features : Array.isArray(dto.featuresJsonb) ? dto.featuresJsonb : [];
+
+    const combinedFeaturesJsonb = {
+      features: featuresList,
+      nameJsonb,
+      descriptionJsonb,
+      heroImageUrl: dto.heroImageUrl,
+      isArchived: false,
+    };
+
+    const created = await this.prisma.transportationService.create({
+      data: {
+        name: primaryName,
+        serviceType: dto.serviceType || 'AIRPORT',
+        vehicleCategory: dto.vehicleCategory || 'bus',
+        vehicleType: dto.vehicleType || 'VIP Tour Vehicle',
+        capacity: dto.capacity !== undefined ? Number(dto.capacity) : 50,
+        doors: dto.doors !== undefined ? Number(dto.doors) : 2,
+        transmission: dto.transmission || 'AUTO',
+        basePriceUsd: new Prisma.Decimal(dto.basePriceUsd || 150),
+        heroImageUrl: dto.heroImageUrl || this.getFallbackVehicleImage(dto.vehicleCategory),
+        heroMediaId: dto.heroMediaId || null,
+        isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : false,
+        isActive: dto.isActive !== undefined ? Boolean(dto.isActive) : true,
+        description: dto.description || descriptionJsonb.en || descriptionJsonb.ar || '',
+        pickupInstructions: dto.pickupInstructions || null,
+        dropoffInstructions: dto.dropoffInstructions || null,
+        featuresJsonb: combinedFeaturesJsonb,
+      },
+    });
+
+    return this.resolveLocalizedService(created, 'en');
+  }
+
+  async updateAdmin(id: string, dto: UpdateTransportationServiceDto) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+    }
+
+    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
+      ? (existing.featuresJsonb as Record<string, any>)
+      : {};
+
+    const nameJsonb: Record<string, any> = {
+      ...(prevJsonb.nameJsonb || {}),
+      ...(dto.nameJsonb || {}),
+      ar: dto.nameAr || dto.name || (prevJsonb.nameJsonb as any)?.ar || existing.name,
+      en: dto.nameEn || dto.name || (prevJsonb.nameJsonb as any)?.en || existing.name,
+    };
+    if (dto.nameAr) nameJsonb.ar = dto.nameAr;
+    if (dto.nameEn) nameJsonb.en = dto.nameEn;
+
+    const descriptionJsonb: Record<string, any> = {
+      ...(prevJsonb.descriptionJsonb || {}),
+      ...(dto.descriptionJsonb || {}),
+      ar: dto.description || (prevJsonb.descriptionJsonb as any)?.ar || existing.description || '',
+      en: dto.description || (prevJsonb.descriptionJsonb as any)?.en || existing.description || '',
+    };
+
+    const featuresList = dto.features !== undefined
+      ? dto.features
+      : Array.isArray(prevJsonb.features)
+      ? prevJsonb.features
+      : Array.isArray(existing.featuresJsonb)
+      ? existing.featuresJsonb
+      : [];
+
+    const updatedFeaturesJsonb = {
+      ...prevJsonb,
+      features: featuresList,
+      nameJsonb,
+      descriptionJsonb,
+      heroImageUrl: dto.heroImageUrl !== undefined ? dto.heroImageUrl : existing.heroImageUrl,
+    };
+
+    const updated = await this.prisma.transportationService.update({
+      where: { id },
+      data: {
+        name: dto.name || dto.nameEn || dto.nameAr || existing.name,
+        serviceType: dto.serviceType !== undefined ? dto.serviceType : existing.serviceType,
+        vehicleCategory: dto.vehicleCategory !== undefined ? dto.vehicleCategory : existing.vehicleCategory,
+        vehicleType: dto.vehicleType !== undefined ? dto.vehicleType : existing.vehicleType,
+        capacity: dto.capacity !== undefined ? Number(dto.capacity) : existing.capacity,
+        doors: dto.doors !== undefined ? Number(dto.doors) : existing.doors,
+        transmission: dto.transmission !== undefined ? dto.transmission : existing.transmission,
+        basePriceUsd: dto.basePriceUsd !== undefined ? new Prisma.Decimal(dto.basePriceUsd) : existing.basePriceUsd,
+        heroImageUrl: dto.heroImageUrl !== undefined ? dto.heroImageUrl : existing.heroImageUrl,
+        heroMediaId: dto.heroMediaId !== undefined ? dto.heroMediaId : existing.heroMediaId,
+        isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : existing.isPrivate,
+        isActive: dto.isActive !== undefined ? Boolean(dto.isActive) : existing.isActive,
+        description: dto.description !== undefined ? dto.description : existing.description,
+        pickupInstructions: dto.pickupInstructions !== undefined ? dto.pickupInstructions : existing.pickupInstructions,
+        dropoffInstructions: dto.dropoffInstructions !== undefined ? dto.dropoffInstructions : existing.dropoffInstructions,
+        featuresJsonb: updatedFeaturesJsonb,
+      },
+    });
+
+    return this.resolveLocalizedService(updated, 'en');
+  }
+
+  async deleteAdmin(id: string) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+      include: { bookings: { take: 1 } },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+    }
+
+    if (existing.bookings.length > 0) {
+      // If service has active historical bookings, softly deactivate and archive it
+      await this.prisma.transportationService.update({
+        where: { id },
+        data: {
+          isActive: false,
+          featuresJsonb: {
+            ...(typeof existing.featuresJsonb === 'object' ? (existing.featuresJsonb as object) : {}),
+            isArchived: true,
+            deletedAt: new Date().toISOString(),
+          },
+        },
+      });
+      return { success: true, message: 'Transportation service archived due to existing customer bookings.' };
+    }
+
+    await this.prisma.transportationService.delete({
+      where: { id },
+    });
+
+    return { success: true, message: 'Transportation service deleted permanently.' };
+  }
+
+  async archiveAdmin(id: string) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+    }
+
+    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
+      ? (existing.featuresJsonb as Record<string, any>)
+      : {};
+
+    const updated = await this.prisma.transportationService.update({
+      where: { id },
+      data: {
+        isActive: false,
+        featuresJsonb: {
+          ...prevJsonb,
+          isArchived: true,
+          archivedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    return this.resolveLocalizedService(updated, 'en');
+  }
+
+  async unarchiveAdmin(id: string) {
+    const existing = await this.prisma.transportationService.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+    }
+
+    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
+      ? (existing.featuresJsonb as Record<string, any>)
+      : {};
+
+    const updated = await this.prisma.transportationService.update({
+      where: { id },
+      data: {
+        isActive: true,
+        featuresJsonb: {
+          ...prevJsonb,
+          isArchived: false,
+          restoredAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    return this.resolveLocalizedService(updated, 'en');
+  }
+
+  // ------------------------------------------------------
+  // ADMIN BOOKINGS MANAGEMENT
+  // ------------------------------------------------------
+  async findAllBookingsAdmin(status?: string) {
+    const where: Prisma.TransportationBookingWhereInput = {};
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
+
+    const bookings = await this.prisma.transportationBooking.findMany({
+      where,
+      include: {
+        service: true,
+        user: {
+          select: { id: true, email: true, name: true, phone: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return bookings.map((b) => this.toSafeBooking(b));
+  }
+
+  async updateBookingStatusAdmin(id: string, dto: UpdateTransportationBookingStatusDto) {
+    const existing = await this.prisma.transportationBooking.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Transportation booking with ID "${id}" was not found.`);
+    }
+
+    const updated = await this.prisma.transportationBooking.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        driverName: dto.driverName !== undefined ? dto.driverName : existing.driverName,
+        notes: dto.notes !== undefined ? dto.notes : existing.notes,
+      },
+      include: {
+        service: true,
+        user: {
+          select: { id: true, email: true, name: true, phone: true },
+        },
+      },
+    });
+
+    return this.toSafeBooking(updated);
   }
 
   private async autoSeedCanonicalFleet(): Promise<void> {
@@ -244,3 +682,4 @@ export class TransportationService {
     return bookings.map((booking) => this.toSafeBooking(booking));
   }
 }
+

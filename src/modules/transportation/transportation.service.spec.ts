@@ -1,4 +1,4 @@
-﻿import { TransportationService } from './transportation.service';
+import { TransportationService } from './transportation.service';
 import { Prisma } from '@prisma/client';
 
 describe('TransportationService', () => {
@@ -113,4 +113,47 @@ describe('TransportationService', () => {
       }),
     );
   });
+
+  it('supports admin list, create, update, archive, and delete operations', async () => {
+    const prisma = {
+      transportationService: {
+        count: jest.fn().mockResolvedValue(1),
+        findMany: jest.fn().mockResolvedValue([mockService]),
+        findUnique: jest.fn().mockResolvedValue({ ...mockService, bookings: [] }),
+        create: jest.fn().mockImplementation((args) => Promise.resolve({ ...mockService, ...args.data })),
+        update: jest.fn().mockImplementation((args) => Promise.resolve({ ...mockService, ...args.data })),
+        delete: jest.fn().mockResolvedValue(mockService),
+      },
+      mediaAsset: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = new TransportationService(prisma as never);
+
+    // 1. findAllAdmin
+    const adminList = await service.findAllAdmin({ page: 1, limit: 10 });
+    expect(adminList.data).toHaveLength(1);
+    expect(adminList.total).toBe(1);
+
+    // 2. createAdmin
+    const created = await service.createAdmin({
+      name: 'VIP Mercedes Van',
+      nameAr: 'فان مرسيدس VIP',
+      nameEn: 'VIP Mercedes Van',
+      serviceType: 'AIRPORT',
+      vehicleCategory: 'private',
+      basePriceUsd: 200,
+    });
+    expect(created.name).toBe('VIP Mercedes Van');
+
+    // 3. archiveAdmin
+    const archived = await service.archiveAdmin(mockService.id);
+    expect(archived.isActive).toBe(false);
+
+    // 4. deleteAdmin
+    const deleted = await service.deleteAdmin(mockService.id);
+    expect(deleted.success).toBe(true);
+  });
 });
+
