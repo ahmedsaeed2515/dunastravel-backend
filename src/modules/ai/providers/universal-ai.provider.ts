@@ -125,7 +125,7 @@ export class UniversalAiProvider implements IAiProvider {
     apiKey: string,
     providerDef: any,
   ): Promise<IAiProviderResponse> {
-    const rawModel = options.model || 'gemini-3.7-flash';
+    const rawModel = options.model || 'gemini-3.5-flash';
     const model = normalizeModelId(rawModel);
 
     // Try Google Native API first (fastest, direct, reliable)

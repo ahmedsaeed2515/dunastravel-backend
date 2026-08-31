@@ -57,23 +57,23 @@ export const AGENT_ROUTING_POLICIES: AgentModelPolicy[] = [
   {
     agentSlug: 'guider',
     economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
-    normal: { provider: 'google', model: 'gemini-3.7-flash' },
-    complex: { provider: 'google', model: 'gemini-3.1-pro' },
-    fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
+    normal: { provider: 'google', model: 'gemini-3.5-flash' },
+    complex: { provider: 'google', model: 'gemini-3.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
   },
   {
     agentSlug: 'booking-specialist',
     economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
-    normal: { provider: 'google', model: 'gemini-3.7-flash' },
-    complex: { provider: 'openai', model: 'gpt-4o' },
-    fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
+    normal: { provider: 'google', model: 'gemini-3.5-flash' },
+    complex: { provider: 'google', model: 'gemini-3.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
   },
   {
     agentSlug: 'support',
     economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
-    normal: { provider: 'google', model: 'gemini-3.7-flash' },
-    complex: { provider: 'google', model: 'gemini-3.1-pro' },
-    fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
+    normal: { provider: 'google', model: 'gemini-3.5-flash' },
+    complex: { provider: 'google', model: 'gemini-3.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
   },
 ];
 

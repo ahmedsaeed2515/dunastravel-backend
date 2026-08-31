@@ -95,12 +95,12 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isLegacy: false,
     allowCustomBaseUrl: false,
     primaryModels: [
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
       'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
     ],
   },
 
@@ -345,7 +345,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     isPopular: true,
-    isDefault: true,
+    isDefault: false,
   },
 
   'gemini-3.6-flash': {
@@ -397,7 +397,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     isPopular: true,
-    isDefault: false,
+    isDefault: true,
   },
 
   'gemini-3.5-flash-lite': {
