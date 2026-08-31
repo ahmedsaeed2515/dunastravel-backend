@@ -24,6 +24,14 @@ export class ProviderError extends Error {
 
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
+  'gemini-3.7-flash': 'gemini-2.0-flash',
+  'gemini-3.6-flash': 'gemini-2.0-flash',
+  'gemini-3.5-flash': 'gemini-2.0-flash',
+  'gemini-3.5-flash-lite': 'gemini-2.0-flash',
+  'gemini-3.1-flash-lite': 'gemini-2.0-flash',
+  'gemini-3.1-pro': 'gemini-1.5-pro',
+  'gemini-2.0-flash-001': 'gemini-2.0-flash',
+  'gemini-2.0-flash-lite-001': 'gemini-2.0-flash',
 };
 
 export function normalizeModelId(model: string): string {
