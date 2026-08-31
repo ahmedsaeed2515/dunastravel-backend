@@ -72,6 +72,14 @@ export class HotelRoomDto {
   @Min(0)
   @Max(100_000)
   sortOrder?: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  amenitiesJsonb?: Record<string, unknown>;
 }
 
 export class CreateHotelDto {
@@ -146,8 +154,16 @@ export class CreateHotelDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(100)
   heroMediaId?: string;
+
+  @IsOptional()
+  @IsString()
+  heroImageUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  images?: Array<{ id?: string; url: string; altText?: string; isHero?: boolean; sortOrder?: number }>;
 
   @IsOptional()
   @IsIn(HOTEL_STATUSES)

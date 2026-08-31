@@ -25,7 +25,7 @@ describe('HotelsService', () => {
   it('only reads published and active hotels from the public catalog', async () => {
     const prisma = {
       hotel: { findMany: jest.fn().mockResolvedValue([hotel]) },
-      mediaAsset: { findMany: jest.fn() },
+      mediaAsset: { findMany: jest.fn().mockResolvedValue([]) },
     };
     const service = new HotelsService(prisma as never);
 

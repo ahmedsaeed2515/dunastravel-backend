@@ -78,6 +78,35 @@ export class HotelsService {
     };
   }
 
+  private getFallbackHotelImage(destinationSlug?: string, city?: string, slug?: string): string {
+    const key = `${slug || ''} ${city || ''} ${destinationSlug || ''}`.toLowerCase();
+    if (key.includes('atlantis') || key.includes('dubai') || key.includes('royal')) {
+      return 'https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1200';
+    }
+    if (key.includes('istanbul') || key.includes('ciragan') || key.includes('turkey') || key.includes('turquia')) {
+      return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200';
+    }
+    if (key.includes('petra') || key.includes('movenpick') || key.includes('jordan') || key.includes('jordania')) {
+      return 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1200';
+    }
+    if (key.includes('siwa') || key.includes('desert') || key.includes('oasis')) {
+      return 'https://images.unsplash.com/photo-1544971587-b842c27f8c14?q=80&w=1200';
+    }
+    if (key.includes('luxor') || key.includes('aswan') || key.includes('nile')) {
+      return 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?q=80&w=1200';
+    }
+    if (key.includes('marriott') || key.includes('cairo') || key.includes('mena') || key.includes('pyramid') || key.includes('egypt')) {
+      return 'https://images.unsplash.com/photo-1572252821143-035a0f6700c2?q=80&w=1200';
+    }
+    if (key.includes('morocco') || key.includes('marruecos') || key.includes('marrakech')) {
+      return 'https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=1200';
+    }
+    if (key.includes('greece') || key.includes('santorini') || key.includes('mykonos')) {
+      return 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200';
+    }
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200';
+  }
+
   private hotelData(dto: CreateHotelDto | UpdateHotelDto): Prisma.HotelUncheckedCreateInput {
     const data: Record<string, unknown> = {};
     if (dto.slug !== undefined) data.slug = dto.slug;
@@ -92,7 +121,18 @@ export class HotelsService {
     if (dto.phone !== undefined) data.phone = sanitizePlainText(dto.phone).slice(0, 50) || null;
     if (dto.email !== undefined) data.email = dto.email.toLowerCase();
     if (dto.website !== undefined) data.website = dto.website;
-    if (dto.amenitiesJsonb !== undefined) data.amenitiesJsonb = this.sanitizeObject(dto.amenitiesJsonb);
+
+    const amenities = (dto.amenitiesJsonb && typeof dto.amenitiesJsonb === 'object' ? { ...dto.amenitiesJsonb } : {}) as Record<string, unknown>;
+    if (dto.heroImageUrl) {
+      amenities.heroImageUrl = dto.heroImageUrl;
+    }
+    if (dto.images && Array.isArray(dto.images)) {
+      amenities.images = dto.images;
+    }
+    if (Object.keys(amenities).length > 0 || dto.amenitiesJsonb !== undefined) {
+      data.amenitiesJsonb = this.sanitizeObject(amenities);
+    }
+
     if (dto.policiesJsonb !== undefined) data.policiesJsonb = this.sanitizeObject(dto.policiesJsonb);
     if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId || null;
     if (dto.status !== undefined) data.status = dto.status;
@@ -101,14 +141,40 @@ export class HotelsService {
     return data as Prisma.HotelUncheckedCreateInput;
   }
 
-  private async heroUrls(hotels: Array<{ heroMediaId: string | null }>) {
+  private async heroUrls(hotels: Array<any>) {
     const ids = hotels.flatMap((hotel) => (hotel.heroMediaId ? [hotel.heroMediaId] : []));
-    if (ids.length === 0) return new Map<string, { url: string; altText: string | null }>();
-    const assets = await this.prisma.mediaAsset.findMany({
-      where: { id: { in: ids }, deletedAt: null },
-      select: { id: true, secureUrl: true, url: true, altText: true },
-    });
-    return new Map(assets.map((asset) => [asset.id, { url: asset.secureUrl || asset.url, altText: asset.altText }]));
+    const hotelIds = hotels.map((h) => h.id).filter(Boolean);
+
+    const [assetsById, assetsByHotel] = await Promise.all([
+      ids.length > 0
+        ? this.prisma.mediaAsset.findMany({
+            where: { id: { in: ids }, deletedAt: null },
+            select: { id: true, secureUrl: true, url: true, altText: true },
+          })
+        : [],
+      hotelIds.length > 0
+        ? this.prisma.mediaAsset.findMany({
+            where: { entityType: 'HOTEL', entityId: { in: hotelIds }, deletedAt: null },
+            select: { id: true, entityId: true, secureUrl: true, url: true, altText: true },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [],
+    ]);
+
+    const mediaMap = new Map<string, { url: string; altText: string | null }>();
+    for (const asset of assetsById) {
+      mediaMap.set(asset.id, { url: asset.secureUrl || asset.url, altText: asset.altText });
+    }
+
+    const galleryByHotelId = new Map<string, Array<{ id: string; url: string; altText: string | null }>>();
+    for (const asset of assetsByHotel) {
+      if (!asset.entityId) continue;
+      const list = galleryByHotelId.get(asset.entityId) || [];
+      list.push({ id: asset.id, url: asset.secureUrl || asset.url, altText: asset.altText });
+      galleryByHotelId.set(asset.entityId, list);
+    }
+
+    return { mediaMap, galleryByHotelId };
   }
 
   private roomView(room: { id: string; slug: string; nameJsonb: Prisma.JsonValue; descriptionJsonb: Prisma.JsonValue | null; ratePerNight: Prisma.Decimal; currency: string; mealPlanJsonb: Prisma.JsonValue | null; maxOccupancy: number; inventory: number; isActive: boolean }) {
@@ -127,7 +193,7 @@ export class HotelsService {
   }
 
   private async publicView(hotels: Array<any>, locale: string) {
-    const mediaById = await this.heroUrls(hotels);
+    const { mediaMap, galleryByHotelId } = await this.heroUrls(hotels);
     return hotels.map((hotel) => {
       const rooms = hotel.rooms.map((room: any) => ({
         ...this.roomView(room),
@@ -140,7 +206,11 @@ export class HotelsService {
           : null,
       }));
       const rates = rooms.map((room: { ratePerNight: number }) => room.ratePerNight);
-      const hero = hotel.heroMediaId ? mediaById.get(hotel.heroMediaId) : undefined;
+      const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+      const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
+      const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
+      const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+
       return {
         id: hotel.id,
         slug: hotel.slug,
@@ -159,8 +229,9 @@ export class HotelsService {
         amenities: hotel.amenitiesJsonb,
         policies: hotel.policiesJsonb,
         heroMediaId: hotel.heroMediaId,
-        heroImageUrl: hero?.url ?? null,
+        heroImageUrl: resolvedHeroUrl,
         heroImageAlt: hero?.altText ?? null,
+        images: hotelGallery,
         pricePerNight: rates.length ? Math.min(...rates) : null,
         rooms,
       };
@@ -226,13 +297,22 @@ export class HotelsService {
         take: limit,
       }),
     ]);
-    const mediaById = await this.heroUrls(hotels);
-    const items = hotels.map((hotel) => ({
-      ...hotel,
-      rating: hotel.rating === null ? null : Number(hotel.rating),
-      heroImageUrl: hotel.heroMediaId ? mediaById.get(hotel.heroMediaId)?.url ?? null : null,
-      rooms: hotel.rooms.map((room) => this.roomView(room)),
-    }));
+    const { mediaMap, galleryByHotelId } = await this.heroUrls(hotels);
+    const items = hotels.map((hotel) => {
+      const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+      const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
+      const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
+      const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+
+      return {
+        ...hotel,
+        rating: hotel.rating === null ? null : Number(hotel.rating),
+        heroImageUrl: resolvedHeroUrl,
+        heroImageAlt: hero?.altText ?? null,
+        images: hotelGallery,
+        rooms: hotel.rooms.map((room) => this.roomView(room)),
+      };
+    });
     return paginate(items, total, page, limit);
   }
 
@@ -242,11 +322,18 @@ export class HotelsService {
       include: { rooms: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } } },
     });
     if (!hotel) throw new NotFoundException(`Hotel '${id}' not found`);
-    const mediaById = await this.heroUrls([hotel]);
+    const { mediaMap, galleryByHotelId } = await this.heroUrls([hotel]);
+    const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+    const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
+    const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
+    const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+
     return {
       ...hotel,
       rating: hotel.rating === null ? null : Number(hotel.rating),
-      heroImageUrl: hotel.heroMediaId ? mediaById.get(hotel.heroMediaId)?.url ?? null : null,
+      heroImageUrl: resolvedHeroUrl,
+      heroImageAlt: hero?.altText ?? null,
+      images: hotelGallery,
       rooms: hotel.rooms.map((room) => this.roomView(room)),
     };
   }
