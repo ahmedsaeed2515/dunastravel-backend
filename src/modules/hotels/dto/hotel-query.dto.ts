@@ -15,9 +15,19 @@ export class PublicHotelsQueryDto {
   locale?: string = 'en';
 
   @IsOptional()
+  @IsIn(['en', 'ar', 'es', 'pt', 'it'])
+  lang?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   destinationSlug?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
 
   @IsOptional()
   @Type(() => Number)

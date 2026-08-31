@@ -54,6 +54,7 @@ import { BlogsModule } from './modules/blogs/blogs.module';
 import { FaqModule } from './modules/faq/faq.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { JourneyMapsModule } from './modules/journey-maps/journey-maps.module';
+import { RootController } from './root.controller';
 import { RedisThrottlerStorage } from './common/security/redis-throttler-storage.service';
 import { RedisKeyvStore } from './common/cache/redis-keyv.store';
 import Keyv from 'keyv';
@@ -62,6 +63,7 @@ import { InAppNotificationsModule } from './modules/in-app-notifications/in-app-
 import { HotelsModule } from './modules/hotels/hotels.module';
 
 @Module({
+  controllers: [RootController],
   imports: [
     // Config — global, validates env vars on startup
     ConfigModule.forRoot({

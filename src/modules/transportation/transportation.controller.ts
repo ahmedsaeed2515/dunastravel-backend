@@ -28,7 +28,7 @@ import { Throttle } from '@nestjs/throttler';
 export class TransportationController {
   constructor(private readonly transportationService: TransportationService) {}
 
-  @Get(['services', 'search'])
+  @Get(['', 'services', 'search'])
   @Public()
   @ApiOperation({ summary: 'Get available transportation services with optional localization' })
   @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ar', 'es', 'pt', 'it'] })

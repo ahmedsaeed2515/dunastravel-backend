@@ -9,7 +9,7 @@ import { ConvertCurrencyDto } from './dto/currency.dto';
 export class PublicCurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
-  @Get('rates')
+  @Get(['', 'rates'])
   @Public()
   @ApiOperation({
     summary: 'Get current global exchange rates',
