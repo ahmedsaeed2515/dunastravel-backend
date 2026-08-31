@@ -106,7 +106,7 @@ async function bootstrapServerless(): Promise<express.Express> {
       maxAge: 86400,
     });
 
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix('api', { exclude: ['/'] });
     app.enableVersioning({ type: VersioningType.URI });
 
     app.useGlobalPipes(

@@ -6,7 +6,7 @@ import { Public } from './common/decorators/public.decorator';
 @Controller()
 @Public()
 export class RootController {
-  @Get()
+  @Get(['', 'api'])
   @ApiOperation({ summary: 'API Root & Service Status' })
   getRoot() {
     return {

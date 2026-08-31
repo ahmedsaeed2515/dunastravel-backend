@@ -126,7 +126,7 @@ async function bootstrap(): Promise<void> {
   });
 
   // ─── Global Prefix ────────────────────────────────────────────────────────
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['/'] });
   app.enableVersioning({ type: VersioningType.URI });
   // ─── Global Validation Pipe ───────────────────────────────────────────────
   app.useGlobalPipes(
