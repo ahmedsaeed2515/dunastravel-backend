@@ -11,3 +11,4 @@ process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 process.env.CLOUDINARY_CLOUD_NAME = 'test_cloud';
 process.env.CLOUDINARY_API_KEY = '1234567890';
 process.env.CLOUDINARY_API_SECRET = 'abcdef12345678901234567890';
+process.env.PUBLIC_API_URL = 'https://api.dunastravel.com';

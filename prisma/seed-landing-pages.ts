@@ -1,10 +1,11 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const connectionString =
   process.env.DATABASE_URL ||
-  'postgresql://postgres:password@127.0.0.1:5432/dunastravel_db';
+  'postgresql://postgres:password@127.0.0.1:5432/dunas_travel?sslmode=disable';
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -21,11 +22,11 @@ const LANDING_PAGES = [
       it: 'Egitto',
     },
     subtitleJsonb: {
-      en: 'Land of the Pharaohs',
-      ar: 'أرض الفراعنة',
-      es: 'Tierra de los Faraones',
-      pt: 'Terra dos Faraós',
-      it: 'Terra dei Faraoni',
+      en: 'The luxury of an eternal civilization',
+      ar: 'فخامة حضارة خالدة',
+      es: 'El lujo de una civilización eterna',
+      pt: 'O luxo de uma civilização eterna',
+      it: 'Il lusso di una civiltà eterna',
     },
     descriptionJsonb: {
       en: 'From the timeless Pyramids of Giza to the golden temples of Luxor and the crystal waters of the Red Sea, Egypt offers a journey through history like no other.',
@@ -71,11 +72,11 @@ const LANDING_PAGES = [
       it: 'Turchia',
     },
     subtitleJsonb: {
-      en: 'Where East Meets West',
-      ar: 'حيث يلتقي الشرق بالغرب',
-      es: 'Donde el Oriente se encuentra con el Occidente',
-      pt: 'Onde o Oriente encontra o Ocidente',
-      it: 'Dove l\'Oriente incontra l\'Occidente',
+      en: 'Elegance between two continents',
+      ar: 'الأناقة بين قارتين',
+      es: 'La elegancia entre dos continentes',
+      pt: 'A elegância entre dois continentes',
+      it: 'L\'eleganza tra due continenti',
     },
     descriptionJsonb: {
       en: 'From the majestic Hagia Sophia to the fairy chimneys of Cappadocia and the turquoise waters of the Aegean, Turkey bridges continents and millennia.',
@@ -107,11 +108,11 @@ const LANDING_PAGES = [
       it: 'Giordania',
     },
     subtitleJsonb: {
-      en: 'The Rose-Red Kingdom',
-      ar: 'المملكة الوردية',
-      es: 'El Reino de la Ciudad Rosa',
-      pt: 'O Reino Vermelho-Rosa',
-      it: 'Il Regno Rosa-Rosso',
+      en: 'A journey through millenary treasures.',
+      ar: 'رحلة بين كنوز عريقة عبر التاريخ.',
+      es: 'Un viaje entre tesoros milenarios.',
+      pt: 'Uma viagem por tesouros milenares.',
+      it: 'Un viaggio tra tesori millenari.',
     },
     descriptionJsonb: {
       en: 'From the rose-red city of Petra to the otherworldly desert of Wadi Rum and the healing waters of the Dead Sea.',
@@ -136,11 +137,11 @@ const LANDING_PAGES = [
       it: 'Marocco',
     },
     subtitleJsonb: {
-      en: 'Kingdom of Color & Spice',
-      ar: 'مملكة الألوان والتوابل',
-      es: 'El Reino de los Colores y las Especias',
-      pt: 'O Reino das Cores e Especiarias',
-      it: 'Il Regno dei Colori e delle Spezie',
+      en: 'Between imperial splendor and the desert.',
+      ar: 'بين العظمة الإمبراطورية والصحراء.',
+      es: 'Entre el esplendor imperial y el desierto.',
+      pt: 'Entre o esplendor imperial e o deserto.',
+      it: 'Tra lo splendore imperiale e il deserto.',
     },
     descriptionJsonb: {
       en: 'Explore imperial cities, vibrant souks, breathtaking Atlas mountains and desert dunes in luxury.',
@@ -165,11 +166,11 @@ const LANDING_PAGES = [
       it: 'Grecia',
     },
     subtitleJsonb: {
-      en: 'Cradle of Antiquity',
-      ar: 'مهد الحضارة القديمة',
-      es: 'Cuna de la Antigüedad',
-      pt: 'Berço da Antiguidade',
-      it: 'Culla dell\'Antichità',
+      en: 'The essence of the most exclusive Mediterranean.',
+      ar: 'جوهر البحر الأبيض المتوسط الأكثر حصرية.',
+      es: 'La esencia del Mediterráneo más exclusivo.',
+      pt: 'A essência do Mediterrâneo mais exclusivo.',
+      it: 'L\'essenza del Mediterraneo più esclusivo.',
     },
     descriptionJsonb: {
       en: 'Immerse in ancient mythologies, stunning islands, Aegean sunsets and Mediterranean cuisine.',
@@ -194,11 +195,11 @@ const LANDING_PAGES = [
       it: 'Dubai',
     },
     subtitleJsonb: {
-      en: 'Futuristic Luxury & Desert Wonders',
-      ar: 'الفخامة المستقبلية وعجائب الصحراء',
-      es: 'Lujo Futuro y Maravillas del Desierto',
-      pt: 'Luxo Futurista e Maravilhas do Deserto',
-      it: 'Lusso Futuristico e Meraviglie del Deserto',
+      en: 'Where luxury reaches a new dimension.',
+      ar: 'حيث يبلغ الفخامة بُعداً جديداً.',
+      es: 'Donde el lujo alcanza una nueva dimensión.',
+      pt: 'Onde o luxo alcança uma nova dimensão.',
+      it: 'Dove il lusso raggiunge una nuova dimensione.',
     },
     descriptionJsonb: {
       en: 'Experience ultra-modern architecture, high-end shopping, luxury desert safaris and world-class attractions.',
@@ -223,11 +224,11 @@ const LANDING_PAGES = [
       it: 'Tunisia',
     },
     subtitleJsonb: {
-      en: 'Mediterranean Heritage & Sahara Oasis',
-      ar: 'التراث المتوسطي وواحات الصحراء',
-      es: 'Patrimonio Mediterráneo y Oasis del Sahara',
-      pt: 'Património Mediterrâneo e Oásis do Saara',
-      it: 'Patrimonio Mediterraneo e Oasi del Sahara',
+      en: 'Authenticity with Mediterranean essence.',
+      ar: 'أصالة بروح متوسطية.',
+      es: 'Autenticidad con esencia mediterránea.',
+      pt: 'Autenticidade com essência mediterrânea.',
+      it: 'Autenticità con essenza mediterranea.',
     },
     descriptionJsonb: {
       en: 'Discover ancient Carthage, blue-and-white Sidi Bou Said, Saharan oasis towns and golden beaches.',
@@ -246,17 +247,17 @@ const LANDING_PAGES = [
     type: 'DESTINATION',
     titleJsonb: {
       en: 'Holy Land',
-      ar: 'الأراضي المقدسة',
+      ar: 'الأرض المقدسة',
       es: 'Tierra Santa',
       pt: 'Terra Santa',
       it: 'Terra Santa',
     },
     subtitleJsonb: {
-      en: 'Sacred Pilgrimages & Spiritual Journeys',
-      ar: 'رحلات الحج والمزارات المقدسة',
-      es: 'Peregrinaciones Sagradas y Viajes Espirituales',
-      pt: 'Peregrinações Sagradas e Viagens Espirituais',
-      it: 'Pellegrinaggi Sacri e Viaggi Spirituali',
+      en: 'History, spirituality and eternal legacy.',
+      ar: 'تاريخ وروحانية وإرث أبدي.',
+      es: 'Historia, espiritualidad y legado eterno.',
+      pt: 'História, espiritualidade e legado eterno.',
+      it: 'Storia, spiritualità ed eredità eterna.',
     },
     descriptionJsonb: {
       en: 'Walk through historic sacred sites in Jerusalem, Bethlehem, Nazareth, Mount Nebo and ancient monasteries.',
@@ -381,6 +382,13 @@ async function main() {
       },
       update: {
         type: item.type,
+        titleJsonb: item.titleJsonb,
+        subtitleJsonb: item.subtitleJsonb,
+        descriptionJsonb: item.descriptionJsonb,
+        briefJsonb: item.briefJsonb,
+        heroImageUrl: item.heroImageUrl,
+        seoTitleJsonb: item.seoTitleJsonb || item.titleJsonb,
+        seoDescriptionJsonb: item.seoDescriptionJsonb || item.descriptionJsonb,
         status: item.status,
         isActive: item.isActive,
         sortOrder: item.sortOrder,

@@ -171,7 +171,7 @@ export const envValidationSchema = Joi.object({
     .valid('DISABLED', 'GETPAYIN')
     .default('DISABLED'),
   PUBLIC_API_URL: Joi.string()
-    .uri({ scheme: ['https'] })
+    .uri({ scheme: ['http', 'https'] })
     .default('https://dunastravel-backend-seven.vercel.app'),
   GETPAYIN_MODE: Joi.string().valid('sandbox', 'production').default('sandbox'),
   GETPAYIN_BASE_URL: Joi.string()
