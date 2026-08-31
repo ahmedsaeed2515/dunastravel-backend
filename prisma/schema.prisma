@@ -277,6 +277,7 @@ model TourItinerary {
   id                  String   @id @default(uuid())
   tourId              String   @map("tour_id")
   dayLabel            String?  @map("day_label") @db.VarChar(50)
+  titleJsonb          Json?    @map("title_jsonb")
   descriptionJsonb    Json     @map("description_jsonb")
   mealsJsonb          Json?    @map("meals_jsonb")
   sortOrder           Int      @map("sort_order")

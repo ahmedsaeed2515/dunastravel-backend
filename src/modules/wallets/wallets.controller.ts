@@ -70,6 +70,17 @@ export class WalletsController {
     return result;
   }
 
+  // Placed before :ownerType/:ownerId so Express router matches literal /transactions correctly
+  @Get(':walletId/transactions')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get transactions for a specific wallet' })
+  async getTransactions(
+    @Param('walletId', ParseUUIDPipe) walletId: string,
+    @Query() filters: WalletTransactionQueryFilters,
+  ) {
+    return this.walletsService.getWalletTransactions(walletId, filters);
+  }
+
   @Get(':ownerType/:ownerId')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get or initialize a wallet for a User or Company' })
@@ -79,16 +90,6 @@ export class WalletsController {
     @Param('ownerId', ParseUUIDPipe) ownerId: string,
   ) {
     return this.walletsService.getOrCreateWallet(ownerType, ownerId);
-  }
-
-  @Get(':walletId/transactions')
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Get transactions for a specific wallet' })
-  async getTransactions(
-    @Param('walletId', ParseUUIDPipe) walletId: string,
-    @Query() filters: WalletTransactionQueryFilters,
-  ) {
-    return this.walletsService.getWalletTransactions(walletId, filters);
   }
 
   @Post('transactions/manual')

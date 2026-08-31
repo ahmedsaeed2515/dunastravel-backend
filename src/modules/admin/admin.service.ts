@@ -2471,6 +2471,14 @@ export class AdminService {
       dayLabel: itinerary.dayLabel
         ? sanitizePlainText(itinerary.dayLabel).slice(0, 255)
         : undefined,
+      titleJsonb:
+        itinerary.titleJsonb && Object.keys(itinerary.titleJsonb).length > 0
+          ? this.sanitizeTourLocalizedJson(
+              itinerary.titleJsonb,
+              'itinerary.titleJsonb',
+              false,
+            )
+          : undefined,
       descriptionJsonb: this.sanitizeTourLocalizedJson(
         itinerary.descriptionJsonb,
         'itinerary.descriptionJsonb',
@@ -3088,7 +3096,10 @@ export class AdminService {
       const itinerary = await tx.tourItinerary.create({
         data: {
           tourId: tour.id,
-          dayLabel: sanitizePlainText(dto.dayLabel).slice(0, 50),
+          dayLabel: sanitizePlainText(dto.dayLabel).slice(0, 100),
+          titleJsonb: dto.titleJsonb
+            ? this.sanitizeTourLocalizedJson(dto.titleJsonb, 'titleJsonb', false)
+            : Prisma.JsonNull,
           descriptionJsonb: this.sanitizeTourLocalizedJson(
             dto.descriptionJsonb,
             'descriptionJsonb',
@@ -3132,7 +3143,12 @@ export class AdminService {
         where: { id: dayId, tourId: tour.id },
         data: {
           ...(dto.dayLabel && {
-            dayLabel: sanitizePlainText(dto.dayLabel).slice(0, 50),
+            dayLabel: sanitizePlainText(dto.dayLabel).slice(0, 100),
+          }),
+          ...(dto.titleJsonb !== undefined && {
+            titleJsonb: dto.titleJsonb
+              ? this.sanitizeTourLocalizedJson(dto.titleJsonb, 'titleJsonb', false)
+              : Prisma.JsonNull,
           }),
           ...(dto.descriptionJsonb && {
             descriptionJsonb: this.sanitizeTourLocalizedJson(

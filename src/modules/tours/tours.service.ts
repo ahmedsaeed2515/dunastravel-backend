@@ -292,17 +292,22 @@ export class ToursService {
     tour: TourWithPresentation,
     lang: string,
   ): TourDetailResponse {
-    const itinerary: TourItineraryResponse[] = tour.itineraries.map((it) => ({
-      id: it.id,
-      dayLabel: it.dayLabel,
-      description: extractI18n(it.descriptionJsonb, lang),
-      meals: it.mealsJsonb ? extractI18n(it.mealsJsonb, lang) || null : null,
-      sortOrder: it.sortOrder,
-      activities: it.activitiesJsonb ? extractI18n(it.activitiesJsonb, lang) || null : null,
-      hotels: it.hotelsJsonb ? extractI18n(it.hotelsJsonb, lang) || null : null,
-      notes: it.notesJsonb ? extractI18n(it.notesJsonb, lang) || null : null,
-      transportation: it.transportationJsonb ? extractI18n(it.transportationJsonb, lang) || null : null,
-    }));
+    const itinerary: TourItineraryResponse[] = tour.itineraries.map((it: any) => {
+      const localizedTitle = it.titleJsonb ? extractI18n(it.titleJsonb, lang) : null;
+      return {
+        id: it.id,
+        dayLabel: localizedTitle || it.dayLabel,
+        title: localizedTitle || it.dayLabel,
+        titleJsonb: it.titleJsonb,
+        description: extractI18n(it.descriptionJsonb, lang),
+        meals: it.mealsJsonb ? extractI18n(it.mealsJsonb, lang) || null : null,
+        sortOrder: it.sortOrder,
+        activities: it.activitiesJsonb ? extractI18n(it.activitiesJsonb, lang) || null : null,
+        hotels: it.hotelsJsonb ? extractI18n(it.hotelsJsonb, lang) || null : null,
+        notes: it.notesJsonb ? extractI18n(it.notesJsonb, lang) || null : null,
+        transportation: it.transportationJsonb ? extractI18n(it.transportationJsonb, lang) || null : null,
+      };
+    });
 
     const images: TourImageResponse[] = tour.images.map((img) => ({
       id: img.id,

@@ -371,6 +371,7 @@ export class CommissionsService {
         referenceCode: {
           contains: bookingReference.trim(),
           mode: 'insensitive',
+
         },
       };
     }
@@ -400,9 +401,9 @@ export class CommissionsService {
       data: data.map(({ booking, ...commission }) => ({
         ...commission,
         booking: {
-          referenceCode: booking.referenceCode,
-          totalAmountUsd: booking.totalAmountUsd,
-          invoiceNumber: booking.invoice?.invoiceNumber ?? null,
+          referenceCode: booking?.referenceCode ?? '—',
+          totalAmountUsd: booking?.totalAmountUsd ?? 0,
+          invoiceNumber: booking?.invoice?.invoiceNumber ?? null,
         },
       })),
       meta: {

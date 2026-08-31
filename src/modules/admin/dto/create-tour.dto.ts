@@ -46,6 +46,11 @@ export class CreateTourItineraryDto {
   @MaxLength(255)
   dayLabel?: string;
 
+  @ApiPropertyOptional({ description: 'Multilingual title object' })
+  @IsOptional()
+  @IsObject()
+  titleJsonb?: Record<string, any>;
+
   @ApiProperty({ description: 'Multilingual description object' })
   @IsObject()
   @IsNotEmpty()

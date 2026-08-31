@@ -11,6 +11,8 @@ export interface TourImageResponse {
 export interface TourItineraryResponse {
   id: string;
   dayLabel: string | null;
+  title?: string | null;
+  titleJsonb?: unknown;
   description: string;
   meals: string | null;
   sortOrder: number;
