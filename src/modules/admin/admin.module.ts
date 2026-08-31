@@ -4,7 +4,6 @@ import { AdminController } from './admin.controller';
 import { BackupService } from './backup.service';
 import { BookingsModule } from '../bookings/bookings.module';
 import { AdminPromotionsModule } from './admin-promotions/admin-promotions.module';
-import { AdminTransportationModule } from './admin-transportation/admin-transportation.module';
 import { AdminTailorMadeModule } from './admin-tailor-made/admin-tailor-made.module';
 import { AdminInvoicesModule } from './admin-invoices/admin-invoices.module';
 import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
@@ -16,7 +15,6 @@ import { ContactSubmissionsModule } from '../contact-submissions/contact-submiss
 
 @Module({
   imports: [
-    AdminTransportationModule,
     AdminTailorMadeModule,
     AdminInvoicesModule,
     AdminWalletsModule,
