@@ -263,11 +263,16 @@ export class TourCatalogToolService {
         return { tour, score, matchReasons };
       });
 
+      // Only consider tours that actually matched constraints or keywords with a significant score
       const matched = scored
-        .filter((x) => x.score > 0)
+        .filter((x) => x.score >= 15)
         .sort((a, b) => b.score - a.score);
 
-      const finalEntries = matched.length > 0 ? matched.slice(0, limit) : scored.slice(0, limit);
+      if (matched.length === 0) {
+        return [];
+      }
+
+      const finalEntries = matched.slice(0, limit);
 
       return finalEntries.map((entry) =>
         this.mapTourToRecommendation(entry.tour, locale, entry.matchReasons),
