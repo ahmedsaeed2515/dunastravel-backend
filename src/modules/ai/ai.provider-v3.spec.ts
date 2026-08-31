@@ -37,16 +37,20 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(validation.valid).toBe(false);
     });
 
-    it('MUST reject shutdown gemini-2.0-flash-lite model', () => {
+    it('MUST reject shutdown Gemini 1.5 and 2.0 models', () => {
       const validation = modelRegistry.validateProviderModelPair('google', 'gemini-2.0-flash-lite');
       expect(validation.valid).toBe(false);
       expect(validation.reason).toContain('deprecated/shut down');
+      expect(modelRegistry.validateProviderModelPair('google', 'gemini-2.0-flash').valid).toBe(false);
+      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.5-flash').valid).toBe(false);
     });
 
     it('MUST accept Google + valid Gemini production models', () => {
       const models = [
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash-lite',
         'gemini-2.5-flash',
-        'gemini-2.0-flash',
       ];
       for (const m of models) {
         const validation = modelRegistry.validateProviderModelPair('google', m);
@@ -111,36 +115,36 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
   });
 
   describe('3. Tiered Model Routing Engine (GuideR Routing V3)', () => {
-    it('routes simple pricing/visa/FAQ questions to ECONOMY tier (Gemini 2.5 Flash)', () => {
+    it('routes simple pricing/visa/FAQ questions to the economy model (gemini-3.1-flash-lite)', () => {
       const result = modelRouting.route('What is the price of the Nile Cruise?');
       expect(result.tier).toBe('economy');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.5-flash');
+      expect(result.model).toBe('gemini-3.1-flash-lite');
     });
 
     it('routes Arabic short inquiry to ECONOMY tier', () => {
       const result = modelRouting.route('كم سعر رحلة القاهرة؟');
       expect(result.tier).toBe('economy');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.5-flash');
+      expect(result.model).toBe('gemini-3.1-flash-lite');
     });
 
-    it('routes complex multi-day itinerary synthesis to COMPLEX tier', () => {
+    it('routes complex multi-day itinerary synthesis to COMPLEX tier (gemini-3.1-pro)', () => {
       const complexMsg =
         'I need a customized multi-day private tour itinerary for a family of 5 combining Cairo, Luxor, and Aswan with luxury Nile cruise and Dahabiya.';
       const result = modelRouting.route(complexMsg);
       expect(result.tier).toBe('complex');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.5-flash');
+      expect(result.model).toBe('gemini-3.1-pro');
     });
 
-    it('routes standard travel concierge conversation to NORMAL tier (Gemini 2.5 Flash)', () => {
+    it('routes standard travel concierge conversation to the flagship model (gemini-3.7-flash)', () => {
       const standardMsg =
         'Could you tell me more about the luxury experiences included in the Grand Egyptian Museum VIP package?';
       const result = modelRouting.route(standardMsg);
       expect(result.tier).toBe('normal');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.5-flash');
+      expect(result.model).toBe('gemini-3.7-flash');
     });
 
     it('resolves FALLBACK tier to OpenRouter DeepSeek V3 Flash', () => {
@@ -181,7 +185,8 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
         ok: true,
         json: async () => ({
           data: [
-            { id: 'models/gemini-2.5-flash' },
+            { id: 'models/gemini-3.6-flash' },
+            { id: 'models/gemini-3.5-flash-lite' },
             { id: 'models/gemini-2.0-flash' },
             { id: 'models/gemini-2.0-flash-lite' }, // shutdown model
             { id: 'models/text-embedding-004' },
@@ -197,8 +202,9 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
       expect(result.providerId).toBe('google');
       expect(result.models.length).toBeGreaterThanOrEqual(2);
-      expect(result.models.map((m) => m.id)).toContain('gemini-2.5-flash');
-      expect(result.models.map((m) => m.id)).toContain('gemini-2.0-flash');
+      expect(result.models.map((m) => m.id)).toContain('gemini-3.6-flash');
+      expect(result.models.map((m) => m.id)).toContain('gemini-3.5-flash-lite');
+      expect(result.models.find((m) => m.id === 'gemini-2.0-flash')).toBeUndefined();
       // Shutdown model must NOT be in available models
       expect(result.models.find((m) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
 

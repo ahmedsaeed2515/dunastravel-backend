@@ -4,7 +4,6 @@ import {
   ServiceUnavailableException,
   NotFoundException,
   BadRequestException,
-  UnprocessableEntityException,
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -85,12 +84,15 @@ export class AiKeyPoolService implements OnModuleInit {
 
   private async sanitizeLegacyModelIds() {
     const legacyModelMap: Record<string, string> = {
-      'gemini-2.5-flash': 'gemini-2.0-flash',
-      'gemini-2.5-flash-lite': 'gemini-2.0-flash-lite',
-      'gemini-2.5-pro': 'gemini-1.5-pro',
-      'gemini-3.7-flash': 'gemini-2.0-flash',
+      'gemini-1.5-flash': 'gemini-3.5-flash-lite',
+      'gemini-1.5-pro': 'gemini-3.6-flash',
+      'gemini-1.5-flash-8b': 'gemini-3.5-flash-lite',
+      'gemini-2.0-flash': 'gemini-3.6-flash',
+      'gemini-2.0-flash-001': 'gemini-3.6-flash',
+      'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
+      'gemini-2.0-flash-lite-001': 'gemini-3.5-flash-lite',
       'gpt-5.6-luna': 'gpt-4o',
-      'google/gemini-2.5-flash': 'google/gemini-2.0-flash-001',
+      'google/gemini-2.0-flash-001': 'gemini-3.6-flash',
     };
 
     for (const [legacy, current] of Object.entries(legacyModelMap)) {
@@ -101,8 +103,8 @@ export class AiKeyPoolService implements OnModuleInit {
     }
 
     await (this.prisma as any).aiConfig.updateMany({
-      where: { model: { in: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.7-flash', 'gemini-2.5-flash-lite'] } },
-      data: { model: 'gemini-2.0-flash' },
+      where: { model: { in: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] } },
+      data: { model: 'gemini-3.6-flash' },
     }).catch(() => {});
   }
 
@@ -195,7 +197,7 @@ export class AiKeyPoolService implements OnModuleInit {
       config = await (this.prisma as any).aiConfig.create({
         data: {
           provider: 'google',                      // Changed from 'anthropic'
-          model: 'gemini-2.0-flash',               // Verified Google Flagship
+          model: 'gemini-3.6-flash',
           isEnabled: true,
           isPublicEnabled: true,
           systemInstructions: 'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
@@ -246,9 +248,6 @@ export class AiKeyPoolService implements OnModuleInit {
     // Validate model/provider pair if a model is specified
     if (dto.model && dto.model.trim()) {
       const trimmedModel = dto.model.trim();
-      if (trimmedModel === 'gemini-2.0-flash-lite') {
-        throw new UnprocessableEntityException("Model 'gemini-2.0-flash-lite' is deprecated/shut down and cannot be assigned.");
-      }
       const validation = this.modelRegistry.validateProviderModelPair(providerId, trimmedModel);
       if (!validation.valid) {
         throw new BadRequestException(
@@ -309,9 +308,6 @@ export class AiKeyPoolService implements OnModuleInit {
 
     const modelId = dto.model !== undefined ? dto.model.trim() : existing.model;
     if (modelId && dto.model !== undefined) {
-      if (modelId === 'gemini-2.0-flash-lite') {
-        throw new UnprocessableEntityException("Model 'gemini-2.0-flash-lite' is deprecated/shut down and cannot be assigned.");
-      }
       const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
       if (!validation.valid) {
         throw new BadRequestException(`Invalid provider/model combination: ${validation.reason}`);
@@ -513,7 +509,7 @@ export class AiKeyPoolService implements OnModuleInit {
     const candidates = rows.map((r: any) => ({
       id: r.id,
       provider: r.provider,
-      model: r.model || config.model || 'gemini-2.0-flash',
+      model: r.model || config.model || 'gemini-3.6-flash',
       apiKey: decryptSensitiveField(r.encryptedApiKey) || '',
     })).filter((c: any) => c.apiKey.length > 5);
 

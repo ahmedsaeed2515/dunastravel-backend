@@ -367,7 +367,8 @@ describe('AI HTTP Contract Spec', () => {
       ok: true,
       json: async () => ({
         data: [
-          { id: 'models/gemini-2.5-flash' },
+          { id: 'models/gemini-3.6-flash' },
+          { id: 'models/gemini-3.5-flash-lite' },
           { id: 'models/gemini-2.0-flash' },
           { id: 'models/gemini-2.0-flash-lite' }, // deprecated
         ],
@@ -387,6 +388,7 @@ describe('AI HTTP Contract Spec', () => {
     expect(res.body.data.providerId).toBe('google');
     expect(Array.isArray(res.body.data.models)).toBe(true);
     expect(res.body.data.models.length).toBeGreaterThanOrEqual(2);
+    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.0-flash')).toBeUndefined();
     // Deprecated model must NOT be in models
     expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
     // Raw secret key MUST NEVER appear in the response payload

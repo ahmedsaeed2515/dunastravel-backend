@@ -228,10 +228,11 @@ const INJECTION_PATTERNS = [
 
 const FINOPS_MODEL_PRICING: Record<string, { inputPer1M: number; outputPer1M: number }> = {
   'gemini-2.5-flash': { inputPer1M: 0.10, outputPer1M: 0.40 },
-  'gemini-2.0-flash': { inputPer1M: 0.10, outputPer1M: 0.40 },
-  'gemini-2.0-flash-lite': { inputPer1M: 0.075, outputPer1M: 0.30 },
-  'gemini-1.5-flash': { inputPer1M: 0.075, outputPer1M: 0.30 },
-  'gemini-1.5-pro': { inputPer1M: 1.25, outputPer1M: 5.00 },
+  'gemini-3.7-flash': { inputPer1M: 0.75, outputPer1M: 3.75 },
+  'gemini-3.6-flash': { inputPer1M: 0.75, outputPer1M: 3.75 },
+  'gemini-3.5-flash': { inputPer1M: 1.50, outputPer1M: 9.00 },
+  'gemini-3.5-flash-lite': { inputPer1M: 0.30, outputPer1M: 2.50 },
+  'gemini-3.1-flash-lite': { inputPer1M: 0.25, outputPer1M: 1.50 },
   'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.60 },
   'gpt-4o': { inputPer1M: 2.50, outputPer1M: 10.00 },
   'o3-mini': { inputPer1M: 1.10, outputPer1M: 4.40 },
@@ -240,7 +241,6 @@ const FINOPS_MODEL_PRICING: Record<string, { inputPer1M: number; outputPer1M: nu
   'deepseek-chat': { inputPer1M: 0.14, outputPer1M: 0.28 },
   'deepseek/deepseek-chat-v3-0324': { inputPer1M: 0.14, outputPer1M: 0.28 },
   'deepseek/deepseek-r1': { inputPer1M: 0.55, outputPer1M: 2.19 },
-  'google/gemini-2.0-flash-001': { inputPer1M: 0.10, outputPer1M: 0.40 },
   'qwen/qwen-2.5-72b-instruct': { inputPer1M: 0.35, outputPer1M: 0.40 },
   'claude-3-5-sonnet-20241022': { inputPer1M: 3.00, outputPer1M: 15.00 },
   'claude-3-5-haiku-20241022': { inputPer1M: 0.80, outputPer1M: 4.00 },
@@ -970,7 +970,7 @@ CRITICAL EXECUTION RULES:
     let latencyMs = 0;
     let isError = false;
     let usedProvider = config.provider || 'google';
-    let usedModel = config.model || 'gemini-2.5-flash';
+    let usedModel = config.model || 'gemini-3.7-flash';
 
     const providerStart = Date.now();
     try {

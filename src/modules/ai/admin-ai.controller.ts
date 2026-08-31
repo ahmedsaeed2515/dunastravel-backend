@@ -317,7 +317,7 @@ export class AdminAiController {
   async testConnection(@Body() dto: TestProviderConnectionDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
     const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
-    const model = dto.model || currentConfig.model || 'gemini-2.0-flash';
+    const model = dto.model || currentConfig.model || 'gemini-3.6-flash';
 
     // Validate provider/model pair BEFORE calling the provider
     if (model) {
@@ -561,7 +561,7 @@ export class AdminAiController {
     const agentSlug = body.agentSlug || 'guider';
     const agent = await this.agentRegistry.getAgentBySlug(agentSlug, locale);
 
-    const modelId = body.model || agent.primaryModel || 'gemini-2.0-flash';
+    const modelId = body.model || agent.primaryModel || 'gemini-3.6-flash';
     const providerName = body.provider || agent.provider || 'google';
 
     // 1. RAG & Live Structured Retrieval

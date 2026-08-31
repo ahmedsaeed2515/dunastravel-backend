@@ -17,7 +17,7 @@ export class UpdateAiConfigDto {
   @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
   provider?: string;
 
-  @ApiPropertyOptional({ example: 'gemini-2.0-flash' })
+  @ApiPropertyOptional({ example: 'gemini-3.6-flash' })
   @IsString()
   @IsOptional()
   model?: string;
@@ -120,7 +120,7 @@ export class AddProviderCredentialDto {
   apiKey!: string;
 
   @ApiPropertyOptional({
-    example: 'gemini-2.0-flash',
+    example: 'gemini-3.6-flash',
     description: 'Default model for this credential. Must belong to the selected provider.',
   })
   @IsString()
@@ -215,7 +215,7 @@ export class TestProviderConnectionDto {
   provider?: string;
 
   @ApiPropertyOptional({
-    example: 'gemini-2.0-flash',
+    example: 'gemini-3.6-flash',
     description: 'Model to test with. Must belong to the specified provider.',
   })
   @IsString()
@@ -302,5 +302,4 @@ export class RefreshProviderModelsDto {
   @IsIn(['openai-compatible', 'google-native'])
   integrationMode?: 'openai-compatible' | 'google-native';
 }
-
 

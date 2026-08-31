@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional, BadRequestException, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, Logger, Optional, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { decryptSensitiveField } from '../../../common/security/field-encryption.util';
 
@@ -95,8 +95,12 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isLegacy: false,
     allowCustomBaseUrl: false,
     primaryModels: [
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-2.0-flash',
+      'gemini-2.5-flash-lite',
     ],
   },
 
@@ -318,6 +322,110 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 
   // ── GOOGLE GEMINI ────────────────────────────────────────────────
 
+  'gemini-3.7-flash': {
+    id: 'gemini-3.7-flash',
+    providerId: 'google',
+    displayName: 'Gemini 3.7 Flash',
+    displayNameAr: 'جيمناي 3.7 فلاش',
+    description: 'Google\'s most capable production Flash model for complex agentic and multimodal workflows.',
+    recommendation: 'premium',
+    badge: 'Premium',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'EXCELLENT',
+    inputPricePerMillion: 0.75,
+    outputPricePerMillion: 3.75,
+    cachedInputPricePerMillion: 0.075,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: true,
+    isDefault: true,
+  },
+
+  'gemini-3.6-flash': {
+    id: 'gemini-3.6-flash',
+    providerId: 'google',
+    displayName: 'Gemini 3.6 Flash',
+    displayNameAr: 'جيمناي 3.6 فلاش',
+    description: 'Fast production-grade Gemini model for general chat, tool use, and grounded travel workflows.',
+    recommendation: 'balanced',
+    badge: 'Balanced',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'EXCELLENT',
+    inputPricePerMillion: 0.75,
+    outputPricePerMillion: 3.75,
+    cachedInputPricePerMillion: 0.075,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: true,
+    isDefault: false,
+  },
+
+  'gemini-3.5-flash-lite': {
+    id: 'gemini-3.5-flash-lite',
+    providerId: 'google',
+    displayName: 'Gemini 3.5 Flash-Lite',
+    displayNameAr: 'جيمناي 3.5 فلاش لايت',
+    description: 'Low-latency, cost-efficient production model for high-volume travel conversations and simple tasks.',
+    recommendation: 'economy',
+    badge: 'Economy',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'VERY_GOOD',
+    inputPricePerMillion: 0.30,
+    outputPricePerMillion: 2.50,
+    cachedInputPricePerMillion: 0.03,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: true,
+    isDefault: false,
+  },
+
+  'gemini-3.1-flash-lite': {
+    id: 'gemini-3.1-flash-lite',
+    providerId: 'google',
+    displayName: 'Gemini 3.1 Flash-Lite',
+    displayNameAr: 'جيمناي 3.1 فلاش لايت',
+    description: 'Cost-efficient stable Gemini model for high-volume, lightweight multilingual tasks.',
+    recommendation: 'economy',
+    badge: 'Economy',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'VERY_GOOD',
+    inputPricePerMillion: 0.25,
+    outputPricePerMillion: 1.50,
+    cachedInputPricePerMillion: 0.025,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: false,
+    isDefault: false,
+  },
+
   'gemini-2.5-flash': {
     id: 'gemini-2.5-flash',
     providerId: 'google',
@@ -341,7 +449,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     contextWindow: 1_048_576,
     maxOutputTokens: 8_192,
     isPopular: true,
-    isDefault: true,
+    isDefault: false,
   },
 
   'gemini-2.0-flash': {
@@ -352,7 +460,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'Fastest next-gen multimodal model with 1M context. Standard for luxury travel conversations.',
     recommendation: 'balanced',
     badge: 'Balanced',
-    status: 'AVAILABLE',
+    status: 'DEPRECATED',
     lastVerifiedAt: '2026-08-31',
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -403,7 +511,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'Battle-tested high-speed model with 1M context. Ideal for live travel chat.',
     recommendation: 'economy',
     badge: 'Economy',
-    status: 'AVAILABLE',
+    status: 'DEPRECATED',
     lastVerifiedAt: '2026-08-30',
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -429,7 +537,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'Premier complex reasoning model with 2M context window. Perfect for complex multi-day custom tours.',
     recommendation: 'premium',
     badge: 'Premium',
-    status: 'AVAILABLE',
+    status: 'DEPRECATED',
     lastVerifiedAt: '2026-08-30',
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -455,7 +563,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'High-volume, small footprint model for quick categorization, translation, and simple answers.',
     recommendation: 'economy',
     badge: 'Economy',
-    status: 'AVAILABLE',
+    status: 'DEPRECATED',
     lastVerifiedAt: '2026-08-30',
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -712,7 +820,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'Gemini 2.0 Flash via OpenRouter — useful as a no-key fallback.',
     recommendation: 'fallback',
     badge: 'Fallback',
-    status: 'AVAILABLE',
+    status: 'DEPRECATED',
     lastVerifiedAt: '2026-08-30',
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -864,9 +972,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 // ============================================================
 
 export const MODEL_ALIASES: Record<string, string> = {
-  'gemini-3.7-flash': 'gemini-2.5-flash',
   'gpt-5.6-luna': 'gpt-4o',
-  'google/gemini-2.5-flash': 'google/gemini-2.0-flash-001',
 };
 
 export function normalizeModelId(model: string): string {
@@ -904,7 +1010,7 @@ export function getValidModelIdsForProvider(providerId: string): string[] {
  */
 export function isValidProviderModelPair(providerId: string, modelId: string): boolean {
   const resolvedModelId = normalizeModelId(modelId);
-  if (resolvedModelId === 'gemini-2.0-flash-lite' || modelId === 'gemini-2.0-flash-lite') {
+  if (isRetiredGoogleModel(resolvedModelId)) {
     return false;
   }
   const model = MODEL_REGISTRY[resolvedModelId];
@@ -913,6 +1019,21 @@ export function isValidProviderModelPair(providerId: string, modelId: string): b
   if (model.providerId === providerId) return true;
   if (providerId === 'custom') return true;
   return false;
+}
+
+const RETIRED_GOOGLE_MODELS = new Set([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash-8b',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-001',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash-lite-001',
+  'google/gemini-2.0-flash-001',
+]);
+
+export function isRetiredGoogleModel(modelId: string): boolean {
+  return RETIRED_GOOGLE_MODELS.has(modelId.replace(/^models\//, ''));
 }
 
 /**
@@ -1026,7 +1147,7 @@ export class ModelRegistryService {
           const list = json.models || [];
           for (const item of list) {
             const rawId = (item.name || '').replace(/^models\//, '');
-            if (!rawId || rawId === 'gemini-2.0-flash-lite') continue;
+            if (!rawId || isRetiredGoogleModel(rawId)) continue;
             const methods = item.supportedGenerationMethods || [];
             if (!methods.includes('generateContent')) continue;
 
@@ -1065,7 +1186,7 @@ export class ModelRegistryService {
           const list = json.data || [];
           for (const item of list) {
             const rawId = (item.id || '').replace(/^models\//, '');
-            if (!rawId || rawId === 'gemini-2.0-flash-lite') continue;
+            if (!rawId || isRetiredGoogleModel(rawId)) continue;
             const registered = MODEL_REGISTRY[rawId];
             discovered.push({
               id: rawId,
@@ -1309,10 +1430,10 @@ export class ModelRegistryService {
       return { valid: false, reason: `Provider '${providerId}' is not in the registry.` };
     }
     const resolvedModelId = normalizeModelId(modelId);
-    if (resolvedModelId === 'gemini-2.0-flash-lite' || modelId === 'gemini-2.0-flash-lite') {
+    if (isRetiredGoogleModel(resolvedModelId)) {
       return {
         valid: false,
-        reason: `Model 'gemini-2.0-flash-lite' is deprecated/shut down and no longer available. Please choose 'gemini-2.5-flash' or another active model.`,
+        reason: `Model '${modelId}' is deprecated/shut down and no longer available. Refresh the provider model list and select an active model.`,
       };
     }
     if (pId === 'custom') {
@@ -1405,4 +1526,3 @@ export class ModelRegistryService {
     };
   }
 }
-
