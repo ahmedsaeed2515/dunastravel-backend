@@ -756,9 +756,10 @@ export class MediaService {
         if (!record) {
           throw new NotFoundException('Media asset not found');
         }
+        const isAdmin = actor && (actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN');
         if (
           actor &&
-          actor.role !== 'SUPER_ADMIN' &&
+          !isAdmin &&
           record.uploadedBy !== actor.id
         ) {
           throw new ForbiddenException(
@@ -766,16 +767,21 @@ export class MediaService {
           );
         }
 
-        const [docCount, attachCount, hotelHeroCount] = await Promise.all([
+        const [docCount, attachCount] = await Promise.all([
           tx.customerDocument.count({ where: { mediaAssetId: id } }),
           tx.bookingAttachment.count({ where: { mediaAssetId: id } }),
-          tx.hotel.count({ where: { heroMediaId: id, deletedAt: null } }),
         ]);
-        if (docCount > 0 || attachCount > 0 || hotelHeroCount > 0) {
+        if (docCount > 0 || attachCount > 0) {
           throw new BadRequestException(
-            'Media asset is referenced and cannot be removed',
+            'Media asset is attached to customer documents or booking attachments and cannot be removed',
           );
         }
+
+        // Clean up references in hotel hero media before soft deleting
+        await tx.hotel.updateMany({
+          where: { heroMediaId: id },
+          data: { heroMediaId: null },
+        });
 
         const claimed = await tx.mediaAsset.updateMany({
           where: { id, deletedAt: null },
@@ -815,7 +821,9 @@ export class MediaService {
 
     let providerDeleteFailed = false;
     try {
-      await this.storageProvider.delete(asset.publicId);
+      if (asset.publicId) {
+        await this.storageProvider.delete(asset.publicId);
+      }
     } catch {
       this.logger.warn('Cloud provider delete failed for a soft-deleted asset');
       providerDeleteFailed = true;
