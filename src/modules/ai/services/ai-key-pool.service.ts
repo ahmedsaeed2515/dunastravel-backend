@@ -386,19 +386,18 @@ export class AiKeyPoolService implements OnModuleInit {
       };
     }
 
-    if (!modelId) {
-      return {
-        success: false,
-        code: 'INVALID_CONFIGURATION',
-        provider: providerId,
-        model: '',
-        error: 'No model configured for this credential.',
-        diagnosis: 'Select a model for this credential.',
-      };
-    }
+    const effectiveModel =
+      modelId?.trim() ||
+      (providerId === 'google'
+        ? 'gemini-3.7-flash'
+        : providerId === 'openai'
+        ? 'gpt-4o-mini'
+        : providerId === 'xai'
+        ? 'grok-3-mini'
+        : 'deepseek/deepseek-chat-v3-0324');
 
     // Validate provider/model before making any external call
-    const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
+    const validation = this.modelRegistry.validateProviderModelPair(providerId, effectiveModel);
     if (!validation.valid) {
       await (this.prisma as any).aiProviderCredential.update({
         where: { id },
@@ -408,7 +407,7 @@ export class AiKeyPoolService implements OnModuleInit {
         success: false,
         code: 'INVALID_CONFIGURATION',
         provider: providerId,
-        model: modelId,
+        model: effectiveModel,
         error: validation.reason,
         diagnosis: `This credential has a provider/model mismatch. ${validation.reason}`,
       };
@@ -420,9 +419,9 @@ export class AiKeyPoolService implements OnModuleInit {
         'Say "Connection verified" in exactly 2 words.',
         {
           provider: providerId,
-          model: modelId,
+          model: effectiveModel,
           maxTokens: 20,
-          timeoutMs: 12_000,
+          timeoutMs: 15_000,
         },
         apiKey,
       );
@@ -441,7 +440,7 @@ export class AiKeyPoolService implements OnModuleInit {
         success: true,
         code: 'SUCCESS',
         provider: providerId,
-        model: modelId,
+        model: effectiveModel,
         latencyMs: res.latencyMs,
         message: res.text,
       };

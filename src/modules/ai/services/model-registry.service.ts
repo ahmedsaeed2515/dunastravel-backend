@@ -1135,70 +1135,95 @@ export class ModelRegistryService {
 
     try {
       if (pId === 'google') {
-        const isNative = options.integrationMode === 'google-native';
-        if (isNative) {
+        // Try Google Native API first (fastest, most reliable, supports all keys)
+        try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
           const res = await fetch(url, { signal: abortController.signal });
-          if (!res.ok) {
-            const errBody = await res.text();
-            throw new Error(`Google Native API returned ${res.status}: ${errBody.slice(0, 150)}`);
-          }
-          const json: any = await res.json();
-          const list = json.models || [];
-          for (const item of list) {
-            const rawId = (item.name || '').replace(/^models\//, '');
-            if (!rawId || isRetiredGoogleModel(rawId)) continue;
-            const methods = item.supportedGenerationMethods || [];
-            if (!methods.includes('generateContent')) continue;
+          if (res.ok) {
+            const json: any = await res.json();
+            const list = json.models || [];
+            for (const item of list) {
+              const rawId = (item.name || '').replace(/^models\//, '');
+              if (!rawId || isRetiredGoogleModel(rawId)) continue;
+              const methods = item.supportedGenerationMethods || [];
+              if (!methods.includes('generateContent')) continue;
 
-            const registered = MODEL_REGISTRY[rawId];
-            discovered.push({
-              id: rawId,
-              displayName: item.displayName || registered?.displayName || rawId,
-              provider: 'google',
-              supportsChat: true,
-              supportsStreaming: true,
-              supportsTools: true,
-              supportsStructuredOutput: true,
-              contextWindow: item.inputTokenLimit || registered?.contextWindow || 1_048_576,
-              inputPricePer1M: registered?.inputPricePerMillion,
-              outputPricePer1M: registered?.outputPricePerMillion,
-              status: 'AVAILABLE',
-              source: 'LIVE_PROVIDER',
+              const registered = MODEL_REGISTRY[rawId];
+              discovered.push({
+                id: rawId,
+                displayName: item.displayName || registered?.displayName || rawId,
+                provider: 'google',
+                supportsChat: true,
+                supportsStreaming: true,
+                supportsTools: true,
+                supportsStructuredOutput: true,
+                contextWindow: item.inputTokenLimit || registered?.contextWindow || 1_048_576,
+                inputPricePer1M: registered?.inputPricePerMillion,
+                outputPricePer1M: registered?.outputPricePerMillion,
+                status: 'AVAILABLE',
+                source: 'LIVE_PROVIDER',
+              });
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`Google Native models API failed (${err.message}). Trying OpenAI-compatible...`);
+        }
+
+        // If native didn't find models, try OpenAI-compatible endpoint
+        if (discovered.length === 0) {
+          try {
+            const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
+            const url = `${baseUrl}/models`;
+            const res = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'x-goog-api-key': apiKey,
+              },
+              signal: abortController.signal,
             });
+            if (res.ok) {
+              const json: any = await res.json();
+              const list = json.data || [];
+              for (const item of list) {
+                const rawId = (item.id || '').replace(/^models\//, '');
+                if (!rawId || isRetiredGoogleModel(rawId)) continue;
+                const registered = MODEL_REGISTRY[rawId];
+                discovered.push({
+                  id: rawId,
+                  displayName: registered?.displayName || rawId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+                  provider: 'google',
+                  supportsChat: true,
+                  supportsStreaming: true,
+                  supportsTools: true,
+                  supportsStructuredOutput: true,
+                  contextWindow: registered?.contextWindow || 1_048_576,
+                  inputPricePer1M: registered?.inputPricePerMillion,
+                  outputPricePer1M: registered?.outputPricePerMillion,
+                  status: 'AVAILABLE',
+                  source: 'LIVE_PROVIDER',
+                });
+              }
+            }
+          } catch (err: any) {
+            this.logger.warn(`Google OpenAI-compatible models API failed (${err.message}).`);
           }
-        } else {
-          // OpenAI-compatible mode
-          const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
-          const url = `${baseUrl}/models`;
-          const res = await fetch(url, {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'x-goog-api-key': apiKey,
-            },
-            signal: abortController.signal,
-          });
-          if (!res.ok) {
-            const errBody = await res.text();
-            throw new Error(`Google API returned ${res.status}: ${errBody.slice(0, 150)}`);
-          }
-          const json: any = await res.json();
-          const list = json.data || [];
-          for (const item of list) {
-            const rawId = (item.id || '').replace(/^models\//, '');
-            if (!rawId || isRetiredGoogleModel(rawId)) continue;
-            const registered = MODEL_REGISTRY[rawId];
+        }
+
+        // If provider live discovery is still empty, fall back to registered Google models
+        if (discovered.length === 0) {
+          const registeredGoogle = this.getPrimaryModelsForProvider('google');
+          for (const m of registeredGoogle) {
             discovered.push({
-              id: rawId,
-              displayName: registered?.displayName || rawId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+              id: m.id,
+              displayName: m.displayName,
               provider: 'google',
               supportsChat: true,
               supportsStreaming: true,
               supportsTools: true,
               supportsStructuredOutput: true,
-              contextWindow: registered?.contextWindow || 1_048_576,
-              inputPricePer1M: registered?.inputPricePerMillion,
-              outputPricePer1M: registered?.outputPricePerMillion,
+              contextWindow: m.contextWindow,
+              inputPricePer1M: m.inputPricePerMillion,
+              outputPricePer1M: m.outputPricePerMillion,
               status: 'AVAILABLE',
               source: 'LIVE_PROVIDER',
             });

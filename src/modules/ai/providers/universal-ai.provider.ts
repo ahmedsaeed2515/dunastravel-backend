@@ -109,7 +109,122 @@ export class UniversalAiProvider implements IAiProvider {
       return this.generateAnthropicCompletion(prompt, options, apiKey);
     }
 
+    if (provider === 'google') {
+      return this.generateGoogleCompletionWithFallback(prompt, options, apiKey, providerDef);
+    }
+
     return this.generateOpenAiCompatibleCompletion(prompt, options, apiKey, provider, providerDef);
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Google Gemini Native + OpenAI-compatible Fallback
+  // ──────────────────────────────────────────────────────────────────
+  private async generateGoogleCompletionWithFallback(
+    prompt: string,
+    options: IAiCompletionOptions,
+    apiKey: string,
+    providerDef: any,
+  ): Promise<IAiProviderResponse> {
+    const rawModel = options.model || 'gemini-3.7-flash';
+    const model = normalizeModelId(rawModel);
+
+    // Try Google Native API first (fastest, direct, reliable)
+    try {
+      return await this.generateGoogleNativeCompletion(prompt, options, apiKey, model);
+    } catch (err: any) {
+      if (err instanceof ProviderError && (err.code === 'UNAUTHORIZED' || err.code === 'INVALID_KEY')) {
+        throw err;
+      }
+      this.logger.warn(`Google Native API failed (${err.message}). Trying OpenAI-compatible endpoint...`);
+      return this.generateOpenAiCompatibleCompletion(prompt, options, apiKey, 'google', providerDef);
+    }
+  }
+
+  private async generateGoogleNativeCompletion(
+    prompt: string,
+    options: IAiCompletionOptions,
+    apiKey: string,
+    model: string,
+  ): Promise<IAiProviderResponse> {
+    const timeoutMs = options.timeoutMs || 15_000;
+    const maxTokens = options.maxTokens || 1_024;
+    const temperature = options.temperature ?? 0.7;
+
+    const cleanModel = model.replace(/^models\//, '');
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const payload: any = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens,
+      },
+    };
+
+    if (options.systemPrompt) {
+      payload.systemInstruction = {
+        parts: [{ text: options.systemPrompt }],
+      };
+    }
+
+    const startTime = Date.now();
+    const abortController = new AbortController();
+    const timer = setTimeout(() => abortController.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: abortController.signal,
+      });
+
+      const latencyMs = Date.now() - startTime;
+
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => '');
+        throw classifyHttpError(res.status, errorBody, 'google', cleanModel);
+      }
+
+      const json = await res.json();
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const inputTokens = json.usageMetadata?.promptTokenCount || 0;
+      const outputTokens = json.usageMetadata?.candidatesTokenCount || 0;
+
+      this.logger.debug(
+        `[google-native] SUCCESS (${latencyMs}ms) model=${cleanModel} in=${inputTokens} out=${outputTokens}`,
+      );
+
+      return { text, inputTokens, outputTokens, latencyMs, provider: 'google', model: cleanModel };
+    } catch (error: any) {
+      const latencyMs = Date.now() - startTime;
+      if (error instanceof ProviderError) throw error;
+      if (error?.name === 'AbortError') {
+        throw new ProviderError(
+          'TIMEOUT',
+          `Provider 'google' request timed out after ${timeoutMs}ms.`,
+          undefined,
+          'google',
+          cleanModel,
+        );
+      }
+      throw new ProviderError(
+        'UNKNOWN_ERROR',
+        `Google Native API failed (${latencyMs}ms): ${error?.message}`,
+        undefined,
+        'google',
+        cleanModel,
+      );
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────

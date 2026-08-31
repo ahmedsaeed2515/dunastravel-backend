@@ -301,5 +301,10 @@ export class RefreshProviderModelsDto {
   @IsOptional()
   @IsIn(['openai-compatible', 'google-native'])
   integrationMode?: 'openai-compatible' | 'google-native';
+
+  @ApiPropertyOptional({ description: 'Force refresh live models bypass cache' })
+  @IsBoolean()
+  @IsOptional()
+  forceRefresh?: boolean;
 }
 

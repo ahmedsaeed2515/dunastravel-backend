@@ -317,7 +317,15 @@ export class AdminAiController {
   async testConnection(@Body() dto: TestProviderConnectionDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
     const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
-    const model = dto.model || currentConfig.model || 'gemini-3.6-flash';
+    const defaultModelForProvider =
+      providerName === 'google'
+        ? 'gemini-3.7-flash'
+        : providerName === 'openai'
+        ? 'gpt-4o-mini'
+        : providerName === 'xai'
+        ? 'grok-3-mini'
+        : 'deepseek/deepseek-chat-v3-0324';
+    const model = (dto.model && dto.model.trim()) ? dto.model.trim() : defaultModelForProvider;
 
     // Validate provider/model pair BEFORE calling the provider
     if (model) {
