@@ -33,7 +33,7 @@ export class InquiryCreatedListener {
         message: `Tailor-made travel inquiry from ${payload.fullName} (${payload.email})`,
         entityType: 'INQUIRY',
         entityId: payload.referenceCode,
-        deepLink: '/admin/crm/inquiries',
+        deepLink: '/admin/inquiries',
         metadata: { referenceCode: payload.referenceCode },
       });
       // 1. Compose emails
