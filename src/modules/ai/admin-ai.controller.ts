@@ -535,6 +535,13 @@ export class AdminAiController {
     return this.agentRegistry.updateAgent(id, dto);
   }
 
+  @Post('agents/:id/activate')
+  @ApiOperation({ summary: 'Set this agent persona as the single active AI assistant on the live website' })
+  async activateAgent(@Param('id') id: string) {
+    const activated = await this.agentRegistry.activateSingleAgent(id);
+    return { success: true, agent: activated };
+  }
+
   @Delete('agents/:id')
   @ApiOperation({ summary: 'Delete AI Agent from registry' })
   async deleteAgent(@Param('id') id: string) {

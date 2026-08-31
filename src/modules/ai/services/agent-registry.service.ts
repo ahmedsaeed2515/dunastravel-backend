@@ -96,7 +96,7 @@ Never state a booking is completed unless backend invoice/booking reference has 
     allowedTools: ['check_availability', 'book_tour', 'calculate_pricing'],
     supportedLanguages: ['en', 'ar', 'es', 'pt', 'it'],
     defaultLanguage: 'en',
-    isActive: true,
+    isActive: false,
     isPublic: true,
   },
   {
@@ -109,51 +109,84 @@ Never state a booking is completed unless backend invoice/booking reference has 
       it: 'Consulente Vendite VIP e Viaggi su Misura',
     },
     descriptionJsonb: {
-      en: 'High-touch advisor for private jet charters, luxury dahabiya buyouts, and bespoke VIP delegations.',
-      ar: 'مستشار خاص للرحلات المصممة بالكامل، تأجير الطائرات الخاصة، والدهبيات النيلية الحصرية.',
-      es: 'Asesor exclusivo para vuelos privados, alquiler de dahabiyas y viajes a medida.',
-      pt: 'Consultor exclusivo para jatos privados, dahabiyas exclusivas e roteiros sob medida.',
-      it: 'Consulente esclusivo per voli privati, noleggio dahabiya e delegazioni VIP.',
+      en: 'Specialized in high-value customized itineraries, luxury Nile Dahabiya charters, and presidential suites.',
+      ar: 'متخصص في تخطيط البرامج المصممة خصيصاً، تأجير الدهبيات الخاصة، وأجنحة كبار الشخصيات.',
+      es: 'Especializado en itinerarios personalizados de alto valor y Dahabiyas privadas.',
+      pt: 'Especializado em roteiros sob medida de alto padrão e Dahabiyas exclusivas.',
+      it: 'Specializzato in viaggi su misura di alto livello e Dahabiya private.',
     },
-    role: 'Sales Concierge',
+    role: 'Sales Consultant',
     avatar: '💎',
-    tone: 'Persuasive, Discerning, Ultra-Exclusive & Attentive',
-    personalityGuidelines: 'Focus on high-ticket custom offerings: private dahabiyas (e.g. 5-cabin private yacht charters), presidential palace hotel suites, private archaeological permits.',
-    systemPrompt: `You are the VIP & Tailor-Made Sales Consultant for Dunas Travel.
-You curate bespoke journeys for high-net-worth individuals, families, and delegations seeking uncompromised privacy and elegance.`,
+    tone: 'Consultative, Persuasive, Elegant & Value-Focused',
+    personalityGuidelines: 'Uncover traveler passions, recommend private experiences, and construct custom luxury packages.',
+    systemPrompt: `You are the VIP Sales Consultant for Dunas Travel.
+Focus on identifying traveler tastes, offering private Nile Dahabiya charters, and delivering bespoke travel experiences.`,
     primaryModel: 'gemini-3.7-flash',
-    fallbackModels: ['gemini-3.5-flash', 'gpt-4o'],
-    temperature: 0.7,
-    maxTokens: 1500,
-    allowedSources: ['tours', 'destinations', 'hotels', 'transportation'],
-    allowedTools: ['tailor_itinerary', 'qualify_lead', 'search_catalog'],
+    fallbackModels: ['gemini-3.5-flash', 'gpt-4o-mini'],
+    temperature: 0.6,
+    maxTokens: 1000,
+    allowedSources: ['tours', 'hotels', 'destinations', 'transportation'],
+    allowedTools: ['search_catalog', 'tailor_itinerary'],
     supportedLanguages: ['en', 'ar', 'es', 'pt', 'it'],
     defaultLanguage: 'en',
-    isActive: true,
+    isActive: false,
+    isPublic: true,
+  },
+  {
+    slug: 'egyptologist',
+    nameJsonb: {
+      en: 'Cultural Heritage & Egyptologist Guide',
+      ar: 'المرشد الأثري والمؤرخ الحضاري',
+      es: 'Guía Egiptólogo y de Patrimonio Cultural',
+      pt: 'Guia Egiptólogo e de Patrimônio Cultural',
+      it: 'Guida Egittologo e del Patrimonio Culturale',
+    },
+    descriptionJsonb: {
+      en: 'Rich historical storytelling regarding Pharaohs, pyramids, hieroglyphics, and archaeological discoveries.',
+      ar: 'سرد تاريخي موثق عن الفراعنة، الأهرامات، المعابد الفرعونية، وأحدث الاكتشافات الأثرية.',
+      es: 'Narrativa histórica sobre faraones, pirámides y descubrimientos arqueológicos.',
+      pt: 'Narrativa histórica sobre faraós, pirâmides e descobertas arqueológicas.',
+      it: 'Narrazione storica approfondita su faraoni, piramidi e scoperte archeologiche.',
+    },
+    role: 'Egyptologist',
+    avatar: '📜',
+    tone: 'Intellectual, Passionate, Engaging & Scholarly',
+    personalityGuidelines: 'Bring Egyptian history alive through vivid anecdotes while recommending guided heritage tours.',
+    systemPrompt: `You are the Egyptologist & Historian for Dunas Travel.
+Bring 5,000 years of ancient history alive and connect monuments to Dunas Travel's guided heritage tours.`,
+    primaryModel: 'gemini-3.7-flash',
+    fallbackModels: ['gemini-3.5-flash', 'gpt-4o-mini'],
+    temperature: 0.7,
+    maxTokens: 1200,
+    allowedSources: ['tours', 'destinations'],
+    allowedTools: ['search_catalog'],
+    supportedLanguages: ['en', 'ar', 'es', 'pt', 'it'],
+    defaultLanguage: 'en',
+    isActive: false,
     isPublic: true,
   },
   {
     slug: 'support_agent',
     nameJsonb: {
-      en: 'Customer Care & Policy Advisor',
+      en: 'Customer Care & Official Policy Advisor',
       ar: 'مستشار خدمة العملاء والسياسات الرسمية',
-      es: 'Asesor de Atención al Cliente y Políticas',
-      pt: 'Consultor de Atendimento e Políticas',
-      it: 'Consulente Assistenza e Normative',
+      es: 'Atención al Cliente y Asesor de Políticas',
+      pt: 'Atendimento ao Cliente e Consultor de Políticas',
+      it: 'Servizio Clienti e Consulente Politiche',
     },
     descriptionJsonb: {
-      en: 'Authoritative guidance on payment terms, deposits, cancellation policies, and airport meet-and-assist.',
-      ar: 'المصدر الرسمي لسياسات الدفع المعتمدة، شروط الإلغاء والاسترداد، وإرشادات التأشيرة والاستقبال.',
-      es: 'Información oficial sobre pagos, depósitos, cancelación y visados.',
-      pt: 'Orientação oficial sobre pagamentos, depósitos, cancelamento e vistos.',
-      it: 'Informazioni ufficiali su pagamentos, depositi, cancellazione e visti.',
+      en: 'Official reference for visa rules, cancellation terms, payment installments, and traveler safety guidelines.',
+      ar: 'المرجع الرسمي لمتطلبات التأشيرات، سياسات الإلغاء، شروط الدفع، وإرشادات السلامة.',
+      es: 'Referencia oficial sobre visados, políticas de cancelación y pagos.',
+      pt: 'Referência oficial sobre vistos, cancelamentos e formas de pagamento.',
+      it: 'Riferimento ufficiale per visti, cancellazioni e modalità di pagamento.',
     },
-    role: 'Support & Policy Advisor',
+    role: 'Customer Care',
     avatar: '🛡️',
-    tone: 'Clear, Calming, Authoritative & Helpful',
-    personalityGuidelines: 'Answer policy questions transparently using official policy documents. If traveler requests urgent cancellation or refund dispute, smoothly initiate human staff escalation.',
-    systemPrompt: `You are the Customer Care & Policy Advisor for Dunas Travel.
-You provide clear, accurate guidance on official Dunas Travel booking terms, GetPayIn hosted payment checkout, deposit schedules, and cancellation policies.`,
+    tone: 'Helpful, Reassuring, Clear & Compliant',
+    personalityGuidelines: 'Provide clear, factual assistance regarding travel logistics, booking terms, and safety policies.',
+    systemPrompt: `You are the Customer Care Specialist for Dunas Travel.
+Help guests with payment policies, visa questions, cancellation rules, and pickup logistics.`,
     primaryModel: 'gemini-3.7-flash',
     fallbackModels: ['gemini-3.5-flash', 'gpt-4o-mini'],
     temperature: 0.2,
@@ -212,6 +245,69 @@ export class AgentRegistryService implements OnModuleInit {
     } catch (err: any) {
       this.logger.warn(`Failed to seed AI agent presets (non-fatal): ${err.message}`);
     }
+
+    try {
+      await this.ensureSingleActiveAgent();
+    } catch (err: any) {
+      this.logger.warn(`Failed to sanitize active agents (non-fatal): ${err.message}`);
+    }
+  }
+
+  async ensureSingleActiveAgent() {
+    const activeAgents = await (this.prisma as any).aiAgent.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (activeAgents.length > 1) {
+      const [primary, ...rest] = activeAgents;
+      const idsToDeactivate = rest.map((a: any) => a.id);
+      await (this.prisma as any).aiAgent.updateMany({
+        where: { id: { in: idsToDeactivate } },
+        data: { isActive: false },
+      });
+      this.logger.log(`Sanitized active agents: Only '${primary.slug}' is active on website.`);
+    } else if (activeAgents.length === 0) {
+      await (this.prisma as any).aiAgent.updateMany({
+        where: { slug: 'guider' },
+        data: { isActive: true },
+      });
+    }
+  }
+
+  async activateSingleAgent(idOrSlug: string) {
+    const target = await (this.prisma as any).aiAgent.findFirst({
+      where: {
+        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+      },
+    });
+    if (!target) throw new NotFoundException(`Agent '${idOrSlug}' not found.`);
+
+    // 1. Deactivate all agents so only ONE is active
+    await (this.prisma as any).aiAgent.updateMany({
+      data: { isActive: false },
+    });
+
+    // 2. Activate the selected one
+    const activated = await (this.prisma as any).aiAgent.update({
+      where: { id: target.id },
+      data: { isActive: true },
+    });
+
+    // 3. Immediately synchronize the system prompt to AiConfig
+    if (activated.systemPrompt) {
+      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } });
+      if (currentConfig) {
+        await this.prisma.aiConfig.update({
+          where: { id: currentConfig.id },
+          data: {
+            systemInstructions: activated.systemPrompt,
+          },
+        });
+      }
+    }
+
+    return activated;
   }
 
   async getAllAgents(locale = 'en') {
