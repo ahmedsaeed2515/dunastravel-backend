@@ -35,9 +35,10 @@ export class AiController {
   @ApiOperation({ summary: 'Generate a customized travel itinerary using AI' })
   async generateItinerary(
     @Body() dto: GenerateItineraryDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
-    await this.aiUsageQuota.consume(user.id);
+    const userId = user?.id || 'admin-system';
+    await this.aiUsageQuota.consume(userId);
     return this.aiService.generateItinerary(dto);
   }
 
@@ -48,9 +49,10 @@ export class AiController {
   })
   async analyzeCustomer(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
-    await this.aiUsageQuota.consume(user.id);
+    const userId = user?.id || 'admin-system';
+    await this.aiUsageQuota.consume(userId);
     return this.aiService.analyzeCustomer(id);
   }
 }

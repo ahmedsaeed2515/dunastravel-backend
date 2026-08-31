@@ -584,7 +584,7 @@ export class AdminController {
 
   @Delete('tours/clear-all')
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe � SUPER_ADMIN only).' })
+  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe - SUPER_ADMIN only).' })
   @ApiOkResponse({ description: 'Count of archived tours' })
   async clearAllTours(@CurrentUser() user: AuthenticatedUser) {
     return this.adminService.clearAllTours(user.id);

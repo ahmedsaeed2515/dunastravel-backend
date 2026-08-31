@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -14,7 +14,7 @@ import { ModelRegistryService, PROVIDER_REGISTRY } from './services/model-regist
 import { ModelRoutingService } from './services/model-routing.service';
 import { PromptEngineService } from './services/prompt-engine.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { UpdateAiConfigDto, TestProviderConnectionDto, AddProviderCredentialDto, UpdateProviderCredentialDto } from './dto/admin-ai.dto';
+import { UpdateAiConfigDto, TestProviderConnectionDto, AddProviderCredentialDto, UpdateProviderCredentialDto, GenerateAiItineraryDto } from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
 import {
   decryptSensitiveField,
@@ -648,4 +648,3 @@ export class AdminAiController {
     };
   }
 }
-

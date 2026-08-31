@@ -575,7 +575,7 @@ export class ChatOrchestratorService {
   /**
    * Deterministic Structured Itinerary Generator when traveler asks for custom tour planning
    */
-  private generateTripProposal(
+  public generateTripProposal(
     constraints: TravelConstraints,
     locale: string,
   ): StructuredTripProposal | null {

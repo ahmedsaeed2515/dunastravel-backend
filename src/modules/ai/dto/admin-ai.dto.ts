@@ -229,3 +229,50 @@ export class TestProviderConnectionDto {
   @IsOptional()
   apiKey?: string;
 }
+
+// ============================================================
+// GENERATE AI ITINERARY DTO
+// ============================================================
+
+export class GenerateAiItineraryDto {
+  @ApiPropertyOptional()
+  @IsArray()
+  @IsOptional()
+  destinations?: string[];
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsNumber()
+  @IsOptional()
+  durationDays?: number;
+
+  @ApiPropertyOptional({ example: 3500 })
+  @IsNumber()
+  @IsOptional()
+  budget?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  nileCruise?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  beachExtension?: boolean;
+
+  @ApiPropertyOptional({ example: 'LUXURY' })
+  @IsString()
+  @IsOptional()
+  travelStyle?: string;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsString()
+  @IsOptional()
+  locale?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
