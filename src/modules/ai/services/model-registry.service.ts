@@ -374,6 +374,32 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     isDefault: false,
   },
 
+  'gemini-3.5-flash': {
+    id: 'gemini-3.5-flash',
+    providerId: 'google',
+    displayName: 'Gemini 3.5 Flash',
+    displayNameAr: 'جيمناي 3.5 فلاش',
+    description: 'High-speed, production-grade model with ~900ms response time and full multimodal & tool support.',
+    recommendation: 'balanced',
+    badge: 'Balanced',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'EXCELLENT',
+    inputPricePerMillion: 0.50,
+    outputPricePerMillion: 3.00,
+    cachedInputPricePerMillion: 0.05,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: true,
+    isDefault: false,
+  },
+
   'gemini-3.5-flash-lite': {
     id: 'gemini-3.5-flash-lite',
     providerId: 'google',
@@ -1029,6 +1055,7 @@ const RETIRED_GOOGLE_MODELS = new Set([
   'gemini-2.0-flash-001',
   'gemini-2.0-flash-lite',
   'gemini-2.0-flash-lite-001',
+  'gemini-2.5-flash-lite',
   'google/gemini-2.0-flash-001',
 ]);
 
