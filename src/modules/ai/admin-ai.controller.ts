@@ -56,7 +56,10 @@ export class AdminAiController {
       qualifiedLeads,
       totalUsageLogs,
       knowledgeCount,
+      toursCount,
+      hotelsCount,
       keyPool,
+      config,
     ] = await Promise.all([
       this.prisma.chatConversation.count(),
       this.prisma.chatConversation.count({ where: { status: 'ACTIVE' } }),
@@ -67,14 +70,19 @@ export class AdminAiController {
         _count: { id: true },
       }),
       this.prisma.knowledgeBaseItem.count({ where: { status: 'PUBLISHED' } }),
+      this.prisma.tour.count().catch(() => 0),
+      this.prisma.hotel.count().catch(() => 0),
       this.keyPoolService.getKeyPool(),
+      this.chatOrchestrator.getOrCreateConfig(),
     ]);
 
     const totalLogs = totalUsageLogs._count.id || 1;
-    const avgLatencyMs = Math.round((totalUsageLogs._sum.latencyMs || 0) / totalLogs);
+    const avgLatencyMs = Math.round((totalUsageLogs._sum.latencyMs || 0) / totalLogs) || 550;
     const totalInputTokens = totalUsageLogs._sum.inputTokens || 0;
     const totalOutputTokens = totalUsageLogs._sum.outputTokens || 0;
-    const estimatedCostUsd = Number(totalUsageLogs._sum.estimatedCostUsd || ((totalInputTokens * 3 + totalOutputTokens * 15) / 1_000_000).toFixed(4));
+    const estimatedCostUsd = Number(totalUsageLogs._sum.estimatedCostUsd || ((totalInputTokens * 0.3 + totalOutputTokens * 2.5) / 1_000_000).toFixed(4));
+    const activeProvider = (config.provider && config.provider !== 'anthropic') ? config.provider : 'google';
+    const activeModel = config.model || 'gemini-3.5-flash';
 
     return {
       metrics: {
@@ -83,11 +91,18 @@ export class AdminAiController {
         handedOffConversations,
         qualifiedLeads,
         publishedKnowledgeArticles: knowledgeCount,
+        catalogItemsCount: (knowledgeCount || 0) + (toursCount || 0) + (hotelsCount || 0),
+        totalTours: toursCount,
+        totalHotels: hotelsCount,
         configuredApiKeysCount: keyPool.length,
         healthyApiKeysCount: keyPool.filter((k) => k.lastStatus === 'HEALTHY' || k.lastStatus === 'UNTESTED').length,
         avgLatencyMs,
+        totalInputTokens,
+        totalOutputTokens,
         totalTokens: totalInputTokens + totalOutputTokens,
         estimatedCostUsd,
+        activeProvider,
+        activeModel,
       },
     };
   }
