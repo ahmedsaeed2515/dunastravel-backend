@@ -4,12 +4,13 @@ import {
   ServiceUnavailableException,
   NotFoundException,
   BadRequestException,
+  UnprocessableEntityException,
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UniversalAiProvider, ProviderError } from '../providers/universal-ai.provider';
 import { IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
-import { ModelRegistryService, PROVIDER_REGISTRY } from './model-registry.service';
+import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl } from './model-registry.service';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
@@ -235,9 +236,20 @@ export class AiKeyPoolService implements OnModuleInit {
       throw new BadRequestException(`Unknown provider '${dto.provider}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
     }
 
+    if (dto.baseUrl) {
+      const urlCheck = validateBaseUrl(dto.baseUrl);
+      if (!urlCheck.valid) {
+        throw new BadRequestException(`Invalid base URL: ${urlCheck.reason}`);
+      }
+    }
+
     // Validate model/provider pair if a model is specified
     if (dto.model && dto.model.trim()) {
-      const validation = this.modelRegistry.validateProviderModelPair(providerId, dto.model.trim());
+      const trimmedModel = dto.model.trim();
+      if (trimmedModel === 'gemini-2.0-flash-lite') {
+        throw new UnprocessableEntityException("Model 'gemini-2.0-flash-lite' is deprecated/shut down and cannot be assigned.");
+      }
+      const validation = this.modelRegistry.validateProviderModelPair(providerId, trimmedModel);
       if (!validation.valid) {
         throw new BadRequestException(
           `Invalid provider/model combination: ${validation.reason}`
@@ -264,6 +276,7 @@ export class AiKeyPoolService implements OnModuleInit {
       },
     });
 
+    this.modelRegistry.invalidateDiscoveryCache(providerId);
     return this.toMasked(row);
   }
 
@@ -287,8 +300,18 @@ export class AiKeyPoolService implements OnModuleInit {
       throw new BadRequestException(`Unknown provider '${dto.provider}'.`);
     }
 
+    if (dto.baseUrl) {
+      const urlCheck = validateBaseUrl(dto.baseUrl);
+      if (!urlCheck.valid) {
+        throw new BadRequestException(`Invalid base URL: ${urlCheck.reason}`);
+      }
+    }
+
     const modelId = dto.model !== undefined ? dto.model.trim() : existing.model;
     if (modelId && dto.model !== undefined) {
+      if (modelId === 'gemini-2.0-flash-lite') {
+        throw new UnprocessableEntityException("Model 'gemini-2.0-flash-lite' is deprecated/shut down and cannot be assigned.");
+      }
       const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
       if (!validation.valid) {
         throw new BadRequestException(`Invalid provider/model combination: ${validation.reason}`);
@@ -306,7 +329,6 @@ export class AiKeyPoolService implements OnModuleInit {
       if (PROVIDER_REGISTRY[providerId]?.allowCustomBaseUrl) {
         updateData.baseUrl = dto.baseUrl.trim() || null;
       }
-      // For official providers, silently ignore baseUrl updates
     }
     // API key: only update if a real new key is provided (not masked dots)
     if (dto.apiKey && dto.apiKey.trim().length > 5 && !dto.apiKey.includes('••')) {
@@ -320,10 +342,15 @@ export class AiKeyPoolService implements OnModuleInit {
       data: updateData,
     });
 
+    this.modelRegistry.invalidateDiscoveryCache(providerId);
     return this.toMasked(row);
   }
 
   async deleteKey(id: string): Promise<{ success: boolean; id: string }> {
+    const existing = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id } });
+    if (existing) {
+      this.modelRegistry.invalidateDiscoveryCache(existing.provider);
+    }
     await (this.prisma as any).aiProviderCredential.delete({ where: { id } }).catch(() => {});
     return { success: true, id };
   }

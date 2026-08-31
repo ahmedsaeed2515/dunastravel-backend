@@ -227,6 +227,7 @@ const INJECTION_PATTERNS = [
 ];
 
 const FINOPS_MODEL_PRICING: Record<string, { inputPer1M: number; outputPer1M: number }> = {
+  'gemini-2.5-flash': { inputPer1M: 0.10, outputPer1M: 0.40 },
   'gemini-2.0-flash': { inputPer1M: 0.10, outputPer1M: 0.40 },
   'gemini-2.0-flash-lite': { inputPer1M: 0.075, outputPer1M: 0.30 },
   'gemini-1.5-flash': { inputPer1M: 0.075, outputPer1M: 0.30 },
@@ -969,7 +970,7 @@ CRITICAL EXECUTION RULES:
     let latencyMs = 0;
     let isError = false;
     let usedProvider = config.provider || 'google';
-    let usedModel = config.model || 'gemini-2.0-flash';
+    let usedModel = config.model || 'gemini-2.5-flash';
 
     const providerStart = Date.now();
     try {

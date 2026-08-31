@@ -32,15 +32,15 @@ export interface AgentModelPolicy {
 export const DEFAULT_ROUTING_TABLE: Record<RoutingTier, { provider: string; model: string }> = {
   economy: {
     provider: 'google',
-    model: 'gemini-2.0-flash-lite',
+    model: 'gemini-2.5-flash',
   },
   normal: {
     provider: 'google',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
   },
   complex: {
     provider: 'google',
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.5-flash',
   },
   fallback: {
     provider: 'openrouter',
@@ -56,23 +56,23 @@ export const DEFAULT_ROUTING_TABLE: Record<RoutingTier, { provider: string; mode
 export const AGENT_ROUTING_POLICIES: AgentModelPolicy[] = [
   {
     agentSlug: 'guider',
-    economy: { provider: 'google', model: 'gemini-2.0-flash-lite' },
-    normal: { provider: 'google', model: 'gemini-2.0-flash' },
-    complex: { provider: 'google', model: 'gemini-1.5-pro' },
+    economy: { provider: 'google', model: 'gemini-2.5-flash' },
+    normal: { provider: 'google', model: 'gemini-2.5-flash' },
+    complex: { provider: 'google', model: 'gemini-2.5-flash' },
     fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
   },
   {
     agentSlug: 'booking-specialist',
-    economy: { provider: 'google', model: 'gemini-2.0-flash' },
-    normal: { provider: 'google', model: 'gemini-2.0-flash' },
+    economy: { provider: 'google', model: 'gemini-2.5-flash' },
+    normal: { provider: 'google', model: 'gemini-2.5-flash' },
     complex: { provider: 'openai', model: 'gpt-4o' },
     fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
   },
   {
     agentSlug: 'support',
-    economy: { provider: 'google', model: 'gemini-2.0-flash-lite' },
-    normal: { provider: 'google', model: 'gemini-2.0-flash' },
-    complex: { provider: 'google', model: 'gemini-2.0-flash' },
+    economy: { provider: 'google', model: 'gemini-2.5-flash' },
+    normal: { provider: 'google', model: 'gemini-2.5-flash' },
+    complex: { provider: 'google', model: 'gemini-2.5-flash' },
     fallback: { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324' },
   },
 ];

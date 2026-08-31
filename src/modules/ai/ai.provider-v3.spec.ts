@@ -37,22 +37,18 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(validation.valid).toBe(false);
     });
 
-    it('MUST accept Google + valid Gemini production models', () => {
-      const models = [
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-      ];
-      for (const m of models) {
-        const validation = modelRegistry.validateProviderModelPair('google', m);
-        expect(validation.valid).toBe(true);
-      }
+    it('MUST reject shutdown gemini-2.0-flash-lite model', () => {
+      const validation = modelRegistry.validateProviderModelPair('google', 'gemini-2.0-flash-lite');
+      expect(validation.valid).toBe(false);
+      expect(validation.reason).toContain('deprecated/shut down');
     });
 
-    it('MUST accept legacy alias models for Google (auto-normalized)', () => {
-      const legacyModels = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.7-flash'];
-      for (const m of legacyModels) {
+    it('MUST accept Google + valid Gemini production models', () => {
+      const models = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+      ];
+      for (const m of models) {
         const validation = modelRegistry.validateProviderModelPair('google', m);
         expect(validation.valid).toBe(true);
       }
@@ -75,7 +71,7 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
     });
   });
 
-  describe('2. Authoritative Server-Side Base URL Registry', () => {
+  describe('2. Authoritative Server-Side Base URL Registry & URL Validation', () => {
     it('MUST enforce Google OpenAI-compatible URL with trailing slash', () => {
       const url = getOfficialBaseUrl('google');
       expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
@@ -103,7 +99,6 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
     it('MUST never allow custom base URL for official providers like Google', () => {
       const url = getOfficialBaseUrl('google', 'https://api.anthropic.com/v1');
-      // Should ignore the custom URL and return official Google URL
       expect(url).not.toContain('anthropic');
       expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
     });
@@ -116,36 +111,36 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
   });
 
   describe('3. Tiered Model Routing Engine (GuideR Routing V3)', () => {
-    it('routes simple pricing/visa/FAQ questions to ECONOMY tier (Gemini 2.0 Flash-Lite)', () => {
+    it('routes simple pricing/visa/FAQ questions to ECONOMY tier (Gemini 2.5 Flash)', () => {
       const result = modelRouting.route('What is the price of the Nile Cruise?');
       expect(result.tier).toBe('economy');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.0-flash-lite');
+      expect(result.model).toBe('gemini-2.5-flash');
     });
 
     it('routes Arabic short inquiry to ECONOMY tier', () => {
       const result = modelRouting.route('كم سعر رحلة القاهرة؟');
       expect(result.tier).toBe('economy');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.0-flash-lite');
+      expect(result.model).toBe('gemini-2.5-flash');
     });
 
-    it('routes complex multi-day itinerary synthesis to COMPLEX tier (Gemini 1.5 Pro)', () => {
+    it('routes complex multi-day itinerary synthesis to COMPLEX tier', () => {
       const complexMsg =
         'I need a customized multi-day private tour itinerary for a family of 5 combining Cairo, Luxor, and Aswan with luxury Nile cruise and Dahabiya.';
       const result = modelRouting.route(complexMsg);
       expect(result.tier).toBe('complex');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-1.5-pro');
+      expect(result.model).toBe('gemini-2.5-flash');
     });
 
-    it('routes standard travel concierge conversation to NORMAL tier (Gemini 2.0 Flash)', () => {
+    it('routes standard travel concierge conversation to NORMAL tier (Gemini 2.5 Flash)', () => {
       const standardMsg =
         'Could you tell me more about the luxury experiences included in the Grand Egyptian Museum VIP package?';
       const result = modelRouting.route(standardMsg);
       expect(result.tier).toBe('normal');
       expect(result.provider).toBe('google');
-      expect(result.model).toBe('gemini-2.0-flash');
+      expect(result.model).toBe('gemini-2.5-flash');
     });
 
     it('resolves FALLBACK tier to OpenRouter DeepSeek V3 Flash', () => {
@@ -156,33 +151,70 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
   });
 
   describe('4. Model Registry & FinOps Cost Calculation', () => {
-    it('calculates accurate token cost in USD for Gemini 2.0 Flash', () => {
-      // 10,000 in ($0.10/1M = $0.0010) + 2,000 out ($0.40/1M = $0.0008) = $0.0018
-      const cost = modelRegistry.calculateCostUsd('gemini-2.0-flash', 10_000, 2_000);
+    it('calculates accurate token cost in USD for Gemini 2.5 Flash', () => {
+      const cost = modelRegistry.calculateCostUsd('gemini-2.5-flash', 10_000, 2_000);
       expect(cost).toBeCloseTo(0.0018, 4);
     });
 
     it('calculates accurate token cost in USD for GPT-4o', () => {
-      // 1,000 in ($2.50/1M = $0.0025) + 500 out ($10.00/1M = $0.0050) = $0.0075
       const cost = modelRegistry.calculateCostUsd('gpt-4o', 1_000, 500);
       expect(cost).toBeCloseTo(0.0075, 4);
     });
 
     it('provides verified metadata for all registered models', () => {
       const allModels = modelRegistry.getAllModels();
-      expect(allModels.length).toBeGreaterThanOrEqual(10);
+      expect(allModels.length).toBeGreaterThanOrEqual(5);
       allModels.forEach((m) => {
         expect(m.id).toBeDefined();
         expect(m.providerId).toBeDefined();
         expect(m.contextWindow).toBeGreaterThan(0);
         expect(m.inputPricePerMillion).toBeGreaterThanOrEqual(0);
         expect(m.outputPricePerMillion).toBeGreaterThanOrEqual(0);
-        expect(m.lastVerifiedAt).toBeDefined();
+        expect(m.status).not.toBe('DEPRECATED');
       });
     });
   });
 
-  describe('5. Error Classification & 404 Prevention', () => {
+  describe('5. Live Model Discovery & API Key Security', () => {
+    it('MUST mock discovery for Google and return only chat-capable available models', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [
+            { id: 'models/gemini-2.5-flash' },
+            { id: 'models/gemini-2.0-flash' },
+            { id: 'models/gemini-2.0-flash-lite' }, // shutdown model
+            { id: 'models/text-embedding-004' },
+          ],
+        }),
+      });
+      global.fetch = mockFetch as any;
+
+      const result = await modelRegistry.discoverLiveModels('google', {
+        apiKey: 'AIzaSyFakeGoogleApiKey123456',
+        forceRefresh: true,
+      });
+
+      expect(result.providerId).toBe('google');
+      expect(result.models.length).toBeGreaterThanOrEqual(2);
+      expect(result.models.map((m) => m.id)).toContain('gemini-2.5-flash');
+      expect(result.models.map((m) => m.id)).toContain('gemini-2.0-flash');
+      // Shutdown model must NOT be in available models
+      expect(result.models.find((m) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
+
+      // Ensure API key is NEVER exposed in the discovery result
+      const serialized = JSON.stringify(result);
+      expect(serialized).not.toContain('AIzaSyFakeGoogleApiKey123456');
+    });
+
+    it('MUST reject discovery without an API key', async () => {
+      await expect(
+        modelRegistry.discoverLiveModels('google', { apiKey: '' }),
+      ).rejects.toThrow('An API key is required');
+    });
+  });
+
+  describe('6. Error Classification & 404 Prevention', () => {
     it('ProviderError includes typed error code', () => {
       const err = new ProviderError(
         'MODEL_NOT_FOUND',

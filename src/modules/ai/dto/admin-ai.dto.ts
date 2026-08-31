@@ -276,3 +276,31 @@ export class GenerateAiItineraryDto {
   notes?: string;
 }
 
+// ============================================================
+// REFRESH PROVIDER MODELS DTO
+// ============================================================
+
+export class RefreshProviderModelsDto {
+  @ApiPropertyOptional({ description: 'Credential ID from database to use stored key' })
+  @IsString()
+  @IsOptional()
+  credentialId?: string;
+
+  @ApiPropertyOptional({ description: 'In-flight API key for discovering models before saving' })
+  @IsString()
+  @IsOptional()
+  apiKey?: string;
+
+  @ApiPropertyOptional({ description: 'Custom base URL if testing custom provider or custom endpoint' })
+  @IsString()
+  @IsOptional()
+  baseUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Integration mode for Google provider', enum: ['openai-compatible', 'google-native'] })
+  @IsString()
+  @IsOptional()
+  @IsIn(['openai-compatible', 'google-native'])
+  integrationMode?: 'openai-compatible' | 'google-native';
+}
+
+

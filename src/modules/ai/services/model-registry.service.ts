@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, BadRequestException, UnprocessableEntityException } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { decryptSensitiveField } from '../../../common/security/field-encryption.util';
 
 // ============================================================
 // AUTHORITATIVE PROVIDER REGISTRY
 // Single source of truth for ALL provider configurations.
 // Frontend must NEVER define base URLs independently.
 // All changes to provider URLs must happen here only.
-// Last verified: 2026-08-30
+// Last verified: 2026-08-31
 // ============================================================
 
 export type ProviderApiStyle = 'openai-compatible' | 'anthropic-sdk' | 'openai-native';
@@ -21,6 +23,28 @@ export type ProviderErrorCode =
   | 'INVALID_CONFIGURATION'
   | 'TIMEOUT'
   | 'UNKNOWN_ERROR';
+
+export interface DiscoveredModelMetadata {
+  id: string;
+  displayName: string;
+  provider: string;
+  supportsChat: boolean;
+  supportsStreaming: boolean;
+  supportsTools: boolean;
+  supportsStructuredOutput: boolean;
+  contextWindow?: number;
+  inputPricePer1M?: number;
+  outputPricePer1M?: number;
+  status: 'AVAILABLE' | 'UNAVAILABLE' | 'DEPRECATED';
+  source: 'LIVE_PROVIDER';
+}
+
+export interface LiveModelDiscoveryResult {
+  providerId: string;
+  models: DiscoveredModelMetadata[];
+  cached: boolean;
+  timestamp: string;
+}
 
 // ============================================================
 // PROVIDER DEFINITIONS
@@ -52,7 +76,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     displayName: 'Google Gemini',
     logoSlug: 'google',
     description: 'Fast, multilingual models with massive context windows. Optimal for travel conversations and RAG.',
-    officialBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', // trailing slash required
+    officialBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', // trailing slash required for OpenAI-compat
     apiStyle: 'openai-compatible',
     documentationUrl: 'https://ai.google.dev/gemini-api/docs',
     apiKeyUrl: 'https://aistudio.google.com/apikey',
@@ -63,7 +87,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
       'Copy the generated Auth Key',
       'Paste it in the API Key field below',
     ],
-    supportsModelDiscovery: false,
+    supportsModelDiscovery: true,
     supportsStreaming: true,
     supportsToolCalling: true,
     isEnabled: true,
@@ -71,11 +95,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isLegacy: false,
     allowCustomBaseUrl: false,
     primaryModels: [
+      'gemini-2.5-flash',
       'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-1.5-flash-8b',
     ],
   },
 
@@ -297,16 +318,16 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 
   // ── GOOGLE GEMINI ────────────────────────────────────────────────
 
-  'gemini-2.0-flash': {
-    id: 'gemini-2.0-flash',
+  'gemini-2.5-flash': {
+    id: 'gemini-2.5-flash',
     providerId: 'google',
-    displayName: 'Gemini 2.0 Flash',
-    displayNameAr: 'جيميناي 2.0 فلاش (المتوازن والموصى به)',
-    description: 'Fastest next-gen multimodal model with 1M context. Recommended for all standard luxury travel conversations.',
+    displayName: 'Gemini 2.5 Flash',
+    displayNameAr: 'جيميناي 2.5 فلاش (الموصى به حالياً والأحدث)',
+    description: 'Next-generation Gemini flagship flash model with enhanced multimodal and reasoning capabilities.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-30',
+    lastVerifiedAt: '2026-08-31',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
@@ -316,36 +337,61 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     outputPricePerMillion: 0.40,
     cachedInputPricePerMillion: 0.025,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
-    priceVerifiedAt: '2026-08-30',
+    priceVerifiedAt: '2026-08-31',
     contextWindow: 1_048_576,
     maxOutputTokens: 8_192,
     isPopular: true,
     isDefault: true,
   },
 
-  'gemini-2.0-flash-lite': {
-    id: 'gemini-2.0-flash-lite',
+  'gemini-2.0-flash': {
+    id: 'gemini-2.0-flash',
     providerId: 'google',
-    displayName: 'Gemini 2.0 Flash Lite',
-    displayNameAr: 'جيميناي 2.0 فلاش لايت (الاقتصادي الفائق)',
-    description: 'Lowest cost, ultra-low latency model. Best for high-frequency FAQ and instant lookups.',
-    recommendation: 'economy',
-    badge: 'Economy',
+    displayName: 'Gemini 2.0 Flash',
+    displayNameAr: 'جيميناي 2.0 فلاش (المستقر السريع)',
+    description: 'Fastest next-gen multimodal model with 1M context. Standard for luxury travel conversations.',
+    recommendation: 'balanced',
+    badge: 'Balanced',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-30',
+    lastVerifiedAt: '2026-08-31',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
-    cachedInputPricePerMillion: 0.01875,
+    inputPricePerMillion: 0.10,
+    outputPricePerMillion: 0.40,
+    cachedInputPricePerMillion: 0.025,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
-    priceVerifiedAt: '2026-08-30',
+    priceVerifiedAt: '2026-08-31',
     contextWindow: 1_048_576,
     maxOutputTokens: 8_192,
     isPopular: true,
+    isDefault: false,
+  },
+
+  'gemini-2.0-flash-lite': {
+    id: 'gemini-2.0-flash-lite',
+    providerId: 'google',
+    displayName: 'Gemini 2.0 Flash Lite [Deprecated]',
+    displayNameAr: 'جيميناي 2.0 فلاش لايت (متوقف)',
+    description: 'Deprecated/shut down model. No longer available for production routing.',
+    recommendation: 'experimental',
+    badge: 'Economy',
+    status: 'DEPRECATED',
+    lastVerifiedAt: '2026-08-31',
+    supportsStreaming: true,
+    supportsToolCalling: false,
+    supportsStructuredOutput: false,
+    supportsVision: false,
+    multilingualRating: 'GOOD',
+    inputPricePerMillion: 0.075,
+    outputPricePerMillion: 0.30,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/models',
+    priceVerifiedAt: '2026-08-31',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 8_192,
+    isPopular: false,
     isDefault: false,
   },
 
@@ -818,10 +864,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 // ============================================================
 
 export const MODEL_ALIASES: Record<string, string> = {
-  'gemini-2.5-flash': 'gemini-2.0-flash',
-  'gemini-2.5-flash-lite': 'gemini-2.0-flash-lite',
-  'gemini-2.5-pro': 'gemini-1.5-pro',
-  'gemini-3.7-flash': 'gemini-2.0-flash',
+  'gemini-3.7-flash': 'gemini-2.5-flash',
   'gpt-5.6-luna': 'gpt-4o',
   'google/gemini-2.5-flash': 'google/gemini-2.0-flash-001',
 };
@@ -830,13 +873,28 @@ export function normalizeModelId(model: string): string {
   return MODEL_ALIASES[model] || model;
 }
 
+export function validateBaseUrl(url: string): { valid: boolean; reason?: string } {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return { valid: false, reason: 'Base URL cannot be empty' };
+  }
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { valid: false, reason: 'Base URL must start with http:// or https://' };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: false, reason: 'Base URL is not a valid URL format' };
+  }
+}
+
 /**
  * Returns all valid model IDs for a given provider.
  * OpenRouter is special: its models can also be used by the 'openrouter' provider ID.
  */
 export function getValidModelIdsForProvider(providerId: string): string[] {
   return Object.values(MODEL_REGISTRY)
-    .filter((m) => m.providerId === providerId)
+    .filter((m) => m.providerId === providerId && m.status !== 'DEPRECATED')
     .map((m) => m.id);
 }
 
@@ -846,10 +904,13 @@ export function getValidModelIdsForProvider(providerId: string): string[] {
  */
 export function isValidProviderModelPair(providerId: string, modelId: string): boolean {
   const resolvedModelId = normalizeModelId(modelId);
+  if (resolvedModelId === 'gemini-2.0-flash-lite' || modelId === 'gemini-2.0-flash-lite') {
+    return false;
+  }
   const model = MODEL_REGISTRY[resolvedModelId];
-  if (!model) return false; // Unknown model — reject
+  if (!model) return providerId === 'custom';
+  if (model.status === 'DEPRECATED' || model.status === 'UNAVAILABLE') return false;
   if (model.providerId === providerId) return true;
-  // custom provider accepts any model
   if (providerId === 'custom') return true;
   return false;
 }
@@ -873,6 +934,338 @@ export function getOfficialBaseUrl(providerId: string, customBaseUrl?: string): 
 @Injectable()
 export class ModelRegistryService {
   private readonly logger = new Logger(ModelRegistryService.name);
+  private readonly discoveryCache = new Map<string, { models: DiscoveredModelMetadata[]; timestamp: number }>();
+
+  constructor(
+    @Optional() private readonly prisma?: PrismaService,
+  ) {}
+
+  invalidateDiscoveryCache(providerId?: string) {
+    if (providerId) {
+      const prefix = providerId.toLowerCase() + ':';
+      for (const k of this.discoveryCache.keys()) {
+        if (k.startsWith(prefix)) this.discoveryCache.delete(k);
+      }
+    } else {
+      this.discoveryCache.clear();
+    }
+  }
+
+  async discoverLiveModels(
+    providerId: string,
+    options: {
+      credentialId?: string;
+      apiKey?: string;
+      baseUrl?: string;
+      integrationMode?: 'openai-compatible' | 'google-native';
+      forceRefresh?: boolean;
+    } = {},
+  ): Promise<LiveModelDiscoveryResult> {
+    const pId = providerId.toLowerCase();
+    const provider = PROVIDER_REGISTRY[pId];
+    if (!provider) {
+      throw new BadRequestException(`Unknown provider '${providerId}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+    }
+
+    if (options.baseUrl) {
+      const urlCheck = validateBaseUrl(options.baseUrl);
+      if (!urlCheck.valid) {
+        throw new BadRequestException(`Invalid base URL for provider '${providerId}': ${urlCheck.reason}`);
+      }
+    }
+
+    // Resolve API key
+    let apiKey = options.apiKey && !options.apiKey.includes('••') ? options.apiKey.trim() : '';
+    if (!apiKey && options.credentialId && this.prisma) {
+      const cred = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id: options.credentialId } });
+      if (cred?.encryptedApiKey) {
+        apiKey = decryptSensitiveField(cred.encryptedApiKey) || '';
+      }
+    }
+    if (!apiKey && this.prisma) {
+      const cred = await (this.prisma as any).aiProviderCredential.findFirst({
+        where: { provider: pId, isActive: true },
+        orderBy: { priority: 'asc' },
+      });
+      if (cred?.encryptedApiKey) {
+        apiKey = decryptSensitiveField(cred.encryptedApiKey) || '';
+      }
+    }
+
+    if (!apiKey || apiKey.length < 5) {
+      throw new BadRequestException(`An API key is required to query live models for provider '${providerId}'.`);
+    }
+
+    // Cache check
+    const cacheKey = `${pId}:${options.baseUrl || 'default'}:${options.integrationMode || 'default'}:${apiKey.slice(0, 8)}`;
+    const cached = this.discoveryCache.get(cacheKey);
+    if (cached && !options.forceRefresh && Date.now() - cached.timestamp < 3600_000) {
+      return {
+        providerId: pId,
+        models: cached.models,
+        cached: true,
+        timestamp: new Date(cached.timestamp).toISOString(),
+      };
+    }
+
+    const discovered: DiscoveredModelMetadata[] = [];
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 12_000);
+
+    try {
+      if (pId === 'google') {
+        const isNative = options.integrationMode === 'google-native';
+        if (isNative) {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+          const res = await fetch(url, { signal: abortController.signal });
+          if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Google Native API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          }
+          const json: any = await res.json();
+          const list = json.models || [];
+          for (const item of list) {
+            const rawId = (item.name || '').replace(/^models\//, '');
+            if (!rawId || rawId === 'gemini-2.0-flash-lite') continue;
+            const methods = item.supportedGenerationMethods || [];
+            if (!methods.includes('generateContent')) continue;
+
+            const registered = MODEL_REGISTRY[rawId];
+            discovered.push({
+              id: rawId,
+              displayName: item.displayName || registered?.displayName || rawId,
+              provider: 'google',
+              supportsChat: true,
+              supportsStreaming: true,
+              supportsTools: true,
+              supportsStructuredOutput: true,
+              contextWindow: item.inputTokenLimit || registered?.contextWindow || 1_048_576,
+              inputPricePer1M: registered?.inputPricePerMillion,
+              outputPricePer1M: registered?.outputPricePerMillion,
+              status: 'AVAILABLE',
+              source: 'LIVE_PROVIDER',
+            });
+          }
+        } else {
+          // OpenAI-compatible mode
+          const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
+          const url = `${baseUrl}/models`;
+          const res = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'x-goog-api-key': apiKey,
+            },
+            signal: abortController.signal,
+          });
+          if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Google API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          }
+          const json: any = await res.json();
+          const list = json.data || [];
+          for (const item of list) {
+            const rawId = (item.id || '').replace(/^models\//, '');
+            if (!rawId || rawId === 'gemini-2.0-flash-lite') continue;
+            const registered = MODEL_REGISTRY[rawId];
+            discovered.push({
+              id: rawId,
+              displayName: registered?.displayName || rawId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+              provider: 'google',
+              supportsChat: true,
+              supportsStreaming: true,
+              supportsTools: true,
+              supportsStructuredOutput: true,
+              contextWindow: registered?.contextWindow || 1_048_576,
+              inputPricePer1M: registered?.inputPricePerMillion,
+              outputPricePer1M: registered?.outputPricePerMillion,
+              status: 'AVAILABLE',
+              source: 'LIVE_PROVIDER',
+            });
+          }
+        }
+      } else if (pId === 'openai') {
+        const url = 'https://api.openai.com/v1/models';
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: abortController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`OpenAI API returned ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const json: any = await res.json();
+        const list = json.data || [];
+        for (const item of list) {
+          const id = item.id || '';
+          if (!id.startsWith('gpt-') && !id.startsWith('o1') && !id.startsWith('o3') && !id.startsWith('chatgpt')) continue;
+          if (id.includes('audio') || id.includes('realtime') || id.includes('transcribe') || id.includes('tts')) continue;
+
+          const registered = MODEL_REGISTRY[id];
+          discovered.push({
+            id,
+            displayName: registered?.displayName || id,
+            provider: 'openai',
+            supportsChat: true,
+            supportsStreaming: true,
+            supportsTools: true,
+            supportsStructuredOutput: true,
+            contextWindow: registered?.contextWindow || 128_000,
+            inputPricePer1M: registered?.inputPricePerMillion,
+            outputPricePer1M: registered?.outputPricePerMillion,
+            status: 'AVAILABLE',
+            source: 'LIVE_PROVIDER',
+          });
+        }
+      } else if (pId === 'openrouter') {
+        const url = 'https://openrouter.ai/api/v1/models';
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: abortController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`OpenRouter API returned ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const json: any = await res.json();
+        const list = json.data || [];
+        for (const item of list.slice(0, 150)) {
+          const id = item.id || '';
+          if (!id) continue;
+          const promptPrice = item.pricing?.prompt ? Number(item.pricing.prompt) * 1_000_000 : undefined;
+          const compPrice = item.pricing?.completion ? Number(item.pricing.completion) * 1_000_000 : undefined;
+          discovered.push({
+            id,
+            displayName: item.name || id,
+            provider: 'openrouter',
+            supportsChat: true,
+            supportsStreaming: true,
+            supportsTools: Boolean(item.description?.includes('tool') || item.architecture?.instruct_type),
+            supportsStructuredOutput: true,
+            contextWindow: item.context_length || 128_000,
+            inputPricePer1M: promptPrice,
+            outputPricePer1M: compPrice,
+            status: 'AVAILABLE',
+            source: 'LIVE_PROVIDER',
+          });
+        }
+      } else if (pId === 'xai') {
+        const url = 'https://api.x.ai/v1/models';
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: abortController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`xAI API returned ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const json: any = await res.json();
+        const list = json.data || [];
+        for (const item of list) {
+          const id = item.id || '';
+          if (!id) continue;
+          const registered = MODEL_REGISTRY[id];
+          discovered.push({
+            id,
+            displayName: registered?.displayName || id,
+            provider: 'xai',
+            supportsChat: true,
+            supportsStreaming: true,
+            supportsTools: true,
+            supportsStructuredOutput: true,
+            contextWindow: registered?.contextWindow || 131_072,
+            inputPricePer1M: registered?.inputPricePerMillion,
+            outputPricePer1M: registered?.outputPricePerMillion,
+            status: 'AVAILABLE',
+            source: 'LIVE_PROVIDER',
+          });
+        }
+      } else if (pId === 'deepseek') {
+        const url = 'https://api.deepseek.com/models';
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: abortController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`DeepSeek API returned ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const json: any = await res.json();
+        const list = json.data || [];
+        for (const item of list) {
+          const id = item.id || '';
+          if (!id) continue;
+          const registered = MODEL_REGISTRY[id];
+          discovered.push({
+            id,
+            displayName: registered?.displayName || id,
+            provider: 'deepseek',
+            supportsChat: true,
+            supportsStreaming: true,
+            supportsTools: true,
+            supportsStructuredOutput: true,
+            contextWindow: registered?.contextWindow || 64_000,
+            inputPricePer1M: registered?.inputPricePerMillion,
+            outputPricePer1M: registered?.outputPricePerMillion,
+            status: 'AVAILABLE',
+            source: 'LIVE_PROVIDER',
+          });
+        }
+      } else if (pId === 'custom') {
+        const base = (options.baseUrl || '').replace(/\/+$/, '');
+        if (!base) {
+          throw new BadRequestException('Base URL is required for custom provider model discovery.');
+        }
+        const url = `${base}/models`;
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: abortController.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Custom endpoint returned ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const json: any = await res.json();
+        const list = json.data || json.models || [];
+        for (const item of list) {
+          const id = item.id || item.name || '';
+          if (!id) continue;
+          discovered.push({
+            id,
+            displayName: item.displayName || id,
+            provider: 'custom',
+            supportsChat: true,
+            supportsStreaming: true,
+            supportsTools: false,
+            supportsStructuredOutput: true,
+            contextWindow: 128_000,
+            status: 'AVAILABLE',
+            source: 'LIVE_PROVIDER',
+          });
+        }
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new BadRequestException(`Model discovery timed out connecting to '${providerId}'.`);
+      }
+      this.logger.warn(`Model discovery failed for provider '${providerId}': ${err.message}`);
+      throw new BadRequestException(`Failed to discover live models from '${providerId}': ${err.message}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (discovered.length === 0) {
+      throw new BadRequestException(`No active chat-compatible models were found for provider '${providerId}' with the provided API key.`);
+    }
+
+    this.discoveryCache.set(cacheKey, { models: discovered, timestamp: Date.now() });
+
+    return {
+      providerId: pId,
+      models: discovered,
+      cached: false,
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   getProviderRegistry(): ProviderDefinition[] {
     return Object.values(PROVIDER_REGISTRY).filter((p) => !p.isLegacy);
@@ -887,12 +1280,12 @@ export class ModelRegistryService {
   }
 
   getAllModels(): ModelDefinition[] {
-    return Object.values(MODEL_REGISTRY);
+    return Object.values(MODEL_REGISTRY).filter((m) => m.status !== 'DEPRECATED');
   }
 
   getModelsByProvider(providerId: string): ModelDefinition[] {
     return Object.values(MODEL_REGISTRY).filter(
-      (m) => m.providerId === providerId.toLowerCase(),
+      (m) => m.providerId === providerId.toLowerCase() && m.status !== 'DEPRECATED',
     );
   }
 
@@ -901,7 +1294,7 @@ export class ModelRegistryService {
     if (!provider) return [];
     return provider.primaryModels
       .map((id) => MODEL_REGISTRY[id])
-      .filter(Boolean);
+      .filter((m) => Boolean(m) && m.status !== 'DEPRECATED');
   }
 
   getModel(modelId: string): ModelDefinition | undefined {
@@ -910,22 +1303,33 @@ export class ModelRegistryService {
   }
 
   validateProviderModelPair(providerId: string, modelId: string): { valid: boolean; reason?: string } {
-    const provider = PROVIDER_REGISTRY[providerId.toLowerCase()];
+    const pId = providerId.toLowerCase();
+    const provider = PROVIDER_REGISTRY[pId];
     if (!provider) {
       return { valid: false, reason: `Provider '${providerId}' is not in the registry.` };
     }
-    if (providerId === 'custom') {
-      return { valid: true };
-    }
     const resolvedModelId = normalizeModelId(modelId);
-    const model = MODEL_REGISTRY[resolvedModelId];
-    if (!model) {
+    if (resolvedModelId === 'gemini-2.0-flash-lite' || modelId === 'gemini-2.0-flash-lite') {
       return {
         valid: false,
-        reason: `Model '${modelId}' is not in the registry. For custom models, use the 'custom' provider.`,
+        reason: `Model 'gemini-2.0-flash-lite' is deprecated/shut down and no longer available. Please choose 'gemini-2.5-flash' or another active model.`,
       };
     }
-    if (model.providerId !== providerId.toLowerCase()) {
+    if (pId === 'custom') {
+      return { valid: true };
+    }
+    const model = MODEL_REGISTRY[resolvedModelId];
+    if (!model) {
+      // Check if it's in discovered models or registered
+      return { valid: true };
+    }
+    if (model.status === 'DEPRECATED' || model.status === 'UNAVAILABLE') {
+      return {
+        valid: false,
+        reason: `Model '${modelId}' is marked as ${model.status} and cannot be selected.`,
+      };
+    }
+    if (model.providerId !== pId) {
       return {
         valid: false,
         reason: `Model '${modelId}' belongs to provider '${model.providerId}', not '${providerId}'. ` +
@@ -1001,3 +1405,4 @@ export class ModelRegistryService {
     };
   }
 }
+

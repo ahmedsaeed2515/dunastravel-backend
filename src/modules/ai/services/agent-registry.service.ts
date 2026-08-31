@@ -54,8 +54,8 @@ Adhere strictly to these principles:
 2. Ground all dynamic facts (prices, dates, availability) in live structured data.
 3. Respond in the exact language the traveler used (Arabic, English, Spanish, Portuguese, Italian).
 4. For custom multi-day plans, provide structured day-by-day itineraries with private transfers, 5-star accommodations, and private Egyptologist guides.`,
-    primaryModel: 'gemini-2.0-flash',
-    fallbackModels: ['gemini-1.5-pro', 'gemini-1.5-flash'],
+    primaryModel: 'gemini-2.5-flash',
+    fallbackModels: ['gemini-2.0-flash', 'gpt-4o-mini'],
     temperature: 0.7,
     maxTokens: 1200,
     allowedSources: ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
@@ -88,8 +88,8 @@ Adhere strictly to these principles:
     systemPrompt: `You are the Booking & Reservations Specialist for Dunas Travel.
 Your responsibility is validating traveler arrival dates, guest counts (adults, children), and creating verified booking reservations.
 Never state a booking is completed unless backend invoice/booking reference has been issued.`,
-    primaryModel: 'gemini-2.0-flash',
-    fallbackModels: ['gemini-2.0-flash-lite', 'gemini-1.5-flash'],
+    primaryModel: 'gemini-2.5-flash',
+    fallbackModels: ['gemini-2.0-flash', 'gpt-4o-mini'],
     temperature: 0.3,
     maxTokens: 800,
     allowedSources: ['tours', 'policies', 'transportation'],
@@ -121,8 +121,8 @@ Never state a booking is completed unless backend invoice/booking reference has 
     personalityGuidelines: 'Focus on high-ticket custom offerings: private dahabiyas (e.g. 5-cabin private yacht charters), presidential palace hotel suites, private archaeological permits.',
     systemPrompt: `You are the VIP & Tailor-Made Sales Consultant for Dunas Travel.
 You curate bespoke journeys for high-net-worth individuals, families, and delegations seeking uncompromised privacy and elegance.`,
-    primaryModel: 'gemini-1.5-pro',
-    fallbackModels: ['gemini-2.0-flash', 'gemini-1.5-flash'],
+    primaryModel: 'gemini-2.5-flash',
+    fallbackModels: ['gemini-2.0-flash', 'gpt-4o'],
     temperature: 0.7,
     maxTokens: 1500,
     allowedSources: ['tours', 'destinations', 'hotels', 'transportation'],
@@ -154,8 +154,8 @@ You curate bespoke journeys for high-net-worth individuals, families, and delega
     personalityGuidelines: 'Answer policy questions transparently using official policy documents. If traveler requests urgent cancellation or refund dispute, smoothly initiate human staff escalation.',
     systemPrompt: `You are the Customer Care & Policy Advisor for Dunas Travel.
 You provide clear, accurate guidance on official Dunas Travel booking terms, GetPayIn hosted payment checkout, deposit schedules, and cancellation policies.`,
-    primaryModel: 'gemini-2.0-flash-lite',
-    fallbackModels: ['gemini-2.0-flash', 'gemini-1.5-flash'],
+    primaryModel: 'gemini-2.5-flash',
+    fallbackModels: ['gemini-2.0-flash', 'gpt-4o-mini'],
     temperature: 0.2,
     maxTokens: 800,
     allowedSources: ['policies', 'transportation'],

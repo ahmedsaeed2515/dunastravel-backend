@@ -361,4 +361,36 @@ describe('AI HTTP Contract Spec', () => {
     expect(res.body.data.success).toBe(true);
     expect(res.body.data.item.id).toBe('kb-new-1');
   });
+
+  it('POST /admin/ai/providers/:providerId/models/refresh returns live discovered models and never exposes apiKey', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          { id: 'models/gemini-2.5-flash' },
+          { id: 'models/gemini-2.0-flash' },
+          { id: 'models/gemini-2.0-flash-lite' }, // deprecated
+        ],
+      }),
+    });
+    global.fetch = mockFetch as any;
+
+    const res = await request(app.getHttpServer())
+      .post('/admin/ai/providers/google/models/refresh')
+      .send({
+        apiKey: 'AIzaSySecretGoogleKeyForDiscoveryTest',
+        forceRefresh: true,
+      })
+      .expect(201);
+
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.providerId).toBe('google');
+    expect(Array.isArray(res.body.data.models)).toBe(true);
+    expect(res.body.data.models.length).toBeGreaterThanOrEqual(2);
+    // Deprecated model must NOT be in models
+    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
+    // Raw secret key MUST NEVER appear in the response payload
+    const bodyStr = JSON.stringify(res.body);
+    expect(bodyStr).not.toContain('AIzaSySecretGoogleKeyForDiscoveryTest');
+  });
 });

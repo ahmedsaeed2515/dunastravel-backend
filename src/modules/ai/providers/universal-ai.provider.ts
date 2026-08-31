@@ -23,16 +23,13 @@ export class ProviderError extends Error {
 }
 
 export const MODEL_ALIASES: Record<string, string> = {
-  'gemini-2.5-flash': 'gemini-2.0-flash',
-  'gemini-2.5-flash-lite': 'gemini-2.0-flash-lite',
-  'gemini-2.5-pro': 'gemini-1.5-pro',
-  'gemini-3.7-flash': 'gemini-2.0-flash',
   'gpt-5.6-luna': 'gpt-4o',
   'google/gemini-2.5-flash': 'google/gemini-2.0-flash-001',
 };
 
 export function normalizeModelId(model: string): string {
-  return MODEL_ALIASES[model] || model;
+  const clean = (model || '').replace(/^models\//, '');
+  return MODEL_ALIASES[clean] || clean;
 }
 
 function classifyHttpError(status: number, body: string, provider: string, model: string): ProviderError {
@@ -175,8 +172,6 @@ export class UniversalAiProvider implements IAiProvider {
     provider: string,
     providerDef: any,
   ): Promise<IAiProviderResponse> {
-    // ── Model ──────────────────────────────────────────────────────
-    // Resolve any legacy aliases (e.g. gemini-2.5-flash -> gemini-2.0-flash)
     const rawModel = options.model;
     if (!rawModel) {
       throw new ProviderError(
@@ -187,10 +182,6 @@ export class UniversalAiProvider implements IAiProvider {
     const model = normalizeModelId(rawModel);
 
     // ── Base URL ───────────────────────────────────────────────────
-    // Official providers: always use authoritative URL from registry.
-    // Custom provider: use the custom URL from options.
-    // options.baseUrl is ignored for official providers — this prevents the
-    // "Google credential with Anthropic URL" bug class entirely.
     let baseUrl: string;
     try {
       baseUrl = getOfficialBaseUrl(provider, providerDef.allowCustomBaseUrl ? options.baseUrl : undefined);
@@ -202,9 +193,10 @@ export class UniversalAiProvider implements IAiProvider {
     const maxTokens = options.maxTokens || 1_024;
     const temperature = options.temperature ?? 0.7;
 
-    const endpoint = baseUrl.endsWith('/chat/completions')
-      ? baseUrl
-      : `${baseUrl}/chat/completions`;
+    const cleanBase = baseUrl.replace(/\/+$/, '');
+    const endpoint = cleanBase.endsWith('/chat/completions')
+      ? cleanBase
+      : `${cleanBase}/chat/completions`;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -213,7 +205,6 @@ export class UniversalAiProvider implements IAiProvider {
 
     // Provider-specific headers
     if (provider === 'google') {
-      // Google OpenAI-compatible endpoint supports Authorization Bearer and x-goog-api-key
       headers['x-goog-api-key'] = apiKey;
     }
     if (provider === 'openrouter') {

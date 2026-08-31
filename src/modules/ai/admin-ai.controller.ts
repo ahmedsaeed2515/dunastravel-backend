@@ -14,7 +14,14 @@ import { ModelRegistryService, PROVIDER_REGISTRY } from './services/model-regist
 import { ModelRoutingService } from './services/model-routing.service';
 import { PromptEngineService } from './services/prompt-engine.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { UpdateAiConfigDto, TestProviderConnectionDto, AddProviderCredentialDto, UpdateProviderCredentialDto, GenerateAiItineraryDto } from './dto/admin-ai.dto';
+import {
+  UpdateAiConfigDto,
+  TestProviderConnectionDto,
+  AddProviderCredentialDto,
+  UpdateProviderCredentialDto,
+  GenerateAiItineraryDto,
+  RefreshProviderModelsDto,
+} from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
 import {
   decryptSensitiveField,
@@ -247,6 +254,15 @@ export class AdminAiController {
       },
       models: this.modelRegistry.getPrimaryModelsForProvider(id),
     };
+  }
+
+  @Post('providers/:providerId/models/refresh')
+  @ApiOperation({ summary: 'Discover and refresh live models available to a specific provider API key' })
+  async refreshProviderModels(
+    @Param('providerId') providerId: string,
+    @Body() dto: RefreshProviderModelsDto,
+  ) {
+    return this.modelRegistry.discoverLiveModels(providerId, dto);
   }
 
   @Get('routing')
