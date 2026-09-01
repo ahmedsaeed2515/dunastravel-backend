@@ -74,6 +74,10 @@ export class TransportationService {
     const hero = service.heroMediaId && mediaById ? mediaById.get(service.heroMediaId) : undefined;
     const resolvedHeroUrl = hero?.secureUrl || hero?.url || service.heroImageUrl || this.getFallbackVehicleImage(service.vehicleCategory);
 
+    const rating = service.rating || jsonb.rating || 5.0;
+    const reviews = service.reviews || jsonb.reviews || 120;
+    const seats = service.capacity || (service.vehicleCategory === 'private' ? 4 : service.vehicleCategory === 'coaster' ? 24 : 50);
+
     return {
       ...service,
       name: localizedName,
@@ -86,7 +90,13 @@ export class TransportationService {
       features: rawFeatures.filter((item: any): item is string => typeof item === 'string'),
       featuresJsonb: rawFeatures,
       heroImageUrl: resolvedHeroUrl,
+      image: resolvedHeroUrl,
       heroImageAlt: hero?.altText || null,
+      rating,
+      reviews,
+      seats,
+      doors: service.doors || (service.vehicleCategory === 'private' ? 4 : 2),
+      transmission: service.transmission || 'Auto',
       isArchived: Boolean(jsonb.isArchived) || !service.isActive,
     };
   }
