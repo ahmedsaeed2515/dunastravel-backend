@@ -1,6 +1,36 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api": {
+      "get": {
+        "operationId": "RootController_getRoot[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "API Root & Service Status",
+        "tags": [
+          "System"
+        ]
+      }
+    },
+    "/api/api": {
+      "get": {
+        "operationId": "RootController_getRoot[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "API Root & Service Status",
+        "tags": [
+          "System"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "HealthController_checkHealth",
@@ -2610,272 +2640,6 @@
         ]
       }
     },
-    "/api/admin/transportation/services": {
-      "get": {
-        "operationId": "AdminTransportationController_findAllServices",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List transportation services for administration",
-        "tags": [
-          "admin-transportation"
-        ]
-      },
-      "post": {
-        "operationId": "AdminTransportationController_createService",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTransportationServiceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create a transportation service",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
-    "/api/admin/transportation/services/{id}": {
-      "put": {
-        "operationId": "AdminTransportationController_updateService",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTransportationServiceDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update a transportation service",
-        "tags": [
-          "admin-transportation"
-        ]
-      },
-      "delete": {
-        "operationId": "AdminTransportationController_deactivateService",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Deactivate a transportation service",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
-    "/api/admin/transportation": {
-      "get": {
-        "operationId": "AdminTransportationController_findAll",
-        "parameters": [
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List all transportation bookings",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
-    "/api/admin/transportation/{id}": {
-      "get": {
-        "operationId": "AdminTransportationController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get a single transportation booking",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
-    "/api/admin/transportation/{id}/status": {
-      "patch": {
-        "operationId": "AdminTransportationController_updateStatus",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTransportationStatusDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update transportation booking status",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
-    "/api/admin/transportation/{id}/assign-driver": {
-      "patch": {
-        "operationId": "AdminTransportationController_assignDriver",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignTransportationDriverDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Assign a driver to a transportation booking",
-        "tags": [
-          "admin-transportation"
-        ]
-      }
-    },
     "/api/admin/tailor-made-inquiries": {
       "get": {
         "operationId": "AdminTailorMadeController_findAll[0]",
@@ -4268,35 +4032,6 @@
         ]
       }
     },
-    "/api/admin/finance/wallets/{ownerType}/{ownerId}": {
-      "get": {
-        "operationId": "WalletsController_getWallet",
-        "parameters": [
-          {
-            "name": "ownerId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get or initialize a wallet for a User or Company",
-        "tags": [
-          "Admin - Finance & Wallets"
-        ]
-      }
-    },
     "/api/admin/finance/wallets/{walletId}/transactions": {
       "get": {
         "operationId": "WalletsController_getTransactions",
@@ -4337,6 +4072,35 @@
           }
         ],
         "summary": "Get transactions for a specific wallet",
+        "tags": [
+          "Admin - Finance & Wallets"
+        ]
+      }
+    },
+    "/api/admin/finance/wallets/{ownerType}/{ownerId}": {
+      "get": {
+        "operationId": "WalletsController_getWallet",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get or initialize a wallet for a User or Company",
         "tags": [
           "Admin - Finance & Wallets"
         ]
@@ -4841,9 +4605,24 @@
         ]
       }
     },
+    "/api/currency": {
+      "get": {
+        "operationId": "PublicCurrencyController_getRates[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current exchange rates"
+          }
+        },
+        "summary": "Get current global exchange rates",
+        "tags": [
+          "Currency Engine"
+        ]
+      }
+    },
     "/api/currency/rates": {
       "get": {
-        "operationId": "PublicCurrencyController_getRates",
+        "operationId": "PublicCurrencyController_getRates[1]",
         "parameters": [],
         "responses": {
           "200": {
@@ -8070,16 +7849,63 @@
         ]
       }
     },
-    "/api/transportation/services": {
+    "/api/transportation": {
       "get": {
         "operationId": "TransportationController_getServices[0]",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "en",
+                "ar",
+                "es",
+                "pt",
+                "it"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of active services"
           }
         },
-        "summary": "Get available transportation services",
+        "summary": "Get available transportation services with optional localization",
+        "tags": [
+          "Transportation"
+        ]
+      }
+    },
+    "/api/transportation/services": {
+      "get": {
+        "operationId": "TransportationController_getServices[1]",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "en",
+                "ar",
+                "es",
+                "pt",
+                "it"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of active services"
+          }
+        },
+        "summary": "Get available transportation services with optional localization",
         "tags": [
           "Transportation"
         ]
@@ -8087,14 +7913,69 @@
     },
     "/api/transportation/search": {
       "get": {
-        "operationId": "TransportationController_getServices[1]",
-        "parameters": [],
+        "operationId": "TransportationController_getServices[2]",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "en",
+                "ar",
+                "es",
+                "pt",
+                "it"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of active services"
           }
         },
-        "summary": "Get available transportation services",
+        "summary": "Get available transportation services with optional localization",
+        "tags": [
+          "Transportation"
+        ]
+      }
+    },
+    "/api/transportation/services/{id}": {
+      "get": {
+        "operationId": "TransportationController_getServiceById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "en",
+                "ar",
+                "es",
+                "pt",
+                "it"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed transportation service"
+          }
+        },
+        "summary": "Get public details for a single transportation service",
         "tags": [
           "Transportation"
         ]
@@ -8151,6 +8032,339 @@
         "summary": "Get transportation bookings for the authenticated user",
         "tags": [
           "Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/services": {
+      "get": {
+        "operationId": "AdminTransportationController_getServices",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page limit",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for name, type, or description",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by vehicle category (bus, coaster, private, transfer)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceType",
+            "required": false,
+            "in": "query",
+            "description": "Filter by service type (AIRPORT, HOTEL, CITY_TO_CITY)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status (ALL, ACTIVE, INACTIVE, ARCHIVED)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "Requested locale for translated content (en, ar, es, pt, it)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated or full fleet list"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all transportation services for management",
+        "tags": [
+          "Admin Transportation"
+        ]
+      },
+      "post": {
+        "operationId": "AdminTransportationController_createService",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportationServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vehicle created successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new transportation vehicle/service",
+        "tags": [
+          "Admin Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/services/{id}": {
+      "get": {
+        "operationId": "AdminTransportationController_getServiceById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed transportation service"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single transportation service by ID",
+        "tags": [
+          "Admin Transportation"
+        ]
+      },
+      "put": {
+        "operationId": "AdminTransportationController_updateService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportationServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vehicle updated successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing transportation service",
+        "tags": [
+          "Admin Transportation"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminTransportationController_deleteService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a transportation service",
+        "tags": [
+          "Admin Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/services/{id}/archive": {
+      "post": {
+        "operationId": "AdminTransportationController_archiveService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle archived successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a transportation service (hide from active catalog)",
+        "tags": [
+          "Admin Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/services/{id}/unarchive": {
+      "post": {
+        "operationId": "AdminTransportationController_unarchiveService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vehicle restored to active draft"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore an archived transportation service to active",
+        "tags": [
+          "Admin Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/bookings": {
+      "get": {
+        "operationId": "AdminTransportationController_getBookings",
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transportation bookings"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all transportation bookings with customer details",
+        "tags": [
+          "Admin Transportation"
+        ]
+      }
+    },
+    "/api/admin/transportation/bookings/{id}/status": {
+      "patch": {
+        "operationId": "AdminTransportationController_updateBookingStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportationBookingStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking status updated successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update status and driver assignment for a booking",
+        "tags": [
+          "Admin Transportation"
         ]
       }
     },
@@ -15769,6 +15983,10 @@
             "type": "string",
             "description": "Day label, e.g., Day 1: Arrival"
           },
+          "titleJsonb": {
+            "type": "object",
+            "description": "Multilingual title object"
+          },
           "descriptionJsonb": {
             "type": "object",
             "description": "Multilingual description object"
@@ -16442,6 +16660,10 @@
             "type": "string",
             "description": "Day label (e.g. Day 1, Day 2)"
           },
+          "titleJsonb": {
+            "type": "object",
+            "description": "I18n day title JSON (ar, en, es, pt, it)"
+          },
           "descriptionJsonb": {
             "type": "object",
             "description": "I18n description JSON"
@@ -16468,6 +16690,10 @@
             "type": "string",
             "description": "Day label (e.g. Day 1, Day 2)"
           },
+          "titleJsonb": {
+            "type": "object",
+            "description": "I18n day title JSON (ar, en, es, pt, it)"
+          },
           "descriptionJsonb": {
             "type": "object",
             "description": "I18n description JSON"
@@ -16481,22 +16707,6 @@
             "description": "Sort order for display"
           }
         }
-      },
-      "CreateTransportationServiceDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateTransportationServiceDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateTransportationStatusDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "AssignTransportationDriverDto": {
-        "type": "object",
-        "properties": {}
       },
       "UpdateTailorMadeStatusDto": {
         "type": "object",
@@ -17640,6 +17850,287 @@
           "pickupLocation",
           "dropoffLocation",
           "passengerCount"
+        ]
+      },
+      "CreateTransportationServiceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Primary vehicle or service name"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "description": "Localized names dictionary in 5 languages: ar, en, es, pt, it",
+            "additionalProperties": true
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name shorthand"
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "English name shorthand"
+          },
+          "serviceType": {
+            "type": "string",
+            "description": "Service type",
+            "enum": [
+              "AIRPORT",
+              "HOTEL",
+              "CITY_TO_CITY",
+              "FULL_DAY",
+              "VIP_ESCORT",
+              "COASTER",
+              "BUS",
+              "PRIVATE"
+            ],
+            "default": "AIRPORT"
+          },
+          "vehicleCategory": {
+            "type": "string",
+            "description": "Vehicle category",
+            "enum": [
+              "bus",
+              "coaster",
+              "private",
+              "transfer",
+              "luxury_van",
+              "sedan",
+              "suv"
+            ],
+            "default": "bus"
+          },
+          "vehicleType": {
+            "type": "string",
+            "description": "Vehicle model and specifications"
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Passenger seating capacity",
+            "default": 50
+          },
+          "doors": {
+            "type": "number",
+            "description": "Vehicle door count",
+            "default": 2
+          },
+          "transmission": {
+            "type": "string",
+            "description": "Transmission type (AUTO or MANUAL)",
+            "default": "AUTO"
+          },
+          "basePriceUsd": {
+            "type": "number",
+            "description": "Base price per booking/trip in USD",
+            "default": 150
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "description": "Featured vehicle hero image URL"
+          },
+          "heroMediaId": {
+            "type": "string",
+            "description": "MediaAsset ID from library"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "Is private exclusive chauffeur vehicle",
+            "default": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is active and available for booking",
+            "default": true
+          },
+          "description": {
+            "type": "string",
+            "description": "Vehicle overview description"
+          },
+          "descriptionJsonb": {
+            "type": "object",
+            "description": "Localized description dictionary in 5 languages: ar, en, es, pt, it",
+            "additionalProperties": true
+          },
+          "pickupInstructions": {
+            "type": "string",
+            "description": "Pickup instructions and meeting point advice"
+          },
+          "dropoffInstructions": {
+            "type": "string",
+            "description": "Dropoff instructions and luggage advice"
+          },
+          "features": {
+            "description": "Vehicle luxury amenities and features list",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "featuresJsonb": {
+            "type": "object",
+            "description": "Structured features jsonb or dictionary"
+          }
+        },
+        "required": [
+          "name",
+          "serviceType",
+          "basePriceUsd"
+        ]
+      },
+      "UpdateTransportationServiceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Primary vehicle or service name"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "description": "Localized names dictionary in 5 languages: ar, en, es, pt, it",
+            "additionalProperties": true
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name shorthand"
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "English name shorthand"
+          },
+          "serviceType": {
+            "type": "string",
+            "description": "Service type",
+            "enum": [
+              "AIRPORT",
+              "HOTEL",
+              "CITY_TO_CITY",
+              "FULL_DAY",
+              "VIP_ESCORT",
+              "COASTER",
+              "BUS",
+              "PRIVATE"
+            ],
+            "default": "AIRPORT"
+          },
+          "vehicleCategory": {
+            "type": "string",
+            "description": "Vehicle category",
+            "enum": [
+              "bus",
+              "coaster",
+              "private",
+              "transfer",
+              "luxury_van",
+              "sedan",
+              "suv"
+            ],
+            "default": "bus"
+          },
+          "vehicleType": {
+            "type": "string",
+            "description": "Vehicle model and specifications"
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Passenger seating capacity",
+            "default": 50
+          },
+          "doors": {
+            "type": "number",
+            "description": "Vehicle door count",
+            "default": 2
+          },
+          "transmission": {
+            "type": "string",
+            "description": "Transmission type (AUTO or MANUAL)",
+            "default": "AUTO"
+          },
+          "basePriceUsd": {
+            "type": "number",
+            "description": "Base price per booking/trip in USD",
+            "default": 150
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "description": "Featured vehicle hero image URL"
+          },
+          "heroMediaId": {
+            "type": "string",
+            "description": "MediaAsset ID from library"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "Is private exclusive chauffeur vehicle",
+            "default": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Is active and available for booking",
+            "default": true
+          },
+          "description": {
+            "type": "string",
+            "description": "Vehicle overview description"
+          },
+          "descriptionJsonb": {
+            "type": "object",
+            "description": "Localized description dictionary in 5 languages: ar, en, es, pt, it",
+            "additionalProperties": true
+          },
+          "pickupInstructions": {
+            "type": "string",
+            "description": "Pickup instructions and meeting point advice"
+          },
+          "dropoffInstructions": {
+            "type": "string",
+            "description": "Dropoff instructions and luggage advice"
+          },
+          "features": {
+            "description": "Vehicle luxury amenities and features list",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "featuresJsonb": {
+            "type": "object",
+            "description": "Structured features jsonb or dictionary"
+          }
+        }
+      },
+      "UpdateTransportationBookingStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Updated booking status",
+            "enum": [
+              "SUBMITTED",
+              "UNDER_REVIEW",
+              "QUOTED",
+              "AWAITING_PAYMENT",
+              "CONFIRMED",
+              "ASSIGNED",
+              "DRIVER_EN_ROUTE",
+              "PASSENGER_PICKED_UP",
+              "COMPLETED",
+              "CANCELLED",
+              "NO_SHOW",
+              "REFUNDED"
+            ]
+          },
+          "driverName": {
+            "type": "string",
+            "description": "Assigned driver full name"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Internal staff notes or instructions"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "CreateInquiryDto": {

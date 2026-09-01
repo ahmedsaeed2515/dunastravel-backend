@@ -22669,29 +22669,29 @@
     },
     "highlightsJsonb": {
       "ar": [
-        "honeymooners.tag1",
-        "honeymooners.tag2",
-        "honeymooners.tag3"
+        "استقبال بالورود وعشاء رومانسي خاص على النيل",
+        "منتجعات فاخرة وإطلالات ساحرة على البحر الأحمر",
+        "إبحار بالفلّوكة وقت الغروب وترقية غرف مجانية"
       ],
       "en": [
-        "honeymooners.tag1",
-        "honeymooners.tag2",
-        "honeymooners.tag3"
+        "Private candlelit dinner on the Nile & flower reception",
+        "Luxury Red Sea beachfront resorts & world-class spas",
+        "Sunset Felucca sailing cruise & complimentary room upgrade"
       ],
       "es": [
-        "honeymooners.tag1",
-        "honeymooners.tag2",
-        "honeymooners.tag3"
-      ],
-      "it": [
-        "honeymooners.tag1",
-        "honeymooners.tag2",
-        "honeymooners.tag3"
+        "Cena romántica privada en el Nilo y bienvenida floral",
+        "Resorts de lujo en primera línea de playa en el Mar Rojo",
+        "Paseo al atardecer en faluca y mejora de habitación de cortesía"
       ],
       "pt": [
-        "honeymooners.tag1",
-        "honeymooners.tag2",
-        "honeymooners.tag3"
+        "Jantar romântico privativo no Nilo e recepção com flores",
+        "Resorts de luxo à beira-mar no Mar Vermelho e spas",
+        "Cruzeiro ao pôr do sol em feluca e upgrade de quarto cortesia"
+      ],
+      "it": [
+        "Cena romantica privata sul Nilo e accoglienza con fiori",
+        "Resort di lusso sul Mar Rosso con spa esclusive",
+        "Crociera al tramonto in feluca e upgrade camera gratuito"
       ]
     },
     "departureInfoJsonb": {

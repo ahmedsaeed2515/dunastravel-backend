@@ -214,7 +214,17 @@ export class ToursService {
     return paginate(mappedItems, total, page, limit);
   }
 
-  async findBySlug(slug: string, lang: string): Promise<TourDetailResponse> {
+  async findBySlug(rawSlug: string, lang: string): Promise<TourDetailResponse> {
+    const SLUG_ALIASES: Record<string, string> = {
+      'classic': 'complete-egypt-8d',
+      'classic-program': 'complete-egypt-8d',
+      'honeymoon-in-egypt': 'cairo-cruzeiro-sharm-11d',
+      'honeymooners': 'cairo-cruzeiro-sharm-11d',
+      'journey-of-the-holy-family-10-days': 'egito-historico-10d',
+      'egypt-jordan-combined-14d': 'jewels-of-egypt-and-jordan-11-days',
+    };
+    const slug = SLUG_ALIASES[rawSlug] || rawSlug;
+
     this.toursCounter.inc();
     const cacheKey = `tour:detail:${slug}:${lang}`;
     const cached = await this.cacheManager.get<TourDetailResponse>(cacheKey);
@@ -226,17 +236,6 @@ export class ToursService {
         isActive: true,
         status: 'PUBLISHED',
         deletedAt: null,
-        landingPages: {
-          some: {
-            isVisible: true,
-            landingPage: {
-              type: 'DESTINATION',
-              status: 'PUBLISHED',
-              isActive: true,
-              deletedAt: null,
-            },
-          },
-        },
       },
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
