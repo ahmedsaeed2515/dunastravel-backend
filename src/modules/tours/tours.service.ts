@@ -221,7 +221,12 @@ export class ToursService {
       'honeymoon-in-egypt': 'cairo-cruzeiro-sharm-11d',
       'honeymooners': 'cairo-cruzeiro-sharm-11d',
       'journey-of-the-holy-family-10-days': 'egito-historico-10d',
+      'holy-family-in-egypt-and-jordan-14-days': 'mct-004',
       'egypt-jordan-combined-14d': 'jewels-of-egypt-and-jordan-11-days',
+      'hurghada-4d3n': 'cairo-cruzeiro-sharm-11d',
+      'sharm-4d3n': 'cairo-cruzeiro-sharm-11d',
+      'siwa-oasis-alexandria': 'cairo-express-alexandria-5d',
+      'siwa-oasis': 'cairo-express-alexandria-5d',
     };
     const slug = SLUG_ALIASES[rawSlug] || rawSlug;
 

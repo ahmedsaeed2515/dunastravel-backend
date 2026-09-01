@@ -35,7 +35,8 @@ const COUNTRY_MAP = {
   'multi-country': 'Multi-Country',
   morocco: 'Morocco',
   tunisia: 'Tunisia',
-  greece: 'Greece'
+  greece: 'Greece',
+  religious: 'Egypt'
 };
 
 const CATEGORY_MAP = {
@@ -46,7 +47,12 @@ const CATEGORY_MAP = {
   'multi-country': 'Multi-Country',
   morocco: 'Morocco',
   tunisia: 'Tunisia',
-  greece: 'Greece'
+  greece: 'Greece',
+  religious: 'Religious'
+};
+
+const DEDICATED_LP_SLUGS = {
+  religious: ['egito-historico-10d', 'mct-004', 'mct-009']
 };
 
 async function seed() {
@@ -178,11 +184,13 @@ async function seed() {
 
   for (const lp of landingPages) {
     const destSlug = lp.slug.toLowerCase();
+    const dedicatedSlugs = DEDICATED_LP_SLUGS[destSlug] || [];
     const matchingTours = await prisma.tour.findMany({
       where: {
         deletedAt: null,
         isActive: true,
         OR: [
+          ...(dedicatedSlugs.length > 0 ? [{ slug: { in: dedicatedSlugs } }] : []),
           { category: { equals: CATEGORY_MAP[destSlug] || destSlug, mode: 'insensitive' } },
           { country: { equals: COUNTRY_MAP[destSlug] || destSlug, mode: 'insensitive' } }
         ]
