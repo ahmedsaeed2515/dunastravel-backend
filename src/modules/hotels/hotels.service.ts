@@ -70,12 +70,20 @@ export class HotelsService {
       slug: room.slug,
       nameJsonb: this.sanitizeLocalized(room.nameJsonb, 255, true),
       descriptionJsonb: room.descriptionJsonb
-        ? this.sanitizeLocalized(room.descriptionJsonb, 5_000)
+        ? (typeof room.descriptionJsonb === 'object' && !Array.isArray(room.descriptionJsonb)
+            ? (Object.keys(room.descriptionJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
+                ? this.sanitizeObject(room.descriptionJsonb as Record<string, unknown>)
+                : this.sanitizeLocalized(room.descriptionJsonb, 5_000))
+            : undefined)
         : undefined,
       ratePerNight: room.ratePerNight,
       currency: room.currency ?? currency,
       mealPlanJsonb: room.mealPlanJsonb
-        ? this.sanitizeLocalized(room.mealPlanJsonb, 100)
+        ? (typeof room.mealPlanJsonb === 'object' && !Array.isArray(room.mealPlanJsonb)
+            ? (Object.keys(room.mealPlanJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
+                ? this.sanitizeObject(room.mealPlanJsonb as Record<string, unknown>)
+                : this.sanitizeLocalized(room.mealPlanJsonb, 100))
+            : undefined)
         : undefined,
       maxOccupancy: room.maxOccupancy,
       inventory: room.inventory ?? 0,
@@ -184,33 +192,47 @@ export class HotelsService {
   }
 
   private roomView(room: { id: string; slug: string; nameJsonb: Prisma.JsonValue; descriptionJsonb: Prisma.JsonValue | null; ratePerNight: Prisma.Decimal; currency: string; mealPlanJsonb: Prisma.JsonValue | null; maxOccupancy: number; inventory: number; isActive: boolean }) {
+    const desc = room.descriptionJsonb as Record<string, any> | null;
     return {
       id: room.id,
       slug: room.slug,
       name: room.nameJsonb,
-      description: room.descriptionJsonb,
+      description: desc?.overview || room.descriptionJsonb,
       ratePerNight: Number(room.ratePerNight),
       currency: room.currency,
       mealPlan: room.mealPlanJsonb,
       maxOccupancy: room.maxOccupancy,
       inventory: room.inventory,
       isActive: room.isActive,
+      bedType: desc?.bedType || null,
+      viewType: desc?.viewType || null,
+      smokingAllowed: desc?.smokingAllowed ?? false,
+      petsAllowed: desc?.petsAllowed ?? false,
+      image: desc?.image || null,
+      gallery: Array.isArray(desc?.gallery) ? desc.gallery : [],
+      amenities: Array.isArray(desc?.amenities) ? desc.amenities : [],
     };
   }
 
   private async publicView(hotels: Array<any>, locale: string) {
     const { mediaMap, galleryByHotelId } = await this.heroUrls(hotels);
     return hotels.map((hotel) => {
-      const rooms = hotel.rooms.map((room: any) => ({
-        ...this.roomView(room),
-        name: extractI18nFallback(room.nameJsonb, locale),
-        description: room.descriptionJsonb
-          ? extractI18nFallback(room.descriptionJsonb, locale)
-          : null,
-        mealPlan: room.mealPlanJsonb
-          ? extractI18nFallback(room.mealPlanJsonb, locale)
-          : null,
-      }));
+      const rooms = hotel.rooms.map((room: any) => {
+        const view = this.roomView(room);
+        const desc = room.descriptionJsonb as Record<string, any> | null;
+        return {
+          ...view,
+          name: extractI18nFallback(room.nameJsonb, locale),
+          description: desc?.overview
+            ? extractI18nFallback(desc.overview, locale)
+            : (room.descriptionJsonb ? extractI18nFallback(room.descriptionJsonb, locale) : null),
+          bedType: desc?.bedType ? extractI18nFallback(desc.bedType, locale) : null,
+          viewType: desc?.viewType ? extractI18nFallback(desc.viewType, locale) : null,
+          mealPlan: room.mealPlanJsonb
+            ? extractI18nFallback(room.mealPlanJsonb, locale)
+            : null,
+        };
+      });
       const rates = rooms.map((room: { ratePerNight: number }) => room.ratePerNight);
       const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
       const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
