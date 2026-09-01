@@ -1,0 +1,923 @@
+{
+  "mode": "execute",
+  "sourceTourCount": 55,
+  "databaseTourCount": 55,
+  "created": [],
+  "updated": [
+    {
+      "slug": "cairo-express-4d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "cairo-express-alexandria-5d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "egito-classico-8d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "egito-classico-ii-9d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "egito-historico-10d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "cairo-cruzeiro-sharm-11d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "grande-ramses-10d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "tesouros-egipto-9d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "lo-mejor-de-grecia-9d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "complete-egypt-8d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "tunisia-8-days-desert-sea",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "mrc-01-spices-of-morocco",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-01-legendary-turkey",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-04-legendary-cappadocia",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "ist-01-best-of-istanbul",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-03-passion-of-turkey",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-05-admirable-turkey",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-06-heart-of-turkey",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-07-turkish-riviera",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-08-stop-over",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-09-turkey-without-rush",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-10-turkish-riviera-with-fethiye",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-11-antalya",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-12-beautiful-turkey",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-05-b-admirable-turkey-winter",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-13-extension-7-churches",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-14-secret-of-the-temple",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-15-classic-jordan",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-16-jordan-with-desert",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-17-jordan-with-desert-and-dead-sea",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-18-complete-jordan",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-19-jordan-red-sea",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-20-jordan-extension-5-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-21-jordan-extension-4-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-22-stop-over-dubai",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-23-dubai-and-its-history",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-24-dubai-city-of-the-future",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-25-dubai-and-abu-dhabi",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-26-dubai-with-overnight-in-abu-dhabi",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-27-one-week-in-dubai",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "reg-28-the-complete-emirates",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "hm001-honeymoon-in-dubai",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "hm002-honeymoon-in-dubai-with-dinner-at-burj-al-arab",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "estrellas-medio-oriente-19d",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "cairo-and-athens-11-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "essences-of-egypt-and-turkey-15-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "marvels-of-dubai-and-turkey-14-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "stars-of-the-middle-east-16-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "treasures-of-egypt-and-tunisia-16-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "hotelInfoJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "egypt-and-dubai-13-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "spices-of-egypt-and-morocco",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "jewels-of-egypt-and-jordan-11-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "sourceRating",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "hotelInfoJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "journey-of-the-holy-family-10-days",
+      "action": "update",
+      "fields": [
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "includedServicesJsonb"
+      ]
+    },
+    {
+      "slug": "sharm-el-sheikh-escape",
+      "action": "update",
+      "fields": [
+        "sourceCatalogId",
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "market",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "hotelInfoJsonb",
+        "includedServicesJsonb",
+        "tags"
+      ]
+    },
+    {
+      "slug": "hurghada-escape",
+      "action": "update",
+      "fields": [
+        "sourceCatalogId",
+        "titleJsonb",
+        "subtitleJsonb",
+        "highlightsJsonb",
+        "departureInfoJsonb",
+        "sourceCodeJsonb",
+        "market",
+        "durationJsonb",
+        "overviewJsonb",
+        "minPaxJsonb",
+        "excludedServicesJsonb",
+        "hotelInfoJsonb",
+        "includedServicesJsonb",
+        "tags"
+      ]
+    }
+  ],
+  "unchanged": 0,
+  "archived": [],
+  "deleted": [],
+  "generatedAt": "2026-08-29T10:31:31.143Z"
+}
