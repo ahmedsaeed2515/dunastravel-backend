@@ -179,16 +179,10 @@ export class BookingsService {
     userId?: string,
     idempotencyKey?: string,
   ): Promise<BookingCreatedResponse> {
-    this.logger.log(`Initiating booking creation | tourId=${dto.tourId}`);
-
-    if (!userId) {
-      throw new UnauthorizedException(
-        'Authentication is required to create a booking',
-      );
-    }
+    this.logger.log(`Initiating booking creation | tourId=${dto.tourId} | user=${userId || 'GUEST'}`);
 
     if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency key is required');
+      idempotencyKey = `bkg_auto_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     }
 
     if (dto.passengerNames) {
@@ -492,12 +486,18 @@ export class BookingsService {
           // 6. Create booking, passengers, billing, redemption, invoice
           const referenceCode = await this.generateUniqueReferenceCode(tx);
           const bookingId = crypto.randomUUID();
+          const guestToken = !userId
+            ? this.generateGuestToken(bookingId, referenceCode)
+            : null;
+          const guestTokenHash = guestToken
+            ? crypto.createHash('sha256').update(guestToken).digest('hex')
+            : null;
 
           const booking = await tx.booking.create({
             data: {
               id: bookingId,
               referenceCode,
-              userId: userId,
+              userId: userId || null,
               tourId: tour.id,
               availabilityId: availIdToStore,
               arrivalDate: arrivalDateObj,
@@ -508,7 +508,7 @@ export class BookingsService {
               totalAmountUsd: finalTotalAmountUsd,
               idempotencyKey: idempotencyKey || null,
               requestHash,
-              guestTokenHash: null,
+              guestTokenHash,
             },
           });
 
@@ -662,7 +662,7 @@ export class BookingsService {
             invoiceNumber,
             passengers,
             tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
-            guestToken: null,
+            guestToken,
           };
         });
 

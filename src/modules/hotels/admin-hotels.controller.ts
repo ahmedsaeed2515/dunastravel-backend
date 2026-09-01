@@ -1,12 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../../common/types';
 import { HotelsService } from './hotels.service';
 import { AdminHotelsQueryDto } from './dto/hotel-query.dto';
 import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
+import { AdminHotelBookingsQueryDto, UpdateHotelBookingStatusDto } from './dto/hotel-booking.dto';
 
 @ApiTags('admin-hotels')
 @ApiBearerAuth()
@@ -20,6 +23,25 @@ export class AdminHotelsController {
   @ApiOperation({ summary: 'List hotels for administration' })
   findAll(@Query() query: AdminHotelsQueryDto) {
     return this.hotelsService.findAllAdmin(query.page, query.limit, query.search, query.status, query.destinationSlug);
+  }
+
+  // ----------------------------------------------------
+  // Hotel Bookings Management Endpoints
+  // ----------------------------------------------------
+  @Get('bookings')
+  @ApiOperation({ summary: 'List standalone hotel bookings for administration' })
+  findAllBookings(@Query() query: AdminHotelBookingsQueryDto) {
+    return this.hotelsService.findAllBookingsAdmin(query);
+  }
+
+  @Patch('bookings/:id/status')
+  @ApiOperation({ summary: 'Update standalone hotel booking status' })
+  updateBookingStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateHotelBookingStatusDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.hotelsService.updateBookingStatusAdmin(id, dto, actor);
   }
 
   @Get(':id')

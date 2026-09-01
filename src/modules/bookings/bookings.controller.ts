@@ -43,28 +43,20 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(201)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Create an authenticated tour booking' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Create a tour booking (Guest or Authenticated)' })
   @ApiCreatedResponse({ description: 'Booking created successfully' })
   @ApiBadRequestResponse({ description: 'Validation failed or invalid tour' })
   @ApiUnprocessableEntityResponse({ description: 'Tour not available' })
   async createBooking(
     @Body() dto: CreateBookingDto,
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user?: AuthenticatedUser,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    if (!idempotencyKey) {
-      throw new BadRequestException('Idempotency-Key header is required');
-    }
-    if (!user || !user.id) {
-      throw new UnauthorizedException(
-        'Authentication is required to create a booking',
-      );
-    }
-    return this.bookingsService.createBooking(dto, user.id, idempotencyKey);
+    const effectiveKey = idempotencyKey || `bkg_idem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return this.bookingsService.createBooking(dto, user?.id, effectiveKey);
   }
 
   @Post('calculate')

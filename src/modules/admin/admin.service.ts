@@ -57,6 +57,7 @@ import {
   decryptSensitiveField,
   encryptSensitiveField,
 } from '../../common/security/field-encryption.util';
+import { generateReferenceCode } from '../../common/utils';
 
 @Injectable()
 export class AdminService {
@@ -560,6 +561,99 @@ export class AdminService {
     );
   }
 
+  async recordManualBookingPayment(
+    referenceCode: string,
+    dto: {
+      amount: number;
+      method?: string;
+      transactionId?: string;
+      notes?: string;
+    },
+    adminUserId: string,
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
+      include: { invoice: true, payments: true, assignee: true },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const amountNum = Number(dto.amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      throw new BadRequestException('Payment amount must be greater than zero');
+    }
+
+    const paymentAmount = new Prisma.Decimal(amountNum.toFixed(2));
+    const currentPaid = booking.paidAmountUsd || new Prisma.Decimal(0);
+    const newPaidAmount = currentPaid.plus(paymentAmount);
+
+    if (newPaidAmount.gt(booking.totalAmountUsd)) {
+      throw new BadRequestException(
+        `Total paid amount ($${newPaidAmount.toFixed(2)}) cannot exceed booking total ($${booking.totalAmountUsd.toFixed(2)})`,
+      );
+    }
+
+    const isFullyPaid = newPaidAmount.equals(booking.totalAmountUsd);
+    const targetStatus = isFullyPaid ? 'CONFIRMED' : 'PARTIALLY_PAID';
+
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: paymentAmount,
+          currency: 'USD',
+          method: dto.method || 'CASH',
+          provider: 'MANUAL_ADMIN',
+          providerStatus: 'PAID',
+          transactionId: dto.transactionId || `MANUAL-${Date.now()}`,
+          status: 'CAPTURED',
+          paidAt: new Date(),
+        },
+      });
+
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: targetStatus,
+          paidAmountUsd: newPaidAmount,
+        },
+      });
+
+      if (booking.invoice) {
+        await tx.invoice.update({
+          where: { id: booking.invoice.id },
+          data: {
+            status: isFullyPaid ? 'PAID' : 'SENT',
+            paymentId: payment.id,
+          },
+        });
+      }
+
+      await tx.bookingActivityLog.create({
+        data: {
+          bookingId: booking.id,
+          userId: adminUserId,
+          action: 'MANUAL_PAYMENT_RECORDED',
+          details: {
+            amount: paymentAmount.toFixed(2),
+            method: dto.method || 'CASH',
+            transactionId: dto.transactionId || payment.transactionId,
+            newPaidTotal: newPaidAmount.toFixed(2),
+            newStatus: targetStatus,
+            notes: dto.notes || null,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        payment,
+        newPaidAmount: newPaidAmount.toFixed(2),
+        balanceDue: booking.totalAmountUsd.minus(newPaidAmount).toFixed(2),
+        status: targetStatus,
+      };
+    });
+  }
+
   async addBookingNote(
     referenceCode: string,
     dto: AddBookingNoteDto,
@@ -1052,6 +1146,7 @@ export class AdminService {
         { fullName: { contains: term, mode: 'insensitive' } },
         { email: { contains: term, mode: 'insensitive' } },
         { phone: { contains: term, mode: 'insensitive' } },
+        { partnerCode: { contains: term, mode: 'insensitive' } },
       ];
     }
     if (dateFrom || dateTo) {
@@ -1078,22 +1173,28 @@ export class AdminService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        select: {
-          id: true,
-          referenceCode: true,
-          status: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          adults: true,
-          children: true,
-          assigneeId: true,
-          createdAt: true,
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              referenceCode: true,
+              taxId: true,
+              tier: true,
+            },
+          },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       }),
     ]);
 
-    const data = records.map((r) => {
+    const data: IAdminInquirySummary[] = records.map((r) => {
       const parts = r.fullName.split(' ');
       const firstName = parts[0];
       const lastName = parts.slice(1).join(' ') || '';
@@ -1101,13 +1202,29 @@ export class AdminService {
         id: r.id,
         referenceCode: r.referenceCode,
         status: r.status,
+        fullName: r.fullName,
         firstName,
         lastName,
         email: r.email,
         phone: r.phone || null,
+        destinations: r.destinations,
+        departureDate: r.startDate || null,
+        returnDate: r.endDate || null,
+        adults: r.adults,
+        children: r.children,
         numberOfTravelers: r.adults + r.children,
+        budgetAmount: r.budgetAmount ? Number(r.budgetAmount) : null,
+        budgetCurrency: r.budgetCurrency || 'USD',
+        quotedAmountUsd: r.quotedAmountUsd ? Number(r.quotedAmountUsd) : null,
+        notes: r.notes || null,
+        partnerCode: r.partnerCode || null,
+        companyId: r.companyId || null,
+        company: r.company,
         assigneeId: r.assigneeId,
+        assignee: r.assignee,
+        bookingId: r.bookingId || null,
         createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
       };
     });
 
@@ -1127,6 +1244,32 @@ export class AdminService {
     );
     const r = await this.prisma.tailorMadeInquiry.findUnique({
       where: { referenceCode },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            referenceCode: true,
+            taxId: true,
+            tier: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        booking: {
+          select: {
+            id: true,
+            referenceCode: true,
+            status: true,
+            totalAmountUsd: true,
+          },
+        },
+      },
     });
     if (!r)
       throw new NotFoundException(
@@ -1152,22 +1295,34 @@ export class AdminService {
       id: r.id,
       referenceCode: r.referenceCode,
       status: r.status,
+      fullName: r.fullName,
       firstName,
       lastName,
       email: r.email,
       phone: r.phone || null,
-      numberOfTravelers: r.adults + r.children,
-      assigneeId: r.assigneeId,
-      createdAt: r.createdAt,
+      destinations: r.destinations,
       departureDate: r.startDate || null,
       returnDate: r.endDate || null,
-      destinations: r.destinations,
+      adults: r.adults,
+      children: r.children,
+      numberOfTravelers: r.adults + r.children,
+      budgetAmount: r.budgetAmount ? Number(r.budgetAmount) : null,
+      budgetCurrency: r.budgetCurrency || 'USD',
+      quotedAmountUsd: r.quotedAmountUsd ? Number(r.quotedAmountUsd) : null,
+      notes: r.notes || null,
+      partnerCode: r.partnerCode || null,
+      companyId: r.companyId || null,
+      company: r.company,
       message: r.notes || null,
       budget,
       locale: r.preferredLanguage,
       ipAddress: null,
       followUpAt: r.followUpAt,
       internalNote: r.internalNote,
+      assigneeId: r.assigneeId,
+      assignee: r.assignee,
+      bookingId: r.bookingId || null,
+      createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     };
   }
@@ -1198,25 +1353,25 @@ export class AdminService {
       const assignee = await this.prisma.user.findFirst({
         where: {
           id: dto.assigneeId,
-          role: 'AGENT',
+          role: { in: ['AGENT', 'ADMIN', 'SUPER_ADMIN'] },
           status: 'ACTIVE',
           deletedAt: null,
         },
         select: { id: true },
       });
       if (!assignee) {
-        throw new BadRequestException('Assignee must be an active agent');
+        throw new BadRequestException('Assignee must be an active agent or admin');
       }
     }
 
     if (dto.status && inquiry.status !== dto.status) {
       const validTransitions: Record<string, string[]> = {
-        NEWLY_RECEIVED: ['IN_PROGRESS', 'CLOSED'],
-        IN_PROGRESS: ['QUOTED', 'CLOSED'],
-        QUOTED: ['APPROVED', 'CLOSED'],
-        APPROVED: ['CONVERTED_TO_BOOKING', 'CLOSED'],
+        NEWLY_RECEIVED: ['IN_PROGRESS', 'QUOTED', 'CLOSED'],
+        IN_PROGRESS: ['QUOTED', 'APPROVED', 'CLOSED'],
+        QUOTED: ['APPROVED', 'IN_PROGRESS', 'CONVERTED_TO_BOOKING', 'CLOSED'],
+        APPROVED: ['CONVERTED_TO_BOOKING', 'QUOTED', 'CLOSED'],
         CONVERTED_TO_BOOKING: ['CLOSED'],
-        CLOSED: [],
+        CLOSED: ['IN_PROGRESS', 'NEWLY_RECEIVED'],
       };
 
       const allowed = validTransitions[inquiry.status] || [];
@@ -1243,6 +1398,17 @@ export class AdminService {
       dto.internalNote !== undefined
         ? sanitizePlainText(dto.internalNote).slice(0, 5_000)
         : undefined;
+
+    const safeNotes =
+      dto.notes !== undefined
+        ? sanitizePlainText(dto.notes).slice(0, 5_000)
+        : undefined;
+
+    const quotedAmountDecimal =
+      dto.quotedAmountUsd !== undefined
+        ? new Prisma.Decimal(Number(dto.quotedAmountUsd).toFixed(2))
+        : undefined;
+
     const changedFields = Object.keys(dto);
 
     await this.prisma.$transaction(
@@ -1256,13 +1422,19 @@ export class AdminService {
           data: {
             ...(dto.status && { status: dto.status }),
             ...(dto.assigneeId !== undefined && {
-              assigneeId: dto.assigneeId,
+              assigneeId: dto.assigneeId || null,
             }),
             ...(dto.followUpAt !== undefined && {
               followUpAt: followUpAt ?? null,
             }),
             ...(safeInternalNote !== undefined && {
               internalNote: safeInternalNote,
+            }),
+            ...(safeNotes !== undefined && {
+              notes: safeNotes,
+            }),
+            ...(quotedAmountDecimal !== undefined && {
+              quotedAmountUsd: quotedAmountDecimal,
             }),
           },
         });
@@ -1286,6 +1458,178 @@ export class AdminService {
     );
 
     return this.getInquiryByReferenceCode(referenceCode, adminUserId, isAgent);
+  }
+
+  async convertInquiryToBooking(
+    referenceCode: string,
+    adminUserId: string,
+    dto?: {
+      tourId?: string;
+      quotedAmountUsd?: number;
+      notes?: string;
+    },
+  ) {
+    const inquiry = await this.prisma.tailorMadeInquiry.findUnique({
+      where: { referenceCode },
+      include: { company: true },
+    });
+    if (!inquiry) {
+      throw new NotFoundException(
+        `Inquiry with reference ${referenceCode} not found`,
+      );
+    }
+
+    if (inquiry.bookingId) {
+      const existingBooking = await this.prisma.booking.findUnique({
+        where: { id: inquiry.bookingId },
+      });
+      if (existingBooking) {
+        return {
+          success: true,
+          message: 'Inquiry is already converted to booking',
+          booking: existingBooking,
+        };
+      }
+    }
+
+    // Determine total amount
+    const totalAmount = dto?.quotedAmountUsd
+      ? new Prisma.Decimal(Number(dto.quotedAmountUsd).toFixed(2))
+      : inquiry.quotedAmountUsd ||
+        inquiry.budgetAmount ||
+        new Prisma.Decimal(1500.0);
+
+    // Find tour (or default to first active tour)
+    let tourId = dto?.tourId;
+    if (!tourId) {
+      const firstTour = await this.prisma.tour.findFirst({
+        where: { isActive: true, deletedAt: null },
+        select: { id: true },
+      });
+      if (firstTour) tourId = firstTour.id;
+    }
+    if (!tourId) {
+      throw new BadRequestException(
+        'No active tour available to associate with booking',
+      );
+    }
+
+    // Determine or find customer User
+    const customerUser = await this.prisma.user.findFirst({
+      where: { email: inquiry.email.toLowerCase(), deletedAt: null },
+      select: { id: true, email: true },
+    });
+
+    const bookingRef = generateReferenceCode('DN');
+
+    return this.prisma.$transaction(async (tx) => {
+      const arrivalDate = inquiry.startDate
+        ? inquiry.startDate.toISOString().split('T')[0]
+        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0];
+
+      const departureDate = inquiry.endDate
+        ? inquiry.endDate.toISOString().split('T')[0]
+        : new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0];
+
+      const newBooking = await tx.booking.create({
+        data: {
+          referenceCode: bookingRef,
+          userId: customerUser ? customerUser.id : null,
+          tourId: tourId!,
+          companyId: inquiry.companyId || null,
+          status: 'PENDING',
+          totalAmountUsd: totalAmount,
+          adults: inquiry.adults,
+          children: inquiry.children,
+          infants: 0,
+          arrivalDate: new Date(arrivalDate),
+          departureDate: new Date(departureDate),
+          notes: [
+            `Guest: ${inquiry.fullName} (${inquiry.email} | ${inquiry.phone})`,
+            inquiry.notes ? `Inquiry Notes: ${inquiry.notes}` : '',
+            dto?.notes ? `Admin Notes: ${dto.notes}` : '',
+            `Converted from Tailor-Made Inquiry ${inquiry.referenceCode}`,
+          ]
+            .filter(Boolean)
+            .join(' | '),
+          assigneeId: inquiry.assigneeId || adminUserId,
+          billingInfo: {
+            create: {
+              fullName: inquiry.fullName,
+              email: inquiry.email.toLowerCase(),
+              phone: inquiry.phone,
+              invoiceType: 'PERSONAL',
+            },
+          },
+          passengers: {
+            create: {
+              fullName: inquiry.fullName,
+              passengerType: 'ADULT',
+            },
+          },
+        },
+      });
+
+      // Update inquiry to CONVERTED_TO_BOOKING and link bookingId
+      await tx.tailorMadeInquiry.update({
+        where: { id: inquiry.id },
+        data: {
+          bookingId: newBooking.id,
+          status: 'CONVERTED_TO_BOOKING',
+          quotedAmountUsd: totalAmount,
+        },
+      });
+
+      // Create initial Invoice
+      const invoiceNumber = `INV-${bookingRef}`;
+      await tx.invoice.create({
+        data: {
+          bookingId: newBooking.id,
+          invoiceNumber,
+          status: 'SENT',
+          subtotal: totalAmount,
+          total: totalAmount,
+          currency: 'USD',
+        },
+      });
+
+      // Create activity log
+      await tx.bookingActivityLog.create({
+        data: {
+          bookingId: newBooking.id,
+          userId: adminUserId,
+          action: 'CREATED_FROM_INQUIRY',
+          details: {
+            inquiryReferenceCode: inquiry.referenceCode,
+            totalAmount: totalAmount.toFixed(2),
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          actorRole: 'ADMIN',
+          action: 'INQUIRY_CONVERTED_TO_BOOKING',
+          entityType: 'TAILOR_MADE_INQUIRY',
+          entityId: inquiry.id,
+          metadata: {
+            bookingId: newBooking.id,
+            bookingReferenceCode: newBooking.referenceCode,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Inquiry successfully converted to official booking',
+        booking: newBooking,
+      };
+    });
   }
 
   async listContactSubmissions(
@@ -2118,6 +2462,8 @@ export class AdminService {
         createdTour.category,
       );
 
+      await this.autoSeedTourAvailability(tx, createdTour.id);
+
       return createdTour;
     });
 
@@ -2930,6 +3276,13 @@ export class AdminService {
         },
       },
     });
+    if (targetStatus === 'PUBLISHED') {
+      try {
+        await this.autoSeedTourAvailability(this.prisma, tour.id);
+      } catch (e) {
+        this.logger.warn(`Failed to auto-seed availability for ${slug}: ${e}`);
+      }
+    }
     await this.invalidateTourCache(slug);
     return {
       success: true,
@@ -3329,5 +3682,33 @@ export class AdminService {
     for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
       await this.cacheManager.del(`tour:${slug}:${locale}`);
     }
+  }
+
+  private async autoSeedTourAvailability(
+    db: Prisma.TransactionClient | PrismaService,
+    tourId: string,
+    daysAhead: number = 365,
+    capacity: number = 25,
+  ): Promise<void> {
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const slotDates: Date[] = [];
+    for (let i = 0; i < daysAhead; i++) {
+      const d = new Date(startDate);
+      d.setUTCDate(startDate.getUTCDate() + i);
+      slotDates.push(d);
+    }
+
+    await db.tourAvailability.createMany({
+      data: slotDates.map((date) => ({
+        tourId,
+        date,
+        totalCapacity: capacity,
+        remainingSeats: capacity,
+        status: 'AVAILABLE',
+      })),
+      skipDuplicates: true,
+    });
   }
 }

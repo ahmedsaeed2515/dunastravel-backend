@@ -26,6 +26,7 @@ import {
 import {
   UpdateReviewStatusDto,
   AdminReplyReviewDto,
+  BatchUpdateReviewStatusDto,
 } from './dto/update-review-status.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -82,6 +83,17 @@ export class AdminReviewsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.reviewsService.updateAdminReview(id, dto, user);
+  }
+
+  @Patch('batch/status')
+  @ApiOperation({
+    summary: 'Batch update moderation status for multiple reviews at once',
+  })
+  async batchUpdateStatus(
+    @Body() dto: BatchUpdateReviewStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reviewsService.batchUpdateStatusAdmin(dto, user);
   }
 
   @Patch(':id/status')

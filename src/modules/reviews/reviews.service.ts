@@ -16,6 +16,7 @@ import {
 import {
   UpdateReviewStatusDto,
   AdminReplyReviewDto,
+  BatchUpdateReviewStatusDto,
 } from './dto/update-review-status.dto';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
@@ -58,6 +59,41 @@ export class ReviewsService {
     throw new NotFoundException(`Tour "${tourIdOrSlug}" not found`);
   }
 
+  /**
+   * Recalculates average rating and review count directly on the Tour entity.
+   */
+  private async recalculateTourRating(
+    tourId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx || this.prisma;
+    try {
+      const agg = await client.tourReview.aggregate({
+        where: {
+          tourId,
+          isPublished: true,
+          status: 'APPROVED',
+          deletedAt: null,
+        },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      const avgRating = agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 5.0;
+      const count = agg._count.rating || 0;
+
+      await client.tour.updateMany({
+        where: { id: tourId },
+        data: {
+          sourceRating: avgRating.toString(),
+          sourceReviewCount: count,
+        },
+      });
+    } catch {
+      // Safe non-blocking recalculation
+    }
+  }
+
   // --- PUBLIC / CUSTOMER API ---
 
   async findTourReviewsPublic(
@@ -70,6 +106,7 @@ export class ReviewsService {
 
     const where: Prisma.TourReviewWhereInput = {
       tourId,
+      status: 'APPROVED',
       isPublished: true,
       deletedAt: null,
     };
@@ -94,7 +131,12 @@ export class ReviewsService {
     ]);
 
     const aggregates = await this.prisma.tourReview.aggregate({
-      where: { tourId, isPublished: true, deletedAt: null },
+      where: {
+        tourId,
+        status: 'APPROVED',
+        isPublished: true,
+        deletedAt: null,
+      },
       _avg: { rating: true },
       _count: { rating: true },
     });
@@ -291,6 +333,8 @@ export class ReviewsService {
         },
       });
 
+      await this.recalculateTourRating(tourId, tx);
+
       return review;
     });
   }
@@ -359,6 +403,8 @@ export class ReviewsService {
         },
       });
 
+      await this.recalculateTourRating(updated.tourId, tx);
+
       return updated;
     });
   }
@@ -407,7 +453,72 @@ export class ReviewsService {
         },
       });
 
+      await this.recalculateTourRating(review.tourId, tx);
+
       return updated;
+    });
+  }
+
+  async batchUpdateStatusAdmin(
+    dto: BatchUpdateReviewStatusDto,
+    actor: AuthenticatedUser,
+  ) {
+    if (!dto.reviewIds || !Array.isArray(dto.reviewIds) || dto.reviewIds.length === 0) {
+      throw new BadRequestException('At least one review ID must be provided');
+    }
+
+    const isPublished =
+      dto.status === 'APPROVED' && dto.isPublished !== false;
+
+    return this.prisma.$transaction(async (tx) => {
+      const existingReviews = await tx.tourReview.findMany({
+        where: {
+          id: { in: dto.reviewIds },
+          deletedAt: null,
+        },
+        select: { id: true, tourId: true, status: true },
+      });
+
+      if (existingReviews.length === 0) {
+        throw new NotFoundException('No matching active reviews found');
+      }
+
+      await tx.tourReview.updateMany({
+        where: {
+          id: { in: existingReviews.map((r) => r.id) },
+        },
+        data: {
+          status: dto.status,
+          isPublished,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'TOUR_REVIEWS_BATCH_STATUS_UPDATED',
+          entityType: 'TOUR_REVIEW',
+          metadata: {
+            count: existingReviews.length,
+            reviewIds: existingReviews.map((r) => r.id),
+            newStatus: dto.status,
+            isPublished,
+          },
+        },
+      });
+
+      const uniqueTourIds = Array.from(new Set(existingReviews.map((r) => r.tourId)));
+      for (const tourId of uniqueTourIds) {
+        await this.recalculateTourRating(tourId, tx);
+      }
+
+      return {
+        success: true,
+        count: existingReviews.length,
+        status: dto.status,
+        isPublished,
+      };
     });
   }
 
@@ -481,6 +592,8 @@ export class ReviewsService {
           entityId: id,
         },
       });
+
+      await this.recalculateTourRating(review.tourId, tx);
     });
 
     return { success: true, message: `Review '${id}' deleted.` };

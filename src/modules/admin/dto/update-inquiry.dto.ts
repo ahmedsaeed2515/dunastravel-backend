@@ -35,4 +35,14 @@ export class UpdateInquiryDto {
   @IsString()
   @MaxLength(5_000)
   internalNote?: string;
+
+  @ApiPropertyOptional({ description: 'Quoted amount in USD for the inquiry' })
+  @IsOptional()
+  quotedAmountUsd?: number;
+
+  @ApiPropertyOptional({ description: 'Customer notes or special requests' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5_000)
+  notes?: string;
 }

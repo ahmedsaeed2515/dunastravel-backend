@@ -64,6 +64,7 @@ model User {
   assignedInquiries      TailorMadeInquiry[]     @relation("InquiryAssignee")
   tourFavorites          TourFavorite[]
   transportationBookings TransportationBooking[]
+  hotelBookings          HotelBooking[]
   promotionRedemptions   PromotionRedemption[]
   reviews                TourReview[]
   inAppNotifications     InAppNotification[]     @relation("UserInAppNotifications")
@@ -1034,6 +1035,7 @@ model Hotel {
   updatedAt        DateTime    @updatedAt @map("updated_at")
   deletedAt        DateTime?   @map("deleted_at")
   rooms            HotelRoom[]
+  bookings         HotelBooking[]
 
   @@index([destinationSlug, status, isActive, deletedAt])
   @@index([city])
@@ -1058,10 +1060,50 @@ model HotelRoom {
   updatedAt        DateTime  @updatedAt @map("updated_at")
   deletedAt        DateTime? @map("deleted_at")
   hotel            Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  bookings         HotelBooking[]
 
   @@unique([hotelId, slug])
   @@index([hotelId, isActive, deletedAt])
   @@map("hotel_rooms")
+}
+
+model HotelBooking {
+  id              String    @id @default(uuid())
+  referenceCode   String    @unique @map("reference_code") @db.VarChar(30)
+  hotelId         String    @map("hotel_id")
+  roomId          String?   @map("room_id")
+  userId          String?   @map("user_id")
+  status          String    @default("PENDING") @db.VarChar(50)
+  guestName       String    @map("guest_name") @db.VarChar(150)
+  guestEmail      String    @map("guest_email") @db.VarChar(255)
+  guestPhone      String    @map("guest_phone") @db.VarChar(50)
+  checkInDate     DateTime  @map("check_in_date") @db.Date
+  checkOutDate    DateTime  @map("check_out_date") @db.Date
+  nights          Int       @default(1)
+  roomsCount      Int       @default(1) @map("rooms_count")
+  guestsCount     Int       @default(1) @map("guests_count")
+  ratePerNightUsd Decimal   @map("rate_per_night_usd") @db.Decimal(10, 2)
+  totalAmountUsd  Decimal   @map("total_amount_usd") @db.Decimal(10, 2)
+  currency        String    @default("USD") @db.VarChar(10)
+  specialRequests String?   @map("special_requests") @db.Text
+  adminNotes      String?   @map("admin_notes") @db.Text
+  idempotencyKey  String?   @map("idempotency_key") @db.VarChar(100)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  hotel           Hotel      @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  room            HotelRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, idempotencyKey], map: "hotel_bookings_user_idempotency_key")
+  @@index([hotelId])
+  @@index([roomId])
+  @@index([userId])
+  @@index([status])
+  @@index([checkInDate])
+  @@index([createdAt])
+  @@map("hotel_bookings")
 }
 
 model AnalyticsEvent {

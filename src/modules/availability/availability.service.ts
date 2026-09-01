@@ -384,4 +384,39 @@ export class AvailabilityService {
       return releasedCount;
     });
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async extendAllToursRollingAvailability(): Promise<void> {
+    const activeTours = await this.prisma.tour.findMany({
+      where: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+      select: { id: true },
+    });
+
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const slotDates: Date[] = [];
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(startDate);
+      d.setUTCDate(startDate.getUTCDate() + i);
+      slotDates.push(d);
+    }
+
+    for (const tour of activeTours) {
+      try {
+        await this.prisma.tourAvailability.createMany({
+          data: slotDates.map((date) => ({
+            tourId: tour.id,
+            date,
+            totalCapacity: 25,
+            remainingSeats: 25,
+            status: 'AVAILABLE',
+          })),
+          skipDuplicates: true,
+        });
+      } catch {
+        // Non-blocking
+      }
+    }
+  }
 }

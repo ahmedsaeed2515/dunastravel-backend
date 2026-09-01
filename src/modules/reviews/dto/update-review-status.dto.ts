@@ -28,3 +28,21 @@ export class AdminReplyReviewDto {
   @MaxLength(2_000)
   adminReply!: string;
 }
+
+export class BatchUpdateReviewStatusDto {
+  @ApiProperty({ description: 'List of review IDs to update' })
+  @IsOptional()
+  reviewIds!: string[];
+
+  @ApiProperty({ description: 'Target review status (APPROVED, REJECTED, PENDING)' })
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
+  status!: string;
+
+  @ApiPropertyOptional({ description: 'Whether the reviews should be published' })
+  @IsOptional()
+  @IsBoolean()
+  isPublished?: boolean;
+}
+

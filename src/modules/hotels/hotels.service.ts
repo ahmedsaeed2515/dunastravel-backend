@@ -11,6 +11,12 @@ import {
 } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
 import { CreateHotelDto, HotelRoomDto, UpdateHotelDto } from './dto/hotel.dto';
+import {
+  CreateHotelBookingDto,
+  UpdateHotelBookingStatusDto,
+  AdminHotelBookingsQueryDto,
+} from './dto/hotel-booking.dto';
+import { AuthenticatedUser } from '../../common/types';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
 
@@ -432,5 +438,268 @@ export class HotelsService {
       where: { id },
       data: { deletedAt: null, status: 'DRAFT', isActive: false },
     });
+  }
+
+  // ----------------------------------------------------
+  // Standalone Hotel Bookings Engine
+  // ----------------------------------------------------
+  async createBookingPublic(dto: CreateHotelBookingDto) {
+    let hotel = null;
+    if (dto.hotelId) {
+      hotel = await this.prisma.hotel.findFirst({
+        where: { id: dto.hotelId, deletedAt: null },
+        include: { rooms: { where: { deletedAt: null } } },
+      });
+    } else if (dto.hotelSlug) {
+      hotel = await this.prisma.hotel.findFirst({
+        where: { slug: dto.hotelSlug, deletedAt: null },
+        include: { rooms: { where: { deletedAt: null } } },
+      });
+    }
+
+    if (!hotel) {
+      throw new NotFoundException('Selected hotel not found or currently unavailable');
+    }
+
+    // Match Room
+    let room = null;
+    if (dto.roomId) {
+      room = hotel.rooms.find((r) => r.id === dto.roomId) || null;
+    } else if (dto.roomSlug) {
+      room = hotel.rooms.find((r) => r.slug === dto.roomSlug) || null;
+    }
+
+    // Parse Dates
+    const checkIn = new Date(dto.checkInDate);
+    const checkOut = new Date(dto.checkOutDate);
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+      throw new BadRequestException('Valid check-in and check-out dates are required');
+    }
+
+    const diffTime = checkOut.getTime() - checkIn.getTime();
+    const nights = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    if (nights <= 0) {
+      throw new BadRequestException('Check-out date must be after check-in date (minimum 1 night)');
+    }
+
+    const roomsCount = Math.max(1, dto.roomsCount || 1);
+    const guestsCount = Math.max(1, dto.guestsCount || 1);
+
+    // Calculate Rate
+    const roomRate = room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
+    const totalAmount = nights * roomsCount * roomRate;
+
+    // Unique Reference Code
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const referenceCode = `HTL-${Date.now().toString(36).toUpperCase().slice(-4)}-${randomSuffix}`;
+
+    const booking = await this.prisma.hotelBooking.create({
+      data: {
+        referenceCode,
+        hotelId: hotel.id,
+        roomId: room ? room.id : null,
+        guestName: sanitizePlainText(dto.guestName),
+        guestEmail: dto.guestEmail.trim().toLowerCase(),
+        guestPhone: sanitizePlainText(dto.guestPhone),
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        nights,
+        roomsCount,
+        guestsCount,
+        ratePerNightUsd: new Prisma.Decimal(roomRate),
+        totalAmountUsd: new Prisma.Decimal(totalAmount),
+        currency: 'USD',
+        specialRequests: dto.specialRequests ? sanitizePlainText(dto.specialRequests) : null,
+        status: 'PENDING',
+      },
+      include: {
+        hotel: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            city: true,
+            stars: true,
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            ratePerNight: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      booking,
+      referenceCode: booking.referenceCode,
+      summary: {
+        hotelName: (hotel.nameJsonb as any)?.en || (hotel.nameJsonb as any)?.ar || hotel.slug,
+        roomName: room ? (room.nameJsonb as any)?.en || (room.nameJsonb as any)?.ar || room.slug : 'Standard Room',
+        checkInDate: dto.checkInDate,
+        checkOutDate: dto.checkOutDate,
+        nights,
+        roomsCount,
+        guestsCount,
+        ratePerNight: roomRate,
+        totalAmountUsd: totalAmount,
+        currency: 'USD',
+      },
+    };
+  }
+
+  async getBookingByReferencePublic(referenceCode: string) {
+    const booking = await this.prisma.hotelBooking.findUnique({
+      where: { referenceCode: referenceCode.trim().toUpperCase() },
+      include: {
+        hotel: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            city: true,
+            stars: true,
+            phone: true,
+            email: true,
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            ratePerNight: true,
+          },
+        },
+      },
+    });
+
+    if (!booking || booking.deletedAt) {
+      throw new NotFoundException(`Booking with reference '${referenceCode}' not found`);
+    }
+
+    return booking;
+  }
+
+  async findAllBookingsAdmin(query: AdminHotelBookingsQueryDto) {
+    const { page, limit, skip } = getPaginationParams(query.page, query.limit);
+    const where: Prisma.HotelBookingWhereInput = {
+      deletedAt: null,
+    };
+
+    if (query.status && query.status !== 'ALL') {
+      where.status = query.status;
+    }
+
+    if (query.hotelId && query.hotelId !== 'ALL') {
+      where.hotelId = query.hotelId;
+    }
+
+    if (query.search?.trim()) {
+      const q = query.search.trim();
+      where.OR = [
+        { referenceCode: { contains: q, mode: 'insensitive' } },
+        { guestName: { contains: q, mode: 'insensitive' } },
+        { guestEmail: { contains: q, mode: 'insensitive' } },
+        { guestPhone: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, records] = await Promise.all([
+      this.prisma.hotelBooking.count({ where }),
+      this.prisma.hotelBooking.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          hotel: {
+            select: {
+              id: true,
+              slug: true,
+              nameJsonb: true,
+              city: true,
+              stars: true,
+            },
+          },
+          room: {
+            select: {
+              id: true,
+              slug: true,
+              nameJsonb: true,
+              ratePerNight: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      items: records,
+      meta: paginate(records, total, page, limit).meta,
+    };
+  }
+
+  async updateBookingStatusAdmin(
+    id: string,
+    dto: UpdateHotelBookingStatusDto,
+    actor: AuthenticatedUser,
+  ) {
+    const booking = await this.prisma.hotelBooking.findUnique({
+      where: { id },
+    });
+
+    if (!booking || booking.deletedAt) {
+      throw new NotFoundException(`Hotel booking '${id}' not found`);
+    }
+
+    const updated = await this.prisma.hotelBooking.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        adminNotes: dto.adminNotes !== undefined ? dto.adminNotes : booking.adminNotes,
+      },
+      include: {
+        hotel: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            city: true,
+            stars: true,
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            ratePerNight: true,
+          },
+        },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: actor.id,
+        actorRole: actor.role,
+        action: 'HOTEL_BOOKING_STATUS_UPDATED',
+        entityType: 'HOTEL_BOOKING',
+        entityId: id,
+        metadata: {
+          referenceCode: booking.referenceCode,
+          oldStatus: booking.status,
+          newStatus: dto.status,
+          adminNotes: dto.adminNotes,
+        },
+      },
+    });
+
+    return updated;
   }
 }

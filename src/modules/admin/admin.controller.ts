@@ -206,6 +206,18 @@ export class AdminController {
     return this.adminService.restoreBooking(referenceCode, user.id);
   }
 
+  @Post('bookings/:referenceCode/payments')
+  @ApiOperation({ summary: 'Record manual offline payment for a booking.' })
+  @ApiParam({ name: 'referenceCode', type: 'string' })
+  @ApiOkResponse({ description: 'Payment recorded and booking updated' })
+  async recordManualPayment(
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
+    @Body() dto: { amount: number; method?: string; transactionId?: string; notes?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.recordManualBookingPayment(referenceCode, dto, user.id);
+  }
+
   @Post('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend a user account.' })
   @ApiParam({ name: 'id', type: 'string' })
@@ -394,6 +406,25 @@ export class AdminController {
       dto,
       user.id,
       isAgent,
+    );
+  }
+
+  @Post('inquiries/:referenceCode/convert-to-booking')
+  @ApiOperation({
+    summary: 'Convert a tailor-made inquiry into an official booking.',
+  })
+  @ApiParam({ name: 'referenceCode', type: 'string' })
+  @ApiOkResponse({ description: 'Created booking record' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
+  async convertInquiryToBooking(
+    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
+    @Body() dto: { tourId?: string; quotedAmountUsd?: number; notes?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.convertInquiryToBooking(
+      referenceCode,
+      user.id,
+      dto,
     );
   }
 

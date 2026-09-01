@@ -132,6 +132,9 @@ export class TransportationService {
           passengerCount: dto.passengerCount,
           luggageCount: dto.luggageCount || 0,
           flightNumber: dto.flightNumber?.trim().toUpperCase() || null,
+          fullName: dto.fullName?.trim() || null,
+          email: dto.email?.trim() || null,
+          phone: dto.phone?.trim() || null,
           notes: dto.notes?.trim() || null,
         }),
       )
@@ -185,6 +188,17 @@ export class TransportationService {
       .mul(multiplier)
       .toDecimalPlaces(2);
 
+    const guestContact = [
+      dto.fullName ? `Name: ${sanitizePlainText(dto.fullName).slice(0, 100)}` : null,
+      dto.email ? `Email: ${sanitizePlainText(dto.email).slice(0, 255)}` : null,
+      dto.phone ? `Phone: ${sanitizePlainText(dto.phone).slice(0, 50)}` : null,
+    ].filter(Boolean).join(' | ');
+
+    const combinedNotes = [
+      guestContact ? `[Contact: ${guestContact}]` : null,
+      dto.notes ? sanitizePlainText(dto.notes).slice(0, 2_000) : null,
+    ].filter(Boolean).join('\n');
+
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const created = await this.prisma.transportationBooking.create({
@@ -206,9 +220,7 @@ export class TransportationService {
                   .slice(0, 20)
                   .toUpperCase()
               : null,
-            notes: dto.notes
-              ? sanitizePlainText(dto.notes).slice(0, 2_000)
-              : null,
+            notes: combinedNotes || null,
             totalAmountUsd: totalAmount,
             status: 'SUBMITTED',
             idempotencyKey: effectiveKey,
