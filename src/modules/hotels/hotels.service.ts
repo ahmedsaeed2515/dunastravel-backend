@@ -424,7 +424,7 @@ export class HotelsService {
     await this.findOneAdmin(id);
     return this.prisma.hotel.update({
       where: { id },
-      data: { status: 'DRAFT', isActive: false },
+      data: { status: 'PUBLISHED', isActive: true },
     });
   }
 
@@ -436,7 +436,7 @@ export class HotelsService {
     }
     return this.prisma.hotel.update({
       where: { id },
-      data: { deletedAt: null, status: 'DRAFT', isActive: false },
+      data: { deletedAt: null, status: 'PUBLISHED', isActive: true },
     });
   }
 
