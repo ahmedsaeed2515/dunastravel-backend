@@ -92,7 +92,7 @@
     ],
     "category": "City Break",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 590,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -187,7 +187,8 @@
         "pt": "Mercado Khan El Khalili",
         "it": "Mercato di Khan El Khalili"
       }
-    ]
+    ],
+    "price": 590
   },
   {
     "sourceId": "eg-br-002",
@@ -289,7 +290,7 @@
     ],
     "category": "City Break",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 790,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -401,7 +402,8 @@
         "pt": "Biblioteca de Alexandria",
         "it": "Biblioteca di Alessandria"
       }
-    ]
+    ],
+    "price": 790
   },
   {
     "sourceId": "eg-br-003",
@@ -531,7 +533,7 @@
     ],
     "category": "Cruzeiro + City",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1350,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -666,7 +668,8 @@
         "pt": "Novo Museu (GEM)",
         "it": "Nuovo Museo (GEM)"
       }
-    ]
+    ],
+    "price": 1350
   },
   {
     "sourceId": "eg-br-004",
@@ -803,7 +806,7 @@
     ],
     "category": "Cruzeiro + City",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1490,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -930,7 +933,8 @@
         "pt": "Vale dos Reis, Karnak, Edfu, Kom Ombo e Filae",
         "it": "Valle dei Re, Karnak, Edfu, Kom Ombo e Filae"
       }
-    ]
+    ],
+    "price": 1490
   },
   {
     "sourceId": "eg-br-005",
@@ -1074,7 +1078,7 @@
     ],
     "category": "Cruzeiro + Mar Vermelho",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1790,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1229,7 +1233,8 @@
         "pt": "História e Lazer no mesmo roteiro",
         "it": "Storia e svago nello stesso itinerario"
       }
-    ]
+    ],
+    "price": 1790
   },
   {
     "sourceId": "eg-br-006",
@@ -1366,7 +1371,7 @@
     ],
     "category": "Cruzeiro + Mar Vermelho",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1890,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1531,7 +1536,8 @@
         "pt": "Sharm El Sheikh All Inclusive",
         "it": "Sharm El Sheikh All Inclusive"
       }
-    ]
+    ],
+    "price": 1890
   },
   {
     "sourceId": "eg-br-007",
@@ -1647,7 +1653,7 @@
     ],
     "category": "Cruzeiro + Abu Simbel",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1990,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1802,7 +1808,8 @@
         "pt": "Roteiro arqueológico de elite",
         "it": "Tour archeologico d'élite"
       }
-    ]
+    ],
+    "price": 1990
   },
   {
     "sourceId": "eg-br-008",
@@ -1925,7 +1932,7 @@
     ],
     "category": "Cruzeiro + Alexandria",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1550,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2070,7 +2077,8 @@
         "pt": "Vale dos Reis e Templos de Karnak",
         "it": "Valle dei Re e Templi di Karnak"
       }
-    ]
+    ],
+    "price": 1550
   },
   {
     "sourceId": "eg-completo-001",
@@ -2172,7 +2180,7 @@
     ],
     "category": "completoEgypt.type",
     "country": "Egypt",
-    "basePriceUsd": 0,
+    "basePriceUsd": 1390,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2321,7 +2329,8 @@
         "pt": "Templos de Abu Simbel, Represa de Assuã e Templo de Filae",
         "it": "Templi di Abu Simbel, Diga di Assuan e Tempio di File"
       }
-    ]
+    ],
+    "price": 1390
   },
   {
     "sourceId": "gr-es-001",
@@ -2630,7 +2639,8 @@
         "pt": "Assistente que fala espanhol na chegada a Atenas",
         "it": "Asistente de habla hispana en la llegada a Atenas"
       }
-    ]
+    ],
+    "price": 1490
   },
   {
     "sourceId": "tunisia-8d-7n-tour",
@@ -2891,7 +2901,8 @@
         "pt": "Descubra a engenharia romana em El Jem, o terceiro maior anfiteatro romano do mundo.",
         "it": "Scoprite l'ingegneria romana a El Jem, il terzo anfiteatro romano più grande del mondo."
       }
-    ]
+    ],
+    "price": 1328
   },
   {
     "sourceId": "mct-001",
@@ -3049,7 +3060,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": null,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3308,7 +3319,8 @@
         "pt": "Excursão aos templos de Abu Simbel",
         "it": "Escursione ai templi di Abu Simbel"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-002",
@@ -3417,7 +3429,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3589,7 +3601,8 @@
         "pt": "Cruzeiro de um dia pelas ilhas do Golfo Sarónico: Hydra, Poros e Egina",
         "it": "Crociera di un giorno alle isole del Golfo Saronico: Idra, Poros ed Egina"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-003",
@@ -3733,7 +3746,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3945,7 +3958,8 @@
         "pt": "Éfeso e a Casa da Virgem Maria, cruzeiro pelo Bósforo em Istambul",
         "it": "Efeso e la Casa della Vergine Maria, giro in barca sul Bosforo a Istanbul"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-004",
@@ -4089,7 +4103,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": null,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -4291,7 +4305,8 @@
         "pt": "Istambul: cruzeiro pelo Bósforo, Bazar das Especiarias e tour opcional Joias de Constantinopla",
         "it": "Istanbul: giro in barca sul Bosforo, Bazar delle Spezie e tour facoltativo Gioielli di Costantinopoli"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-005",
@@ -4442,7 +4457,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": null,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -4664,7 +4679,8 @@
         "pt": "Três países numa só viagem: maravilhas antigas da Jordânia, tesouros faraónicos do Egito e modernidade do Dubai",
         "it": "Tre paesi in un unico viaggio: meraviglie antiche della Giordania, tesori faraonici dell'Egitto e modernità di Dubai"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-006",
@@ -4794,7 +4810,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5006,7 +5022,8 @@
         "pt": "Dois países numa só viagem: o encanto mediterrâneo da Tunísia e as paisagens do Saara, os tesouros faraónicos do Egito e o seu lendário rio",
         "it": "Due paesi in un viaggio: il fascino mediterraneo della Tunisia e i paesaggi del Sahara, i tesori faraonici dell'Egitto e il suo leggendario fiume"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-007",
@@ -5185,7 +5202,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5504,7 +5521,8 @@
         "pt": "Visite o Vale dos Reis, os Templos de Karnak e Luxor, e os templos de Edfu e Kom Ombo",
         "it": "Visitate la Valle dei Re, i Templi di Karnak e Luxor, e i templi di Edfu e Kom Ombo"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-008",
@@ -5635,7 +5653,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5789,7 +5807,8 @@
         "pt": "Desfrute de um cruzeiro pelo Nilo visitando o Vale dos Reis e os templos de Karnak, Luxor, Edfu, Kom Ombo e Philae",
         "it": "Godetevi una crociera sul Nilo visitando la Valle dei Re e i templi di Karnak, Luxor, Edfu, Kom Ombo e Philae"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "mct-009",
@@ -5920,7 +5939,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 0,
+    "basePriceUsd": 2450,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6066,7 +6085,8 @@
         "pt": "Desfrute de um cruzeiro pelo Nilo visitando o Vale dos Reis, Karnak, Luxor, Edfu e Kom Ombo",
         "it": "Godetevi una crociera sul Nilo visitando la Valle dei Re, Karnak, Luxor, Edfu e Kom Ombo"
       }
-    ]
+    ],
+    "price": 2450
   },
   {
     "sourceId": "ahmed-group-10",
@@ -6403,7 +6423,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6657,7 +6677,8 @@
         "pt": "Bursa: primeira capital do Império Otomano",
         "it": "Bursa: prima capitale dell'Impero Ottomano"
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "REG-04",
@@ -6752,7 +6773,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6945,7 +6966,8 @@
         "pt": "Passeio opcional de balão sobre as deslumbrantes paisagens lunares da Capadócia.",
         "it": "Giro in mongolfiera opzionale sugli splendidi paesaggi lunari della Cappadocia."
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "IST-01",
@@ -7040,7 +7062,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -7161,7 +7183,8 @@
         "pt": "Saídas diárias garantidas",
         "it": "Partenze giornaliere garantite"
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "REG-03",
@@ -7256,7 +7279,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -7449,7 +7472,8 @@
         "pt": "Oportunidade de peregrinação e bênção visitando a sagrada Casa da Virgem Maria no Monte Bülbül.",
         "it": "Opportunità di pellegrinaggio alla sacra Casa della Vergine Maria sul Monte Bülbül."
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "REG-15",
@@ -7773,7 +7797,8 @@
         "pt": "City tour em Amã, Jerash e Castelo de Ajlun",
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
-    ]
+    ],
+    "price": 615
   },
   {
     "sourceId": "REG-16",
@@ -8104,7 +8129,8 @@
         "pt": "City tour em Amã, Jerash e Castelo de Ajlun",
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
-    ]
+    ],
+    "price": 670
   },
   {
     "sourceId": "REG-17",
@@ -8435,7 +8461,8 @@
         "pt": "City tour em Amã, Jerash e Castelo de Ajlun",
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
-    ]
+    ],
+    "price": 705
   },
   {
     "sourceId": "REG-18",
@@ -8766,7 +8793,8 @@
         "pt": "City tour em Amã, Jerash e Castelo de Ajlun",
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
-    ]
+    ],
+    "price": 685
   },
   {
     "sourceId": "REG-19",
@@ -9097,7 +9125,8 @@
         "pt": "City tour em Amã, Jerash e Castelo de Ajlun",
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
-    ]
+    ],
+    "price": 665
   },
   {
     "sourceId": "REG-20",
@@ -9363,7 +9392,8 @@
         "pt": "Visita a Madaba, Monte Nebo e Castelo de Shobak",
         "it": "Visita di Madaba, Monte Nebo e Castello di Shobak"
       }
-    ]
+    ],
+    "price": 470
   },
   {
     "sourceId": "REG-21",
@@ -9605,7 +9635,8 @@
         "pt": "Visita a Madaba, Monte Nebo e Castelo de Shobak",
         "it": "Visita di Madaba, Monte Nebo e Castello di Shobak"
       }
-    ]
+    ],
+    "price": 430
   },
   {
     "sourceId": "REG-22",
@@ -12586,7 +12617,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -12836,7 +12867,8 @@
         "pt": "Cruzeiro opcional pelo Bósforo em Istambul",
         "it": "Crociera opzionale sul Bosforo a Istanbul"
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "REG-06",
@@ -12931,7 +12963,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13120,7 +13152,8 @@
         "pt": "Tour opcional pela Capadócia do Sul",
         "it": "Tour opzionale della Cappadocia del Sud"
       }
-    ]
+    ],
+    "price": 750
   },
   {
     "sourceId": "REG-07",
@@ -13215,7 +13248,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13451,7 +13484,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-08",
@@ -13546,7 +13611,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13620,7 +13685,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-09",
@@ -13715,7 +13812,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13897,7 +13994,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-10",
@@ -13992,7 +14121,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14246,7 +14375,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-11",
@@ -14341,7 +14502,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14541,7 +14702,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-12",
@@ -14636,7 +14829,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14818,7 +15011,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-05-B",
@@ -14913,7 +15138,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15113,7 +15338,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-13",
@@ -15208,7 +15465,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15282,7 +15539,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-14",
@@ -15377,7 +15666,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": null,
+    "basePriceUsd": 750,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15595,7 +15884,39 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": []
+    "highlightsJsonb": {
+      "ar": [
+        "جولات إرشادية في أهم المعالم التاريخية",
+        "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "انتقالات مريحة ومكيفة طوال الرحلة",
+        "تجارب ثقافية وأسواق تقليدية"
+      ],
+      "en": [
+        "Guided tours of major historical landmarks",
+        "Luxury hotel accommodation with daily breakfast",
+        "Comfortable air-conditioned transfers throughout",
+        "Authentic cultural experiences and bazaars"
+      ],
+      "es": [
+        "Visitas guiadas a los principales monumentos históricos",
+        "Alojamiento en hoteles de lujo con desayuno diario",
+        "Traslados cómodos con aire acondicionado",
+        "Experiencias culturales auténticas y bazares"
+      ],
+      "pt": [
+        "Passeios guiados pelos principais monumentos históricos",
+        "Hospedagem em hotéis de luxo com café da manhã diário",
+        "Traslados confortáveis com ar-condicionado",
+        "Experiências culturais autênticas e bazares"
+      ],
+      "it": [
+        "Visite guidate ai principali monumenti storici",
+        "Sistemazione in hotel di lusso con colazione giornaliera",
+        "Trasferimenti confortevoli con aria condizionata",
+        "Esperienze culturali autentiche e bazar"
+      ]
+    },
+    "price": 750
   },
   {
     "sourceId": "REG-29",
@@ -15970,7 +16291,8 @@
         "pt": "Travessia do Mediterrâneo de ferry",
         "it": "Attraversamento del Mediterraneo in traghetto"
       }
-    ]
+    ],
+    "price": 799
   },
   {
     "sourceId": "eg-classic-001",
