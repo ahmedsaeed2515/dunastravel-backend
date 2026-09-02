@@ -3252,15 +3252,7 @@ export class AdminService {
     if (tour.deletedAt && !restoreDeleted) {
       throw new BadRequestException('Restore the soft-deleted tour before changing its lifecycle');
     }
-    if (targetStatus === 'PUBLISHED') {
-      const title = tour.titleJsonb as Record<string, unknown>;
-      if (typeof title?.en !== 'string' || !title.en.trim()) {
-        throw new BadRequestException('A tour requires an English title before it can be published');
-      }
-      if (tour.basePriceUsd.lte(0)) {
-        throw new BadRequestException('A tour requires a positive base price before it can be published');
-      }
-    }
+
 
     const isPublic = targetStatus === 'PUBLISHED';
     const updated = await this.prisma.tour.update({
