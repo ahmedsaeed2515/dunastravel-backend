@@ -32,6 +32,8 @@ export interface TourSummaryResponse {
   duration: string;
   overview: string;
   highlights: string[];
+  includedServices?: string[];
+  excludedServices?: string[];
   heroImage: string | null;
   country: string | null;
   city?: string | null;

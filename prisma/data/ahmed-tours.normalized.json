@@ -13484,38 +13484,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -13685,38 +13683,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -13994,38 +13990,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -14375,38 +14369,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -14702,38 +14694,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -15011,38 +15001,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -15338,38 +15326,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -15539,38 +15525,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
@@ -15884,38 +15868,36 @@
       }
     ],
     "images": [],
-    "highlightsJsonb": {
-      "ar": [
-        "جولات إرشادية في أهم المعالم التاريخية",
-        "إقامة فندقية فاخرة مع الإفطار اليومي",
-        "انتقالات مريحة ومكيفة طوال الرحلة",
-        "تجارب ثقافية وأسواق تقليدية"
-      ],
-      "en": [
-        "Guided tours of major historical landmarks",
-        "Luxury hotel accommodation with daily breakfast",
-        "Comfortable air-conditioned transfers throughout",
-        "Authentic cultural experiences and bazaars"
-      ],
-      "es": [
-        "Visitas guiadas a los principales monumentos históricos",
-        "Alojamiento en hoteles de lujo con desayuno diario",
-        "Traslados cómodos con aire acondicionado",
-        "Experiencias culturales auténticas y bazares"
-      ],
-      "pt": [
-        "Passeios guiados pelos principais monumentos históricos",
-        "Hospedagem em hotéis de luxo com café da manhã diário",
-        "Traslados confortáveis com ar-condicionado",
-        "Experiências culturais autênticas e bazares"
-      ],
-      "it": [
-        "Visite guidate ai principali monumenti storici",
-        "Sistemazione in hotel di lusso con colazione giornaliera",
-        "Trasferimenti confortevoli con aria condizionata",
-        "Esperienze culturali autentiche e bazar"
-      ]
-    },
+    "highlightsJsonb": [
+      {
+        "ar": "جولات إرشادية في أهم المعالم التاريخية",
+        "en": "Guided tours of major historical landmarks",
+        "es": "Visitas guiadas a los principales monumentos históricos",
+        "pt": "Passeios guiados pelos principais monumentos históricos",
+        "it": "Visite guidate ai principali monumenti storici"
+      },
+      {
+        "ar": "إقامة فندقية فاخرة مع الإفطار اليومي",
+        "en": "Luxury hotel accommodation with daily breakfast",
+        "es": "Alojamiento en hoteles de lujo con desayuno diario",
+        "pt": "Hospedagem em hotéis de luxo com café da manhã diário",
+        "it": "Sistemazione in hotel di lusso con colazione giornaliera"
+      },
+      {
+        "ar": "انتقالات مريحة ومكيفة طوال الرحلة",
+        "en": "Comfortable air-conditioned transfers throughout",
+        "es": "Traslados cómodos con aire acondicionado",
+        "pt": "Traslados confortáveis com ar-condicionado",
+        "it": "Trasferimenti confortevoli con aria condizionata"
+      },
+      {
+        "ar": "تجارب ثقافية وأسواق تقليدية",
+        "en": "Authentic cultural experiences and bazaars",
+        "es": "Experiencias culturales auténticas y bazares",
+        "pt": "Experiências culturais autênticas e bazares",
+        "it": "Esperienze culturali autentiche e bazar"
+      }
+    ],
     "price": 750
   },
   {
