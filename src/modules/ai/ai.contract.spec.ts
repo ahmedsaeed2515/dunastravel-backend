@@ -15,7 +15,7 @@ import { AiService } from './ai.service';
 describe('AI HTTP Contract Spec', () => {
   let app: INestApplication;
 
-  const mockPrisma = {
+  const mockPrisma: any = {
     aiConfig: {
       findFirst: jest.fn().mockResolvedValue({
         id: 'cfg-1',
