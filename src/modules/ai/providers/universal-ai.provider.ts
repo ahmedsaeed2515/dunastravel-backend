@@ -24,17 +24,9 @@ export class ProviderError extends Error {
 
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
-  // Deprecated/retired Google models remapped to active, verified Google models:
-  'gemini-2.0-flash': 'gemini-3.6-flash',
-  'gemini-2.0-flash-001': 'gemini-3.6-flash',
-  'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
-  'gemini-2.0-flash-lite-001': 'gemini-3.5-flash-lite',
-  'gemini-1.5-flash': 'gemini-3.5-flash',
-  'gemini-1.5-flash-8b': 'gemini-3.5-flash-lite',
-  'gemini-1.5-pro': 'gemini-3.6-flash',
-  'gemini-2.5-flash': 'gemini-3.6-flash',
-  'gemini-2.5-pro': 'gemini-3.6-flash',
+  'google/gemini-2.0-flash-001': 'gemini-2.0-flash',
 };
+
 
 export function normalizeModelId(model: string): string {
   const clean = (model || '').replace(/^models\//, '');

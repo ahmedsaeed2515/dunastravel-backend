@@ -1021,6 +1021,65 @@ export function validateBaseUrl(url: string): { valid: boolean; reason?: string 
 }
 
 /**
+ * Validates API key syntax/format for known official providers.
+ * Catches invalid strings (e.g. "Password123", raw tokens, truncated keys) BEFORE persisting or dispatching calls.
+ */
+export function validateApiKeyFormat(provider: string, apiKey: string): { valid: boolean; reason?: string } {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 5) {
+    return { valid: false, reason: 'API key is missing or too short.' };
+  }
+  const key = apiKey.trim();
+  const p = (provider || '').toLowerCase();
+
+  if (p === 'google') {
+    if (!key.startsWith('AIza') || key.length < 30) {
+      return {
+        valid: false,
+        reason: "Invalid Google Gemini API key format. Google AI Studio keys must start with 'AIza' (e.g. AIzaSy...) and contain ~39 characters. Obtain a free key from https://aistudio.google.com/apikey",
+      };
+    }
+  } else if (p === 'openai') {
+    if (!key.startsWith('sk-') || key.length < 20) {
+      return {
+        valid: false,
+        reason: "Invalid OpenAI API key format. OpenAI keys must start with 'sk-' or 'sk-proj-' and contain at least 20 characters.",
+      };
+    }
+  } else if (p === 'openrouter') {
+    if (!key.startsWith('sk-or-') || key.length < 20) {
+      return {
+        valid: false,
+        reason: "Invalid OpenRouter API key format. OpenRouter keys must start with 'sk-or-'. Obtain your key from https://openrouter.ai/keys",
+      };
+    }
+  } else if (p === 'anthropic') {
+    if (!key.startsWith('sk-ant-') || key.length < 20) {
+      return {
+        valid: false,
+        reason: "Invalid Anthropic API key format. Claude keys must start with 'sk-ant-'.",
+      };
+    }
+  } else if (p === 'deepseek') {
+    if (!key.startsWith('sk-') || key.length < 20) {
+      return {
+        valid: false,
+        reason: "Invalid DeepSeek API key format. DeepSeek keys must start with 'sk-'.",
+      };
+    }
+  } else if (p === 'xai') {
+    if (key.length < 15) {
+      return {
+        valid: false,
+        reason: "Invalid xAI Grok API key format. Key must contain at least 15 characters.",
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+
+/**
  * Returns all valid model IDs for a given provider.
  * OpenRouter is special: its models can also be used by the 'openrouter' provider ID.
  */
@@ -1515,6 +1574,11 @@ export class ModelRegistryService {
   getOfficialBaseUrl(providerId: string, customBaseUrl?: string): string {
     return getOfficialBaseUrl(providerId, customBaseUrl);
   }
+
+  validateApiKeyFormat(providerId: string, apiKey: string): { valid: boolean; reason?: string } {
+    return validateApiKeyFormat(providerId, apiKey);
+  }
+
 
   calculateCostUsd(modelId: string, inputTokens: number, outputTokens: number): number {
     const resolved = normalizeModelId(modelId);

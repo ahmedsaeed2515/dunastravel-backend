@@ -46,12 +46,17 @@ export class CloudinaryStorageProvider implements StorageProvider {
     );
 
     return new Promise((resolve) => {
-      const uploadOptions = {
+      const uploadOptions: Record<string, any> = {
         resource_type: 'image' as const,
         folder: folderPath,
         use_filename: false,
         unique_filename: true,
         overwrite: false,
+        format: 'webp',
+        transformation: [
+          { quality: 'auto:good' },
+          { fetch_format: 'webp' },
+        ],
         eager: options.eager,
         eager_async: false,
         tags: tags,
@@ -159,12 +164,17 @@ export class CloudinaryStorageProvider implements StorageProvider {
     );
 
     return new Promise((resolve) => {
-      const uploadOptions = {
+      const uploadOptions: Record<string, any> = {
         resource_type: 'image' as const,
         folder: folderPath,
         use_filename: false,
         unique_filename: true,
         overwrite: false,
+        format: 'webp',
+        transformation: [
+          { quality: 'auto:good' },
+          { fetch_format: 'webp' },
+        ],
         eager: options.eager,
         eager_async: false,
         tags: tags,
@@ -267,6 +277,11 @@ export class CloudinaryStorageProvider implements StorageProvider {
     publicId: string,
     transformOptions?: TransformOptions,
   ): Promise<string> {
-    return cloudinary.url(publicId, transformOptions);
+    return cloudinary.url(publicId, {
+      format: 'webp',
+      quality: 'auto:good',
+      fetch_format: 'webp',
+      ...transformOptions,
+    });
   }
 }
