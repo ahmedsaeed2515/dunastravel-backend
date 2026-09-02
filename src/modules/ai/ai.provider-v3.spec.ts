@@ -2,11 +2,13 @@ import {
   ModelRegistryService,
   isValidProviderModelPair,
   getOfficialBaseUrl,
+  validateApiKeyFormat,
   PROVIDER_REGISTRY,
   MODEL_REGISTRY,
 } from './services/model-registry.service';
 import { ModelRoutingService } from './services/model-routing.service';
 import { UniversalAiProvider, ProviderError } from './providers/universal-ai.provider';
+
 
 describe('AI Providers & Model Routing V3 — Architecture & Security Suite', () => {
   let modelRegistry: ModelRegistryService;
@@ -235,4 +237,45 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(err.model).toBe('claude-3-5-sonnet-20241022');
     });
   });
+
+  describe('7. API Key Format Validation & Pre-flight Security', () => {
+    it('MUST reject dummy string "Password123" for Google provider', () => {
+      const result = validateApiKeyFormat('google', 'Password123');
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('AIza');
+    });
+
+    it('MUST reject short or truncated Google API keys', () => {
+      const result = validateApiKeyFormat('google', 'AIzaShort');
+      expect(result.valid).toBe(false);
+    });
+
+    it('MUST accept valid Google AI Studio API key format', () => {
+      const result = validateApiKeyFormat('google', 'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q');
+      expect(result.valid).toBe(true);
+    });
+
+    it('MUST reject non-sk prefix for OpenAI provider', () => {
+      const result = validateApiKeyFormat('openai', 'invalid-openai-key-1234567890');
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('sk-');
+    });
+
+    it('MUST accept valid OpenAI API key format', () => {
+      const result = validateApiKeyFormat('openai', 'sk-proj-abc1234567890defghijklmnopqrstuvwxyz');
+      expect(result.valid).toBe(true);
+    });
+
+    it('MUST reject non-sk-or prefix for OpenRouter provider', () => {
+      const result = validateApiKeyFormat('openrouter', 'sk-other-key-1234567890');
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('sk-or-');
+    });
+
+    it('MUST accept valid OpenRouter API key format', () => {
+      const result = validateApiKeyFormat('openrouter', 'sk-or-v1-abc1234567890defghijklmnopqrstuvwxyz');
+      expect(result.valid).toBe(true);
+    });
+  });
 });
+
