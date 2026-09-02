@@ -141,6 +141,99 @@ export class CloudinaryStorageProvider implements StorageProvider {
     });
   }
 
+  async uploadUrl(
+    url: string,
+    options: UploadOptions,
+  ): Promise<UploadResult> {
+    const start = Date.now();
+    const folderPath = `${options.folder}/${options.entityType.toLowerCase()}/${options.entityId ?? 'general'}`;
+    const tags = [
+      'dunas-travel',
+      options.entityType,
+      options.entityId ?? 'general',
+      'url-import',
+    ];
+
+    this.logger.debug(
+      `Upload URL SDK call started { url: ${url.slice(0, 100)}, folder: ${folderPath} }`,
+    );
+
+    return new Promise((resolve) => {
+      const uploadOptions = {
+        resource_type: 'image' as const,
+        folder: folderPath,
+        use_filename: false,
+        unique_filename: true,
+        overwrite: false,
+        eager: options.eager,
+        eager_async: false,
+        tags: tags,
+      };
+
+      const callback = (error: any, result: any) => {
+        const duration_ms = Date.now() - start;
+        if (error) {
+          this.logger.error(
+            `SDK error { operation: 'uploadUrl', errorCode: ${error.http_code || 'UNKNOWN'}, message: '${error.message}' }`,
+          );
+          return resolve({
+            success: false,
+            publicId: '',
+            url: '',
+            secureUrl: '',
+            format: '',
+            bytes: 0,
+            width: null,
+            height: null,
+            error: error.message || 'Failed to upload image from URL',
+          });
+        }
+
+        if (!result) {
+          this.logger.error(
+            `SDK error { operation: 'uploadUrl', errorCode: 'UNKNOWN', message: 'No result returned from Cloudinary for URL' }`,
+          );
+          return resolve({
+            success: false,
+            publicId: '',
+            url: '',
+            secureUrl: '',
+            format: '',
+            bytes: 0,
+            width: null,
+            height: null,
+            error: 'Unknown error occurred during URL upload',
+          });
+        }
+
+        this.logger.debug(
+          `Upload URL completed { publicId: ${result.public_id}, duration_ms: ${duration_ms} }`,
+        );
+
+        let finalUrl = result.url;
+        let finalSecureUrl = result.secure_url;
+        if (result.eager && result.eager.length > 0) {
+          finalUrl = result.eager[0].url;
+          finalSecureUrl = result.eager[0].secure_url;
+        }
+
+        resolve({
+          success: true,
+          publicId: result.public_id,
+          url: finalUrl,
+          secureUrl: finalSecureUrl,
+          format: result.format,
+          bytes: result.bytes,
+          width: result.width || null,
+          height: result.height || null,
+          error: null,
+        });
+      };
+
+      cloudinary.uploader.upload(url, uploadOptions, callback);
+    });
+  }
+
   async delete(publicId: string): Promise<void> {
     const start = Date.now();
     try {

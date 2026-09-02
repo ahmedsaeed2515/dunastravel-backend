@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
   BadRequestException,
   HttpCode,
   HttpStatus,
@@ -30,7 +31,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -38,6 +39,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MediaService } from './media.service';
 import { UploadMediaDto } from './dto/upload-media.dto';
+import { UploadBulkMediaDto } from './dto/upload-bulk-media.dto';
+import { ImportMediaUrlsDto } from './dto/import-media-urls.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
 import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
@@ -45,6 +48,7 @@ import { MediaAssetResponseDto } from './dto/media-asset-response.dto';
 import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { ListMediaDto } from './dto/list-media.dto';
 import { FileValidationPipe } from './pipes/file-validation.pipe';
+import { FilesValidationPipe } from './pipes/files-validation.pipe';
 import { MediaEntityType } from '@prisma/client';
 import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
@@ -59,7 +63,7 @@ export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Post('upload')
-  @Throttle({ default: { limit: 20, ttl: 3_600_000 } })
+  @Throttle({ default: { limit: 120, ttl: 3_600_000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @UseInterceptors(
@@ -81,7 +85,7 @@ export class MediaAdminController {
       },
     }),
   )
-  @ApiOperation({ summary: 'Upload a media asset' })
+  @ApiOperation({ summary: 'Upload a single media asset' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -107,6 +111,63 @@ export class MediaAdminController {
   ): Promise<MediaAssetResponseDto> {
     const asset = await this.mediaService.uploadAsset(file, dto, user.id);
     return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Post('upload-bulk')
+  @Throttle({ default: { limit: 120, ttl: 3_600_000 } })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @UseInterceptors(
+    FilesInterceptor('files', 25, {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+        fieldSize: 50 * 1024,
+        fields: 10,
+        files: 25,
+        parts: 35,
+      },
+      fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.mimetype)) {
+          return cb(new BadRequestException(`Invalid file type for ${file.originalname}`), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Upload multiple media assets at once' })
+  @ApiConsumes('multipart/form-data')
+  @ApiCreatedResponse({ type: [MediaAssetResponseDto] })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @ApiForbiddenResponse()
+  @ApiBadGatewayResponse()
+  async uploadBulk(
+    @UploadedFiles(FilesValidationPipe) files: Express.Multer.File[],
+    @Body() dto: UploadBulkMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MediaAssetResponseDto[]> {
+    const assets = await this.mediaService.uploadBulkAssets(files, dto, user.id);
+    return assets.map((asset) => MediaAssetResponseDto.fromPrisma(asset));
+  }
+
+  @Post('import-urls')
+  @Throttle({ default: { limit: 120, ttl: 3_600_000 } })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Import media assets from external direct URLs' })
+  @ApiCreatedResponse({ type: [MediaAssetResponseDto] })
+  @ApiBadRequestResponse()
+  @ApiUnauthorizedResponse()
+  @ApiForbiddenResponse()
+  @ApiBadGatewayResponse()
+  async importUrls(
+    @Body() dto: ImportMediaUrlsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MediaAssetResponseDto[]> {
+    const assets = await this.mediaService.importMediaUrls(dto, user.id);
+    return assets.map((asset) => MediaAssetResponseDto.fromPrisma(asset));
   }
 
   @Patch(':id')
@@ -192,6 +253,7 @@ export class MediaAdminController {
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'includeDeleted', required: false, type: Boolean })
   @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'format', required: false, type: String })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'bytes'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   async listAssets(@Query() query: ListMediaDto) {

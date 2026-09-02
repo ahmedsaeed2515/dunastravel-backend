@@ -48,6 +48,7 @@ export interface UploadResult {
 
 export interface StorageProvider {
   upload(file: UploadableFile, options: UploadOptions): Promise<UploadResult>;
+  uploadUrl(url: string, options: UploadOptions): Promise<UploadResult>;
   delete(publicId: string): Promise<void>;
   getDeliveryUrl(
     publicId: string,

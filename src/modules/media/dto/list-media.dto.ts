@@ -56,6 +56,11 @@ export class ListMediaDto {
   @MaxLength(255)
   search?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by image format (e.g. webp, jpg, png)' })
+  @IsOptional()
+  @IsString()
+  format?: string;
+
   @ApiPropertyOptional({ enum: ['createdAt', 'bytes'], default: 'createdAt' })
   @IsOptional()
   @IsIn(['createdAt', 'bytes'])

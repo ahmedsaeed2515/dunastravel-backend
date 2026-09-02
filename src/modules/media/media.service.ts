@@ -24,6 +24,8 @@ import {
 import { STORAGE_PROVIDER } from '../../common/storage/storage-provider.token';
 import { Prisma, MediaEntityType, MediaProvenance } from '@prisma/client';
 import { UploadMediaDto } from './dto/upload-media.dto';
+import { UploadBulkMediaDto } from './dto/upload-bulk-media.dto';
+import { ImportMediaUrlsDto } from './dto/import-media-urls.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
 import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
@@ -399,6 +401,293 @@ export class MediaService {
     );
 
     return mediaAsset;
+  }
+
+  async uploadBulkAssets(
+    files: UploadableFile[],
+    dto: UploadBulkMediaDto,
+    uploadedByUserId: string,
+  ): Promise<IMediaAsset[]> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided for bulk upload');
+    }
+
+    let altTextMap: Record<string, string> = {};
+    if (dto.altText) {
+      try {
+        if (dto.altText.startsWith('{')) {
+          altTextMap = JSON.parse(dto.altText);
+        }
+      } catch {
+        altTextMap = {};
+      }
+    }
+
+    const uploadedAssets: IMediaAsset[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileAltText =
+        altTextMap[file.originalname] ||
+        (Object.keys(altTextMap).length === 0 && dto.altText && !dto.altText.startsWith('{')
+          ? dto.altText
+          : file.originalname.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+
+      try {
+        const asset = await this.uploadAsset(
+          file,
+          {
+            entityType: dto.entityType,
+            entityId: dto.entityId,
+            categorySlug: dto.categorySlug,
+            altText: fileAltText,
+          },
+          uploadedByUserId,
+        );
+        uploadedAssets.push(asset);
+      } catch (err: any) {
+        this.logger.error(
+          `Failed to upload file in batch (${file.originalname}): ${err.message}`,
+        );
+        errors.push(`${file.originalname}: ${err.message}`);
+      }
+    }
+
+    if (uploadedAssets.length === 0 && errors.length > 0) {
+      throw new BadRequestException(`Bulk upload failed: ${errors.join(', ')}`);
+    }
+
+    return uploadedAssets;
+  }
+
+  async importMediaUrls(
+    dto: ImportMediaUrlsDto,
+    uploadedByUserId: string,
+  ): Promise<IMediaAsset[]> {
+    if (!dto.items || !Array.isArray(dto.items) || dto.items.length === 0) {
+      throw new BadRequestException('No image URLs provided for import');
+    }
+
+    if (dto.items.length > 30) {
+      throw new BadRequestException('Maximum 30 URLs can be imported in a single batch');
+    }
+
+    const isEntityMedia =
+      dto.entityType === MediaEntityType.TOUR ||
+      dto.entityType === MediaEntityType.HOTEL;
+    if (isEntityMedia) {
+      if (!dto.entityId) {
+        throw new BadRequestException(
+          `entityId is required for ${dto.entityType.toLowerCase()} media`,
+        );
+      }
+      if (dto.entityType === MediaEntityType.TOUR) {
+        const tour = await this.prisma.tour.findFirst({
+          where: { id: dto.entityId, deletedAt: null },
+          select: { id: true },
+        });
+        if (!tour) {
+          throw new BadRequestException('Target tour does not exist');
+        }
+      } else {
+        const hotel = await this.prisma.hotel.findFirst({
+          where: { id: dto.entityId, deletedAt: null },
+          select: { id: true },
+        });
+        if (!hotel) {
+          throw new BadRequestException('Target hotel does not exist');
+        }
+      }
+    }
+
+    const targetEntityId = isEntityMedia
+      ? dto.entityId
+      : (dto.categorySlug || dto.entityId || null);
+
+    const folder =
+      this.configService.get<string>('storage.uploadFolder') || 'dunas-travel';
+    const maxSizeBytes =
+      this.configService.get<number>('storage.maxFileSizeBytes') ||
+      10 * 1024 * 1024;
+
+    const eager: EagerTransform[] = [
+      {
+        width: 1920,
+        crop: 'limit',
+        format: 'webp',
+        quality: 'auto',
+      },
+    ];
+
+    const safeFormats = new Set(['jpg', 'jpeg', 'png', 'webp']);
+    const importedAssets: IMediaAsset[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < dto.items.length; i++) {
+      const item = dto.items[i];
+      const trimmedUrl = item.url?.trim();
+      if (!trimmedUrl || !/^https?:\/\//i.test(trimmedUrl)) {
+        errors.push(`Item #${i + 1}: Invalid HTTP/HTTPS image URL format`);
+        continue;
+      }
+
+      const itemAltText =
+        item.altText?.trim() ||
+        dto.defaultAltText?.trim() ||
+        null;
+
+      const options: UploadOptions = {
+        folder,
+        entityType: dto.entityType,
+        entityId: targetEntityId ?? null,
+        altText: itemAltText ? sanitizePlainText(itemAltText).slice(0, 255) : null,
+        eager,
+      };
+
+      let result;
+      let attempt = 0;
+      const maxAttempts = 3;
+
+      while (attempt < maxAttempts) {
+        result = await this.storageProvider.uploadUrl(trimmedUrl, options);
+        if (result.success) break;
+        attempt++;
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        }
+      }
+
+      if (!result || !result.success) {
+        this.logger.error(
+          `URL import failed { url: ${trimmedUrl}, error: ${result?.error} }`,
+        );
+        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): ${result?.error || 'Provider upload failed'}`);
+        continue;
+      }
+
+      let outputIsSafe = false;
+      try {
+        const outputUrl = new URL(result.secureUrl);
+        outputIsSafe =
+          outputUrl.protocol === 'https:' &&
+          safeFormats.has(result.format.toLowerCase()) &&
+          result.bytes > 0 &&
+          result.bytes <= maxSizeBytes;
+      } catch {
+        outputIsSafe = false;
+      }
+
+      if (!outputIsSafe) {
+        try {
+          if (result.publicId) await this.storageProvider.delete(result.publicId);
+        } catch {
+          // Ignore cleanup error
+        }
+        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Content validation failed`);
+        continue;
+      }
+
+      const existing = await this.prisma.mediaAsset.findUnique({
+        where: { publicId: result.publicId },
+        select: { id: true },
+      });
+      if (existing) {
+        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Duplicate asset in database`);
+        continue;
+      }
+
+      try {
+        const mimeType = `image/${result.format === 'jpg' ? 'jpeg' : result.format}`;
+        const mediaAsset = await this.prisma.$transaction(
+          async (tx: Prisma.TransactionClient) => {
+            const asset = await tx.mediaAsset.create({
+              data: {
+                publicId: result.publicId,
+                url: result.url,
+                secureUrl: result.secureUrl,
+                providerName: 'cloudinary',
+                format: result.format,
+                mimeType,
+                bytes: result.bytes,
+                width: result.width,
+                height: result.height,
+                entityType: dto.entityType,
+                entityId: targetEntityId,
+                provenance: MediaProvenance.UPLOADED,
+                altText: options.altText,
+                uploadedBy: uploadedByUserId,
+              },
+            });
+
+            if (dto.entityType === MediaEntityType.TOUR && dto.entityId) {
+              const existingImages = await tx.tourImage.findMany({
+                where: { tourId: dto.entityId },
+                orderBy: { sortOrder: 'desc' },
+                take: 1,
+              });
+              const nextSortOrder =
+                existingImages.length > 0 ? existingImages[0].sortOrder + 1 : 0;
+              const isHero = nextSortOrder === 0;
+
+              await tx.tourImage.create({
+                data: {
+                  tourId: dto.entityId,
+                  imageUrl: asset.secureUrl,
+                  isHero,
+                  altText: asset.altText,
+                  sortOrder: nextSortOrder,
+                },
+              });
+            }
+
+            await tx.auditLog.create({
+              data: {
+                actorId: uploadedByUserId,
+                action: 'MEDIA_ASSET_IMPORTED_URL',
+                entityType: 'MEDIA_ASSET',
+                entityId: asset.id,
+                metadata: {
+                  sourceUrl: trimmedUrl,
+                  mediaEntityType: dto.entityType,
+                  mediaEntityId: targetEntityId,
+                  bytes: result.bytes,
+                  format: result.format,
+                },
+              },
+            });
+
+            return asset as IMediaAsset;
+          },
+        );
+
+        const eventPayload: MediaUploadedEvent = {
+          assetId: mediaAsset.id,
+          publicId: mediaAsset.publicId,
+          entityType: mediaAsset.entityType,
+          entityId: mediaAsset.entityId,
+          uploadedBy: mediaAsset.uploadedBy,
+          url: mediaAsset.secureUrl,
+          occurredAt: mediaAsset.createdAt,
+        };
+        this.eventEmitter.emit(MEDIA_UPLOADED_EVENT, eventPayload);
+        importedAssets.push(mediaAsset);
+      } catch (dbError: any) {
+        this.logger.error(`Database transaction failed for URL import: ${dbError.message}`);
+        try {
+          if (result.publicId) await this.storageProvider.delete(result.publicId);
+        } catch {
+          // Ignore cleanup error
+        }
+        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Database error ${dbError.message}`);
+      }
+    }
+
+    if (importedAssets.length === 0 && errors.length > 0) {
+      throw new BadRequestException(`Failed to import media URLs: ${errors.join(', ')}`);
+    }
+
+    return importedAssets;
   }
 
   async updateAsset(
@@ -848,42 +1137,65 @@ export class MediaService {
       entityType,
       entityId,
       category,
+      format,
       includeDeleted = false,
       search,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = query;
 
-    const where: Prisma.MediaAssetWhereInput = {};
+    const andConditions: Prisma.MediaAssetWhereInput[] = [];
+
     if (!includeDeleted) {
-      where.deletedAt = null;
+      andConditions.push({ deletedAt: null });
     }
+
     if (entityType) {
-      where.entityType = entityType;
+      andConditions.push({ entityType });
     }
+
     if (entityId) {
-      where.entityId = entityId;
+      andConditions.push({ entityId });
     }
-    if (category) {
+
+    if (category && category !== 'all') {
       if (category === 'tours') {
-        where.entityType = MediaEntityType.TOUR;
+        andConditions.push({ entityType: MediaEntityType.TOUR });
       } else if (category === 'hotels') {
-        where.entityType = MediaEntityType.HOTEL;
+        andConditions.push({ entityType: MediaEntityType.HOTEL });
       } else if (category === 'general') {
-        where.entityType = MediaEntityType.GENERAL;
-        where.OR = [{ entityId: null }, { entityId: 'general' }];
+        andConditions.push({
+          entityType: MediaEntityType.GENERAL,
+          OR: [{ entityId: null }, { entityId: 'general' }],
+        });
       } else {
-        where.entityType = MediaEntityType.GENERAL;
-        where.entityId = category;
+        andConditions.push({
+          entityType: MediaEntityType.GENERAL,
+          entityId: category,
+        });
       }
     }
+
+    if (format && format !== 'all') {
+      andConditions.push({ format: format.toLowerCase().trim() });
+    }
+
     if (search?.trim()) {
       const needle = search.trim();
-      where.OR = [
-        { altText: { contains: needle, mode: 'insensitive' } },
-        { publicId: { contains: needle, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { altText: { contains: needle, mode: 'insensitive' } },
+          { publicId: { contains: needle, mode: 'insensitive' } },
+          { entityId: { contains: needle, mode: 'insensitive' } },
+          { url: { contains: needle, mode: 'insensitive' } },
+          { secureUrl: { contains: needle, mode: 'insensitive' } },
+        ],
+      });
     }
+
+    const where: Prisma.MediaAssetWhereInput =
+      andConditions.length > 0 ? { AND: andConditions } : {};
+
     const orderBy: Prisma.MediaAssetOrderByWithRelationInput =
       sortBy === 'bytes' ? { bytes: sortOrder } : { createdAt: sortOrder };
 
