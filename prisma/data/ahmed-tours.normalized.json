@@ -92,7 +92,7 @@
     ],
     "category": "City Break",
     "country": "Egypt",
-    "basePriceUsd": 590,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -188,7 +188,7 @@
         "it": "Mercato di Khan El Khalili"
       }
     ],
-    "price": 590
+    "price": 0
   },
   {
     "sourceId": "eg-br-002",
@@ -290,7 +290,7 @@
     ],
     "category": "City Break",
     "country": "Egypt",
-    "basePriceUsd": 790,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -403,7 +403,7 @@
         "it": "Biblioteca di Alessandria"
       }
     ],
-    "price": 790
+    "price": 0
   },
   {
     "sourceId": "eg-br-003",
@@ -533,7 +533,7 @@
     ],
     "category": "Cruzeiro + City",
     "country": "Egypt",
-    "basePriceUsd": 1350,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -669,7 +669,7 @@
         "it": "Nuovo Museo (GEM)"
       }
     ],
-    "price": 1350
+    "price": 0
   },
   {
     "sourceId": "eg-br-004",
@@ -806,7 +806,7 @@
     ],
     "category": "Cruzeiro + City",
     "country": "Egypt",
-    "basePriceUsd": 1490,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -934,7 +934,7 @@
         "it": "Valle dei Re, Karnak, Edfu, Kom Ombo e Filae"
       }
     ],
-    "price": 1490
+    "price": 0
   },
   {
     "sourceId": "eg-br-005",
@@ -1078,7 +1078,7 @@
     ],
     "category": "Cruzeiro + Mar Vermelho",
     "country": "Egypt",
-    "basePriceUsd": 1790,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1234,7 +1234,7 @@
         "it": "Storia e svago nello stesso itinerario"
       }
     ],
-    "price": 1790
+    "price": 0
   },
   {
     "sourceId": "eg-br-006",
@@ -1371,7 +1371,7 @@
     ],
     "category": "Cruzeiro + Mar Vermelho",
     "country": "Egypt",
-    "basePriceUsd": 1890,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1537,7 +1537,7 @@
         "it": "Sharm El Sheikh All Inclusive"
       }
     ],
-    "price": 1890
+    "price": 0
   },
   {
     "sourceId": "eg-br-007",
@@ -1653,7 +1653,7 @@
     ],
     "category": "Cruzeiro + Abu Simbel",
     "country": "Egypt",
-    "basePriceUsd": 1990,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -1809,7 +1809,7 @@
         "it": "Tour archeologico d'élite"
       }
     ],
-    "price": 1990
+    "price": 0
   },
   {
     "sourceId": "eg-br-008",
@@ -1932,7 +1932,7 @@
     ],
     "category": "Cruzeiro + Alexandria",
     "country": "Egypt",
-    "basePriceUsd": 1550,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2078,7 +2078,7 @@
         "it": "Valle dei Re e Templi di Karnak"
       }
     ],
-    "price": 1550
+    "price": 0
   },
   {
     "sourceId": "eg-completo-001",
@@ -2180,7 +2180,7 @@
     ],
     "category": "completoEgypt.type",
     "country": "Egypt",
-    "basePriceUsd": 1390,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2330,7 +2330,7 @@
         "it": "Templi di Abu Simbel, Diga di Assuan e Tempio di File"
       }
     ],
-    "price": 1390
+    "price": 0
   },
   {
     "sourceId": "gr-es-001",
@@ -2454,7 +2454,7 @@
     ],
     "category": "City & Islands",
     "country": "Greece",
-    "basePriceUsd": 1490,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2640,7 +2640,7 @@
         "it": "Asistente de habla hispana en la llegada a Atenas"
       }
     ],
-    "price": 1490
+    "price": 0
   },
   {
     "sourceId": "tunisia-8d-7n-tour",
@@ -2757,7 +2757,7 @@
     ],
     "category": "Premium Experience",
     "country": "Tunisia",
-    "basePriceUsd": 1328,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -2902,7 +2902,7 @@
         "it": "Scoprite l'ingegneria romana a El Jem, il terzo anfiteatro romano più grande del mondo."
       }
     ],
-    "price": 1328
+    "price": 0
   },
   {
     "sourceId": "mct-001",
@@ -3060,7 +3060,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3320,7 +3320,7 @@
         "it": "Escursione ai templi di Abu Simbel"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-002",
@@ -3429,7 +3429,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3602,7 +3602,7 @@
         "it": "Crociera di un giorno alle isole del Golfo Saronico: Idra, Poros ed Egina"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-003",
@@ -3746,7 +3746,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -3959,7 +3959,7 @@
         "it": "Efeso e la Casa della Vergine Maria, giro in barca sul Bosforo a Istanbul"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-004",
@@ -4103,7 +4103,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -4306,7 +4306,7 @@
         "it": "Istanbul: giro in barca sul Bosforo, Bazar delle Spezie e tour facoltativo Gioielli di Costantinopoli"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-005",
@@ -4457,7 +4457,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -4680,7 +4680,7 @@
         "it": "Tre paesi in un unico viaggio: meraviglie antiche della Giordania, tesori faraonici dell'Egitto e modernità di Dubai"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-006",
@@ -4810,7 +4810,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5023,7 +5023,7 @@
         "it": "Due paesi in un viaggio: il fascino mediterraneo della Tunisia e i paesaggi del Sahara, i tesori faraonici dell'Egitto e il suo leggendario fiume"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-007",
@@ -5202,7 +5202,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5522,7 +5522,7 @@
         "it": "Visitate la Valle dei Re, i Templi di Karnak e Luxor, e i templi di Edfu e Kom Ombo"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-008",
@@ -5653,7 +5653,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -5808,7 +5808,7 @@
         "it": "Godetevi una crociera sul Nilo visitando la Valle dei Re e i templi di Karnak, Luxor, Edfu, Kom Ombo e Philae"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "mct-009",
@@ -5939,7 +5939,7 @@
     ],
     "category": "Multi-Country",
     "country": "Multi-Country",
-    "basePriceUsd": 2450,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6086,7 +6086,7 @@
         "it": "Godetevi una crociera sul Nilo visitando la Valle dei Re, Karnak, Luxor, Edfu e Kom Ombo"
       }
     ],
-    "price": 2450
+    "price": 0
   },
   {
     "sourceId": "ahmed-group-10",
@@ -6140,7 +6140,8 @@
       "religious"
     ],
     "itineraries": [],
-    "images": []
+    "images": [],
+    "price": 0
   },
   {
     "sourceId": "ahmed-group-18",
@@ -6235,7 +6236,8 @@
       "beach"
     ],
     "itineraries": [],
-    "images": []
+    "images": [],
+    "price": 0
   },
   {
     "sourceId": "ahmed-group-19",
@@ -6328,7 +6330,8 @@
       "beach"
     ],
     "itineraries": [],
-    "images": []
+    "images": [],
+    "price": 0
   },
   {
     "sourceId": "REG-01",
@@ -6423,7 +6426,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6678,7 +6681,7 @@
         "it": "Bursa: prima capitale dell'Impero Ottomano"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-04",
@@ -6773,7 +6776,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -6967,7 +6970,7 @@
         "it": "Giro in mongolfiera opzionale sugli splendidi paesaggi lunari della Cappadocia."
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "IST-01",
@@ -7062,7 +7065,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -7184,7 +7187,7 @@
         "it": "Partenze giornaliere garantite"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-03",
@@ -7279,7 +7282,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -7473,7 +7476,7 @@
         "it": "Opportunità di pellegrinaggio alla sacra Casa della Vergine Maria sul Monte Bülbül."
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-15",
@@ -7603,7 +7606,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 615,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -7798,7 +7801,7 @@
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
     ],
-    "price": 615
+    "price": 0
   },
   {
     "sourceId": "REG-16",
@@ -7928,7 +7931,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 670,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -8130,7 +8133,7 @@
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
     ],
-    "price": 670
+    "price": 0
   },
   {
     "sourceId": "REG-17",
@@ -8260,7 +8263,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 705,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -8462,7 +8465,7 @@
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
     ],
-    "price": 705
+    "price": 0
   },
   {
     "sourceId": "REG-18",
@@ -8592,7 +8595,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 685,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -8794,7 +8797,7 @@
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
     ],
-    "price": 685
+    "price": 0
   },
   {
     "sourceId": "REG-19",
@@ -8924,7 +8927,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 665,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -9126,7 +9129,7 @@
         "it": "Tour di Amman, Jerash e Castello di Ajlun"
       }
     ],
-    "price": 665
+    "price": 0
   },
   {
     "sourceId": "REG-20",
@@ -9256,7 +9259,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 470,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -9393,7 +9396,7 @@
         "it": "Visita di Madaba, Monte Nebo e Castello di Shobak"
       }
     ],
-    "price": 470
+    "price": 0
   },
   {
     "sourceId": "REG-21",
@@ -9523,7 +9526,7 @@
     ],
     "category": "Jordan",
     "country": "Jordan",
-    "basePriceUsd": 430,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -9636,7 +9639,7 @@
         "it": "Visita di Madaba, Monte Nebo e Castello di Shobak"
       }
     ],
-    "price": 430
+    "price": 0
   },
   {
     "sourceId": "REG-22",
@@ -9750,7 +9753,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 165,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -9887,7 +9890,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01 May – 30 Sep"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-23",
@@ -9996,7 +10000,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 245,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -10151,7 +10155,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01 May – 30 Sep"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-24",
@@ -10275,7 +10280,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 315,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -10448,7 +10453,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01 May – 30 Sep"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-25",
@@ -10572,7 +10578,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 409,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -10763,7 +10769,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01 May – 30 Sep"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-26",
@@ -10892,7 +10899,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 515,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -11053,7 +11060,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01MAY26 – 30SEP26 / 01MAY27 – 30SEP27"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-27",
@@ -11177,7 +11185,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 465,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -11404,7 +11412,8 @@
       ],
       "winterDates": "04 Jan – 30 Apr / 01 Oct – 26 Dec",
       "summerDates": "01 May – 30 Sep"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-28",
@@ -11543,7 +11552,7 @@
     },
     "category": "United Arab Emirates",
     "country": "United Arab Emirates",
-    "basePriceUsd": 799,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -12023,7 +12032,8 @@
           }
         }
       ]
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "HM001",
@@ -12142,7 +12152,7 @@
     },
     "category": "Honeymoon",
     "country": "United Arab Emirates",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -12270,7 +12280,8 @@
       ],
       "winterDates": "04JAN26 - 30APR26 / 01OCT26 - 26DEC26",
       "summerDates": "04JAN27 - 30APR27 / 01OCT27 - 26DEC27"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "HM002",
@@ -12394,7 +12405,7 @@
     },
     "category": "Honeymoon",
     "country": "United Arab Emirates",
-    "basePriceUsd": 1099,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -12522,7 +12533,8 @@
       ],
       "winterDates": "04JAN26 - 30APR26 / 01OCT26 - 26DEC26",
       "summerDates": "04JAN27 - 30APR27 / 01OCT27 - 26DEC27"
-    }
+    },
+    "price": 0
   },
   {
     "sourceId": "REG-05",
@@ -12617,7 +12629,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -12868,7 +12880,7 @@
         "it": "Crociera opzionale sul Bosforo a Istanbul"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-06",
@@ -12963,7 +12975,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13153,7 +13165,7 @@
         "it": "Tour opzionale della Cappadocia del Sud"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-07",
@@ -13248,7 +13260,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13514,7 +13526,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-08",
@@ -13609,7 +13621,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -13713,7 +13725,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-09",
@@ -13808,7 +13820,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14020,7 +14032,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-10",
@@ -14115,7 +14127,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14399,7 +14411,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-11",
@@ -14494,7 +14506,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -14724,7 +14736,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-12",
@@ -14819,7 +14831,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15031,7 +15043,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-05-B",
@@ -15126,7 +15138,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15356,7 +15368,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-13",
@@ -15451,7 +15463,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15555,7 +15567,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-14",
@@ -15650,7 +15662,7 @@
     ],
     "category": "Turkey",
     "country": "Turkey",
-    "basePriceUsd": 750,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "DRAFT",
     "isActive": false,
@@ -15898,7 +15910,7 @@
         "it": "Esperienze culturali autentiche e bazar"
       }
     ],
-    "price": 750
+    "price": 0
   },
   {
     "sourceId": "REG-29",
@@ -16032,7 +16044,8 @@
         "sortOrder": 4
       }
     ],
-    "images": []
+    "images": [],
+    "price": 0
   },
   {
     "sourceId": "MRC-01",
@@ -16127,7 +16140,7 @@
     ],
     "category": "Morocco",
     "country": "Morocco",
-    "basePriceUsd": 799,
+    "basePriceUsd": 0,
     "currency": "USD",
     "status": "PUBLISHED",
     "isActive": true,
@@ -16274,7 +16287,7 @@
         "it": "Attraversamento del Mediterraneo in traghetto"
       }
     ],
-    "price": 799
+    "price": 0
   },
   {
     "sourceId": "eg-classic-001",
@@ -16570,6 +16583,7 @@
           "it": "Dopo la colazione faremo il check out delle camere, vi porteremo all'aeroporto e vi daremo assistenza per prendere il volo internazionale."
         }
       }
-    ]
+    ],
+    "price": 0
   }
 ]
