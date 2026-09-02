@@ -23,8 +23,10 @@ import {
 export interface CredentialEntry {
   id: string;
   provider: string;
+  model: string;
   defaultModel: string;
   enabledModels: string[];
+
   baseUrl?: string;
   label?: string;
   priority: number;
@@ -202,8 +204,10 @@ export class AiKeyPoolService implements OnModuleInit {
     return {
       id: row.id,
       provider: row.provider,
+      model: row.model || '',
       defaultModel: row.model || '',
       enabledModels: Array.isArray(row.enabledModels) ? row.enabledModels : (row.model ? [row.model] : []),
+
       baseUrl: row.baseUrl || undefined,
       label: row.label || undefined,
       priority: row.priority,
