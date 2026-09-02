@@ -2077,6 +2077,12 @@ export class AdminService {
       displayOrder: t.displayOrder,
       country: t.country,
       city: t.city,
+      highlightsJsonb: t.highlightsJsonb,
+      includedServicesJsonb: t.includedServicesJsonb,
+      excludedServicesJsonb: t.excludedServicesJsonb,
+      departureInfoJsonb: t.departureInfoJsonb,
+      hotelInfoJsonb: t.hotelInfoJsonb,
+      seasonPricingJsonb: t.seasonPricingJsonb,
 
       bookingCount: t._count.bookings,
       reviewCount: t._count.reviews,

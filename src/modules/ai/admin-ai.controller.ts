@@ -334,7 +334,7 @@ export class AdminAiController {
     const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
     const defaultModelForProvider =
       providerName === 'google'
-        ? 'gemini-3.7-flash'
+        ? 'gemini-3.6-flash'
         : providerName === 'openai'
         ? 'gpt-4o-mini'
         : providerName === 'xai'

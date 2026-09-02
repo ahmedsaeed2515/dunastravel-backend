@@ -24,14 +24,16 @@ export class ProviderError extends Error {
 
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
-  'gemini-3.7-flash': 'gemini-2.0-flash',
-  'gemini-3.6-flash': 'gemini-2.0-flash',
-  'gemini-3.5-flash': 'gemini-2.0-flash',
-  'gemini-3.5-flash-lite': 'gemini-2.0-flash',
-  'gemini-3.1-flash-lite': 'gemini-2.0-flash',
-  'gemini-3.1-pro': 'gemini-1.5-pro',
-  'gemini-2.0-flash-001': 'gemini-2.0-flash',
-  'gemini-2.0-flash-lite-001': 'gemini-2.0-flash',
+  // Deprecated/retired Google models remapped to active, verified Google models:
+  'gemini-2.0-flash': 'gemini-3.6-flash',
+  'gemini-2.0-flash-001': 'gemini-3.6-flash',
+  'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
+  'gemini-2.0-flash-lite-001': 'gemini-3.5-flash-lite',
+  'gemini-1.5-flash': 'gemini-3.5-flash',
+  'gemini-1.5-flash-8b': 'gemini-3.5-flash-lite',
+  'gemini-1.5-pro': 'gemini-3.6-flash',
+  'gemini-2.5-flash': 'gemini-3.6-flash',
+  'gemini-2.5-pro': 'gemini-3.6-flash',
 };
 
 export function normalizeModelId(model: string): string {
@@ -41,11 +43,26 @@ export function normalizeModelId(model: string): string {
 
 function classifyHttpError(status: number, body: string, provider: string, model: string): ProviderError {
   let message = `Provider '${provider}' HTTP ${status}`;
+  let isKeyInvalid = false;
   try {
     const parsed = JSON.parse(body);
-    message = parsed?.error?.message || parsed?.message || message;
+    const errObj = Array.isArray(parsed) ? (parsed[0]?.error || parsed[0]) : (parsed?.error || parsed);
+    message = errObj?.message || parsed?.message || message;
+    const reason = errObj?.details?.[0]?.reason || errObj?.reason || '';
+    if (
+      reason === 'API_KEY_INVALID' ||
+      message.toLowerCase().includes('api key not valid') ||
+      message.toLowerCase().includes('pass a valid api key') ||
+      message.toLowerCase().includes('invalid api key')
+    ) {
+      isKeyInvalid = true;
+    }
   } catch {
     if (body) message += `: ${body.slice(0, 200)}`;
+  }
+
+  if (isKeyInvalid) {
+    return new ProviderError('INVALID_KEY', `API key rejected by provider '${provider}'. Key may be invalid or expired: ${message}`, status, provider, model);
   }
 
   switch (status) {
@@ -133,18 +150,18 @@ export class UniversalAiProvider implements IAiProvider {
     apiKey: string,
     providerDef: any,
   ): Promise<IAiProviderResponse> {
-    const rawModel = options.model || 'gemini-3.5-flash';
+    const rawModel = options.model || 'gemini-3.6-flash';
     const model = normalizeModelId(rawModel);
 
     // Try Google Native API first (fastest, direct, reliable)
     try {
-      return await this.generateGoogleNativeCompletion(prompt, options, apiKey, model);
+      return await this.generateGoogleNativeCompletion(prompt, { ...options, model }, apiKey, model);
     } catch (err: any) {
       if (err instanceof ProviderError && (err.code === 'UNAUTHORIZED' || err.code === 'INVALID_KEY')) {
         throw err;
       }
       this.logger.warn(`Google Native API failed (${err.message}). Trying OpenAI-compatible endpoint...`);
-      return this.generateOpenAiCompatibleCompletion(prompt, options, apiKey, 'google', providerDef);
+      return this.generateOpenAiCompatibleCompletion(prompt, { ...options, model }, apiKey, 'google', providerDef);
     }
   }
 
@@ -202,7 +219,8 @@ export class UniversalAiProvider implements IAiProvider {
       }
 
       const json = await res.json();
-      const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const parts = json.candidates?.[0]?.content?.parts || [];
+      const text = parts.map((p: any) => p.text || '').filter(Boolean).join('\n') || '';
       const inputTokens = json.usageMetadata?.promptTokenCount || 0;
       const outputTokens = json.usageMetadata?.candidatesTokenCount || 0;
 

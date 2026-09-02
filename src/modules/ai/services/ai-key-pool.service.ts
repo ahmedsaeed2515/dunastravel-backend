@@ -389,7 +389,7 @@ export class AiKeyPoolService implements OnModuleInit {
     const effectiveModel =
       modelId?.trim() ||
       (providerId === 'google'
-        ? 'gemini-3.7-flash'
+        ? 'gemini-3.6-flash'
         : providerId === 'openai'
         ? 'gpt-4o-mini'
         : providerId === 'xai'
