@@ -890,6 +890,41 @@
         ]
       }
     },
+    "/api/admin/bookings/{referenceCode}/payments": {
+      "post": {
+        "operationId": "AdminController_recordManualPayment",
+        "parameters": [
+          {
+            "name": "referenceCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment recorded and booking updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record manual offline payment for a booking.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/users/{id}/suspend": {
       "post": {
         "operationId": "UsersController_suspendUser",
@@ -1321,6 +1356,41 @@
           }
         ],
         "summary": "Update a tailor-made inquiry.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/inquiries/{referenceCode}/convert-to-booking": {
+      "post": {
+        "operationId": "AdminController_convertInquiryToBooking",
+        "parameters": [
+          {
+            "name": "referenceCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Created booking record"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Convert a tailor-made inquiry into an official booking.",
         "tags": [
           "Admin"
         ]
@@ -4712,12 +4782,7 @@
             "description": "Tour not available"
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create an authenticated tour booking",
+        "summary": "Create a tour booking (Guest or Authenticated)",
         "tags": [
           "Bookings"
         ]
@@ -8565,7 +8630,101 @@
             "description": ""
           }
         },
-        "summary": "Upload a media asset",
+        "summary": "Upload a single media asset",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/upload-bulk": {
+      "post": {
+        "operationId": "MediaAdminController_uploadBulk",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadBulkMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaAssetResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "502": {
+            "description": ""
+          }
+        },
+        "summary": "Upload multiple media assets at once",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/import-urls": {
+      "post": {
+        "operationId": "MediaAdminController_importUrls",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMediaUrlsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaAssetResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "502": {
+            "description": ""
+          }
+        },
+        "summary": "Import media assets from external direct URLs",
         "tags": [
           "Admin — Media"
         ]
@@ -8838,6 +8997,15 @@
             "required": false,
             "in": "query",
             "description": "Searches persisted alt text and provider asset ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": false,
+            "in": "query",
+            "description": "Filter by image format (e.g. webp, jpg, png)",
             "schema": {
               "type": "string"
             }
@@ -14988,6 +15156,36 @@
         ]
       }
     },
+    "/api/admin/reviews/batch/status": {
+      "patch": {
+        "operationId": "AdminReviewsController_batchUpdateStatus",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchUpdateReviewStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch update moderation status for multiple reviews at once",
+        "tags": [
+          "admin-reviews"
+        ]
+      }
+    },
     "/api/admin/reviews/{id}/status": {
       "patch": {
         "operationId": "AdminReviewsController_updateStatus",
@@ -15304,6 +15502,55 @@
         ]
       }
     },
+    "/api/hotels/bookings": {
+      "post": {
+        "operationId": "HotelsController_createBooking",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a standalone hotel or room booking",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/bookings/{referenceCode}": {
+      "get": {
+        "operationId": "HotelsController_getBookingByReference",
+        "parameters": [
+          {
+            "name": "referenceCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get hotel booking confirmation by reference code",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
     "/api/hotels/{slug}": {
       "get": {
         "operationId": "HotelsController_findOne",
@@ -15371,6 +15618,113 @@
           }
         ],
         "summary": "Create hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/bookings": {
+      "get": {
+        "operationId": "AdminHotelsController_findAllBookings",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Page limit",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status (PENDING, CONFIRMED, CANCELLED, COMPLETED)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hotelId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hotel ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term by reference code, guest name, email or phone",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List standalone hotel bookings for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/bookings/{id}/status": {
+      "patch": {
+        "operationId": "AdminHotelsController_updateBookingStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHotelBookingStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update standalone hotel booking status",
         "tags": [
           "admin-hotels"
         ]
@@ -15961,6 +16315,14 @@
           "internalNote": {
             "type": "string",
             "description": "Internal note by the agent"
+          },
+          "quotedAmountUsd": {
+            "type": "number",
+            "description": "Quoted amount in USD for the inquiry"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Customer notes or special requests"
           }
         }
       },
@@ -17842,6 +18204,15 @@
           },
           "notes": {
             "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
           }
         },
         "required": [
@@ -18292,6 +18663,90 @@
           "provenance",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "UploadBulkMediaDto": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "TOUR",
+              "HOTEL",
+              "GENERAL"
+            ],
+            "description": "Type of entity this media belongs to",
+            "default": "GENERAL"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "Required if entityType is TOUR or HOTEL, or category slug if GENERAL"
+          },
+          "categorySlug": {
+            "type": "string",
+            "description": "Optional category slug for general library assets"
+          },
+          "altText": {
+            "type": "string",
+            "description": "Optional default alt text or JSON string mapping filenames to alt text"
+          }
+        },
+        "required": [
+          "entityType"
+        ]
+      },
+      "MediaUrlItemDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Direct image URL"
+          },
+          "altText": {
+            "type": "string",
+            "description": "Accessibility alt text for this specific image"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ImportMediaUrlsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Array of image URLs to import with optional individual alt text",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaUrlItemDto"
+            }
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "TOUR",
+              "HOTEL",
+              "GENERAL"
+            ],
+            "description": "Type of entity this media belongs to",
+            "default": "GENERAL"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "Required if entityType is TOUR or HOTEL, or category slug if GENERAL"
+          },
+          "categorySlug": {
+            "type": "string",
+            "description": "Optional category slug for general library assets"
+          },
+          "defaultAltText": {
+            "type": "string",
+            "description": "Default alt text applied if individual altText is not provided"
+          }
+        },
+        "required": [
+          "items",
+          "entityType"
         ]
       },
       "UpdateMediaDto": {
@@ -19192,6 +19647,14 @@
           "priority": {
             "type": "number",
             "example": 10
+          },
+          "sourceEntityType": {
+            "type": "string",
+            "example": "MANUAL"
+          },
+          "sourceEntityId": {
+            "type": "string",
+            "example": "visa_guidelines_2026"
           }
         },
         "required": [
@@ -19249,6 +19712,12 @@
           },
           "priority": {
             "type": "number"
+          },
+          "sourceEntityType": {
+            "type": "string"
+          },
+          "sourceEntityId": {
+            "type": "string"
           }
         }
       },
@@ -19749,6 +20218,30 @@
           }
         }
       },
+      "BatchUpdateReviewStatusDto": {
+        "type": "object",
+        "properties": {
+          "reviewIds": {
+            "description": "List of review IDs to update",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Target review status (APPROVED, REJECTED, PENDING)"
+          },
+          "isPublished": {
+            "type": "boolean",
+            "description": "Whether the reviews should be published"
+          }
+        },
+        "required": [
+          "reviewIds",
+          "status"
+        ]
+      },
       "UpdateReviewStatusDto": {
         "type": "object",
         "properties": {
@@ -19849,6 +20342,84 @@
             "description": "Associated Tour UUID"
           }
         }
+      },
+      "CreateHotelBookingDto": {
+        "type": "object",
+        "properties": {
+          "hotelSlug": {
+            "type": "string",
+            "description": "Hotel slug to book"
+          },
+          "hotelId": {
+            "type": "string",
+            "description": "Hotel ID"
+          },
+          "roomSlug": {
+            "type": "string",
+            "description": "Room slug to book"
+          },
+          "roomId": {
+            "type": "string",
+            "description": "Room ID"
+          },
+          "guestName": {
+            "type": "string",
+            "description": "Full name of guest"
+          },
+          "guestEmail": {
+            "type": "string",
+            "description": "Email address of guest"
+          },
+          "guestPhone": {
+            "type": "string",
+            "description": "Contact phone number with country code"
+          },
+          "checkInDate": {
+            "type": "string",
+            "description": "Check-in date (YYYY-MM-DD)"
+          },
+          "checkOutDate": {
+            "type": "string",
+            "description": "Check-out date (YYYY-MM-DD)"
+          },
+          "guestsCount": {
+            "type": "number",
+            "description": "Number of guests",
+            "default": 1
+          },
+          "roomsCount": {
+            "type": "number",
+            "description": "Number of rooms",
+            "default": 1
+          },
+          "specialRequests": {
+            "type": "string",
+            "description": "Special requests or preferences"
+          }
+        },
+        "required": [
+          "guestName",
+          "guestEmail",
+          "guestPhone",
+          "checkInDate",
+          "checkOutDate"
+        ]
+      },
+      "UpdateHotelBookingStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Target booking status"
+          },
+          "adminNotes": {
+            "type": "string",
+            "description": "Admin operational notes"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "CreateHotelDto": {
         "type": "object",

@@ -79,11 +79,15 @@ describe('TransportationService', () => {
     };
     const service = new TransportationService(prisma as never);
 
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 14);
+    const pickupDateStr = futureDate.toISOString().slice(0, 10);
+
     const booking = await service.createBooking(
       null,
       {
         serviceId: mockService.id,
-        pickupDate: '2026-09-01',
+        pickupDate: pickupDateStr,
         pickupTime: '10:00',
         pickupLocation: 'Cairo Airport Terminal 3',
         dropoffLocation: 'Four Seasons Cairo',

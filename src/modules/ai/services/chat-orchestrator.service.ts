@@ -821,7 +821,7 @@ export class ChatOrchestratorService {
     }
 
     // 2. If human staff is actively taking over this conversation, do not send autonomous LLM reply
-    if (conversation.status === 'HUMAN_ACTIVE') {
+    if (conversation.status === 'HANDED_OFF' || conversation.status === 'HUMAN_ACTIVE' || conversation.status === 'CLOSED' || conversation.status === 'ARCHIVED') {
       const userMsg = await (this.prisma as any).chatMessage.create({
         data: {
           conversationId: conversation.id,
@@ -845,7 +845,7 @@ export class ChatOrchestratorService {
         handoff: {
           available: true,
           requested: true,
-          status: 'HUMAN_ACTIVE',
+          status: conversation.status,
           assignedStaffId: conversation.assignedStaffId,
         },
         leadCapture: { required: false, fields: [] },
@@ -893,9 +893,6 @@ export class ChatOrchestratorService {
     // 6. Detect Tour Comparison queries
     const isComparison = /(compare|difference|versus|vs|مقارنة|قارن|الفرق بين)/i.test(sanitizedMsg);
     let tourComparison: StructuredTourComparison | null = null;
-    if (isComparison) {
-      tourComparison = await this.tourCatalogTool.compareTwoTours('egito-classico-8d', 'egito-historico-10d', locale);
-    }
 
     // 7. Detect Itinerary Refinement or Creation
     const isRefinement = existingPrefs.currentProposal && /(add|remove|make|change|تعديل|زيادة|حذف|تغيير|بدل)/i.test(sanitizedMsg);
@@ -949,6 +946,13 @@ export class ChatOrchestratorService {
       sources = rSources;
       recommendedTours = rTours;
       recommendedDestinations = rDests;
+    }
+
+    // Resolve tour comparison dynamically from grounded catalog tours or fallback to top published tours
+    if (isComparison) {
+      const tourA = recommendedTours[0]?.id || recommendedTours[0]?.slug;
+      const tourB = recommendedTours[1]?.id || recommendedTours[1]?.slug;
+      tourComparison = await this.tourCatalogTool.compareTwoTours(tourA, tourB, locale);
     }
     const retrievalLatencyMs = Date.now() - retrievalStart;
 
@@ -1075,11 +1079,11 @@ CONVERSATION & STYLING RULES:
       structuredContentPayload.proposal = structuredProposal;
     }
 
-    // 10. Race condition guard: if conversation transitioned to HUMAN_ACTIVE while waiting for provider
+    // 10. Race condition guard: if conversation transitioned to HANDED_OFF while waiting for provider
     const freshConversation = await (this.prisma as any).chatConversation.findUnique({
       where: { id: conversation.id },
     });
-    if (freshConversation && freshConversation.status === 'HUMAN_ACTIVE') {
+    if (freshConversation && (freshConversation.status === 'HANDED_OFF' || freshConversation.status === 'HUMAN_ACTIVE' || freshConversation.status === 'CLOSED' || freshConversation.status === 'ARCHIVED')) {
       this.logger.warn(`AI completion discarded for conversation ${conversation.id} because staff took over during generation.`);
       return {
         conversationId: conversation.id,
@@ -1087,7 +1091,7 @@ CONVERSATION & STYLING RULES:
         recommendations: { tours: [], destinations: [] },
         suggestedReplies: [],
         actions: [],
-        handoff: { available: true, requested: true, status: 'HUMAN_ACTIVE' },
+        handoff: { available: true, requested: true, status: freshConversation.status },
         leadCapture: { required: false, fields: [] },
         sources: [],
       };
@@ -1208,18 +1212,20 @@ CONVERSATION & STYLING RULES:
       sendEvent('status', { phase: 'retrieving' });
       const result = await this.processVisitorMessage(dto);
 
-      const content = result.message.content || '';
-      const chunkSize = 20;
-      for (let i = 0; i < content.length; i += chunkSize) {
-        sendEvent('token', { delta: content.slice(i, i + chunkSize) });
-      }
+      if (result.message?.id !== 'discarded') {
+        const content = result.message.content || '';
+        const chunkSize = 20;
+        for (let i = 0; i < content.length; i += chunkSize) {
+          sendEvent('token', { delta: content.slice(i, i + chunkSize) });
+        }
 
-      if (result.recommendations?.proposal || result.recommendations?.comparison) {
-        sendEvent('structured', {
-          proposal: result.recommendations.proposal,
-          comparison: result.recommendations.comparison,
-          tours: result.recommendations.tours,
-        });
+        if (result.recommendations?.proposal || result.recommendations?.comparison) {
+          sendEvent('structured', {
+            proposal: result.recommendations.proposal,
+            comparison: result.recommendations.comparison,
+            tours: result.recommendations.tours,
+          });
+        }
       }
 
       sendEvent('complete', result);
@@ -1246,7 +1252,12 @@ CONVERSATION & STYLING RULES:
       throw new BadRequestException('Invalid chat session token');
     }
 
-    // Idempotency check
+    // 1. Session-level idempotency check
+    if (conversation.leadStatus === 'QUALIFIED' && conversation.visitorEmail === visitorInfo.email) {
+      return { success: true, leadId: conversation.customerId || conversation.id, leadStatus: 'QUALIFIED', isDuplicate: true };
+    }
+
+    // 2. Global 5-minute idempotency check
     if (visitorInfo.email && (this.prisma as any)?.tailorMadeInquiry?.findFirst) {
       try {
         const recentInquiry = await (this.prisma as any).tailorMadeInquiry.findFirst({

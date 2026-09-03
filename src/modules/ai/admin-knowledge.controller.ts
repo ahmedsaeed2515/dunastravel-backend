@@ -102,17 +102,35 @@ export class AdminKnowledgeController {
     const groupedMap = new Map<string, any>();
 
     for (const item of allMatchingItems) {
-      const canonicalKey = (item.sourceEntityType && item.sourceEntityId)
-        ? `${item.sourceEntityType}:${item.sourceEntityId}`
-        : `MANUAL:${item.id}`;
+      let baseEntityId = item.sourceEntityId || item.id;
+      if (item.locale && baseEntityId.endsWith(`:${item.locale}`)) {
+        baseEntityId = baseEntityId.slice(0, -(item.locale.length + 1));
+      }
+
+      let canonicalKey = item.sourceEntityId
+        ? `${item.sourceEntityType || 'MANUAL'}:${baseEntityId}`
+        : null;
+
+      if (!canonicalKey && Array.isArray(item.tags)) {
+        const entityTag = item.tags.find((t: string) => typeof t === 'string' && (t.startsWith('entity:') || t.startsWith('canonical:')));
+        if (entityTag) {
+          canonicalKey = `MANUAL:${entityTag.split(':')[1]}`;
+        }
+      }
+
+      if (!canonicalKey) {
+        canonicalKey = (item.sourceEntityType && item.sourceEntityType !== 'MANUAL')
+          ? `${item.sourceEntityType}:${baseEntityId}`
+          : `MANUAL:${baseEntityId}`;
+      }
 
       if (!groupedMap.has(canonicalKey)) {
-        const isSourceManaged = item.sourceType === 'SYNC_CATALOG' || Boolean(item.sourceEntityType);
+        const isSourceManaged = item.sourceType === 'SYNC_CATALOG' || item.sourceEntityType === 'TOUR' || item.sourceEntityType === 'HOTEL' || item.sourceEntityType === 'TRANSPORTATION';
         groupedMap.set(canonicalKey, {
           canonicalEntityId: canonicalKey,
           sourceEntityType: item.sourceEntityType || 'MANUAL',
           sourceType: isSourceManaged ? 'SOURCE_MANAGED' : 'MANUALLY_MANAGED',
-          sourceEntityId: item.sourceEntityId || item.id,
+          sourceEntityId: baseEntityId,
           title: item.title,
           category: item.category,
           syncStatus: item.syncStatus || 'SYNCED',
@@ -371,7 +389,9 @@ export class AdminKnowledgeController {
         tags: dto.tags || [],
         status: (dto.status as any) || 'PUBLISHED',
         source: dto.source || 'ADMIN_PANEL',
-        sourceType: 'MANUALLY_MANAGED',
+        sourceType: (dto.sourceEntityType && dto.sourceEntityType !== 'MANUAL') ? 'SOURCE_MANAGED' : 'MANUALLY_MANAGED',
+        sourceEntityType: dto.sourceEntityType || 'MANUAL',
+        sourceEntityId: dto.sourceEntityId || undefined,
         priority: dto.priority ?? 0,
         lastIndexedAt: new Date(),
       },
@@ -420,7 +440,10 @@ export class AdminKnowledgeController {
         tags: dto.tags ?? existing.tags,
         status: (dto.status as any) ?? existing.status,
         source: dto.source ?? existing.source,
+        sourceEntityType: dto.sourceEntityType !== undefined ? dto.sourceEntityType : existing.sourceEntityType,
+        sourceEntityId: dto.sourceEntityId !== undefined ? dto.sourceEntityId : existing.sourceEntityId,
         priority: dto.priority ?? existing.priority,
+        isManuallyOverridden: true,
         version: nextVersion,
         lastIndexedAt: new Date(),
       },
@@ -472,6 +495,58 @@ export class AdminKnowledgeController {
     };
   }
 
+  private resolveCanonicalWhere(canonicalId: string): any {
+    const decoded = decodeURIComponent(canonicalId);
+    const firstColon = decoded.indexOf(':');
+    let entityType = '';
+    let remainder = '';
+
+    if (firstColon !== -1) {
+      entityType = decoded.substring(0, firstColon);
+      remainder = decoded.substring(firstColon + 1);
+    } else {
+      remainder = decoded;
+    }
+
+    // Strip optional trailing locale suffix (e.g. :en, :ar, :es, :pt, :it) if present
+    const baseId = remainder.replace(/:(en|ar|es|pt|it)$/i, '');
+
+    if (entityType === 'MANUAL') {
+      return {
+        OR: [
+          { id: remainder },
+          { id: baseId },
+          { sourceEntityId: remainder },
+          { sourceEntityId: baseId },
+        ],
+      };
+    }
+
+    if (entityType) {
+      return {
+        OR: [
+          { sourceEntityType: entityType, sourceEntityId: remainder },
+          { sourceEntityType: entityType, sourceEntityId: baseId },
+          { sourceEntityType: entityType, sourceEntityId: { startsWith: baseId } },
+          { id: remainder },
+          { id: baseId },
+          { sourceEntityId: remainder },
+          { sourceEntityId: baseId },
+          { sourceEntityId: { startsWith: baseId } },
+        ],
+      };
+    }
+
+    return {
+      OR: [
+        { id: remainder },
+        { id: baseId },
+        { sourceEntityId: remainder },
+        { sourceEntityId: baseId },
+      ],
+    };
+  }
+
   /**
    * 7. CANONICAL ENTITY AI TOGGLE
    */
@@ -481,16 +556,7 @@ export class AdminKnowledgeController {
     @Param('canonicalId') canonicalId: string,
     @Body() body: { isExcludedFromAi: boolean },
   ) {
-    const parts = canonicalId.split(':');
-    const entityType = parts[0];
-    const entityId = parts[1];
-
-    let updateWhere: any = {};
-    if (entityType === 'MANUAL') {
-      updateWhere = { id: entityId };
-    } else {
-      updateWhere = { sourceEntityType: entityType, sourceEntityId: entityId };
-    }
+    const updateWhere = this.resolveCanonicalWhere(canonicalId);
 
     const count = await this.prisma.knowledgeBaseItem.updateMany({
       where: updateWhere,
@@ -527,24 +593,33 @@ export class AdminKnowledgeController {
     },
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    const parts = canonicalId.split(':');
-    const entityType = parts[0];
-    const entityId = parts[1];
+    const updateWhere = this.resolveCanonicalWhere(canonicalId);
 
-    let updateWhere: any = {};
-    if (entityType === 'MANUAL') {
-      updateWhere = { id: entityId };
-    } else {
-      updateWhere = { sourceEntityType: entityType, sourceEntityId: entityId };
-    }
-
-    const items = await this.prisma.knowledgeBaseItem.findMany({ where: updateWhere });
+    let items = await this.prisma.knowledgeBaseItem.findMany({ where: updateWhere });
     if (items.length === 0) {
-      throw new NotFoundException('Canonical entity records not found');
+      // Robust fallback search: try by ID or title match if exact where didn't find records
+      const decoded = decodeURIComponent(canonicalId);
+      const lastToken = decoded.split(':').pop() || '';
+      items = await this.prisma.knowledgeBaseItem.findMany({
+        where: {
+          OR: [
+            { id: decoded },
+            { id: lastToken },
+            { sourceEntityId: { contains: lastToken, mode: 'insensitive' } },
+            { title: { contains: lastToken, mode: 'insensitive' } },
+          ],
+        },
+      });
     }
+
+    if (items.length === 0) {
+      throw new NotFoundException(`Canonical entity records not found for '${canonicalId}'`);
+    }
+
+    const itemIds = items.map((i) => i.id);
 
     await this.prisma.knowledgeBaseItem.updateMany({
-      where: updateWhere,
+      where: { id: { in: itemIds } },
       data: {
         aiOverrideInstructions: body.aiOverrideInstructions?.trim() || null,
         aiOverrideContext: body.aiOverrideContext?.trim() || null,
@@ -574,6 +649,7 @@ export class AdminKnowledgeController {
     return {
       success: true,
       canonicalId,
+      affectedItemsCount: items.length,
       aiOverrideInstructions: body.aiOverrideInstructions,
       isRecommendationAllowed: body.isRecommendationAllowed ?? true,
     };
@@ -585,16 +661,7 @@ export class AdminKnowledgeController {
   @Delete('canonical/:canonicalId/override')
   @ApiOperation({ summary: 'Clear AI Knowledge Override and restore canonical database facts' })
   async clearCanonicalAiOverride(@Param('canonicalId') canonicalId: string) {
-    const parts = canonicalId.split(':');
-    const entityType = parts[0];
-    const entityId = parts[1];
-
-    let updateWhere: any = {};
-    if (entityType === 'MANUAL') {
-      updateWhere = { id: entityId };
-    } else {
-      updateWhere = { sourceEntityType: entityType, sourceEntityId: entityId };
-    }
+    const updateWhere = this.resolveCanonicalWhere(canonicalId);
 
     await this.prisma.knowledgeBaseItem.updateMany({
       where: updateWhere,

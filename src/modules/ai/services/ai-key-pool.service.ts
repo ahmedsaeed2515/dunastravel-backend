@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UniversalAiProvider, ProviderError } from '../providers/universal-ai.provider';
 import { IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
-import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl, validateApiKeyFormat } from './model-registry.service';
+import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl, validateApiKeyFormat, sanitizeApiKey } from './model-registry.service';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
@@ -97,12 +97,13 @@ export class AiKeyPoolService implements OnModuleInit {
       const rows = await (this.prisma as any).aiProviderCredential.findMany();
       for (const r of rows) {
         const decrypted = decryptSensitiveField(r.encryptedApiKey) || '';
+        const fmt = validateApiKeyFormat(r.provider, decrypted);
         if (
           decrypted === 'Password123' ||
           decrypted.includes('[DECRYPT_FAILED') ||
-          (r.provider === 'google' && (!decrypted.startsWith('AIza') || decrypted.length < 30))
+          !fmt.valid
         ) {
-          this.logger.warn(`Deactivating invalid/dummy API key credential ${r.id} (${r.label || r.provider})...`);
+          this.logger.warn(`Deactivating invalid/dummy API key credential ${r.id} (${r.label || r.provider}): ${fmt.reason || 'Invalid format'}`);
           await (this.prisma as any).aiProviderCredential.update({
             where: { id: r.id },
             data: {
@@ -283,8 +284,9 @@ export class AiKeyPoolService implements OnModuleInit {
       }
     }
 
-    // Validate API Key format
-    const formatCheck = validateApiKeyFormat(providerId, dto.apiKey);
+    // Validate and sanitize API Key format
+    const cleanedKey = sanitizeApiKey(dto.apiKey);
+    const formatCheck = validateApiKeyFormat(providerId, cleanedKey);
     if (!formatCheck.valid) {
       throw new BadRequestException(formatCheck.reason);
     }
@@ -310,7 +312,7 @@ export class AiKeyPoolService implements OnModuleInit {
         provider: providerId,
         model: dto.model?.trim() || '',
         label: dto.label?.trim() || `${dto.provider} Key`,
-        encryptedApiKey: encryptSensitiveField(dto.apiKey.trim())!,
+        encryptedApiKey: encryptSensitiveField(cleanedKey)!,
         baseUrl: dto.baseUrl?.trim() || null,
         priority: nextPriority,
         isActive: dto.isActive ?? true,
@@ -372,11 +374,12 @@ export class AiKeyPoolService implements OnModuleInit {
     }
     // API key: only update if a real new key is provided (not masked dots)
     if (dto.apiKey && dto.apiKey.trim().length > 5 && !dto.apiKey.includes('••')) {
-      const keyFormatCheck = validateApiKeyFormat(providerId, dto.apiKey);
+      const cleanedKey = sanitizeApiKey(dto.apiKey);
+      const keyFormatCheck = validateApiKeyFormat(providerId, cleanedKey);
       if (!keyFormatCheck.valid) {
         throw new BadRequestException(keyFormatCheck.reason);
       }
-      updateData.encryptedApiKey = encryptSensitiveField(dto.apiKey.trim())!;
+      updateData.encryptedApiKey = encryptSensitiveField(cleanedKey)!;
       updateData.lastStatus = 'UNTESTED';
       updateData.failCount = 0;
     }
@@ -434,7 +437,8 @@ export class AiKeyPoolService implements OnModuleInit {
       };
     }
 
-    const keyCheck = validateApiKeyFormat(providerId, apiKey);
+    const cleanedKey = sanitizeApiKey(apiKey);
+    const keyCheck = validateApiKeyFormat(providerId, cleanedKey);
     if (!keyCheck.valid) {
       await (this.prisma as any).aiProviderCredential.update({
         where: { id },

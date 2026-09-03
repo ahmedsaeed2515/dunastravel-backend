@@ -247,6 +247,12 @@ export class AgentRegistryService implements OnModuleInit {
     }
 
     try {
+      await this.backfillEmptyPrompts();
+    } catch (err: any) {
+      this.logger.warn(`Failed to backfill empty agent prompts (non-fatal): ${err.message}`);
+    }
+
+    try {
       await this.ensureSingleActiveAgent();
     } catch (err: any) {
       this.logger.warn(`Failed to sanitize active agents (non-fatal): ${err.message}`);
@@ -272,6 +278,39 @@ export class AgentRegistryService implements OnModuleInit {
         where: { slug: 'guider' },
         data: { isActive: true },
       });
+    }
+  }
+
+  async backfillEmptyPrompts() {
+    const agentsWithoutPrompt = await (this.prisma as any).aiAgent.findMany({
+      where: {
+        OR: [
+          { systemPrompt: null },
+          { systemPrompt: '' },
+        ],
+      },
+    });
+
+    if (agentsWithoutPrompt.length > 0) {
+      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
+      for (const agent of agentsWithoutPrompt) {
+        const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
+        const promptToSet = (agent.isActive && currentConfig?.systemInstructions)
+          ? currentConfig.systemInstructions
+          : preset?.systemPrompt || currentConfig?.systemInstructions || DEFAULT_PRESET_AGENTS[0].systemPrompt;
+        const personalityToSet = (agent.isActive && currentConfig?.salesPersonality)
+          ? currentConfig.salesPersonality
+          : preset?.personalityGuidelines || currentConfig?.salesPersonality || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+
+        await (this.prisma as any).aiAgent.update({
+          where: { id: agent.id },
+          data: {
+            systemPrompt: promptToSet,
+            ...(!agent.personalityGuidelines ? { personalityGuidelines: personalityToSet } : {}),
+          },
+        });
+      }
+      this.logger.log(`Backfilled ${agentsWithoutPrompt.length} agents with empty system prompts.`);
     }
   }
 
@@ -302,6 +341,8 @@ export class AgentRegistryService implements OnModuleInit {
           where: { id: currentConfig.id },
           data: {
             systemInstructions: activated.systemPrompt,
+            ...(activated.personalityGuidelines ? { salesPersonality: activated.personalityGuidelines } : {}),
+            ...(activated.tone ? { toneOfVoice: activated.tone } : {}),
           },
         });
       }
@@ -311,57 +352,89 @@ export class AgentRegistryService implements OnModuleInit {
   }
 
   async getAllAgents(locale = 'en') {
-    const rows = await (this.prisma as any).aiAgent.findMany({
-      orderBy: { createdAt: 'asc' },
-    });
+    const [rows, currentConfig] = await Promise.all([
+      (this.prisma as any).aiAgent.findMany({
+        orderBy: { createdAt: 'asc' },
+      }),
+      (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
+    ]);
 
-    return rows.map((agent: any) => ({
-      id: agent.id,
-      slug: agent.slug,
-      name: agent.nameJsonb?.[locale] || agent.nameJsonb?.en || agent.slug,
-      nameJsonb: agent.nameJsonb,
-      description: agent.descriptionJsonb?.[locale] || agent.descriptionJsonb?.en || '',
-      descriptionJsonb: agent.descriptionJsonb,
-      role: agent.role,
-      avatar: agent.avatar,
-      tone: agent.tone,
-      personalityGuidelines: agent.personalityGuidelines,
-      systemPrompt: agent.systemPrompt,
-      primaryModel: agent.primaryModel,
-      fallbackModels: agent.fallbackModels,
-      temperature: agent.temperature,
-      maxTokens: agent.maxTokens,
-      allowedSources: agent.allowedSources,
-      allowedTools: agent.allowedTools,
-      supportedLanguages: agent.supportedLanguages,
-      defaultLanguage: agent.defaultLanguage,
-      isActive: agent.isActive,
-      isPublic: agent.isPublic,
-      totalConversations: agent.totalConversations || 0,
-      averageRating: agent.averageRating || 5.0,
-      createdAt: agent.createdAt?.toISOString(),
-      updatedAt: agent.updatedAt?.toISOString(),
-    }));
+    return rows.map((agent: any) => {
+      const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
+      const fallbackPrompt = (agent.isActive && currentConfig?.systemInstructions)
+        ? currentConfig.systemInstructions
+        : preset?.systemPrompt || currentConfig?.systemInstructions || DEFAULT_PRESET_AGENTS[0].systemPrompt;
+      const fallbackPersonality = (agent.isActive && currentConfig?.salesPersonality)
+        ? currentConfig.salesPersonality
+        : preset?.personalityGuidelines || currentConfig?.salesPersonality || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+
+      const resolvedPrompt = (agent.systemPrompt && agent.systemPrompt.trim()) ? agent.systemPrompt : fallbackPrompt;
+      const resolvedPersonality = (agent.personalityGuidelines && agent.personalityGuidelines.trim()) ? agent.personalityGuidelines : fallbackPersonality;
+
+      return {
+        id: agent.id,
+        slug: agent.slug,
+        name: agent.nameJsonb?.[locale] || agent.nameJsonb?.en || agent.slug,
+        nameJsonb: agent.nameJsonb,
+        description: agent.descriptionJsonb?.[locale] || agent.descriptionJsonb?.en || '',
+        descriptionJsonb: agent.descriptionJsonb,
+        role: agent.role,
+        avatar: agent.avatar,
+        tone: agent.tone || currentConfig?.toneOfVoice || 'فاخر واحترافي',
+        personalityGuidelines: resolvedPersonality,
+        systemPrompt: resolvedPrompt,
+        primaryModel: agent.primaryModel,
+        fallbackModels: agent.fallbackModels,
+        temperature: agent.temperature,
+        maxTokens: agent.maxTokens,
+        allowedSources: agent.allowedSources,
+        allowedTools: agent.allowedTools,
+        supportedLanguages: agent.supportedLanguages,
+        defaultLanguage: agent.defaultLanguage,
+        isActive: agent.isActive,
+        isPublic: agent.isPublic,
+        totalConversations: agent.totalConversations || 0,
+        averageRating: agent.averageRating || 5.0,
+        createdAt: agent.createdAt?.toISOString(),
+        updatedAt: agent.updatedAt?.toISOString(),
+      };
+    });
   }
 
   async getAgentBySlug(slug: string, locale?: string) {
-    const agent = await (this.prisma as any).aiAgent.findUnique({
-      where: { slug },
-    });
+    const [agent, currentConfig] = await Promise.all([
+      (this.prisma as any).aiAgent.findUnique({
+        where: { slug },
+      }),
+      (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
+    ]);
     if (!agent) {
       throw new NotFoundException(`AI Agent with slug '${slug}' not found.`);
     }
-    if (locale) {
-      const loc = (locale || 'en').toLowerCase().split('-')[0];
-      const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
-      const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
-      return {
-        ...agent,
-        displayName: nameMap[loc] || nameMap.en || agent.slug,
-        displayDescription: descMap[loc] || descMap.en || '',
-      };
-    }
-    return agent;
+
+    const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
+    const resolvedPrompt = (agent.systemPrompt && agent.systemPrompt.trim())
+      || (agent.isActive && currentConfig?.systemInstructions)
+      || preset?.systemPrompt
+      || currentConfig?.systemInstructions
+      || DEFAULT_PRESET_AGENTS[0].systemPrompt;
+    const resolvedPersonality = (agent.personalityGuidelines && agent.personalityGuidelines.trim())
+      || (agent.isActive && currentConfig?.salesPersonality)
+      || preset?.personalityGuidelines
+      || currentConfig?.salesPersonality
+      || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+
+    const loc = (locale || 'en').toLowerCase().split('-')[0];
+    const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
+    const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
+
+    return {
+      ...agent,
+      systemPrompt: resolvedPrompt,
+      personalityGuidelines: resolvedPersonality,
+      displayName: nameMap[loc] || nameMap.en || agent.slug,
+      displayDescription: descMap[loc] || descMap.en || '',
+    };
   }
 
   async createAgent(dto: CreateAgentDto) {
@@ -404,8 +477,8 @@ export class AgentRegistryService implements OnModuleInit {
         descriptionJsonb: dto.descriptionJsonb ?? existing.descriptionJsonb,
         role: dto.role ?? existing.role,
         avatar: dto.avatar ?? existing.avatar,
-        systemPrompt: dto.systemPrompt ?? existing.systemPrompt,
-        personalityGuidelines: dto.personalityGuidelines ?? existing.personalityGuidelines,
+        systemPrompt: dto.systemPrompt !== undefined ? dto.systemPrompt : existing.systemPrompt,
+        personalityGuidelines: dto.personalityGuidelines !== undefined ? dto.personalityGuidelines : existing.personalityGuidelines,
         tone: dto.tone ?? existing.tone,
         primaryModel: dto.primaryModel ?? existing.primaryModel,
         fallbackModels: dto.fallbackModels ?? existing.fallbackModels,
@@ -420,6 +493,21 @@ export class AgentRegistryService implements OnModuleInit {
         activePromptVersionId: dto.activePromptVersionId ?? existing.activePromptVersionId,
       },
     });
+
+    // If updated agent is active on the website and systemPrompt was provided, synchronize to live AiConfig immediately
+    if (updated.isActive && updated.systemPrompt) {
+      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
+      if (currentConfig) {
+        await this.prisma.aiConfig.update({
+          where: { id: currentConfig.id },
+          data: {
+            systemInstructions: updated.systemPrompt,
+            ...(updated.personalityGuidelines ? { salesPersonality: updated.personalityGuidelines } : {}),
+            ...(updated.tone ? { toneOfVoice: updated.tone } : {}),
+          },
+        });
+      }
+    }
 
     return updated;
   }

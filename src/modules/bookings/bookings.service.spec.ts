@@ -325,10 +325,15 @@ describe('BookingsService', () => {
       expect(createdData.totalAmountUsd.toString()).toBe('250');
     });
 
-    it('should reject unauthenticated booking creation (AUTH-001)', async () => {
-      await expect(
-        service.createBooking(baseDto, undefined, 'test-idem-unauth'),
-      ).rejects.toThrow(UnauthorizedException);
+    it('should allow guest booking creation with null userId and guestToken', async () => {
+      const result = await service.createBooking(baseDto, undefined, 'test-idem-unauth');
+      expect(result.referenceCode).toBeDefined();
+      expect(result.guestToken).toBeDefined();
+      const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
+        data: { userId: string | null };
+      }>;
+      const createdData = firstCall[0].data;
+      expect(createdData.userId).toBeNull();
     });
 
     it('should link new booking directly to authenticated userId', async () => {

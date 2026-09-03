@@ -1020,25 +1020,86 @@ export function validateBaseUrl(url: string): { valid: boolean; reason?: string 
   }
 }
 
+export function sanitizeApiKey(apiKey: string): string {
+  if (!apiKey || typeof apiKey !== 'string') return '';
+  let cleaned = apiKey.trim();
+  // Strip zero-width, non-printable control characters, and BOM
+  cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F-\x9F]/g, '').trim();
+
+  // Iteratively strip environment variable prefixes, outer quotes, backticks, and whitespace
+  let prev = '';
+  while (cleaned !== prev && cleaned.length > 0) {
+    prev = cleaned;
+    cleaned = cleaned.replace(/^(Bearer|GEMINI_API_KEY=|OPENAI_API_KEY=|OPENROUTER_API_KEY=|ANTHROPIC_API_KEY=|DEEPSEEK_API_KEY=|XAI_API_KEY=|API_KEY=|apiKey=|api_key=)\s*/i, '').trim();
+    cleaned = cleaned.replace(/^["'`]+|["'`]+$/g, '').trim();
+  }
+  return cleaned;
+}
+
 /**
  * Validates API key syntax/format for known official providers.
  * Catches invalid strings (e.g. "Password123", raw tokens, truncated keys) BEFORE persisting or dispatching calls.
  */
 export function validateApiKeyFormat(provider: string, apiKey: string): { valid: boolean; reason?: string } {
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 5) {
+  const key = sanitizeApiKey(apiKey);
+  if (!key || key.length < 5) {
     return { valid: false, reason: 'API key is missing or too short.' };
   }
-  const key = apiKey.trim();
   const p = (provider || '').toLowerCase();
 
+  // Obvious placeholder detection
+  if (/^(your_api_key|your-api-key|placeholder|test123|example)/i.test(key)) {
+    return { valid: false, reason: 'The provided API key is a placeholder text, not a real key.' };
+  }
+
   if (p === 'google') {
-    if (!key.startsWith('AIza') || key.length < 30) {
+    // Detect mismatch if user accidentally pasted an OpenAI / Anthropic key
+    if (key.startsWith('sk-or-')) {
       return {
         valid: false,
-        reason: "Invalid Google Gemini API key format. Google AI Studio keys must start with 'AIza' (e.g. AIzaSy...) and contain ~39 characters. Obtain a free key from https://aistudio.google.com/apikey",
+        reason: "The key entered is an OpenRouter key ('sk-or-'), but the selected provider is Google Gemini. Please switch provider to OpenRouter or enter a Gemini key.",
       };
     }
+    if (key.startsWith('sk-ant-')) {
+      return {
+        valid: false,
+        reason: "The key entered is an Anthropic Claude key ('sk-ant-'), but the selected provider is Google Gemini. Please switch provider to Anthropic or enter a Gemini key.",
+      };
+    }
+    if (key.startsWith('sk-')) {
+      return {
+        valid: false,
+        reason: "The key entered is an OpenAI key ('sk-'), but the selected provider is Google Gemini. Please switch provider to OpenAI or enter a Gemini key from https://aistudio.google.com/apikey",
+      };
+    }
+
+    if (key.startsWith('AIza')) {
+      if (key.length < 25) {
+        return {
+          valid: false,
+          reason: "Google Gemini API key seems truncated. Keys typically contain ~39 characters. Obtain a key from https://aistudio.google.com/apikey",
+        };
+      }
+      return { valid: true };
+    }
+
+    return {
+      valid: false,
+      reason: "Invalid Google Gemini API key format. Google AI Studio keys must start with 'AIza' (e.g. AIzaSy...) and contain ~39 characters. Obtain a free key from https://aistudio.google.com/apikey",
+    };
   } else if (p === 'openai') {
+    if (key.startsWith('AIza')) {
+      return {
+        valid: false,
+        reason: "The key entered is a Google Gemini key ('AIza'), but the selected provider is OpenAI. Please switch provider to Google Gemini.",
+      };
+    }
+    if (key.startsWith('sk-or-')) {
+      return {
+        valid: false,
+        reason: "The key entered is an OpenRouter key ('sk-or-'), but the selected provider is OpenAI. Please switch provider to OpenRouter.",
+      };
+    }
     if (!key.startsWith('sk-') || key.length < 20) {
       return {
         valid: false,
@@ -1046,21 +1107,33 @@ export function validateApiKeyFormat(provider: string, apiKey: string): { valid:
       };
     }
   } else if (p === 'openrouter') {
-    if (!key.startsWith('sk-or-') || key.length < 20) {
+    if (key.startsWith('AIza')) {
+      return {
+        valid: false,
+        reason: "The key entered is a Google Gemini key ('AIza'), but the selected provider is OpenRouter. Please switch provider to Google Gemini.",
+      };
+    }
+    if (!key.startsWith('sk-or-') || key.length < 15) {
       return {
         valid: false,
         reason: "Invalid OpenRouter API key format. OpenRouter keys must start with 'sk-or-'. Obtain your key from https://openrouter.ai/keys",
       };
     }
   } else if (p === 'anthropic') {
-    if (!key.startsWith('sk-ant-') || key.length < 20) {
+    if (key.startsWith('AIza')) {
+      return {
+        valid: false,
+        reason: "The key entered is a Google Gemini key ('AIza'), but the selected provider is Anthropic. Please switch provider to Google Gemini.",
+      };
+    }
+    if (key.length < 15) {
       return {
         valid: false,
         reason: "Invalid Anthropic API key format. Claude keys must start with 'sk-ant-'.",
       };
     }
   } else if (p === 'deepseek') {
-    if (!key.startsWith('sk-') || key.length < 20) {
+    if (key.length < 15) {
       return {
         valid: false,
         reason: "Invalid DeepSeek API key format. DeepSeek keys must start with 'sk-'.",

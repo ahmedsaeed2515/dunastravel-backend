@@ -446,7 +446,7 @@ export class HotelsService {
     await this.findOneAdmin(id);
     return this.prisma.hotel.update({
       where: { id },
-      data: { status: 'PUBLISHED', isActive: true },
+      data: { status: 'DRAFT', isActive: false },
     });
   }
 

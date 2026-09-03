@@ -339,23 +339,47 @@ export class TourCatalogToolService {
   /**
    * Deterministic Tour Comparison Engine
    */
-  async compareTwoTours(tourAIdOrSlug: string, tourBIdOrSlug: string, locale: string = 'en'): Promise<StructuredTourComparison | null> {
+  async compareTwoTours(tourAIdOrSlug?: string, tourBIdOrSlug?: string, locale: string = 'en'): Promise<StructuredTourComparison | null> {
     try {
-      const tours = await this.prisma.tour.findMany({
-        where: {
-          OR: [
-            { id: tourAIdOrSlug },
-            { slug: tourAIdOrSlug },
-            { id: tourBIdOrSlug },
-            { slug: tourBIdOrSlug },
-          ],
-          isActive: true,
-          deletedAt: null,
-        },
-        include: {
-          images: { take: 1, select: { imageUrl: true } },
-        },
-      });
+      const idsOrSlugs = [tourAIdOrSlug, tourBIdOrSlug].filter((id): id is string => Boolean(id && typeof id === 'string' && id.trim()));
+      let tours: any[] = [];
+
+      if (idsOrSlugs.length > 0) {
+        tours = await this.prisma.tour.findMany({
+          where: {
+            OR: [
+              { id: { in: idsOrSlugs } },
+              { slug: { in: idsOrSlugs } },
+            ],
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+          },
+          include: {
+            images: { take: 1, select: { imageUrl: true } },
+          },
+        });
+      }
+
+      // If fewer than 2 tours matched, supplement with top published active tours
+      if (tours.length < 2) {
+        const existingIds = tours.map((t) => t.id);
+        const needed = 2 - tours.length;
+        const additionalTours = await this.prisma.tour.findMany({
+          where: {
+            id: { notIn: existingIds },
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+          },
+          take: needed,
+          orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+          include: {
+            images: { take: 1, select: { imageUrl: true } },
+          },
+        });
+        tours = [...tours, ...additionalTours];
+      }
 
       if (tours.length < 2) return null;
 

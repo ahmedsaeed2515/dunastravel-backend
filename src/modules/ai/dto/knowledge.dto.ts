@@ -65,6 +65,16 @@ export class CreateKnowledgeItemDto {
   @Min(0)
   @IsOptional()
   priority?: number;
+
+  @ApiPropertyOptional({ example: 'MANUAL' })
+  @IsString()
+  @IsOptional()
+  sourceEntityType?: string;
+
+  @ApiPropertyOptional({ example: 'visa_guidelines_2026' })
+  @IsString()
+  @IsOptional()
+  sourceEntityId?: string;
 }
 
 export class UpdateKnowledgeItemDto {
@@ -108,4 +118,14 @@ export class UpdateKnowledgeItemDto {
   @Min(0)
   @IsOptional()
   priority?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  sourceEntityType?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  sourceEntityId?: string;
 }
