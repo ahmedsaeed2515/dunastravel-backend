@@ -1346,9 +1346,6 @@ export class MediaService {
       }
     } else {
       where.entityType = MediaEntityType.GENERAL;
-      where.NOT = {
-        entityId: { in: ['transport', 'fleet', 'transportation'] },
-      };
     }
 
     return this.prisma.mediaAsset.findMany({
