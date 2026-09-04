@@ -23,4 +23,26 @@ describe('MediaService public gallery', () => {
       take: 100,
     });
   });
+
+  it('filters by transport category matching transport and fleet entity IDs', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const service = new MediaService(
+      { mediaAsset: { findMany } } as unknown as PrismaService,
+      {} as StorageProvider,
+      {} as ConfigService,
+      {} as EventEmitter2,
+    );
+
+    await service.getPublicGallery(50, 'transport');
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        entityType: MediaEntityType.GENERAL,
+        entityId: { in: ['transport', 'fleet', 'transportation'] },
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  });
 });

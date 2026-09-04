@@ -881,6 +881,14 @@ export class MediaService {
       slugCounts[slug] = (slugCounts[slug] || 0) + 1;
     }
 
+    // Merge transport & fleet synonym counts
+    const transportTotal =
+      (slugCounts['transport'] || 0) +
+      (slugCounts['fleet'] || 0) +
+      (slugCounts['transportation'] || 0);
+    slugCounts['transport'] = transportTotal;
+    slugCounts['fleet'] = transportTotal;
+
     for (const [slug, item] of allCategoriesMap.entries()) {
       if (slug !== 'tours' && slug !== 'hotels') {
         item.count = slugCounts[slug] || 0;
@@ -1168,6 +1176,15 @@ export class MediaService {
           entityType: MediaEntityType.GENERAL,
           OR: [{ entityId: null }, { entityId: 'general' }],
         });
+      } else if (
+        category === 'transport' ||
+        category === 'fleet' ||
+        category === 'transportation'
+      ) {
+        andConditions.push({
+          entityType: MediaEntityType.GENERAL,
+          entityId: { in: ['transport', 'fleet', 'transportation'] },
+        });
       } else {
         andConditions.push({
           entityType: MediaEntityType.GENERAL,
@@ -1303,12 +1320,36 @@ export class MediaService {
     };
   }
 
-  async getPublicGallery(limit = 100): Promise<IMediaAsset[]> {
+  async getPublicGallery(limit = 100, category?: string): Promise<IMediaAsset[]> {
+    const where: Prisma.MediaAssetWhereInput = {
+      deletedAt: null,
+    };
+
+    if (category && category !== 'all') {
+      if (category === 'tours') {
+        where.entityType = MediaEntityType.TOUR;
+      } else if (category === 'hotels') {
+        where.entityType = MediaEntityType.HOTEL;
+      } else if (category === 'general') {
+        where.entityType = MediaEntityType.GENERAL;
+        where.OR = [{ entityId: null }, { entityId: 'general' }];
+      } else if (
+        category === 'transport' ||
+        category === 'fleet' ||
+        category === 'transportation'
+      ) {
+        where.entityType = MediaEntityType.GENERAL;
+        where.entityId = { in: ['transport', 'fleet', 'transportation'] };
+      } else {
+        where.entityType = MediaEntityType.GENERAL;
+        where.entityId = category;
+      }
+    } else {
+      where.entityType = MediaEntityType.GENERAL;
+    }
+
     return this.prisma.mediaAsset.findMany({
-      where: {
-        entityType: MediaEntityType.GENERAL,
-        deletedAt: null,
-      },
+      where,
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 100),
     });

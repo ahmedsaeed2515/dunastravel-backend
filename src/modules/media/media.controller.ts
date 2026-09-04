@@ -279,10 +279,35 @@ export class MediaPublicController {
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Get active public gallery assets' })
+  @ApiOperation({ summary: 'Get active public gallery assets with optional category filtering' })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
-  async getPublicGallery(): Promise<PublicMediaAssetResponseDto[]> {
-    const assets = await this.mediaService.getPublicGallery();
+  async getPublicGallery(
+    @Query('category') category?: string,
+    @Query('limit') limit?: number,
+  ): Promise<PublicMediaAssetResponseDto[]> {
+    const assets = await this.mediaService.getPublicGallery(
+      limit ? Number(limit) : 100,
+      category,
+    );
+    return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
+  }
+
+  @Get('category/:categorySlug')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Get active public media assets for a category' })
+  @ApiParam({ name: 'categorySlug', type: 'string' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
+  async getAssetsByCategory(
+    @Param('categorySlug') categorySlug: string,
+    @Query('limit') limit?: number,
+  ): Promise<PublicMediaAssetResponseDto[]> {
+    const assets = await this.mediaService.getPublicGallery(
+      limit ? Number(limit) : 100,
+      categorySlug,
+    );
     return assets.map((asset) => PublicMediaAssetResponseDto.fromPrisma(asset));
   }
 
