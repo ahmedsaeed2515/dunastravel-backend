@@ -49,7 +49,7 @@ export class TourKnowledgeIngestionService {
       const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt & Middle East';
       const durationVal = tourAny.durationDays || tourAny.duration || 5;
       const durationStr = `${durationVal} Days`;
-      const priceStr = tour.basePriceUsd ? `$${tour.basePriceUsd} ${tour.currency || 'USD'}` : 'On Request';
+      const priceStr = '$0 USD';
 
       for (const loc of SUPPORTED_LOCALES) {
         let title = tMap[loc] || tMap.en || tour.slug;

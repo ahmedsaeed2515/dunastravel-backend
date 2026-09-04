@@ -553,21 +553,49 @@ export class ChatOrchestratorService {
       leadStatus: conversation.leadStatus,
       travelPreferences: conversation.travelPreferences,
       messages: conversation.messages.map((m: any) => {
-        let tours = m.structuredContent?.tours || [];
-        if ((!tours || !Array.isArray(tours) || tours.length === 0) && m.recommendedTourIds && Array.isArray(m.recommendedTourIds)) {
-          tours = m.recommendedTourIds.map((id: string) => hydratedToursMap.get(id)).filter(Boolean);
+        let rawTours = m.structuredContent?.tours || [];
+        if ((!rawTours || !Array.isArray(rawTours) || rawTours.length === 0) && m.recommendedTourIds && Array.isArray(m.recommendedTourIds)) {
+          rawTours = m.recommendedTourIds.map((id: string) => hydratedToursMap.get(id)).filter(Boolean);
         }
+
+        const tours = Array.isArray(rawTours)
+          ? rawTours.map((t: any) => ({ ...t, price: 0, basePriceUsd: 0 }))
+          : [];
+
+        const structuredContent = m.structuredContent ? { ...m.structuredContent } : null;
+        if (structuredContent) {
+          if (Array.isArray(structuredContent.tours)) {
+            structuredContent.tours = structuredContent.tours.map((t: any) => ({ ...t, price: 0, basePriceUsd: 0 }));
+          }
+          if (structuredContent.proposal) {
+            structuredContent.proposal = { ...structuredContent.proposal, estimatedPricePerPerson: 0 };
+          }
+          if (structuredContent.comparison && Array.isArray(structuredContent.comparison.tours)) {
+            structuredContent.comparison = {
+              ...structuredContent.comparison,
+              tours: structuredContent.comparison.tours.map((t: any) => ({ ...t, price: 0 })),
+            };
+          }
+        }
+
+        const proposal = m.structuredContent?.proposal ? { ...m.structuredContent.proposal, estimatedPricePerPerson: 0 } : null;
+        const comparison = m.structuredContent?.comparison ? {
+          ...m.structuredContent.comparison,
+          tours: Array.isArray(m.structuredContent.comparison.tours)
+            ? m.structuredContent.comparison.tours.map((t: any) => ({ ...t, price: 0 }))
+            : [],
+        } : null;
 
         return {
           id: m.id,
           role: m.role,
           content: m.textContent,
-          structuredContent: m.structuredContent,
+          structuredContent,
           createdAt: m.createdAt,
           tours,
           sources: m.knowledgeSources,
-          proposal: m.structuredContent?.proposal || null,
-          comparison: m.structuredContent?.comparison || null,
+          proposal,
+          comparison,
         };
       }),
     };
@@ -1014,6 +1042,10 @@ ${tourContext}
 CONVERSATION & STYLING RULES:
 - Address the user's greeting or inquiry directly and naturally.
 - When greeting or answering your identity (e.g. asking your name), introduce yourself as GuideR (جايدر), the luxury travel concierge for Dunas Travel (دوناس ترافيل), and politely offer how you can help without dumping unsolicited tour listings.
+- STRICT PRICING RULES (قواعد الأسعار الإلزامية في جايدر):
+  * The price for EVERY tour, package, proposal, and itinerary in GuideR is strictly 0 ($0 USD / 0 دولار).
+  * If asked about the price or cost of any tour or package, state clearly that the price is $0 (أو 0 دولار / استشارة وتخطيط مجاني).
+  * NEVER mention any other prices (such as $1490, $1890, $2190, $2500, etc.). Any price mentioned in text MUST be $0.
 - DESTINATION & ALL TOURS DISCOVERY (استعراض الواجهات والرحلات):
   * When a user asks about any destination (e.g. Egypt, Turkey, Dubai, Jordan, Morocco, Tunisia, Greece, Holy Land) or asks to view all tours for a destination:
   * Provide a captivating, elegant summary of the destination's top attractions and luxury experiences, and explicitly state the exact number of curated tours (${destinationSummaryInfo?.totalToursCount || recommendedTours.length || 'several'} tours in our catalog).
@@ -1099,18 +1131,18 @@ CONVERSATION & STYLING RULES:
         const topTour = recommendedTours[0];
         if (isArabic) {
           if (dto.personaCode === 'egyptologist') {
-            assistantReply = `أهلاً بك يا باحث التاريخ والحضارة العريقة! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} لاكتشاف عظمة الفراعنة والمعابد الخالدة بسعر يبدأ من $${topTour.price} ${topTour.currency}. يمكنك استعراض البرنامج بالأسفل وحجزه مباشرة.`;
+            assistantReply = `أهلاً بك يا باحث التاريخ والحضارة العريقة! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} لاكتشاف عظمة الفراعنة والمعابد الخالدة بسعر يبدأ من $0 ${topTour.currency}. يمكنك استعراض البرنامج بالأسفل وحجزه مباشرة.`;
           } else if (dto.personaCode === 'practical_budget') {
-            assistantReply = `أهلاً بك! بأعلى قيمة استثمارية وأفضل سعر، نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. استعرض التفاصيل والشمولية بالأسفل.`;
+            assistantReply = `أهلاً بك! بأعلى قيمة استثمارية وأفضل سعر، نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}. استعرض التفاصيل والشمولية بالأسفل.`;
           } else if (dto.personaCode === 'family_adventure') {
-            assistantReply = `أهلاً وسهلاً بك وبعائلتك الكريمة! لتجربة عائلية مريحة وممتعة للجميع، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}.`;
+            assistantReply = `أهلاً وسهلاً بك وبعائلتك الكريمة! لتجربة عائلية مريحة وممتعة للجميع، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}.`;
           } else if (dto.personaCode === 'romantic_honeymoon') {
-            assistantReply = `أهلاً بكما! لقضاء عطلة رومانسية ساحرة وسط أروع الأجواء، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}.`;
+            assistantReply = `أهلاً بكما! لقضاء عطلة رومانسية ساحرة وسط أروع الأجواء، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}.`;
           } else {
-            assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $${topTour.price} ${topTour.currency}. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.`;
+            assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.`;
           }
         } else {
-          assistantReply = `Hello! Based on your request, I highly recommend our signature tour "${topTour.title}" in ${topTour.destination}, starting from $${topTour.price} ${topTour.currency}. Click the tour card below for full details or to book directly!`;
+          assistantReply = `Hello! Based on your request, I highly recommend our signature tour "${topTour.title}" in ${topTour.destination}, starting from $0 ${topTour.currency}. Click the tour card below for full details or to book directly!`;
         }
       } else if (sources.length > 0) {
         assistantReply = isArabic
