@@ -307,7 +307,7 @@ export class HybridRagEngineService {
           ? `Next Departures: ${t.upcomingAvailabilities.map((a) => `${a.startDate} (${a.availableSeats} seats left)`).join(', ')}`
           : 'Departures: Available on request daily';
         
-        let tourLine = `- Tour: "${t.title}" | Slug: ${t.slug} | Duration: ${t.durationDays} Days | Base Price: $${t.basePriceUsd} ${t.currency} | ${availStr} | URL: ${t.publicUrl}`;
+        let tourLine = `- Tour: "${t.title}" | Slug: ${t.slug} | Duration: ${t.durationDays} Days | Base Price: $0 ${t.currency} | ${availStr} | URL: ${t.publicUrl}`;
         if (ov?.instructions) {
           tourLine += `\n  [GUIDER SPECIAL INSTRUCTION FOR THIS TOUR]: ${ov.instructions}`;
         }

@@ -552,7 +552,7 @@ export class TourCatalogToolService {
           slug: t.slug,
           title,
           durationDays: dDays,
-          price: Number(t.basePriceUsd),
+          price: 0,
           currency: t.currency || 'USD',
           destination: [t.city, t.country].filter(Boolean).join(', ') || 'Egypt',
           hasNileCruise,
@@ -581,8 +581,8 @@ export class TourCatalogToolService {
         },
         {
           aspect: isArabic ? 'سعر الباقة يبدأ من' : 'Starting Price per Person',
-          tourAValue: `$${compA.price} ${compA.currency}`,
-          tourBValue: `$${compB.price} ${compB.currency}`,
+          tourAValue: `$0 ${compA.currency}`,
+          tourBValue: `$0 ${compB.currency}`,
         },
         {
           aspect: isArabic ? 'الإبحار في النايل كروز' : 'Nile Cruise Included',
@@ -654,10 +654,7 @@ export class TourCatalogToolService {
     const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
     const dDays = this.getTourDurationDays(tour);
 
-    let price = Number(tour.basePriceUsd) || 0;
-    if (price <= 0) {
-      price = 1490;
-    }
+    const price = 0;
 
     return {
       id: tour.id,

@@ -681,7 +681,7 @@ export class ChatOrchestratorService {
       durationDays: daysCount,
       destinations,
       tier: constraints.nileCruiseRequired ? 'ULTRA_VIP' : 'LUXURY',
-      estimatedPricePerPerson: baseBudget,
+      estimatedPricePerPerson: 0,
       currency: 'USD',
       days,
       highlights: [
@@ -713,6 +713,7 @@ export class ChatOrchestratorService {
     const text = instruction.toLowerCase();
     const updated = JSON.parse(JSON.stringify(currentProposal)) as StructuredTripProposal;
     updated.id = `prop-${Date.now()}`;
+    updated.estimatedPricePerPerson = 0;
 
     // Add Luxor day
     if (/(add|extra|زيادة|اضف|اضافة).*(luxor|الاقصر|الأقصر)/i.test(text)) {
@@ -748,7 +749,7 @@ export class ChatOrchestratorService {
 
     // Budget reduction
     if (/(reduce|lower|cheaper|اقل|أقل|تخفيض|رخص|ميزانية).*(budget|price|سعر|فلوس)/i.test(text)) {
-      updated.estimatedPricePerPerson = Math.max(1200, Math.round(updated.estimatedPricePerPerson * 0.85));
+      updated.estimatedPricePerPerson = 0;
       updated.tier = 'LUXURY';
     }
 
