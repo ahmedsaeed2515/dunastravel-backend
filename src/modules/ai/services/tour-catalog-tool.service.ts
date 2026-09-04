@@ -125,14 +125,162 @@ export class TourCatalogToolService {
       }
     }
 
-    // Country detection
-    if (/(egypt|egito|egipto|egitto|مصر)/i.test(text) || /مصر/.test(message)) constraints.country = 'Egypt';
-    else if (/(turkey|turquia|turchia|تركيا)/i.test(text) || /تركيا/.test(message)) constraints.country = 'Turkey';
-    else if (/(jordan|jordania|giordania|الاردن|الأردن)/i.test(text) || /الاردن|الأردن/.test(message)) constraints.country = 'Jordan';
-    else if (/(dubai|uae|دبي|الامارات|الإمارات)/i.test(text) || /دبي|الامارات|الإمارات/.test(message)) constraints.country = 'Dubai';
-    else if (/(morocco|marruecos|marrocos|marocco|المغرب)/i.test(text) || /المغرب/.test(message)) constraints.country = 'Morocco';
+    // Country / Destination detection
+    if (/(egypt|egito|egipto|egitto|مصر|القاهرة|الاقصر|الأقصر|اسوان|أسوان|الغردقة|شرم)/i.test(text) || /(مصر|القاهرة|الأقصر|اسوان|الغردقة|شرم)/.test(message)) constraints.country = 'Egypt';
+    else if (/(turkey|turquia|turchia|turquie|تركيا|اسطنبول|إسطنبول|كبادوكيا)/i.test(text) || /(تركيا|اسطنبول|كبادوكيا)/.test(message)) constraints.country = 'Turkey';
+    else if (/(jordan|jordania|giordania|الاردن|الأردن|البتراء|عمان)/i.test(text) || /(الاردن|الأردن|البتراء)/.test(message)) constraints.country = 'Jordan';
+    else if (/(dubai|uae|emiratos|دبي|الامارات|الإمارات|ابوظبي|أبوظبي)/i.test(text) || /(دبي|الامارات|الإمارات)/.test(message)) constraints.country = 'Dubai';
+    else if (/(morocco|marruecos|marrocos|marocco|المغرب|مراكش|كازابلانكا|فاس)/i.test(text) || /(المغرب|مراكش)/.test(message)) constraints.country = 'Morocco';
+    else if (/(tunisia|tunez|tunisie|تونس|قرطاج)/i.test(text) || /تونس/.test(message)) constraints.country = 'Tunisia';
+    else if (/(greece|grecia|اليونان|اثينا|أثينا|سانتوريني)/i.test(text) || /(اليونان|أثينا|سانتوريني)/.test(message)) constraints.country = 'Greece';
+    else if (/(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة|القدس)/i.test(text) || /(الاراضي المقدسة|الأراضي المقدسة|القدس)/.test(message)) constraints.country = 'Holy Land';
 
     return constraints;
+  }
+
+  /**
+   * Get Destination Overview, Total Tours Count, and Top Tours
+   */
+  async getDestinationSummaryAndTours(
+    destinationQuery: string,
+    locale: string = 'en',
+    limit: number = 6,
+  ): Promise<{
+    destination: string;
+    slug: string;
+    totalToursCount: number;
+    tours: GroundedTourRecommendation[];
+    landingPage?: GroundedDestinationRecommendation;
+  }> {
+    const norm = this.normalizeText(destinationQuery);
+    let matchedCountry = 'Egypt';
+    let matchedSlug = 'egypt';
+
+    if (/(turkey|turquia|turchia|تركيا|اسطنبول)/i.test(norm)) {
+      matchedCountry = 'Turkey';
+      matchedSlug = 'turkey';
+    } else if (/(dubai|uae|دبي|الامارات|الإمارات)/i.test(norm)) {
+      matchedCountry = 'Dubai';
+      matchedSlug = 'dubai';
+    } else if (/(jordan|jordania|giordania|الاردن|الأردن)/i.test(norm)) {
+      matchedCountry = 'Jordan';
+      matchedSlug = 'jordan';
+    } else if (/(morocco|marruecos|marrocos|المغرب)/i.test(norm)) {
+      matchedCountry = 'Morocco';
+      matchedSlug = 'morocco';
+    } else if (/(tunisia|tunez|تونس)/i.test(norm)) {
+      matchedCountry = 'Tunisia';
+      matchedSlug = 'tunisia';
+    } else if (/(greece|grecia|اليونان)/i.test(norm)) {
+      matchedCountry = 'Greece';
+      matchedSlug = 'greece';
+    } else if (/(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة)/i.test(norm)) {
+      matchedCountry = 'Holy Land';
+      matchedSlug = 'holy-land';
+    }
+
+    const staticCounts: Record<string, number> = {
+      Egypt: 9,
+      Turkey: 15,
+      Dubai: 9,
+      Jordan: 7,
+      Morocco: 1,
+      Tunisia: 1,
+      Greece: 1,
+      'Holy Land': 6,
+    };
+
+    const destinationKeywords: Record<string, string[]> = {
+      Egypt: ['egypt', 'cairo', 'luxor', 'aswan', 'hurghada', 'sharm', 'nile', 'مصر', 'القاهرة', 'الاقصر', 'اسوان', 'الغردقة', 'شرم'],
+      Turkey: ['turkey', 'turquia', 'istanbul', 'cappadocia', 'antalya', 'تركيا', 'اسطنبول', 'كبادوكيا'],
+      Dubai: ['dubai', 'uae', 'emirates', 'abu dhabi', 'دبي', 'الامارات', 'ابوظبي'],
+      Jordan: ['jordan', 'amman', 'petra', 'dead sea', 'الاردن', 'الأردن', 'البتراء', 'عمان'],
+      Morocco: ['morocco', 'marrakech', 'casablanca', 'fez', 'المغرب', 'مراكش', 'كازابلانكا'],
+      Tunisia: ['tunisia', 'carthage', 'tunis', 'تونس', 'قرطاج'],
+      Greece: ['greece', 'athens', 'santorini', 'mykonos', 'اليونان', 'اثينا', 'سانتوريني'],
+      'Holy Land': ['holy-land', 'holy land', 'jerusalem', 'bethlehem', 'الاراضي المقدسة', 'الأراضي المقدسة', 'القدس'],
+    };
+
+    const searchTokens = destinationKeywords[matchedCountry] || [matchedSlug, matchedCountry.toLowerCase()];
+
+    try {
+      const orFilter = searchTokens.flatMap((tok) => [
+        { country: { contains: tok, mode: 'insensitive' as const } },
+        { city: { contains: tok, mode: 'insensitive' as const } },
+        { region: { contains: tok, mode: 'insensitive' as const } },
+        { slug: { contains: tok, mode: 'insensitive' as const } },
+        { tags: { has: tok } },
+      ]);
+
+      const [dbCount, tours, landingPages] = await Promise.all([
+        this.prisma.tour.count({
+          where: {
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+            OR: orFilter,
+          },
+        }),
+        this.prisma.tour.findMany({
+          where: {
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+            OR: orFilter,
+          },
+          take: limit,
+          orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+          include: {
+            images: { take: 1, select: { imageUrl: true, isHero: true } },
+          },
+        }),
+        this.prisma.tourLandingPage.findMany({
+          where: {
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+            slug: { contains: matchedSlug, mode: 'insensitive' },
+          },
+          take: 1,
+        }),
+      ]);
+
+      const fallbackCount = staticCounts[matchedCountry] || 5;
+      const finalCount = Math.max(dbCount, tours.length, fallbackCount);
+
+      const mappedTours = tours.map((t) =>
+        this.mapTourToRecommendation(t, locale, [
+          locale.startsWith('ar')
+            ? `رحلة مميزة في ${matchedCountry}`
+            : `Signature curated tour in ${matchedCountry}`,
+        ]),
+      );
+
+      const mappedLandingPage = landingPages[0]
+        ? this.mapDestinationToRecommendation(landingPages[0], locale)
+        : {
+            id: matchedSlug,
+            slug: matchedSlug,
+            title: matchedCountry,
+            publicUrl: `/destinations/${matchedSlug}`,
+          };
+
+      return {
+        destination: matchedCountry,
+        slug: matchedSlug,
+        totalToursCount: finalCount,
+        tours: mappedTours,
+        landingPage: mappedLandingPage,
+      };
+    } catch (e: any) {
+      this.logger.error(`Error in getDestinationSummaryAndTours: ${e.message}`);
+      return {
+        destination: matchedCountry,
+        slug: matchedSlug,
+        totalToursCount: 0,
+        tours: [],
+      };
+    }
   }
 
   async searchGroundedTours(

@@ -7,6 +7,7 @@ import { NotificationType } from '../types';
 
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
 import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class InquiryCreatedListener {
@@ -16,6 +17,7 @@ export class InquiryCreatedListener {
     private readonly compositionService: EmailCompositionService,
     private readonly deliveryService: EmailDeliveryService,
     private readonly inAppNotifications: InAppNotificationsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @OnEvent(INQUIRY_EVENTS.CREATED, { async: true })
@@ -29,13 +31,41 @@ export class InquiryCreatedListener {
       await this.inAppNotifications.notifyAdmins({
         category: InAppNotificationCategory.INQUIRY,
         priority: InAppNotificationPriority.HIGH,
-        title: `New Inquiry #${payload.referenceCode}`,
+        title: `New Custom Trip Inquiry #${payload.referenceCode}`,
         message: `Tailor-made travel inquiry from ${payload.fullName} (${payload.email})`,
         entityType: 'INQUIRY',
         entityId: payload.referenceCode,
         deepLink: '/admin/inquiries',
         metadata: { referenceCode: payload.referenceCode },
       });
+
+      // In-App Notification for Customer if account exists
+      if (payload.email) {
+        try {
+          const matchedUser = await this.prisma.user.findFirst({
+            where: { email: { equals: payload.email, mode: 'insensitive' }, deletedAt: null },
+            select: { id: true },
+          });
+
+          if (matchedUser) {
+            const destLabel = Array.isArray(payload.destinations) ? payload.destinations.join(', ') : 'Custom Trip';
+            await this.inAppNotifications.createNotification({
+              userId: matchedUser.id,
+              category: InAppNotificationCategory.INQUIRY,
+              priority: InAppNotificationPriority.NORMAL,
+              title: `Custom Trip Request #${payload.referenceCode} Received`,
+              message: `Your tailored travel request for ${destLabel} has been submitted successfully to our concierge team.`,
+              targetApp: 'CUSTOMER',
+              entityType: 'INQUIRY',
+              entityId: payload.referenceCode,
+              deepLink: '/account/profile',
+              metadata: { referenceCode: payload.referenceCode },
+            });
+          }
+        } catch (custNotifErr: any) {
+          this.logger.warn(`Could not create customer in-app notification: ${custNotifErr.message}`);
+        }
+      }
       // 1. Compose emails
       const customerAck =
         await this.compositionService.composeInquiryCustomerAcknowledgment(

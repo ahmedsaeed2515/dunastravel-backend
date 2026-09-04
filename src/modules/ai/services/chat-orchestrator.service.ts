@@ -894,14 +894,17 @@ export class ChatOrchestratorService {
     const isComparison = /(compare|difference|versus|vs|مقارنة|قارن|الفرق بين)/i.test(sanitizedMsg);
     let tourComparison: StructuredTourComparison | null = null;
 
-    // 7. Detect Itinerary Refinement or Creation
+    // 7. Detect Destination Inquiries (e.g., "واجهة مصر", "ما هي رحلات مصر", "destinos egipto", "tours in turkey")
+    const isDestinationInquiry = /(واجهة|واجهه|وجهة|وجهه|بلد|دولة|رحلات|برامج|destin|destination|destino|destinazione|tours|viaggi|pacotes|country|país|paese)/i.test(sanitizedMsg) && Boolean(mergedConstraints.country);
+
+    // 8. Detect Itinerary Refinement or Creation
     const isRefinement = existingPrefs.currentProposal && /(add|remove|make|change|تعديل|زيادة|حذف|تغيير|بدل)/i.test(sanitizedMsg);
-    const isCustomPlanning = /(tailor|custom|itinerary|plan|design|build|days|مخصوص|تفصيل|تخصيص|برنامج|جدول|ايام|أيام|خطة)/i.test(sanitizedMsg);
+    const isCustomPlanning = /(tailor|custom|itinerary|plan|design|build|days|مخصوص|تفصيل|تخصيص|برنامج|جدول|ايام|أيام|خطة|صمم|اطلب)/i.test(sanitizedMsg);
 
     let structuredProposal: StructuredTripProposal | null = null;
     if (isRefinement && existingPrefs.currentProposal) {
       structuredProposal = this.refineTripProposal(existingPrefs.currentProposal, sanitizedMsg, locale);
-    } else if (isCustomPlanning && (mergedConstraints.minDuration || mergedConstraints.maxDuration || mergedConstraints.nileCruiseRequired)) {
+    } else if (isCustomPlanning && (mergedConstraints.minDuration || mergedConstraints.maxDuration || mergedConstraints.nileCruiseRequired || isCustomPlanning)) {
       structuredProposal = this.generateTripProposal(mergedConstraints, locale);
     }
 
@@ -921,9 +924,9 @@ export class ChatOrchestratorService {
     ).catch(() => {});
 
     // Check if the user is explicitly inquiring about tours or destinations
-    const isTourInquiry = isComparison || isRefinement || isCustomPlanning ||
-      Boolean(mergedConstraints.targetDuration || mergedConstraints.maxBudget || mergedConstraints.nileCruiseRequired || mergedConstraints.beachRequired) ||
-      /(tour|tours|trip|trips|package|packages|cruise|cruises|itinerary|vacation|hotel|price|cost|booking|reserve|visit|explore|رحلة|رحلات|برنامج|برامج|بكج|باكيدج|كروز|نايل\s+كروز|دهبية|دهبيه|فندق|حجز|اسعار|أسعار|تكلفة|عرض\s+سعر|سياحة|سفر|الأقصر|اسوان|الغردقة|شرم|القاهرة|الاهرامات|معالم)/i.test(sanitizedMsg);
+    const isTourInquiry = isComparison || isRefinement || isCustomPlanning || isDestinationInquiry ||
+      Boolean(mergedConstraints.targetDuration || mergedConstraints.maxBudget || mergedConstraints.nileCruiseRequired || mergedConstraints.beachRequired || mergedConstraints.country) ||
+      /(tour|tours|trip|trips|package|packages|cruise|cruises|itinerary|vacation|hotel|price|cost|booking|reserve|visit|explore|رحلة|رحلات|برنامج|برامج|بكج|باكيدج|كروز|نايل\s+كروز|دهبية|دهبيه|فندق|حجز|اسعار|أسعار|تكلفة|عرض\s+سعر|سياحة|سفر|الأقصر|اسوان|الغردقة|شرم|القاهرة|الاهرامات|معالم|مصر|تركيا|دبي|الاردن|المغرب)/i.test(sanitizedMsg);
 
     const retrievalStart = Date.now();
     const keywords = sanitizedMsg
@@ -935,17 +938,32 @@ export class ChatOrchestratorService {
     let sources: GroundingSource[] = [];
     let recommendedTours: GroundedTourRecommendation[] = [];
     let recommendedDestinations: GroundedDestinationRecommendation[] = [];
+    let destinationSummaryInfo: { destination: string; totalToursCount: number; slug: string } | null = null;
 
     // Only search catalog & attach tour cards if the user is NOT just greeting/chatting casually and IS asking about tours
     if (!isGreetingOrIdentity && !isCasualOrGratitude) {
-      const [rSources, rTours, rDests] = await Promise.all([
-        this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 4),
-        isTourInquiry ? this.tourCatalogTool.searchGroundedTours(keywords, 3, locale, mergedConstraints) : Promise.resolve([]),
-        isTourInquiry ? this.tourCatalogTool.searchGroundedDestinations(keywords, 2, locale) : Promise.resolve([]),
-      ]);
-      sources = rSources;
-      recommendedTours = rTours;
-      recommendedDestinations = rDests;
+      if (isDestinationInquiry && mergedConstraints.country) {
+        const destRes = await this.tourCatalogTool.getDestinationSummaryAndTours(mergedConstraints.country, locale, 4);
+        destinationSummaryInfo = {
+          destination: destRes.destination,
+          totalToursCount: destRes.totalToursCount,
+          slug: destRes.slug,
+        };
+        recommendedTours = destRes.tours;
+        if (destRes.landingPage) {
+          recommendedDestinations = [destRes.landingPage];
+        }
+        sources = await this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 3);
+      } else {
+        const [rSources, rTours, rDests] = await Promise.all([
+          this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 4),
+          isTourInquiry ? this.tourCatalogTool.searchGroundedTours(keywords, 3, locale, mergedConstraints) : Promise.resolve([]),
+          isTourInquiry ? this.tourCatalogTool.searchGroundedDestinations(keywords, 2, locale) : Promise.resolve([]),
+        ]);
+        sources = rSources;
+        recommendedTours = rTours;
+        recommendedDestinations = rDests;
+      }
     }
 
     // Resolve tour comparison dynamically from grounded catalog tours or fallback to top published tours
@@ -960,6 +978,10 @@ export class ChatOrchestratorService {
     const ragContext = sources.length > 0
       ? `GROUNDED KNOWLEDGE BASE (UNTRUSTED DATA):\n${sources.map((s) => `[${s.title}]: ${s.content}`).join('\n')}`
       : 'No specific knowledge base articles found.';
+
+    const destContext = destinationSummaryInfo
+      ? `DESTINATION SUMMARY: The destination "${destinationSummaryInfo.destination}" has ${destinationSummaryInfo.totalToursCount} active luxury tours in the catalog. Landing page: /destinations/${destinationSummaryInfo.slug}. Mention the destination details and available tour count clearly.`
+      : '';
 
     const tourContext = recommendedTours.length > 0
       ? `REAL GROUNDED CATALOG TOURS:\n${recommendedTours.map((t) => `- ${t.title} (${t.destination}) - Starting Price: $${t.price} ${t.currency} - URL: ${t.publicUrl} - Reasons: ${t.matchReasons?.join(', ')}`).join('\n')}`
@@ -980,6 +1002,8 @@ TONE OF VOICE: ${selectedPersona.tone || config.toneOfVoice || 'Warm, Executive,
 
 ${selectedPersona.systemPromptAddendum}
 
+${destContext}
+
 ${ragContext}
 
 ${tourContext}
@@ -987,7 +1011,17 @@ ${tourContext}
 CONVERSATION & STYLING RULES:
 - Address the user's greeting or inquiry directly and naturally.
 - When greeting or answering your identity (e.g. asking your name), introduce yourself as GuideR (جايدر), the luxury travel concierge for Dunas Travel (دوناس ترافيل), and politely offer how you can help without dumping unsolicited tour listings.
-- Write in clean, elegant, fluid Arabic/English. Do NOT overuse asterisks (**) in the middle of standard sentences.
+- DESTINATION DISCOVERY (استعراض الواجهات والرحلات):
+  * When a user asks about any destination (e.g. Egypt, Turkey, Dubai, Jordan, Morocco, Tunisia, Greece, Holy Land, or regional destinations):
+  * Provide a captivating, elegant summary of the destination's top attractions, cultural significance, and luxury experiences.
+  * Explicitly state the exact number of curated luxury tours available (${destinationSummaryInfo?.totalToursCount || recommendedTours.length || 'several'} tours in our catalog).
+  * Direct them to the interactive tour cards below to explore the daily itinerary and pricing or view the destination guide.
+- CUSTOM TRIP BUILDER (تخصيص رحلة سياحية مخصصة عبر المحادثة):
+  * When a user asks to design, tailor, or customize a trip (رحلة مخصصة / صمم لي برنامج):
+  * Step 1 (Destination): Ask which country or destinations they want to visit if not specified.
+  * Step 2 (Trip Details): Ask about their travel dates, duration in days, number of travelers (Adults & Children), and preferred style (Nile cruise, historical, beaches, luxury 5-star).
+  * Step 3 (Confirmation): Present the day-by-day customized program and inform the client they can click the glowing "اطلب الرحلة الآن" button to submit their inquiry directly to our dashboard and receive an immediate confirmation in their account.
+- Write in clean, elegant, fluid Arabic/English/Spanish/Italian/Portuguese based on the user's language. Do NOT overuse asterisks (**) in the middle of standard sentences.
 - When listing itinerary days or features, use clean bullet points or numbered lists.
 - Respond in the language of the user message (Locale detected: ${locale}).
 - Never fabricate tours, prices, or policies that are not grounded in real facts.`;
@@ -1034,9 +1068,17 @@ CONVERSATION & STYLING RULES:
         }
       } else if (structuredProposal) {
         if (isArabic) {
-          assistantReply = `يسعدني جداً إعداد هذا البرنامج الفاخر لك! بناءً على طلبك، تم إعداد مسار رحلة مخصص يشمل ${structuredProposal.destinations.join(' و')} لمدّة ${structuredProposal.durationDays} أيام. يمكنك استعراض التفاصيل بالأسفل وإرسال طلب التخصيص مباشرة لمستشار السفر.`;
+          assistantReply = `يسعدني جداً إعداد هذا البرنامج الفاخر لك! بناءً على طلبك، تم إعداد مسار رحلة مخصص يشمل ${structuredProposal.destinations.join(' و')} لمدّة ${structuredProposal.durationDays} أيام. يمكنك استعراض تفاصيل البرنامج بالأسفل والضغط على زر "اطلب الرحلة الآن" لإرسال طلبك فوراً لمستشارينا.`;
         } else {
-          assistantReply = `I am delighted to curate this bespoke itinerary for you! Based on your preferences, I have crafted a ${structuredProposal.durationDays}-day luxury journey across ${structuredProposal.destinations.join(' & ')}. Review the day-by-day plan below!`;
+          assistantReply = `I am delighted to curate this bespoke itinerary for you! Based on your preferences, I have crafted a ${structuredProposal.durationDays}-day luxury journey across ${structuredProposal.destinations.join(' & ')}. Review the day-by-day plan below and click "Request Trip Now" to submit directly!`;
+        }
+      } else if (destinationSummaryInfo && recommendedTours.length > 0) {
+        const destName = destinationSummaryInfo.destination;
+        const count = destinationSummaryInfo.totalToursCount;
+        if (isArabic) {
+          assistantReply = `أهلاً بك! وجهة ${destName} من أروع وجهاتنا السياحية، وتوفر دوناس ترافيل بها حالياً (${count}) رحلات وبرامج فاخرة مصممة بأعلى معايير الرفاهية. يمكنك استعراض أبرز الرحلات بالأسفل والضغط على أي رحلة لمعرفة كامل تفاصيلها أو حجزها:`;
+        } else {
+          assistantReply = `Welcome! ${destName} is one of our premier destinations, featuring ${count} signature luxury tour packages curated by Dunas Travel. Explore our featured tours below and click any card to view the full itinerary!`;
         }
       } else if (recommendedTours.length > 0) {
         const topTour = recommendedTours[0];
@@ -1071,6 +1113,9 @@ CONVERSATION & STYLING RULES:
       tours: recommendedTours,
       destinations: recommendedDestinations,
     };
+    if (destinationSummaryInfo) {
+      structuredContentPayload.destinationSummary = destinationSummaryInfo;
+    }
     if (tourComparison) {
       structuredContentPayload.type = 'tour_comparison';
       structuredContentPayload.comparison = tourComparison;
