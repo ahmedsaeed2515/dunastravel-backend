@@ -251,6 +251,10 @@ export class ToursService {
       const GENERIC_ALIASES: Record<string, string> = {
         'classic': 'classic-program',
         'honeymooners': 'honeymoon-egypt',
+        'reg-21-jordan-extension-4-days': 'reg-21-jordan-extension---4-days',
+        'reg-20-jordan-extension-5-days': 'reg-20-jordan-extension---5-days',
+        'reg-21': 'reg-21-jordan-extension---4-days',
+        'reg-20': 'reg-20-jordan-extension---5-days',
       };
       const aliasTarget = GENERIC_ALIASES[trimmed];
       if (aliasTarget) {

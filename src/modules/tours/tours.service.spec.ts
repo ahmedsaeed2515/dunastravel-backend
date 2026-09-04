@@ -149,7 +149,7 @@ describe('ToursService', () => {
       expect(findFirstSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            slug: 'my-tour',
+            OR: [{ slug: 'my-tour' }, { id: 'my-tour' }],
             isActive: true,
             status: 'PUBLISHED',
             deletedAt: null,
