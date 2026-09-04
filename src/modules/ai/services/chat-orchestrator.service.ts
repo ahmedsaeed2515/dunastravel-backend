@@ -896,6 +896,8 @@ export class ChatOrchestratorService {
 
     // 7. Detect Destination Inquiries (e.g., "واجهة مصر", "ما هي رحلات مصر", "destinos egipto", "tours in turkey")
     const isDestinationInquiry = /(واجهة|واجهه|وجهة|وجهه|بلد|دولة|رحلات|برامج|destin|destination|destino|destinazione|tours|viaggi|pacotes|country|país|paese)/i.test(sanitizedMsg) && Boolean(mergedConstraints.country);
+    const isAllToursRequest = /(كل|جميع|كافة|all|todos|tutti|todas)\s+(الرحلات|رحلات|tours|passeios|viaggi|viajes)/i.test(sanitizedMsg) ||
+                              /(الرحلات|رحلات|tours).*(كل|جميع|كافة|all|todos|tutti|todas)/i.test(sanitizedMsg);
 
     // 8. Detect Itinerary Refinement or Creation
     const isRefinement = existingPrefs.currentProposal && /(add|remove|make|change|تعديل|زيادة|حذف|تغيير|بدل)/i.test(sanitizedMsg);
@@ -1011,11 +1013,16 @@ ${tourContext}
 CONVERSATION & STYLING RULES:
 - Address the user's greeting or inquiry directly and naturally.
 - When greeting or answering your identity (e.g. asking your name), introduce yourself as GuideR (جايدر), the luxury travel concierge for Dunas Travel (دوناس ترافيل), and politely offer how you can help without dumping unsolicited tour listings.
-- DESTINATION DISCOVERY (استعراض الواجهات والرحلات):
-  * When a user asks about any destination (e.g. Egypt, Turkey, Dubai, Jordan, Morocco, Tunisia, Greece, Holy Land, or regional destinations):
-  * Provide a captivating, elegant summary of the destination's top attractions, cultural significance, and luxury experiences.
-  * Explicitly state the exact number of curated luxury tours available (${destinationSummaryInfo?.totalToursCount || recommendedTours.length || 'several'} tours in our catalog).
-  * Direct them to the interactive tour cards below to explore the daily itinerary and pricing or view the destination guide.
+- DESTINATION & ALL TOURS DISCOVERY (استعراض الواجهات والرحلات):
+  * When a user asks about any destination (e.g. Egypt, Turkey, Dubai, Jordan, Morocco, Tunisia, Greece, Holy Land) or asks to view all tours for a destination:
+  * Provide a captivating, elegant summary of the destination's top attractions and luxury experiences, and explicitly state the exact number of curated tours (${destinationSummaryInfo?.totalToursCount || recommendedTours.length || 'several'} tours in our catalog).
+  * Always provide this direct clickable link format:
+    - Arabic: "لمعرفة رحلات الواجهة المطلوبة يرجى الضغط على الرابط التالي: [استعراض كافة رحلات ${destinationSummaryInfo?.destination || 'الواجهة'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
+    - English: "To view all tours for this destination, please click the following link: [View all ${destinationSummaryInfo?.destination || 'Destination'} Tours](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
+    - Spanish: "Para conocer todos los tours de este destino, por favor haga clic en el siguiente enlace: [Ver todos los tours de ${destinationSummaryInfo?.destination || 'Destino'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
+    - Portuguese: "Para conhecer todos os passeios deste destino, por favor clique no link a seguir: [Ver todos os passeios de ${destinationSummaryInfo?.destination || 'Destino'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
+    - Italian: "Per visualizzare tutti i tour di questa destinazione, clicca sul seguente link: [Visualizza tutti i tour di ${destinationSummaryInfo?.destination || 'Destinazione'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
+  * Direct them to the interactive tour cards below to explore the daily itineraries or book directly.
 - CUSTOM TRIP BUILDER (تخصيص رحلة سياحية مخصصة عبر المحادثة):
   * When a user asks to design, tailor, or customize a trip (رحلة مخصصة / صمم لي برنامج):
   * Step 1 (Destination): Ask which country or destinations they want to visit if not specified.
@@ -1075,10 +1082,17 @@ CONVERSATION & STYLING RULES:
       } else if (destinationSummaryInfo && recommendedTours.length > 0) {
         const destName = destinationSummaryInfo.destination;
         const count = destinationSummaryInfo.totalToursCount;
+        const destSlug = destinationSummaryInfo.slug;
         if (isArabic) {
-          assistantReply = `أهلاً بك! وجهة ${destName} من أروع وجهاتنا السياحية، وتوفر دوناس ترافيل بها حالياً (${count}) رحلات وبرامج فاخرة مصممة بأعلى معايير الرفاهية. يمكنك استعراض أبرز الرحلات بالأسفل والضغط على أي رحلة لمعرفة كامل تفاصيلها أو حجزها:`;
+          assistantReply = `أهلاً بك! لمعرفة رحلات الواجهة المطلوبة يرجى الضغط على الرابط التالي: [استعراض كافة رحلات ${destName}](/destinations/${destSlug})\n\nتضم وجهة ${destName} حالياً (${count}) رحلات وبرامج سياحية فاخرة مصممة بأعلى معايير الرفاهية. يمكنك أيضاً تصفح أبرز الباقات أدناه:`;
+        } else if (locale.startsWith('es')) {
+          assistantReply = `¡Bienvenido! Para conocer todos los tours de este destino, por favor haga clic en el siguiente enlace: [Ver todos los tours de ${destName}](/destinations/${destSlug})\n\nContamos con ${count} paquetes de lujo en ${destName}.`;
+        } else if (locale.startsWith('pt')) {
+          assistantReply = `Olá! Para conhecer todos os passeios deste destino, por favor clique no link a seguir: [Ver todos os passeios de ${destName}](/destinations/${destSlug})\n\nOferecemos ${count} roteiros exclusivos em ${destName}.`;
+        } else if (locale.startsWith('it')) {
+          assistantReply = `Benvenuto! Per visualizzare tutti i tour di questa destinazione, clicca sul seguente link: [Visualizza tutti i tour di ${destName}](/destinations/${destSlug})\n\nOffriamo ${count} tour esclusivi per ${destName}.`;
         } else {
-          assistantReply = `Welcome! ${destName} is one of our premier destinations, featuring ${count} signature luxury tour packages curated by Dunas Travel. Explore our featured tours below and click any card to view the full itinerary!`;
+          assistantReply = `Welcome! To view all tours for this destination, please click the following link: [View all ${destName} Tours](/destinations/${destSlug})\n\nWe feature ${count} signature luxury tour packages curated by Dunas Travel. Explore our top tours below:`;
         }
       } else if (recommendedTours.length > 0) {
         const topTour = recommendedTours[0];
