@@ -18,7 +18,13 @@ describe('MediaService public gallery', () => {
     await service.getPublicGallery(500);
 
     expect(findMany).toHaveBeenCalledWith({
-      where: { entityType: MediaEntityType.GENERAL, deletedAt: null },
+      where: {
+        entityType: MediaEntityType.GENERAL,
+        deletedAt: null,
+        NOT: {
+          entityId: { in: ['transport', 'fleet', 'transportation'] },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
