@@ -254,6 +254,9 @@ export class HotelsService {
         address: hotel.addressJsonb
           ? extractI18nFallback(hotel.addressJsonb, locale)
           : null,
+        phone: hotel.phone || null,
+        email: hotel.email || null,
+        website: hotel.website || null,
         amenities: hotel.amenitiesJsonb,
         policies: hotel.policiesJsonb,
         heroMediaId: hotel.heroMediaId,
@@ -287,8 +290,15 @@ export class HotelsService {
   }
 
   async findOnePublic(slug: string, locale = 'en') {
+    const trimmed = slug?.trim();
+    if (!trimmed) throw new NotFoundException(`Hotel not found`);
     const hotel = await this.prisma.hotel.findFirst({
-      where: { slug, deletedAt: null, status: 'PUBLISHED', isActive: true },
+      where: {
+        OR: [{ slug: trimmed }, { id: trimmed }],
+        deletedAt: null,
+        status: 'PUBLISHED',
+        isActive: true,
+      },
       include: {
         rooms: {
           where: { deletedAt: null, isActive: true },
@@ -467,14 +477,13 @@ export class HotelsService {
   // ----------------------------------------------------
   async createBookingPublic(dto: CreateHotelBookingDto) {
     let hotel = null;
-    if (dto.hotelId) {
+    const targetHotel = dto.hotelId || dto.hotelSlug;
+    if (targetHotel) {
       hotel = await this.prisma.hotel.findFirst({
-        where: { id: dto.hotelId, deletedAt: null },
-        include: { rooms: { where: { deletedAt: null } } },
-      });
-    } else if (dto.hotelSlug) {
-      hotel = await this.prisma.hotel.findFirst({
-        where: { slug: dto.hotelSlug, deletedAt: null },
+        where: {
+          OR: [{ id: targetHotel }, { slug: targetHotel }],
+          deletedAt: null,
+        },
         include: { rooms: { where: { deletedAt: null } } },
       });
     }
@@ -485,10 +494,9 @@ export class HotelsService {
 
     // Match Room
     let room = null;
-    if (dto.roomId) {
-      room = hotel.rooms.find((r) => r.id === dto.roomId) || null;
-    } else if (dto.roomSlug) {
-      room = hotel.rooms.find((r) => r.slug === dto.roomSlug) || null;
+    const targetRoom = dto.roomId || dto.roomSlug;
+    if (targetRoom) {
+      room = hotel.rooms.find((r) => r.id === targetRoom || r.slug === targetRoom) || null;
     }
 
     // Parse Dates

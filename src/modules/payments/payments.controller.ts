@@ -37,15 +37,25 @@ export class PaymentsController {
   }
 
   @Post(['initiate', 'checkout-session', 'geitpatin/initiate', 'getpayin/initiate'])
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   async initiatePayment(
     @Body() dto: CreatePaymentDto,
-    @Req() req: ExpressRequest & { user: { id: string } },
+    @Req() req: ExpressRequest & { user?: { id: string } },
   ) {
+    const rawGuestToken = req.headers['x-guest-token'] || dto.guestToken;
+    const guestToken =
+      typeof rawGuestToken === 'string'
+        ? rawGuestToken
+        : Array.isArray(rawGuestToken)
+          ? rawGuestToken[0]
+          : undefined;
+
     const session = await this.paymentsService.initiatePayment(
       dto.bookingId,
-      req.user.id,
+      req.user?.id,
+      guestToken,
     );
     return {
       sessionUrl: session.url,
@@ -86,13 +96,26 @@ export class PaymentsController {
   }
 
   @Post('callback/getpayin')
-  @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   async handlePayLinkCallback(
     @Body() dto: PayLinkCallbackDto,
-    @Req() req: ExpressRequest & { user: { id: string } },
+    @Req() req: ExpressRequest & { user?: { id: string } },
   ) {
-    return this.paymentsService.reconcilePayLinkCallback(dto, req.user.id);
+    const rawGuestToken = req.headers['x-guest-token'];
+    const guestToken =
+      typeof rawGuestToken === 'string'
+        ? rawGuestToken
+        : Array.isArray(rawGuestToken)
+          ? rawGuestToken[0]
+          : undefined;
+
+    return this.paymentsService.reconcilePayLinkCallback(
+      dto,
+      req.user?.id,
+      guestToken,
+    );
   }
 
   @Post(':id/refund')

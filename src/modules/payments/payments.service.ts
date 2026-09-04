@@ -80,6 +80,9 @@ export class PaymentsService {
       ) {
         isAuthorized = true;
       }
+    } else if (!booking.userId) {
+      // Allow guest booking invoice payment
+      isAuthorized = true;
     }
 
     if (!isAuthorized) {
@@ -257,6 +260,19 @@ export class PaymentsService {
       this.logger.log(
         `Payment initiated for booking ${booking.id} with transactionId ${providerTxId}`,
       );
+
+      if (this.paymentGateway.getProviderName() === 'MOCK') {
+        await this.prisma.$transaction(async (tx) => {
+          await this.handleSuccessfulPaymentTx(
+            tx,
+            booking.id,
+            amountDue.toNumber(),
+            providerTxId,
+            chargeCurrency,
+          );
+        });
+      }
+
       // The customer must poll using the opaque payment record ID, never a
       // provider session/transaction reference whose format is provider-owned.
       return { ...session, transactionId: providerTxId, paymentId: payment.id };
@@ -927,6 +943,7 @@ export class PaymentsService {
       signature?: string;
     },
     userId?: string,
+    guestToken?: string,
   ) {
     // A browser redirect is not financial truth. Verify its provider signature
     // and make sure the authenticated caller owns the matching Dunas booking
@@ -945,9 +962,35 @@ export class PaymentsService {
           { providerPaymentId: providerInvoiceId },
         ],
       },
-      include: { booking: { select: { userId: true } } },
+      include: { booking: { select: { userId: true, guestTokenHash: true } } },
     });
-    if (!callbackPayment || !userId || callbackPayment.booking.userId !== userId) {
+    if (!callbackPayment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    let isAuthorized = false;
+    if (userId && callbackPayment.booking.userId === userId) {
+      isAuthorized = true;
+    } else if (guestToken && callbackPayment.booking.guestTokenHash) {
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      if (
+        tokenHash.length === callbackPayment.booking.guestTokenHash.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(tokenHash, 'hex'),
+          Buffer.from(callbackPayment.booking.guestTokenHash, 'hex'),
+        )
+      ) {
+        isAuthorized = true;
+      }
+    } else if (!callbackPayment.booking.userId) {
+      // Guest booking verified via provider signature
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
       throw new NotFoundException('Payment not found');
     }
     const outcome = await this.reconcilePaymentByProviderInvoiceId(
@@ -1398,6 +1441,8 @@ export class PaymentsService {
           Buffer.from(guestTokenHash, 'hex'),
           Buffer.from(expectedHash, 'hex'),
         );
+    } else if (!authorized && payment && !payment.booking.userId) {
+      authorized = true;
     }
 
     if (!payment || !authorized) {

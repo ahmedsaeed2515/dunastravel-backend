@@ -219,29 +219,23 @@ export class ToursService {
   }
 
   async findBySlug(rawSlug: string, lang: string): Promise<TourDetailResponse> {
-    const SLUG_ALIASES: Record<string, string> = {
-      'classic': 'complete-egypt-8d',
-      'classic-program': 'complete-egypt-8d',
-      'honeymoon-in-egypt': 'cairo-cruzeiro-sharm-11d',
-      'honeymooners': 'cairo-cruzeiro-sharm-11d',
-      'journey-of-the-holy-family-10-days': 'egito-historico-10d',
-      'holy-family-in-egypt-and-jordan-14-days': 'mct-004',
-      'egypt-jordan-combined-14d': 'jewels-of-egypt-and-jordan-11-days',
-      'hurghada-4d3n': 'cairo-cruzeiro-sharm-11d',
-      'sharm-4d3n': 'cairo-cruzeiro-sharm-11d',
-      'siwa-oasis-alexandria': 'cairo-express-alexandria-5d',
-      'siwa-oasis': 'cairo-express-alexandria-5d',
-    };
-    const slug = SLUG_ALIASES[rawSlug] || rawSlug;
+    const trimmed = rawSlug?.trim();
+    if (!trimmed) {
+      throw new NotFoundException('Tour not found');
+    }
 
     this.toursCounter.inc();
-    const cacheKey = `tour:detail:${slug}:${lang}`;
+    const cacheKey = `tour:detail:${trimmed}:${lang}`;
     const cached = await this.cacheManager.get<TourDetailResponse>(cacheKey);
     if (cached) return cached;
 
-    const tour = await this.prisma.tour.findFirst({
+    // 1. First attempt: match by exact slug or id
+    let tour = await this.prisma.tour.findFirst({
       where: {
-        slug,
+        OR: [
+          { slug: trimmed },
+          { id: trimmed },
+        ],
         isActive: true,
         status: 'PUBLISHED',
         deletedAt: null,
@@ -252,12 +246,35 @@ export class ToursService {
       },
     });
 
+    // 2. Second attempt: check only true legacy generic aliases if exact match failed
     if (!tour) {
-      this.logger.warn(`Tour not found | slug=${slug}`);
+      const GENERIC_ALIASES: Record<string, string> = {
+        'classic': 'classic-program',
+        'honeymooners': 'honeymoon-egypt',
+      };
+      const aliasTarget = GENERIC_ALIASES[trimmed];
+      if (aliasTarget) {
+        tour = await this.prisma.tour.findFirst({
+          where: {
+            OR: [{ slug: aliasTarget }, { id: aliasTarget }],
+            isActive: true,
+            status: 'PUBLISHED',
+            deletedAt: null,
+          },
+          include: {
+            itineraries: { orderBy: { sortOrder: 'asc' } },
+            images: { orderBy: { sortOrder: 'asc' } },
+          },
+        });
+      }
+    }
+
+    if (!tour) {
+      this.logger.warn(`Tour not found | slug=${trimmed}`);
       throw new NotFoundException('Tour not found');
     }
 
-    this.logger.debug(`Tour detail queried | slug=${slug} lang=${lang}`);
+    this.logger.debug(`Tour detail queried | slug=${tour.slug} lang=${lang}`);
 
     const response = this.toTourDetailResponse(tour, lang);
     await this.cacheManager.set(cacheKey, response, 60_000);
