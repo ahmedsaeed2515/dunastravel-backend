@@ -17771,14 +17771,22 @@
       "VerifyEmailDto": {
         "type": "object",
         "properties": {
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit OTP code"
+          },
           "token": {
             "type": "string",
-            "example": "verify123token"
+            "example": "verify123token",
+            "description": "Verification token string"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "User email address"
           }
-        },
-        "required": [
-          "token"
-        ]
+        }
       },
       "ChangePasswordDto": {
         "type": "object",

@@ -80,16 +80,16 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      false,
+      true,
     )) as boolean;
-    const verifyToken = requireEmailVerification
-      ? crypto.randomBytes(32).toString('hex')
+    const otpCode = requireEmailVerification
+      ? Math.floor(100000 + Math.random() * 900000).toString()
       : null;
-    const verifyTokenHash = verifyToken
-      ? crypto.createHash('sha256').update(verifyToken).digest('hex')
+    const verifyTokenHash = otpCode
+      ? crypto.createHash('sha256').update(otpCode).digest('hex')
       : null;
-    const verifyTokenExp = verifyToken
-      ? new Date(Date.now() + 86400000)
+    const verifyTokenExp = otpCode
+      ? new Date(Date.now() + 15 * 60 * 1000) // 15 minutes validity
       : null;
 
     const user = await this.prisma.user.create({
@@ -105,12 +105,12 @@ export class AuthService {
     });
 
     this.logger.log(`User registered: userId=${user.id}`);
-    if (verifyToken) {
+    if (otpCode) {
       try {
         await this.notificationsService.sendVerificationEmail(
           user.email,
           user.name,
-          verifyToken,
+          otpCode,
         );
       } catch (error) {
         // Do not leave a newly registered user blocked behind an email that
@@ -130,21 +130,38 @@ export class AuthService {
   }
 
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+    const rawCodeOrToken = (dto.code || dto.token)?.trim();
+    if (!rawCodeOrToken) {
+      throw new BadRequestException('Verification code or token is required');
+    }
+
     const tokenHash = crypto
       .createHash('sha256')
-      .update(dto.token)
+      .update(rawCodeOrToken)
       .digest('hex');
-    const user = await this.prisma.user.findFirst({
-      where: { verifyToken: tokenHash, deletedAt: null },
-    });
+
+    let user = null;
+    if (dto.email?.trim()) {
+      user = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email.trim().toLowerCase(),
+          verifyToken: tokenHash,
+          deletedAt: null,
+        },
+      });
+    } else {
+      user = await this.prisma.user.findFirst({
+        where: { verifyToken: tokenHash, deletedAt: null },
+      });
+    }
 
     if (!user) {
-      throw new BadRequestException('Invalid verification token');
+      throw new BadRequestException('Invalid or incorrect verification code');
     }
 
     if (user.verifyTokenExp && user.verifyTokenExp < new Date()) {
       throw new BadRequestException(
-        'Verification link has expired. Please request a new one.',
+        'Verification code has expired. Please request a new code.',
       );
     }
 
@@ -184,7 +201,7 @@ export class AuthService {
 
     const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      false,
+      true,
     )) as boolean;
 
     if (requireEmailVerification && !user.isVerified) {
@@ -497,46 +514,42 @@ export class AuthService {
   ): Promise<{ message: string }> {
     const requireEmailVerification = (await this.settingsService.getSetting(
       'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      false,
+      true,
     )) as boolean;
     if (!requireEmailVerification) {
       return { message: 'Email verification is currently disabled.' };
     }
 
     const user = await this.prisma.user.findFirst({
-      where: { email: dto.email, deletedAt: null },
+      where: { email: dto.email.trim().toLowerCase(), deletedAt: null },
     });
-    if (!user)
+    if (!user || user.isVerified) {
       return {
         message:
-          'If that email is registered, a verification link has been sent.',
+          'If that email is registered, a verification code has been sent.',
       };
-    if (user.isVerified)
-      return {
-        message:
-          'If that email is registered, a verification link has been sent.',
-      };
+    }
 
-    const verifyToken = crypto.randomBytes(32).toString('hex');
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verifyTokenHash = crypto
       .createHash('sha256')
-      .update(verifyToken)
+      .update(otpCode)
       .digest('hex');
-    const verifyTokenExp = new Date(Date.now() + 86400000); // 24 hours
+    const verifyTokenExp = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await this.prisma.user.update({
       where: { id: user.id },
       data: { verifyToken: verifyTokenHash, verifyTokenExp },
     });
 
-    this.logger.log(`Resent verification email for userId=${user.id}`);
+    this.logger.log(`Resent verification OTP code for userId=${user.id}`);
     await this.notificationsService.sendVerificationEmail(
       user.email,
       user.name,
-      verifyToken,
+      otpCode,
     );
     return {
       message:
-        'If that email is registered, a verification link has been sent.',
+        'If that email is registered, a verification code has been sent.',
     };
   }
 }

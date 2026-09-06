@@ -240,18 +240,32 @@ export class NotificationsService {
   async sendVerificationEmail(
     email: string,
     name: string,
-    token: string,
+    otpCode: string,
   ): Promise<void> {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&code=${otpCode}`;
 
     const template = await this.emailComposition.getTemplateFromDb(
       'user_verification',
-      { name, verifyUrl },
+      { name, otpCode, verifyUrl },
       (vars: Record<string, string>) => ({
-        subject: 'Verify your Dunas Travel Account',
-        html: `<p>Hi ${vars['name']}</p><p>Please verify your email by clicking the link below:</p><p><a href="${vars['verifyUrl']}">${vars['verifyUrl']}</a></p>`,
-        text: `Hi ${vars['name']},\n\nPlease verify your email using this link: ${vars['verifyUrl']}`,
+        subject: 'Your Dunas Travel Verification Code',
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 550px; margin: 0 auto; padding: 30px; border: 1px solid rgba(201, 162, 39, 0.3); border-radius: 16px; background-color: #121118; color: #f5edd6; text-align: center;">
+            <h2 style="color: #c9a227; margin-bottom: 8px; font-size: 24px;">Verify Your Account</h2>
+            <p style="color: #d1cbbd; font-size: 15px; margin-bottom: 24px;">Hi ${vars['name']}, thank you for registering with Dunas Travel. Please use the 6-digit verification code below to complete your registration:</p>
+            <div style="margin: 28px 0;">
+              <span style="font-size: 34px; font-weight: 800; letter-spacing: 10px; color: #0a0a0d; background: linear-gradient(135deg, #c9a227, #f0d575); padding: 14px 32px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.25);">
+                ${vars['otpCode']}
+              </span>
+            </div>
+            <p style="color: #a0998a; font-size: 13px; margin-top: 20px;">This code will expire in 15 minutes.</p>
+            <div style="margin-top: 30px; padding-top: 20px; border-t: 1px solid rgba(201, 162, 39, 0.15); font-size: 13px; color: #8e8777;">
+              Or verify directly via link: <a href="${vars['verifyUrl']}" style="color: #c9a227; text-decoration: underline;">Click Here to Verify</a>
+            </div>
+          </div>
+        `,
+        text: `Hi ${vars['name']},\n\nYour 6-digit verification code for Dunas Travel is: ${vars['otpCode']}\nThis code will expire in 15 minutes.\n\nDirect verification link: ${vars['verifyUrl']}`,
       }),
     );
 
