@@ -31,8 +31,8 @@ export class ResendEmailProvider implements IEmailProvider {
 
   async send(payload: EmailPayload): Promise<EmailResult> {
     try {
-      const response = await this.resend.emails.send({
-        from: this.fromAddress,
+      let response = await this.resend.emails.send({
+        from: this.fromAddress || 'DunasTravel <onboarding@resend.dev>',
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
@@ -45,6 +45,19 @@ export class ResendEmailProvider implements IEmailProvider {
             }))
           : undefined,
       });
+
+      if (response.error && (response.error.message?.toLowerCase().includes('domain') || response.error.message?.toLowerCase().includes('testing'))) {
+        this.logger.warn(
+          `Resend API error with custom domain (${response.error.message}). Attempting fallback to onboarding@resend.dev...`,
+        );
+        response = await this.resend.emails.send({
+          from: 'DunasTravel <onboarding@resend.dev>',
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text,
+        });
+      }
 
       if (response.error) {
         this.logger.error(

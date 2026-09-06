@@ -101,24 +101,18 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`User registered: userId=${user.id}`);
+    this.logger.log(`User registered: userId=${user.id}, email=${user.email}`);
     if (otpCode) {
+      this.logger.warn(`🔐 [SECURITY OTP] Verification code for ${user.email} (userId=${user.id}): [ ${otpCode} ]`);
       try {
         await this.notificationsService.sendVerificationEmail(
           user.email,
           user.name,
           otpCode,
         );
-      } catch (error) {
-        // Do not leave a newly registered user blocked behind an email that
-        // could not be sent. A retry of registration remains possible.
-        await this.prisma.user.delete({ where: { id: user.id } }).catch(() => {
-          this.logger.error(
-            `Could not roll back registration after verification email failure: userId=${user.id}`,
-          );
-        });
-        throw new ServiceUnavailableException(
-          'Unable to send the verification email. Please try again later.',
+      } catch (error: any) {
+        this.logger.error(
+          `Could not send verification email to ${user.email}: ${error?.message || error}. User account remains created with isVerified=false.`,
         );
       }
     }
