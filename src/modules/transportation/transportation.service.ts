@@ -14,16 +14,20 @@ import {
   UpdateTransportationBookingStatusDto,
 } from './dto/transportation-service.dto';
 import { generateReferenceCode } from '../../common/utils';
-import { Prisma } from '@prisma/client';
+import { Prisma, InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 import { CANONICAL_FLEET } from './constants/canonical-fleet.constant';
 import crypto from 'crypto';
+import { InAppNotificationsService } from '../in-app-notifications/in-app-notifications.service';
 
 @Injectable()
 export class TransportationService {
   private readonly logger = new Logger(TransportationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inAppNotifications?: InAppNotificationsService,
+  ) {}
 
   private toSafeBooking<
     T extends { idempotencyKey: string | null; requestHash: string | null },
@@ -227,6 +231,40 @@ export class TransportationService {
             requestHash,
           },
         });
+        if (this.inAppNotifications) {
+          try {
+            await this.inAppNotifications.notifyAdmins({
+              category: InAppNotificationCategory.BOOKING,
+              priority: InAppNotificationPriority.HIGH,
+              title: `New Transportation Booking #${created.referenceCode}`,
+              message: `Transportation booking #${created.referenceCode} placed (${created.pickupLocation} -> ${created.dropoffLocation})`,
+              entityType: 'TRANSPORTATION_BOOKING',
+              entityId: created.referenceCode,
+              deepLink: '/admin/transportation',
+              metadata: { referenceCode: created.referenceCode, totalAmount: created.totalAmountUsd },
+            });
+
+            if (userId) {
+              await this.inAppNotifications.createNotification({
+                userId,
+                category: InAppNotificationCategory.BOOKING,
+                priority: InAppNotificationPriority.NORMAL,
+                title: `Transportation Booking #${created.referenceCode} Received`,
+                message: `Your transportation booking from ${created.pickupLocation} to ${created.dropoffLocation} has been received.`,
+                targetApp: 'CUSTOMER',
+                entityType: 'TRANSPORTATION_BOOKING',
+                entityId: created.referenceCode,
+                deepLink: '/account/bookings',
+                metadata: { referenceCode: created.referenceCode },
+              });
+            }
+          } catch (notifErr) {
+            this.logger.warn(
+              `Failed to dispatch transportation in-app notification: ${(notifErr as Error).message}`,
+            );
+          }
+        }
+
         return this.toSafeBooking(created);
       } catch (error: unknown) {
         if ((error as { code?: string }).code !== 'P2002') throw error;

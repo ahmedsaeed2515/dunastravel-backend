@@ -701,6 +701,7 @@ export class BookingsService {
           adults: adultsCount,
           children: childrenCount,
           infants: dto.infants ?? 0,
+          userId: userId || result.booking.userId || undefined,
         };
         this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
 
