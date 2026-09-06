@@ -246,11 +246,17 @@ export class AuthService {
     });
 
     this.logger.log(`Password reset token generated for userId=${user.id}`);
-    await this.notificationsService.sendPasswordResetEmail(
-      user.email,
-      user.name,
-      resetToken,
-    );
+    try {
+      await this.notificationsService.sendPasswordResetEmail(
+        user.email,
+        user.name,
+        resetToken,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Could not send password reset email to ${user.email}: ${error?.message || error}.`,
+      );
+    }
 
     return {
       message: 'If that email exists, a password reset link has been sent.',
@@ -528,11 +534,20 @@ export class AuthService {
     });
 
     this.logger.log(`Resent verification OTP code for userId=${user.id}`);
-    await this.notificationsService.sendVerificationEmail(
-      user.email,
-      user.name,
-      otpCode,
+    this.logger.warn(
+      `🔐 [SECURITY OTP] Verification code for ${user.email} (userId=${user.id}): [ ${otpCode} ]`,
     );
+    try {
+      await this.notificationsService.sendVerificationEmail(
+        user.email,
+        user.name,
+        otpCode,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Could not send verification email to ${user.email}: ${error?.message || error}. Code logged to server console.`,
+      );
+    }
     return {
       message:
         'If that email is registered, a verification code has been sent.',
