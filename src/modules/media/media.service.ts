@@ -1332,7 +1332,12 @@ export class MediaService {
         where.entityType = MediaEntityType.HOTEL;
       } else if (category === 'general') {
         where.entityType = MediaEntityType.GENERAL;
-        where.OR = [{ entityId: null }, { entityId: 'general' }];
+        where.OR = [
+          { entityId: null },
+          { entityId: 'general' },
+          { entityId: 'all' },
+          { entityId: '' },
+        ];
       } else if (
         category === 'transport' ||
         category === 'fleet' ||
