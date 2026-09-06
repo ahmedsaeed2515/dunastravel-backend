@@ -79,7 +79,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const requireEmailVerification = true;
+    const requireEmailVerification = false;
     const otpCode = requireEmailVerification
       ? Math.floor(100000 + Math.random() * 900000).toString()
       : null;
@@ -191,7 +191,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const requireEmailVerification = true;
+    const requireEmailVerification = false;
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(

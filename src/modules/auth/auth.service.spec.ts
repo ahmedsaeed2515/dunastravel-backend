@@ -287,7 +287,7 @@ describe('AuthService', () => {
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should create an unverified new user and send verification email', async () => {
+    it('should create a new user ready for immediate login in dev test mode', async () => {
       userService.findByEmail.mockResolvedValueOnce(null);
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
 
@@ -295,12 +295,9 @@ describe('AuthService', () => {
 
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          isVerified: false,
-          verifyToken: expect.any(String),
-          verifyTokenExp: expect.any(Date),
+          isVerified: true,
         }),
       });
-      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledTimes(1);
     });
 
     it('should throw ConflictException if email is already in use', async () => {
