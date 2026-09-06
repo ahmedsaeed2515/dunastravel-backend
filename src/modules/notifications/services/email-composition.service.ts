@@ -22,8 +22,8 @@ export class EmailCompositionService {
   private readonly adminDashboardUrl: string;
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     this.internalSalesEmail =

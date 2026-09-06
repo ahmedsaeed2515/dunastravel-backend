@@ -42,14 +42,16 @@ import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { AuthenticatedUser } from '../../common/types';
 import { UserService } from '../users/users.service';
 
+import { Inject } from '@nestjs/common';
+
 @ApiTags('Auth')
 @Controller('auth')
 @Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService,
-    private readonly userService: UserService,
+    @Inject(AuthService) private readonly authService: AuthService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(UserService) private readonly userService: UserService,
   ) {}
 
   @Public()

@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Logger,
   ServiceUnavailableException,
+  Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -61,13 +62,13 @@ export class AuthService {
   );
 
   constructor(
-    private readonly userService: UserService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
-    private readonly loginSecurityState: LoginSecurityStateService,
-    private readonly notificationsService: NotificationsService,
-    private readonly settingsService: SettingsService,
+    @Inject(UserService) private readonly userService: UserService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(LoginSecurityStateService) private readonly loginSecurityState: LoginSecurityStateService,
+    @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
+    @Inject(SettingsService) private readonly settingsService: SettingsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<SafeUser> {

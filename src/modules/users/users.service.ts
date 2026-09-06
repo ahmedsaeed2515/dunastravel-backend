@@ -84,11 +84,13 @@ export interface UpdateUserData {
   role?: UserRole;
 }
 
+import { Inject } from '@nestjs/common';
+
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({

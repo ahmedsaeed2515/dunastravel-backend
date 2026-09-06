@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ConflictException,
   ServiceUnavailableException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationDeliveryLogQueryFilters } from './dto/notification.dto';
@@ -18,9 +19,9 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly emailComposition: EmailCompositionService,
-    private readonly emailDelivery: EmailDeliveryService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(EmailCompositionService) private readonly emailComposition: EmailCompositionService,
+    @Inject(EmailDeliveryService) private readonly emailDelivery: EmailDeliveryService,
   ) {}
 
   async findAllLogs(filters: NotificationDeliveryLogQueryFilters) {

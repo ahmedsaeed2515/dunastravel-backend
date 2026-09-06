@@ -7,14 +7,16 @@ import { JwtPayload, AuthenticatedUser } from '../../../common/types';
 import { Request } from 'express';
 import { SettingsService } from '../../settings/settings.service';
 
+import { Inject } from '@nestjs/common';
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly userService: UserService,
-    private readonly settingsService: SettingsService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(UserService) private readonly userService: UserService,
+    @Inject(SettingsService) private readonly settingsService: SettingsService,
   ) {
     const secret = configService.get<string>('jwt.secret');
     if (!secret) {

@@ -10,7 +10,7 @@ export class SettingsService {
     'ACTIVE_LOCALES',
   ]);
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 

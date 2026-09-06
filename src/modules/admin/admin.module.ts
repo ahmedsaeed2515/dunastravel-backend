@@ -13,8 +13,11 @@ import { AdminReportsModule } from './admin-reports/admin-reports.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { ContactSubmissionsModule } from '../contact-submissions/contact-submissions.module';
 
+import { PrismaModule } from '../../prisma/prisma.module';
+
 @Module({
   imports: [
+    PrismaModule,
     AdminTailorMadeModule,
     AdminInvoicesModule,
     AdminWalletsModule,

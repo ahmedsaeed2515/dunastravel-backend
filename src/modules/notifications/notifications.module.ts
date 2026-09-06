@@ -34,13 +34,15 @@ const EmailProviderFactory = {
   inject: [ConfigService],
 };
 
+import configuration from '../../config/configuration';
+
 @Module({
   imports: [
-    ConfigModule,
+    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     PrismaModule,
     CommissionsModule,
     InAppNotificationsModule,
-    CacheModule.register(),
+    CacheModule.register({ isGlobal: true }),
   ],
   controllers: [NotificationsController],
   providers: [

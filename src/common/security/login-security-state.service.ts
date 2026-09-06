@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import Redis from 'ioredis';
@@ -21,7 +21,7 @@ export class LoginSecurityStateService implements OnApplicationShutdown {
   private readonly redis: Redis;
   private connectPromise?: Promise<void>;
 
-  constructor(config: ConfigService) {
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {
     const redisUrl = config.get<string>('REDIS_URL');
     if (!redisUrl) {
       throw new Error('REDIS_URL is required for authentication security');

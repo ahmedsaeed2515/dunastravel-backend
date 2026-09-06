@@ -19,7 +19,7 @@ export class EmailDeliveryService {
   constructor(
     @Inject(EMAIL_PROVIDER_TOKEN)
     private readonly providerAdapter: IEmailProvider,
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
   ) {}
 
   async deliver(
@@ -30,15 +30,20 @@ export class EmailDeliveryService {
   ): Promise<boolean> {
     // 1. Create PENDING log entry
     const logRecord = this.prisma?.notificationDeliveryLog
-      ? await this.prisma.notificationDeliveryLog.create({
-          data: {
-            notificationType: notificationType as unknown as PrismaNotificationType,
-            originReferenceCode,
-            originEntityType,
-            recipientEmail: payload.to,
-            status: PrismaDeliveryStatus.PENDING,
-          },
-        })
+      ? await this.prisma.notificationDeliveryLog
+          .create({
+            data: {
+              notificationType: notificationType as unknown as PrismaNotificationType,
+              originReferenceCode,
+              originEntityType,
+              recipientEmail: payload.to,
+              status: PrismaDeliveryStatus.PENDING,
+            },
+          })
+          .catch((err) => {
+            this.logger.warn(`Could not create delivery log record: ${err?.message || err}`);
+            return null;
+          })
       : null;
 
     let attempts = 0;
