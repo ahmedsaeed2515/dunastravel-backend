@@ -1014,8 +1014,9 @@ export class DashboardService {
 
   async getTrafficAnalytics(query: DashboardQueryDto) {
     const { from, to } = this.parseDates(query);
+    const activeThreshold = new Date(Date.now() - 2 * 60 * 1000);
 
-    const [deviceGroups, localeGroups, totalEvents] = await Promise.all([
+    const [deviceGroups, localeGroups, totalEvents, activeVisitorsGroup] = await Promise.all([
       this.prisma.analyticsEvent.groupBy({
         by: ['deviceCategory'],
         where: { createdAt: { gte: from, lte: to } },
@@ -1029,7 +1030,16 @@ export class DashboardService {
       this.prisma.analyticsEvent.count({
         where: { createdAt: { gte: from, lte: to } },
       }),
+      this.prisma.analyticsEvent.groupBy({
+        by: ['sessionId'],
+        where: {
+          createdAt: { gte: activeThreshold },
+          sessionId: { not: null },
+        },
+      }),
     ]);
+
+    const activeVisitors = activeVisitorsGroup.length;
 
     const devices: Record<string, number> = {
       desktop: 0,
@@ -1049,6 +1059,7 @@ export class DashboardService {
 
     return {
       totalEvents,
+      activeVisitors,
       devices,
       locales,
     };
