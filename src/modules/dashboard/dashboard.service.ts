@@ -105,6 +105,7 @@ export class DashboardService {
       failedNotificationsCount,
       visitorEventsCount,
       bookingStartedEventsCount,
+      activeVisitorsGroup,
     ] = await Promise.all([
       // Bookings in current period
       this.prisma.booking.groupBy({
@@ -238,7 +239,17 @@ export class DashboardService {
           eventName: 'booking_started',
         },
       }),
+      // Active Visitors Group
+      this.prisma.analyticsEvent.groupBy({
+        by: ['sessionId'],
+        where: {
+          createdAt: { gte: new Date(Date.now() - 2 * 60 * 1000) },
+          sessionId: { not: null },
+        },
+      }),
     ]);
+
+    const activeVisitors = activeVisitorsGroup.length;
 
     // Financial Computations
     const revenueStatuses = new Set([
@@ -390,6 +401,7 @@ export class DashboardService {
         rate: conversionRate,
         totalConversions,
         visitorViews: visitorEventsCount,
+        activeVisitors,
       },
       capacity: {
         totalCapacity,
@@ -403,6 +415,7 @@ export class DashboardService {
         openInquiriesCount,
         unreadContactsCount,
         failedNotificationsCount,
+        activeVisitors,
       },
       dateRange: {
         from: from.toISOString(),
