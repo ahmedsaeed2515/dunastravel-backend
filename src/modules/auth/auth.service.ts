@@ -78,10 +78,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const requireEmailVerification = (await this.settingsService.getSetting(
-      'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      true,
-    )) as boolean;
+    const requireEmailVerification = true;
     const otpCode = requireEmailVerification
       ? Math.floor(100000 + Math.random() * 900000).toString()
       : null;
@@ -199,10 +196,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const requireEmailVerification = (await this.settingsService.getSetting(
-      'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      true,
-    )) as boolean;
+    const requireEmailVerification = true;
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
@@ -512,10 +506,7 @@ export class AuthService {
   async resendVerification(
     dto: ResendVerificationDto,
   ): Promise<{ message: string }> {
-    const requireEmailVerification = (await this.settingsService.getSetting(
-      'AUTH_REQUIRE_EMAIL_VERIFICATION',
-      true,
-    )) as boolean;
+    const requireEmailVerification = true;
     if (!requireEmailVerification) {
       return { message: 'Email verification is currently disabled.' };
     }

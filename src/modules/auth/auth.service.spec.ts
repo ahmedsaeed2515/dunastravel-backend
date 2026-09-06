@@ -287,21 +287,20 @@ describe('AuthService', () => {
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should activate a new user without sending email when verification is disabled', async () => {
+    it('should create an unverified new user and send verification email', async () => {
       userService.findByEmail.mockResolvedValueOnce(null);
-      settingsService.getSetting.mockResolvedValueOnce(false);
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
 
       await authService.register(registerDto);
 
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          isVerified: true,
-          verifyToken: null,
-          verifyTokenExp: null,
+          isVerified: false,
+          verifyToken: expect.any(String),
+          verifyTokenExp: expect.any(Date),
         }),
       });
-      expect(notificationsService.sendVerificationEmail).not.toHaveBeenCalled();
+      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledTimes(1);
     });
 
     it('should throw ConflictException if email is already in use', async () => {
