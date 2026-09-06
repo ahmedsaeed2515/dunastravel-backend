@@ -18,6 +18,7 @@ export class DashboardService {
     let from: Date;
 
     const preset = query.preset || (query.year ? query.year : undefined);
+    const yearMatch = preset && /^\d{4}$/.test(preset) ? parseInt(preset, 10) : null;
 
     if (query.from) {
       from = new Date(query.from);
@@ -29,12 +30,9 @@ export class DashboardService {
       from = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
     } else if (preset === '12m') {
       from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-    } else if (preset === '2026') {
-      from = new Date('2026-01-01T00:00:00.000Z');
-      to = new Date('2026-12-31T23:59:59.999Z');
-    } else if (preset === '2025') {
-      from = new Date('2025-01-01T00:00:00.000Z');
-      to = new Date('2025-12-31T23:59:59.999Z');
+    } else if (yearMatch) {
+      from = new Date(`${yearMatch}-01-01T00:00:00.000Z`);
+      to = new Date(`${yearMatch}-12-31T23:59:59.999Z`);
     } else {
       // Default / 'all': full trailing 365 days
       from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
@@ -53,12 +51,9 @@ export class DashboardService {
     let prevFrom: Date;
     let prevTo: Date;
 
-    if (preset === '2026') {
-      prevFrom = new Date('2025-01-01T00:00:00.000Z');
-      prevTo = new Date('2025-12-31T23:59:59.999Z');
-    } else if (preset === '2025') {
-      prevFrom = new Date('2024-01-01T00:00:00.000Z');
-      prevTo = new Date('2024-12-31T23:59:59.999Z');
+    if (yearMatch) {
+      prevFrom = new Date(`${yearMatch - 1}-01-01T00:00:00.000Z`);
+      prevTo = new Date(`${yearMatch - 1}-12-31T23:59:59.999Z`);
     } else {
       prevTo = new Date(from.getTime());
       prevFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
