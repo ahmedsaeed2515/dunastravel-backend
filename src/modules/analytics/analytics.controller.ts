@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { Throttle } from '@nestjs/throttler';
 import {
   AnalyticsDateRangeQueryDto,
@@ -28,6 +29,7 @@ import {
 
 const BROWSER_ALLOWED_EVENTS = new Set([
   'page_view',
+  'heartbeat',
   'interface_view',
   'tour_impression',
   'tour_card_click',
@@ -54,7 +56,8 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post('events')
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @SkipCsrf()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Track a privacy-aware website visitor event.' })
   @ApiOkResponse({ description: 'Event tracked successfully' })
   async trackEvent(@Body() dto: TrackEventDto) {
