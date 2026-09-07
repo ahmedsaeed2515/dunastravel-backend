@@ -559,32 +559,16 @@ export class ChatOrchestratorService {
         }
 
         const tours = Array.isArray(rawTours)
-          ? rawTours.map((t: any) => ({ ...t, price: 0, basePriceUsd: 0 }))
+          ? rawTours.map((t: any) => ({
+              ...t,
+              price: Number(t.price ?? t.basePriceUsd) || 0,
+              basePriceUsd: Number(t.basePriceUsd ?? t.price) || 0,
+            }))
           : [];
 
         const structuredContent = m.structuredContent ? { ...m.structuredContent } : null;
-        if (structuredContent) {
-          if (Array.isArray(structuredContent.tours)) {
-            structuredContent.tours = structuredContent.tours.map((t: any) => ({ ...t, price: 0, basePriceUsd: 0 }));
-          }
-          if (structuredContent.proposal) {
-            structuredContent.proposal = { ...structuredContent.proposal, estimatedPricePerPerson: 0 };
-          }
-          if (structuredContent.comparison && Array.isArray(structuredContent.comparison.tours)) {
-            structuredContent.comparison = {
-              ...structuredContent.comparison,
-              tours: structuredContent.comparison.tours.map((t: any) => ({ ...t, price: 0 })),
-            };
-          }
-        }
-
-        const proposal = m.structuredContent?.proposal ? { ...m.structuredContent.proposal, estimatedPricePerPerson: 0 } : null;
-        const comparison = m.structuredContent?.comparison ? {
-          ...m.structuredContent.comparison,
-          tours: Array.isArray(m.structuredContent.comparison.tours)
-            ? m.structuredContent.comparison.tours.map((t: any) => ({ ...t, price: 0 }))
-            : [],
-        } : null;
+        const proposal = m.structuredContent?.proposal ? { ...m.structuredContent.proposal } : null;
+        const comparison = m.structuredContent?.comparison ? { ...m.structuredContent.comparison } : null;
 
         return {
           id: m.id,
@@ -709,7 +693,7 @@ export class ChatOrchestratorService {
       durationDays: daysCount,
       destinations,
       tier: constraints.nileCruiseRequired ? 'ULTRA_VIP' : 'LUXURY',
-      estimatedPricePerPerson: 0,
+      estimatedPricePerPerson: baseBudget,
       currency: 'USD',
       days,
       highlights: [
@@ -741,7 +725,6 @@ export class ChatOrchestratorService {
     const text = instruction.toLowerCase();
     const updated = JSON.parse(JSON.stringify(currentProposal)) as StructuredTripProposal;
     updated.id = `prop-${Date.now()}`;
-    updated.estimatedPricePerPerson = 0;
 
     // Add Luxor day
     if (/(add|extra|زيادة|اضف|اضافة).*(luxor|الاقصر|الأقصر)/i.test(text)) {
@@ -777,7 +760,8 @@ export class ChatOrchestratorService {
 
     // Budget reduction
     if (/(reduce|lower|cheaper|اقل|أقل|تخفيض|رخص|ميزانية).*(budget|price|سعر|فلوس)/i.test(text)) {
-      updated.estimatedPricePerPerson = 0;
+      const currentPrice = currentProposal.estimatedPricePerPerson || 2000;
+      updated.estimatedPricePerPerson = Math.round(currentPrice * 0.85);
       updated.tier = 'LUXURY';
     }
 

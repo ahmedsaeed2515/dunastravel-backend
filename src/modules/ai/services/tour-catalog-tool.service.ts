@@ -581,8 +581,8 @@ export class TourCatalogToolService {
         },
         {
           aspect: isArabic ? 'سعر الباقة يبدأ من' : 'Starting Price per Person',
-          tourAValue: `$0 ${compA.currency}`,
-          tourBValue: `$0 ${compB.currency}`,
+          tourAValue: `$${compA.price} ${compA.currency}`,
+          tourBValue: `$${compB.price} ${compB.currency}`,
         },
         {
           aspect: isArabic ? 'الإبحار في النايل كروز' : 'Nile Cruise Included',
@@ -654,7 +654,7 @@ export class TourCatalogToolService {
     const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
     const dDays = this.getTourDurationDays(tour);
 
-    const price = 0;
+    const price = Number(tour.basePriceUsd) || 0;
 
     return {
       id: tour.id,

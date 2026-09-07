@@ -903,6 +903,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordManualBookingPaymentDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Payment recorded and booking updated"
@@ -3624,7 +3634,7 @@
         ]
       }
     },
-    "/api/payments/geitpatin/webhook": {
+    "/api/payments/getpayin/webhook": {
       "post": {
         "operationId": "PaymentsController_handleWebhook[1]",
         "parameters": [],
@@ -3638,7 +3648,7 @@
         ]
       }
     },
-    "/api/payments/getpayin/webhook": {
+    "/api/admin/payments/webhook/{provider}": {
       "post": {
         "operationId": "PaymentsController_handleWebhook[2]",
         "parameters": [],
@@ -3652,37 +3662,9 @@
         ]
       }
     },
-    "/api/admin/payments/webhook/{provider}": {
-      "post": {
-        "operationId": "PaymentsController_handleWebhook[3]",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Payments"
-        ]
-      }
-    },
-    "/api/admin/payments/geitpatin/webhook": {
-      "post": {
-        "operationId": "PaymentsController_handleWebhook[4]",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Payments"
-        ]
-      }
-    },
     "/api/admin/payments/getpayin/webhook": {
       "post": {
-        "operationId": "PaymentsController_handleWebhook[5]",
+        "operationId": "PaymentsController_handleWebhook[3]",
         "parameters": [],
         "responses": {
           "200": {
@@ -16219,6 +16201,34 @@
           "fullName",
           "email",
           "phone"
+        ]
+      },
+      "RecordManualBookingPaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 450,
+            "description": "Amount paid in USD (must be positive, minimum 0.01)"
+          },
+          "method": {
+            "type": "string",
+            "example": "CASH",
+            "description": "Payment method (CASH, BANK_TRANSFER, POS, etc.)"
+          },
+          "transactionId": {
+            "type": "string",
+            "example": "TX-OFFLINE-98234",
+            "description": "External transaction reference or receipt number"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Received in office by Ahmed",
+            "description": "Internal accounting or audit notes"
+          }
+        },
+        "required": [
+          "amount"
         ]
       },
       "SuspendUserDto": {
