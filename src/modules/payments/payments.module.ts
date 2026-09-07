@@ -7,10 +7,11 @@ import { DisabledPaymentGatewayAdapter } from './adapters/disabled-gateway.adapt
 import { MockPaymentGatewayAdapter } from './adapters/mock-gateway.adapter';
 import { PaymentCronService } from './payment-cron.service';
 import { CommissionsModule } from '../commissions/commissions.module';
+import { AvailabilityModule } from '../availability/availability.module';
 import { ConfigService } from '@nestjs/config';
 
 @Module({
-  imports: [CommissionsModule],
+  imports: [CommissionsModule, AvailabilityModule],
   controllers: [PaymentsController],
   providers: [
     PaymentsService,

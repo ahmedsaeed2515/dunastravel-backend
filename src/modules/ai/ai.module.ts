@@ -22,9 +22,10 @@ import { AgentRegistryService } from './services/agent-registry.service';
 import { LiveCatalogRetrieverService } from './services/live-catalog-retriever.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
 import { PromptEngineService } from './services/prompt-engine.service';
+import { AvailabilityModule } from '../availability/availability.module';
 
 @Module({
-  imports: [ConfigModule, PrismaModule],
+  imports: [ConfigModule, PrismaModule, AvailabilityModule],
   controllers: [
     AiController,
     PublicAiController,

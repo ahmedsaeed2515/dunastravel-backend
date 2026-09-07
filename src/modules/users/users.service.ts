@@ -345,6 +345,20 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
+    const activeBookings = await this.prisma.booking.count({
+      where: {
+        userId: id,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        arrivalDate: { gte: new Date() },
+      },
+    });
+    if (activeBookings > 0) {
+      throw new BadRequestException(
+        `Cannot delete user with ${activeBookings} active or upcoming bookings.`,
+      );
+    }
+
     await this.prisma.user.update({
       where: { id },
       data: {

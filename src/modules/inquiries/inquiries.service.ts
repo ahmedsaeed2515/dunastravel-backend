@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   UnprocessableEntityException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -213,6 +214,12 @@ export class InquiriesService {
     referenceCode: string,
     newStatus: TailorMadeInquiryStatus,
   ): Promise<InquiryResponse> {
+    if (newStatus === TailorMadeInquiryStatus.CONVERTED_TO_BOOKING) {
+      throw new BadRequestException(
+        'Status CONVERTED_TO_BOOKING can only be set via the dedicated /convert-to-booking endpoint.',
+      );
+    }
+
     const inquiry = await this.prisma.tailorMadeInquiry.findUnique({
       where: { referenceCode },
     });

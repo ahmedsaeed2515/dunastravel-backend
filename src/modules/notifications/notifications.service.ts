@@ -288,6 +288,36 @@ export class NotificationsService {
         break;
       }
 
+      case 'USER': {
+        const user = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: log.originReferenceCode },
+              { email: log.originReferenceCode },
+            ],
+            deletedAt: null,
+          },
+          select: { id: true, email: true, name: true },
+        });
+        if (!user) {
+          throw new NotFoundException('User not found for retry reconstruction');
+        }
+        this.logger.log(`Retrying USER notification for ${user.email}`);
+        const payload = {
+          to: user.email,
+          subject: 'Notification Update',
+          html: `<p>Dear ${user.name || 'User'},</p><p>This is a retry of your notification.</p>`,
+          text: `Dear ${user.name || 'User'},\nThis is a retry of your notification.`,
+        };
+        await this.emailDelivery.deliver(
+          log.notificationType as unknown as NotificationType,
+          user.id,
+          'USER',
+          payload,
+        );
+        return { success: true, message: 'Retry completed' };
+      }
+
       default:
         throw new BadRequestException(
           'Automatic retry not supported for this entity type yet',

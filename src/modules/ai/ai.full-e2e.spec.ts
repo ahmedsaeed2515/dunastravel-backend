@@ -136,6 +136,8 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       mockKeyPool as any,
       mockRag as any,
       catalogTool,
+      { reserveCapacity: jest.fn(), releaseCapacity: jest.fn() } as any,
+      { emit: jest.fn() } as any,
     );
   });
 

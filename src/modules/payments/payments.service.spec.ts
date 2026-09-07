@@ -11,6 +11,7 @@ import {
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { CommissionsService } from '../commissions/commissions.service';
+import { AvailabilityService } from '../availability/availability.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -116,6 +117,13 @@ describe('PaymentsService', () => {
             createCommissionForBooking: jest.fn().mockResolvedValue(null),
             reverseCommissionForBooking: jest.fn().mockResolvedValue(null),
             adjustCommissionForPartialRefund: jest.fn().mockResolvedValue(null),
+          },
+        },
+        {
+          provide: AvailabilityService,
+          useValue: {
+            releaseCapacity: jest.fn().mockResolvedValue(undefined),
+            reserveCapacity: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

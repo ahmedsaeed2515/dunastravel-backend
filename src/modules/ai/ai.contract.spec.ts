@@ -96,6 +96,24 @@ describe('AI HTTP Contract Spec', () => {
     destination: {
       findMany: jest.fn().mockResolvedValue([]),
     },
+    tourAvailability: {
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'avail-1',
+        tourId: 'tour-1',
+        date: new Date(),
+        totalCapacity: 20,
+        remainingSeats: 15,
+        status: 'AVAILABLE',
+      }),
+      create: jest.fn().mockResolvedValue({
+        id: 'avail-1',
+        tourId: 'tour-1',
+        date: new Date(),
+        totalCapacity: 20,
+        remainingSeats: 15,
+        status: 'AVAILABLE',
+      }),
+    },
     tourLandingPage: {
       findMany: jest.fn().mockResolvedValue([]),
     },
@@ -135,6 +153,7 @@ describe('AI HTTP Contract Spec', () => {
     notificationDeliveryLog: {
       create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
     },
+    $executeRaw: jest.fn().mockResolvedValue(1),
     $transaction: jest.fn(async (cb: any) => cb(mockPrisma)),
   };
 

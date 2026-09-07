@@ -19,6 +19,7 @@ import { Money } from '../../common/domain/value-objects/money.vo';
 import { PaymentEntity } from './domain/payment.entity';
 import crypto from 'crypto';
 import { CommissionsService } from '../commissions/commissions.service';
+import { AvailabilityService } from '../availability/availability.service';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 @Injectable()
@@ -34,6 +35,7 @@ export class PaymentsService {
     private readonly paymentGateway: IPaymentGatewayPort,
     private readonly eventEmitter: EventEmitter2,
     private readonly commissionsService: CommissionsService,
+    private readonly availabilityService: AvailabilityService,
   ) {}
 
   getReadiness() {
@@ -80,9 +82,6 @@ export class PaymentsService {
       ) {
         isAuthorized = true;
       }
-    } else if (!booking.userId && !booking.guestTokenHash) {
-      // Allow unauthenticated access only if no guest token hash is enforced
-      isAuthorized = true;
     }
 
     if (!isAuthorized) {
@@ -93,6 +92,12 @@ export class PaymentsService {
     if (!['PENDING', 'PARTIALLY_PAID'].includes(booking.status)) {
       throw new BadRequestException(
         `Booking is in ${booking.status} status and cannot be paid.`,
+      );
+    }
+
+    if (booking.invoice?.status === 'VOID') {
+      throw new BadRequestException(
+        'Cannot initiate payment for a voided invoice. Please contact support.',
       );
     }
 
@@ -735,7 +740,11 @@ export class PaymentsService {
       },
     });
 
-    if (booking.invoice) {
+    if (
+      booking.invoice &&
+      booking.invoice.status !== 'VOID' &&
+      booking.invoice.status !== 'PAID'
+    ) {
       await tx.invoice.update({
         where: { id: booking.invoice.id },
         data: {
@@ -998,9 +1007,6 @@ export class PaymentsService {
       ) {
         isAuthorized = true;
       }
-    } else if (!callbackPayment.booking.userId) {
-      // Guest booking verified via provider signature
-      isAuthorized = true;
     }
 
     if (!isAuthorized) {
@@ -1341,6 +1347,32 @@ export class PaymentsService {
           }
         }
 
+        const refundDecimal = new Prisma.Decimal(refundMoney.toDecimal());
+        const isFullRefund =
+          !isPartial &&
+          refundDecimal.gte(new Prisma.Decimal(existingPayment.amount));
+        const newPaidAmount = Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          new Prisma.Decimal(existingPayment.booking.paidAmountUsd).sub(
+            refundDecimal,
+          ),
+        );
+        await tx.booking.update({
+          where: { id: existingPayment.booking.id },
+          data: {
+            paidAmountUsd: newPaidAmount,
+            status: isFullRefund ? 'CANCELLED' : existingPayment.booking.status,
+          },
+        });
+        if (isFullRefund && existingPayment.booking.availabilityId) {
+          await this.availabilityService.releaseCapacity(
+            tx,
+            existingPayment.booking.availabilityId,
+            existingPayment.booking.adults +
+              (existingPayment.booking.children ?? 0),
+          );
+        }
+
         await tx.refundRecord.update({
           where: { id: refundRecord.id },
           data: {
@@ -1482,8 +1514,6 @@ export class PaymentsService {
           Buffer.from(guestTokenHash, 'hex'),
           Buffer.from(expectedHash, 'hex'),
         );
-    } else if (!authorized && payment && !payment.booking.userId && !payment.booking.guestTokenHash) {
-      authorized = true;
     }
 
     if (!payment || !authorized) {

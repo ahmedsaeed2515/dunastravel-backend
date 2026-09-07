@@ -166,8 +166,10 @@ export class AvailabilityService {
     const tour = await this.prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) throw new NotFoundException('Tour not found');
 
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
+    const [sy, sm, sd] = String(startDateStr).split('-').map(Number);
+    const [ey, em, ed] = String(endDateStr).split('-').map(Number);
+    const startDate = new Date(Date.UTC(sy, sm - 1, sd));
+    const endDate = new Date(Date.UTC(ey, em - 1, ed));
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new BadRequestException('Invalid start or end date format');
     }
@@ -186,11 +188,11 @@ export class AvailabilityService {
     const slotDates: Date[] = [];
     const curr = new Date(startDate);
     while (curr <= endDate) {
-      const dayOfWeek = curr.getDay(); // 0 = Sun, 1 = Mon ...
+      const dayOfWeek = curr.getUTCDay(); // 0 = Sun, 1 = Mon ...
       if (!daysOfWeek || daysOfWeek.includes(dayOfWeek)) {
         slotDates.push(new Date(curr));
       }
-      curr.setDate(curr.getDate() + 1);
+      curr.setUTCDate(curr.getUTCDate() + 1);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -377,6 +379,42 @@ export class AvailabilityService {
 
           if (updateResult.count > 0) {
             await this.releaseCapacity(tx, booking.availabilityId, totalPax);
+
+            // Void open invoices
+            if (tx.invoice) {
+              await tx.invoice.updateMany({
+                where: {
+                  bookingId: booking.id,
+                  status: { in: ['SENT', 'DRAFT'] },
+                },
+                data: { status: 'VOID' },
+              });
+            }
+
+            // Reverse promotion redemptions
+            if (tx.promotionRedemption) {
+              const redemptions = await tx.promotionRedemption.findMany({
+                where: {
+                  bookingId: booking.id,
+                  status: { in: ['APPLIED', 'ACTIVE'] },
+                },
+                select: { id: true, promotionId: true },
+              });
+
+              for (const redemption of redemptions) {
+                await tx.promotionRedemption.update({
+                  where: { id: redemption.id },
+                  data: { status: 'REVERSED', reversedAt: new Date() },
+                });
+                if (tx.promotion) {
+                  await tx.promotion.update({
+                    where: { id: redemption.promotionId },
+                    data: { currentUses: { decrement: 1 } },
+                  });
+                }
+              }
+            }
+
             releasedCount++;
           }
         }

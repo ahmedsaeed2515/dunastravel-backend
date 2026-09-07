@@ -249,6 +249,60 @@ export class CommissionsService {
     }
   }
 
+  async calculateAndRecordCommission(
+    bookingId: string,
+    companyId?: string,
+    tx?: Prisma.TransactionClient | PrismaService,
+  ) {
+    const client = tx || this.prisma;
+    const booking = await client.booking.findUnique({
+      where: { id: bookingId },
+      include: { company: true },
+    });
+
+    const targetCompanyId = booking?.companyId || companyId;
+    if (!booking || !targetCompanyId) {
+      return null;
+    }
+
+    const company =
+      booking.company ||
+      (await client.company.findUnique({
+        where: { id: targetCompanyId },
+      }));
+
+    if (
+      !company ||
+      company.deletedAt ||
+      company.status !== CompanyStatus.ACTIVE
+    ) {
+      return null;
+    }
+
+    const existing = await client.commission.findUnique({
+      where: { bookingId },
+    });
+    if (existing) return existing;
+
+    const rate = company.commissionRate;
+    if (Number(rate) <= 0) return null;
+
+    const amount = booking.totalAmountUsd
+      .mul(rate)
+      .div(100)
+      .toDecimalPlaces(2);
+
+    return client.commission.create({
+      data: {
+        companyId: targetCompanyId,
+        bookingId,
+        rate,
+        amount,
+        status: CommissionStatus.PENDING,
+      },
+    });
+  }
+
   async createCommissionForBooking(bookingId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },

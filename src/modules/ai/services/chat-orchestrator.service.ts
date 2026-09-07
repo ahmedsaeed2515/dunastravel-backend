@@ -1,5 +1,10 @@
-import { Injectable, Logger, BadRequestException, ServiceUnavailableException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ServiceUnavailableException, NotFoundException, Optional } from '@nestjs/common';
+import * as crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { AvailabilityService } from '../../availability/availability.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BOOKING_EVENTS } from '../../../common/events';
 import { AiKeyPoolService } from './ai-key-pool.service';
 import { RagRetrievalService, GroundingSource } from './rag-retrieval.service';
 import {
@@ -256,6 +261,8 @@ export class ChatOrchestratorService {
     private readonly keyPoolService: AiKeyPoolService,
     private readonly ragRetrieval: RagRetrievalService,
     private readonly tourCatalogTool: TourCatalogToolService,
+    @Optional() private readonly availabilityService?: AvailabilityService,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   private calculateCostUsd(model: string, inputTokens: number, outputTokens: number): number {
@@ -379,39 +386,77 @@ export class ChatOrchestratorService {
     const totalAmount = adultTotal + childTotal;
     const currency = tour.currency || 'USD';
 
+    const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? tour.titleJsonb : {};
+    const tourTitle = isArabic ? (tMap.ar || tMap.en || tour.slug) : (tMap.en || tMap.ar || tour.slug);
+
     let user = await (this.prisma as any).user.findUnique({
       where: { email: dto.email.trim().toLowerCase() },
     });
 
     if (!user) {
+      const dummyPassword = crypto.randomBytes(32).toString('hex');
+      const passwordHash = bcrypt.hashSync(dummyPassword, 10);
       user = await (this.prisma as any).user.create({
         data: {
           email: dto.email.trim().toLowerCase(),
-          name: dto.fullName.trim(),
+          name: dto.fullName.trim() || 'Guest',
           phone: dto.phone?.trim() || null,
-          role: 'GUEST',
+          role: 'USER',
+          passwordHash,
           status: 'ACTIVE',
+          isVerified: false,
         },
       });
     }
 
     const referenceCode = generateReferenceCode('BKG');
     const invoiceNumber = generateReferenceCode('INV');
+    const totalPax = adults + children;
+
+    let availability: any = null;
+    if ((this.prisma as any)?.tourAvailability) {
+      availability = await (this.prisma as any).tourAvailability.findFirst({
+        where: {
+          tourId: tour.id,
+          date: arrivalDateObj,
+          status: { in: ['AVAILABLE', 'LIMITED'] },
+        },
+      });
+
+      if (!availability) {
+        availability = await (this.prisma as any).tourAvailability.create({
+          data: {
+            tourId: tour.id,
+            date: arrivalDateObj,
+            totalCapacity: Math.max(10, totalPax),
+            remainingSeats: Math.max(10, totalPax),
+            status: 'AVAILABLE',
+          },
+        });
+      }
+    }
 
     const booking = await (this.prisma as any).$transaction(async (tx: any) => {
+      if (this.availabilityService && availability?.id) {
+        await this.availabilityService.reserveCapacity(
+          tx,
+          availability.id,
+          totalPax,
+        );
+      }
+
       const createdBooking = await tx.booking.create({
         data: {
           referenceCode,
           userId: user.id,
           tourId: tour.id,
+          availabilityId: availability.id,
           arrivalDate: arrivalDateObj,
           adults,
           children,
           infants,
           totalAmountUsd: totalAmount,
-          currency,
           status: 'PENDING',
-          paymentStatus: 'PENDING',
           notes: dto.notes?.trim() || null,
           language: dto.locale || 'en',
           transportChoice: dto.transportChoice || 'Standard Luxury Transfer',
@@ -422,7 +467,7 @@ export class ChatOrchestratorService {
       await tx.billingInfo.create({
         data: {
           bookingId: createdBooking.id,
-          fullName: dto.fullName.trim(),
+          fullName: dto.fullName.trim() || 'Guest',
           email: dto.email.trim().toLowerCase(),
           phone: dto.phone?.trim() || 'N/A',
           country: dto.nationality || 'Egypt',
@@ -430,28 +475,84 @@ export class ChatOrchestratorService {
         },
       });
 
+      const snapshotJsonb = {
+        version: 1,
+        invoiceNumber,
+        bookingReference: referenceCode,
+        issuedAt: new Date().toISOString(),
+        tourTitle,
+        tourSlug: tour.slug || 'chat-tour',
+        arrivalDate: arrivalDateObj.toISOString().split('T')[0],
+        departureDate: null,
+        adults,
+        children,
+        infants,
+        customer: {
+          name: dto.fullName.trim() || 'Guest',
+          email: dto.email.trim().toLowerCase(),
+          phone: dto.phone?.trim() || null,
+        },
+        billingRecipient: {
+          fullName: dto.fullName.trim() || 'Guest',
+          email: dto.email.trim().toLowerCase(),
+          phone: dto.phone?.trim() || '',
+          invoiceType: 'PERSONAL',
+          companyName: null,
+          taxId: null,
+          address: null,
+          city: null,
+          country: dto.nationality || null,
+        },
+        items: [
+          {
+            description: tourTitle,
+            quantity: 1,
+            unitPrice: Number(totalAmount),
+            totalPrice: Number(totalAmount),
+          },
+        ],
+        subtotal: Number(totalAmount),
+        tax: 0,
+        total: Number(totalAmount),
+        currency,
+      };
+
       await tx.invoice.create({
         data: {
           bookingId: createdBooking.id,
           invoiceNumber,
-          type: 'STANDARD',
-          amount: totalAmount,
+          status: 'SENT',
+          subtotal: totalAmount,
+          total: totalAmount,
           currency,
-          status: 'PENDING',
-          customerName: dto.fullName.trim(),
-          customerEmail: dto.email.trim().toLowerCase(),
+          snapshotJsonb,
         },
       });
 
       return createdBooking;
     });
 
+    if (this.eventEmitter) {
+      this.eventEmitter.emit(BOOKING_EVENTS.CREATED, {
+        referenceCode: booking.referenceCode,
+        invoiceNumber,
+        tourTitle,
+        totalAmountUsd: String(totalAmount),
+        arrivalDate: arrivalDateObj,
+        customerEmail: dto.email.trim().toLowerCase(),
+        customerName: dto.fullName.trim() || 'Guest',
+        adults,
+        children,
+        infants,
+        userId: user.id,
+        booking,
+      });
+    }
+
     const conversation = await (this.prisma as any).chatConversation.findUnique({
       where: { publicSessionId: dto.sessionId },
     });
 
-    const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? tour.titleJsonb : {};
-    const tourTitle = isArabic ? (tMap.ar || tMap.en || tour.slug) : (tMap.en || tMap.ar || tour.slug);
     const heroImage = tour.images?.[0]?.imageUrl || '/imgs/Brazil/Treasures of Egypt with Alexandria.jpg';
 
     const confirmationCard = {

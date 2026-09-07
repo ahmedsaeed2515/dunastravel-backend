@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CommissionsService } from '../commissions/commissions.service';
+import { AvailabilityService } from '../availability/availability.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('Payments Security & Anti-Fraud Suite', () => {
@@ -106,6 +107,13 @@ describe('Payments Security & Anti-Fraud Suite', () => {
           useValue: {
             reverseCommissionForBooking: jest.fn().mockResolvedValue(undefined),
             adjustCommissionForPartialRefund: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: AvailabilityService,
+          useValue: {
+            releaseCapacity: jest.fn().mockResolvedValue(undefined),
+            reserveCapacity: jest.fn().mockResolvedValue(undefined),
           },
         },
         {

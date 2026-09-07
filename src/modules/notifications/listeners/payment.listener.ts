@@ -13,6 +13,13 @@ import { NotificationType } from '../types';
 
 interface PaymentEventPayload {
   bookingId: string;
+  paymentId?: string;
+  amount?: number;
+  currency?: string;
+  refundId?: string;
+  refundAmount?: number;
+  reason?: string;
+  gateway?: string;
 }
 
 @Injectable()
@@ -157,16 +164,42 @@ export class PaymentEventsListener {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: payload.bookingId },
+      include: {
+        user: true,
+        tour: true,
+        billingInfo: true,
+      },
     });
 
-    // We don't want to override if it's already paid or cancelled etc., maybe only if PENDING
-    if (booking && booking.status === 'PENDING') {
-      // In this system, payment failure might not cancel the booking entirely, but could mark it as FAILED or remain PENDING
-      // We will just log it or update a payment_failed flag if we had one.
-      // Let's not mutate booking status aggressively on failure, but we notify.
-      this.logger.log(
-        `Payment failed notification would be sent to customer for booking ${payload.bookingId}`,
-      );
+    if (!booking) return;
+
+    try {
+      if (booking.userId) {
+        await this.inAppNotifications.createNotification({
+          userId: booking.userId,
+          category: InAppNotificationCategory.PAYMENT,
+          priority: InAppNotificationPriority.HIGH,
+          title: `Payment Failed: #${booking.referenceCode}`,
+          message: 'Your payment could not be processed. Please try again or contact support.',
+          targetApp: 'CUSTOMER',
+          entityType: 'BOOKING',
+          entityId: booking.referenceCode,
+          deepLink: '/account/bookings',
+        });
+      }
+
+      await this.inAppNotifications.notifyAdmins({
+        category: InAppNotificationCategory.PAYMENT,
+        priority: InAppNotificationPriority.HIGH,
+        title: `Payment Failed: #${booking.referenceCode}`,
+        message: `Payment attempt failed for booking #${booking.referenceCode}: ${payload.reason || 'Provider error'}`,
+        entityType: 'BOOKING',
+        entityId: booking.referenceCode,
+        deepLink: '/admin/finance',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send payment failure notification: ${msg}`);
     }
   }
 
@@ -176,7 +209,46 @@ export class PaymentEventsListener {
       `Handling payment refunded event for booking ${payload.bookingId}`,
     );
 
-    // Financial state is committed by PaymentsService. Listeners must not
-    // overwrite authoritative booking/payment state.
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: payload.bookingId },
+      include: {
+        user: true,
+        tour: true,
+        billingInfo: true,
+      },
+    });
+
+    if (!booking) return;
+
+    const refundAmount = payload.amount ?? payload.refundAmount ?? 0;
+
+    try {
+      if (booking.userId) {
+        await this.inAppNotifications.createNotification({
+          userId: booking.userId,
+          category: InAppNotificationCategory.PAYMENT,
+          priority: InAppNotificationPriority.HIGH,
+          title: `Refund Processed: #${booking.referenceCode}`,
+          message: `Your refund of $${refundAmount} has been processed successfully.`,
+          targetApp: 'CUSTOMER',
+          entityType: 'BOOKING',
+          entityId: booking.referenceCode,
+          deepLink: '/account/bookings',
+        });
+      }
+
+      await this.inAppNotifications.notifyAdmins({
+        category: InAppNotificationCategory.PAYMENT,
+        priority: InAppNotificationPriority.HIGH,
+        title: `Refund Processed: #${booking.referenceCode}`,
+        message: `A refund of $${refundAmount} was processed for booking #${booking.referenceCode}`,
+        entityType: 'BOOKING',
+        entityId: booking.referenceCode,
+        deepLink: '/admin/finance',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send refund notification: ${msg}`);
+    }
   }
 }

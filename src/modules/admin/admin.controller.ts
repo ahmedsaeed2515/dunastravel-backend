@@ -40,9 +40,7 @@ import { AddBookingAttachmentDto } from './dto/add-booking-attachment.dto';
 import { UpsertPassengersDto } from './dto/upsert-passengers.dto';
 import { AssignBookingDto } from './dto/assign-booking.dto';
 import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
-import { ListInquiriesQueryDto } from './dto/list-inquiries-query.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
-import { UpdateInquiryDto } from './dto/update-inquiry.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
@@ -60,7 +58,6 @@ import { RecordManualBookingPaymentDto } from './dto/record-manual-payment.dto';
 import { BookingsService } from '../bookings/bookings.service';
 import {
   ParseBookingRefPipe,
-  ParseInquiryRefPipe,
   ParseUuidOrSlugPipe,
 } from '../../common/pipes';
 
@@ -353,90 +350,6 @@ export class AdminController {
     return this.adminService.softDeleteBooking(referenceCode, user.id);
   }
 
-  @Get('inquiries')
-  @ApiOperation({
-    summary: 'List all tailor-made inquiries with pagination and filtering.',
-  })
-  @ApiOkResponse({ description: 'Paginated list of inquiries' })
-  @Roles(UserRole.ADMIN, UserRole.AGENT)
-  async listInquiries(
-    @Query() query: ListInquiriesQueryDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    if (user.role === UserRole.AGENT) {
-      query.assigneeId = user.id;
-    }
-    return this.adminService.listInquiries(query, user.id);
-  }
-
-  @Get('inquiries/metrics')
-  @ApiOperation({ summary: 'Get aggregated inquiry pipeline metrics.' })
-  @ApiOkResponse({ description: 'Inquiry metrics object' })
-  @Roles(UserRole.ADMIN, UserRole.AGENT)
-  async getInquiryMetrics(@CurrentUser() user: AuthenticatedUser) {
-    return this.adminService.getInquiryMetrics(user.id, user.role === UserRole.AGENT);
-  }
-
-  @Get('inquiries/:referenceCode')
-  @ApiOperation({
-    summary: 'Get full detail for a single tailor-made inquiry.',
-  })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiOkResponse({ description: 'Full inquiry record' })
-  @ApiNotFoundResponse({ description: 'Inquiry not found' })
-  @Roles(UserRole.ADMIN, UserRole.AGENT)
-  async getInquiryByReferenceCode(
-    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const isAgent = user.role === UserRole.AGENT;
-    return this.adminService.getInquiryByReferenceCode(
-      referenceCode,
-      user.id,
-      isAgent,
-    );
-  }
-
-  @Patch('inquiries/:referenceCode')
-  @ApiOperation({ summary: 'Update a tailor-made inquiry.' })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiBody({ type: UpdateInquiryDto })
-  @ApiOkResponse({ description: 'Updated inquiry record' })
-  @ApiBadRequestResponse({ description: 'Invalid status transition' })
-  @ApiNotFoundResponse({ description: 'Inquiry not found' })
-  @Roles(UserRole.ADMIN, UserRole.AGENT)
-  async updateInquiry(
-    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
-    @Body() dto: UpdateInquiryDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const isAgent = user.role === UserRole.AGENT;
-    return this.adminService.updateInquiry(
-      referenceCode,
-      dto,
-      user.id,
-      isAgent,
-    );
-  }
-
-  @Post('inquiries/:referenceCode/convert-to-booking')
-  @ApiOperation({
-    summary: 'Convert a tailor-made inquiry into an official booking.',
-  })
-  @ApiParam({ name: 'referenceCode', type: 'string' })
-  @ApiOkResponse({ description: 'Created booking record' })
-  @Roles(UserRole.ADMIN, UserRole.AGENT)
-  async convertInquiryToBooking(
-    @Param('referenceCode', ParseInquiryRefPipe) referenceCode: string,
-    @Body() dto: { tourId?: string; quotedAmountUsd?: number; notes?: string },
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.adminService.convertInquiryToBooking(
-      referenceCode,
-      user.id,
-      dto,
-    );
-  }
 
   @Get('notification-logs')
   @ApiOperation({

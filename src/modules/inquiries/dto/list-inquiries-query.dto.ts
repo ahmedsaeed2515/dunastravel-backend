@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { TailorMadeInquiryStatus } from '@prisma/client';
 
 @ValidatorConstraint({ name: 'IsCreatedAtEndAfterStart', async: false })
 class IsCreatedAtEndAfterStartConstraint implements ValidatorConstraintInterface {
@@ -43,10 +44,10 @@ export class ListInquiriesQueryDto {
   @Type(() => Number)
   limit: number = 10;
 
-  @ApiPropertyOptional({ enum: ['NEWLY_RECEIVED', 'IN_PROGRESS', 'CLOSED'] })
+  @ApiPropertyOptional({ enum: TailorMadeInquiryStatus })
   @IsOptional()
-  @IsEnum(['NEWLY_RECEIVED', 'IN_PROGRESS', 'CLOSED'])
-  status?: string;
+  @IsEnum(TailorMadeInquiryStatus)
+  status?: TailorMadeInquiryStatus;
 
   @ApiPropertyOptional({ description: 'Filter by creation date (start)' })
   @IsOptional()

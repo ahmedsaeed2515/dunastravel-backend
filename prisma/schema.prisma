@@ -535,6 +535,7 @@ model NotificationDeliveryLog {
 }
 
 model ContactSubmission {
+  // TODO: Migrate ContactSubmission.id to UUID — requires data migration plan
   id            Int                     @id @default(autoincrement())
   referenceCode String                  @unique @map("reference_code") @db.VarChar(20)
   status        ContactSubmissionStatus @default(NEW)

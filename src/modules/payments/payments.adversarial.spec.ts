@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CommissionsService } from '../commissions/commissions.service';
+import { AvailabilityService } from '../availability/availability.service';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { GetPayInGatewayAdapter } from './adapters/getpayin-gateway.adapter';
@@ -92,6 +93,13 @@ describe('Adversarial Security & Systems Verification', () => {
         { provide: IPaymentGatewayPort, useValue: mockGateway },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: CommissionsService, useValue: mockCommissions },
+        {
+          provide: AvailabilityService,
+          useValue: {
+            releaseCapacity: jest.fn().mockResolvedValue(undefined),
+            reserveCapacity: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         {
           provide: ConfigService,
           useValue: {

@@ -3,8 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { CommissionsService } from '../../commissions/commissions.service';
 import {
   TailorMadeInquiryStatus,
   Prisma,
@@ -21,7 +23,12 @@ import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util'
 
 @Injectable()
 export class AdminTailorMadeService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminTailorMadeService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly commissionsService: CommissionsService,
+  ) {}
 
   private readonly inquirySelect = {
     id: true,
@@ -603,6 +610,7 @@ export class AdminTailorMadeService {
           adults: adultsCount,
           children: childrenCount,
           totalAmountUsd: quotedAmount,
+          companyId: inquiry.companyId ?? null,
           status: 'PENDING',
           bookingType: 'TAILOR_MADE',
           priority: 'HIGH',
@@ -623,6 +631,21 @@ export class AdminTailorMadeService {
         },
         select: this.bookingResultSelect,
       });
+
+      if (inquiry.companyId) {
+        try {
+          await this.commissionsService.calculateAndRecordCommission(
+            newBooking.id,
+            inquiry.companyId,
+            tx,
+          );
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(
+            `Commission calculation failed for booking ${newBooking.id}: ${msg}`,
+          );
+        }
+      }
 
       const invoiceNumber = await generateInvoiceNumber(tx);
 

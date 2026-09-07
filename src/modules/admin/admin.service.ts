@@ -571,40 +571,44 @@ export class AdminService {
     },
     adminUserId: string,
   ) {
-    const booking = await this.prisma.booking.findFirst({
-      where: { referenceCode, deletedAt: null },
-      include: { invoice: true, payments: true, assignee: true },
-    });
-    if (!booking) throw new NotFoundException('Booking not found');
-
     const amountNum = Number(dto.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       throw new BadRequestException('Payment amount must be greater than zero');
     }
-
     const paymentAmount = new Prisma.Decimal(amountNum.toFixed(2));
-    const currentPaid = booking.paidAmountUsd || new Prisma.Decimal(0);
-    const newPaidAmount = currentPaid.plus(paymentAmount);
-
-    if (newPaidAmount.gt(booking.totalAmountUsd)) {
-      throw new BadRequestException(
-        `Total paid amount ($${newPaidAmount.toFixed(2)}) cannot exceed booking total ($${booking.totalAmountUsd.toFixed(2)})`,
-      );
-    }
-
-    if (['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(booking.status)) {
-      throw new BadRequestException(
-        `Cannot record a payment for a booking with status ${booking.status}`,
-      );
-    }
-
-    const isFullyPaid = newPaidAmount.equals(booking.totalAmountUsd);
-    const targetStatus = isFullyPaid ? 'CONFIRMED' : 'PARTIALLY_PAID';
 
     return this.prisma.$transaction(async (tx) => {
+      const [lockedBooking] = await tx.$queryRaw<any[]>`
+        SELECT id, "total_amount_usd" AS "totalAmountUsd", "paid_amount_usd" AS "paidAmountUsd", status
+        FROM bookings
+        WHERE reference_code = ${referenceCode} AND deleted_at IS NULL
+        FOR UPDATE
+      `;
+
+      if (!lockedBooking) throw new NotFoundException('Booking not found');
+
+      if (['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(lockedBooking.status)) {
+        throw new BadRequestException(
+          `Cannot record a payment for a booking with status ${lockedBooking.status}`,
+        );
+      }
+
+      const total = new Prisma.Decimal(lockedBooking.totalAmountUsd);
+      const paid = new Prisma.Decimal(lockedBooking.paidAmountUsd ?? 0);
+      const newPaidAmount = paid.plus(paymentAmount);
+
+      if (newPaidAmount.gt(total)) {
+        throw new BadRequestException(
+          `Total paid amount ($${newPaidAmount.toFixed(2)}) cannot exceed booking total ($${total.toFixed(2)})`,
+        );
+      }
+
+      const isFullyPaid = newPaidAmount.equals(total);
+      const targetStatus = isFullyPaid ? 'CONFIRMED' : 'PARTIALLY_PAID';
+
       const payment = await tx.payment.create({
         data: {
-          bookingId: booking.id,
+          bookingId: lockedBooking.id,
           amount: paymentAmount,
           currency: 'USD',
           method: dto.method || 'CASH',
@@ -617,16 +621,20 @@ export class AdminService {
       });
 
       await tx.booking.update({
-        where: { id: booking.id },
+        where: { id: lockedBooking.id },
         data: {
           status: targetStatus,
           paidAmountUsd: newPaidAmount,
         },
       });
 
-      if (booking.invoice) {
+      const invoice = await tx.invoice.findUnique({
+        where: { bookingId: lockedBooking.id },
+      });
+
+      if (invoice) {
         await tx.invoice.update({
-          where: { id: booking.invoice.id },
+          where: { id: invoice.id },
           data: {
             status: isFullyPaid ? 'PAID' : 'SENT',
             paymentId: payment.id,
@@ -636,7 +644,7 @@ export class AdminService {
 
       await tx.bookingActivityLog.create({
         data: {
-          bookingId: booking.id,
+          bookingId: lockedBooking.id,
           userId: adminUserId,
           action: 'MANUAL_PAYMENT_RECORDED',
           details: {
@@ -654,7 +662,7 @@ export class AdminService {
         success: true,
         payment,
         newPaidAmount: newPaidAmount.toFixed(2),
-        balanceDue: booking.totalAmountUsd.minus(newPaidAmount).toFixed(2),
+        balanceDue: total.minus(newPaidAmount).toFixed(2),
         status: targetStatus,
       };
     });
@@ -1681,6 +1689,57 @@ export class AdminService {
 
       // Create initial Invoice
       const invoiceNumber = `INV-${bookingRef}`;
+      const tourTitle = `Tailor-Made Itinerary: ${
+        Array.isArray(inquiry.destinations)
+          ? inquiry.destinations.join(', ')
+          : inquiry.destinations ?? 'Custom Egypt Experience'
+      }`;
+      const snapshotJsonb = {
+        version: 1,
+        invoiceNumber,
+        bookingReference: newBooking.referenceCode ?? bookingRef,
+        issuedAt: new Date().toISOString(),
+        tourTitle,
+        tourSlug: 'tailor-made',
+        arrivalDate: inquiry.startDate
+          ? new Date(inquiry.startDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        departureDate: inquiry.endDate
+          ? new Date(inquiry.endDate).toISOString().split('T')[0]
+          : null,
+        adults: inquiry.adults ?? 1,
+        children: inquiry.children ?? 0,
+        infants: 0,
+        customer: {
+          name: inquiry.fullName,
+          email: inquiry.email,
+          phone: inquiry.phone ?? null,
+        },
+        billingRecipient: {
+          fullName: inquiry.fullName,
+          email: inquiry.email,
+          phone: inquiry.phone ?? '',
+          invoiceType: 'PERSONAL',
+          companyName: null,
+          taxId: null,
+          address: null,
+          city: null,
+          country: null,
+        },
+        items: [
+          {
+            description: tourTitle,
+            quantity: 1,
+            unitPrice: Number(totalAmount),
+            totalPrice: Number(totalAmount),
+          },
+        ],
+        subtotal: Number(totalAmount),
+        tax: 0,
+        total: Number(totalAmount),
+        currency: 'USD',
+      };
+
       await tx.invoice.create({
         data: {
           bookingId: newBooking.id,
@@ -1689,6 +1748,7 @@ export class AdminService {
           subtotal: totalAmount,
           total: totalAmount,
           currency: 'USD',
+          snapshotJsonb: snapshotJsonb as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -3276,6 +3336,19 @@ export class AdminService {
     );
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    const activeBookings = await this.prisma.booking.count({
+      where: {
+        tourId: tour.id,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        arrivalDate: { gte: new Date() },
+      },
+    });
+    if (activeBookings > 0) {
+      throw new BadRequestException(
+        `Cannot delete tour with ${activeBookings} active or upcoming bookings.`,
+      );
+    }
 
     await this.prisma.tour.update({
       where: { slug },

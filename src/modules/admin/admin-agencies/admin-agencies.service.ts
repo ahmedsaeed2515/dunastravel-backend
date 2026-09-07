@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CompanyStatus, CompanyType, Prisma } from '@prisma/client';
 import { paginate, getPaginationParams } from '../../../common/utils';
@@ -121,6 +121,9 @@ export class AdminAgenciesService {
     commissionRate: number,
     actorId: string,
   ) {
+    if (commissionRate < 0 || commissionRate > 100) {
+      throw new BadRequestException('Commission rate must be between 0 and 100');
+    }
     const existing = await this.findOne(id);
     const decimalRate = new Prisma.Decimal(commissionRate);
     return this.prisma.$transaction(
