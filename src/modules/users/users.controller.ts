@@ -365,10 +365,19 @@ export class UsersController {
       throw new ForbiddenException('You cannot change your own role');
     }
 
+    if (
+      dto.confirmPassword &&
+      dto.password &&
+      dto.password !== dto.confirmPassword
+    ) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     let passwordHash = undefined;
-    if (dto.password) {
-      assertStrongPassword(dto.password);
-      passwordHash = await bcrypt.hash(dto.password, 12);
+    const cleanPassword = dto.password?.trim();
+    if (cleanPassword && cleanPassword.length > 0) {
+      assertStrongPassword(cleanPassword);
+      passwordHash = await bcrypt.hash(cleanPassword, 12);
     }
 
     const updatedUser = await this.userService.update(id, {
@@ -426,7 +435,7 @@ export class UsersController {
   }
 
   private isPrivilegedRole(role?: UserRole): boolean {
-    return role !== undefined && role !== UserRole.USER;
+    return role === UserRole.SUPER_ADMIN;
   }
 
   private async assertCanManageTarget(
