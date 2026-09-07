@@ -13,6 +13,10 @@ import { NotificationDeliveryStatus, Prisma } from '@prisma/client';
 import { NotificationType } from './types';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
+import { ConfigService } from '@nestjs/config';
+import { renderBookingCustomerConfirmation } from './templates/booking-confirmation.template';
+import { renderBookingInternalAlert } from './templates/booking-alert.template';
+import { BookingCreatedPayload } from './interfaces/booking-created-payload.interface';
 
 @Injectable()
 export class NotificationsService {
@@ -22,6 +26,7 @@ export class NotificationsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EmailCompositionService) private readonly emailComposition: EmailCompositionService,
     @Inject(EmailDeliveryService) private readonly emailDelivery: EmailDeliveryService,
+    @Inject(ConfigService) private readonly configService?: ConfigService,
   ) {}
 
   async findAllLogs(filters: NotificationDeliveryLogQueryFilters) {
@@ -119,7 +124,7 @@ export class NotificationsService {
           { lastAttemptAt: null },
           {
             lastAttemptAt: {
-              lt: new Date(Date.now() - 5 * 60 * 1000),
+              lt: new Date(Date.now() - 15 * 1000),
             },
           },
         ],
@@ -220,6 +225,62 @@ export class NotificationsService {
             log.notificationType as unknown as NotificationType,
             contact.referenceCode,
             'CONTACT',
+            payload,
+          );
+          return { success: true, message: 'Retry completed' };
+        }
+        break;
+      }
+
+      case 'BOOKING': {
+        const booking = await this.prisma.booking.findFirst({
+          where: { referenceCode: log.originReferenceCode, deletedAt: null },
+          include: {
+            tour: { select: { titleJsonb: true } },
+            billingInfo: true,
+            invoice: true,
+          },
+        });
+        if (booking) {
+          const tourTitle =
+            (booking.tour?.titleJsonb as Record<string, string>)?.en ||
+            (booking.tour?.titleJsonb as Record<string, string>)?.ar ||
+            'Custom Tour';
+
+          const bookingPayload: BookingCreatedPayload = {
+            referenceCode: booking.referenceCode,
+            invoiceNumber: booking.invoice?.invoiceNumber || booking.referenceCode,
+            tourTitle,
+            totalAmountUsd: String(booking.totalAmountUsd),
+            arrivalDate: booking.arrivalDate,
+            customerEmail: booking.billingInfo?.email || log.recipientEmail,
+            customerName: booking.billingInfo?.fullName || 'Valued Guest',
+            adults: booking.adults,
+            children: booking.children,
+            infants: booking.infants,
+            userId: booking.userId || undefined,
+          };
+
+          const adminDashboardUrl =
+            this.configService?.get<string>('mail.adminDashboardBaseUrl') ||
+            'http://localhost:3000/admin';
+          const internalRecipient =
+            this.configService?.get<string>('mail.internalAlertRecipient') ||
+            'sales@dunastravel.com';
+
+          const payload =
+            log.notificationType === 'CUSTOMER_ACKNOWLEDGMENT'
+              ? renderBookingCustomerConfirmation(bookingPayload)
+              : renderBookingInternalAlert(
+                  bookingPayload,
+                  internalRecipient,
+                  adminDashboardUrl,
+                );
+
+          await this.emailDelivery.deliver(
+            log.notificationType as unknown as NotificationType,
+            booking.referenceCode,
+            'BOOKING',
             payload,
           );
           return { success: true, message: 'Retry completed' };

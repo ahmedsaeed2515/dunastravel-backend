@@ -168,6 +168,54 @@ export class AdminTailorMadeService {
     return paginate(records, total, page, limit);
   }
 
+  async getMetrics(actor?: AuthenticatedUser) {
+    const where: Prisma.TailorMadeInquiryWhereInput = {};
+    if (actor?.role === UserRole.AGENT) {
+      where.assigneeId = actor.id;
+    }
+
+    const [
+      total,
+      newlyReceived,
+      inProgress,
+      quoted,
+      approved,
+      converted,
+      closed,
+      activeInquiries,
+    ] = await Promise.all([
+      this.prisma.tailorMadeInquiry.count({ where }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'NEWLY_RECEIVED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'IN_PROGRESS' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'QUOTED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'APPROVED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CONVERTED_TO_BOOKING' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CLOSED' } }),
+      this.prisma.tailorMadeInquiry.findMany({
+        where: { ...where, status: { notIn: ['CLOSED'] } },
+        select: { quotedAmountUsd: true, budgetAmount: true },
+      }),
+    ]);
+
+    const pipelineValue = activeInquiries.reduce((acc, curr) => {
+      const val = curr.quotedAmountUsd
+        ? Number(curr.quotedAmountUsd)
+        : (curr.budgetAmount ? Number(curr.budgetAmount) : 0);
+      return acc + val;
+    }, 0);
+
+    return {
+      total,
+      newlyReceived,
+      inProgress,
+      quoted,
+      approved,
+      converted,
+      closed,
+      pipelineValue,
+    };
+  }
+
   private async getInquiry(idOrRef: string) {
     const record = await this.prisma.tailorMadeInquiry.findFirst({
       where: {
@@ -215,13 +263,47 @@ export class AdminTailorMadeService {
 
     if (inquiry.status === status) return inquiry;
 
+    // CONVERTED_TO_BOOKING may ONLY be set via the dedicated convertToBooking() method
+    // which creates the actual booking + invoice. Setting it directly corrupts data.
+    if (status === TailorMadeInquiryStatus.CONVERTED_TO_BOOKING) {
+      throw new BadRequestException(
+        'Cannot set status to CONVERTED_TO_BOOKING directly. Use the Convert to Booking action instead.',
+      );
+    }
+
     const validTransitions: Record<string, string[]> = {
-      NEWLY_RECEIVED: ['IN_PROGRESS', 'CLOSED'],
-      IN_PROGRESS: ['QUOTED', 'CLOSED'],
-      QUOTED: ['APPROVED', 'CLOSED'],
-      APPROVED: ['CONVERTED_TO_BOOKING', 'CLOSED'],
-      CONVERTED_TO_BOOKING: ['CLOSED'],
-      CLOSED: [],
+      NEWLY_RECEIVED: [
+        'IN_PROGRESS',
+        'QUOTED',
+        'APPROVED',
+        'CLOSED',
+      ],
+      IN_PROGRESS: [
+        'QUOTED',
+        'APPROVED',
+        'CLOSED',
+        'NEWLY_RECEIVED',
+      ],
+      QUOTED: [
+        'APPROVED',
+        'IN_PROGRESS',
+        'CLOSED',
+        'NEWLY_RECEIVED',
+      ],
+      APPROVED: [
+        'QUOTED',
+        'IN_PROGRESS',
+        'CLOSED',
+      ],
+      CONVERTED_TO_BOOKING: [
+        'CLOSED',
+        'APPROVED', // Admin can revert a mis-converted inquiry back to APPROVED
+      ],
+      CLOSED: [
+        'IN_PROGRESS',
+        'NEWLY_RECEIVED',
+        'QUOTED',
+      ],
     };
 
     const allowed = validTransitions[inquiry.status] || [];

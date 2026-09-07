@@ -46,6 +46,12 @@ export class AdminTailorMadeController {
     return this.service.findAll(query, assigneeFilter);
   }
 
+  @Get('metrics')
+  @ApiOperation({ summary: 'Get inquiry pipeline aggregated metrics' })
+  async getMetrics(@CurrentUser() user: AuthenticatedUser) {
+    return this.service.getMetrics(user);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single tailor-made inquiry' })
   async findOne(

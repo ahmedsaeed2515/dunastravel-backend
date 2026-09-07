@@ -89,6 +89,17 @@ export class ContactSubmissionsService {
     if (query.status) where.status = query.status;
     if (query.email)
       where.email = { contains: query.email, mode: 'insensitive' };
+    if (query.search?.trim()) {
+      const term = query.search.trim();
+      where.OR = [
+        { referenceCode: { contains: term, mode: 'insensitive' } },
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+        { subject: { contains: term, mode: 'insensitive' } },
+        { message: { contains: term, mode: 'insensitive' } },
+      ];
+    }
     if (query.dateFrom || query.dateTo) {
       where.createdAt = {};
       if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
@@ -149,8 +160,14 @@ export class ContactSubmissionsService {
           ContactSubmissionStatus.READ,
           ContactSubmissionStatus.ARCHIVED,
         ],
-        READ: [ContactSubmissionStatus.ARCHIVED],
-        ARCHIVED: [],
+        READ: [
+          ContactSubmissionStatus.NEW,
+          ContactSubmissionStatus.ARCHIVED,
+        ],
+        ARCHIVED: [
+          ContactSubmissionStatus.READ,
+          ContactSubmissionStatus.NEW,
+        ],
       };
     if (!allowedTransitions[submission.status].includes(status)) {
       throw new BadRequestException(

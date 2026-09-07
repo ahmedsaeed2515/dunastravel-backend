@@ -367,6 +367,14 @@ export class AdminController {
     return this.adminService.listInquiries(query, user.id);
   }
 
+  @Get('inquiries/metrics')
+  @ApiOperation({ summary: 'Get aggregated inquiry pipeline metrics.' })
+  @ApiOkResponse({ description: 'Inquiry metrics object' })
+  @Roles(UserRole.ADMIN, UserRole.AGENT)
+  async getInquiryMetrics(@CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.getInquiryMetrics(user.id, user.role === UserRole.AGENT);
+  }
+
   @Get('inquiries/:referenceCode')
   @ApiOperation({
     summary: 'Get full detail for a single tailor-made inquiry.',

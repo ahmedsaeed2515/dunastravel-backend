@@ -35,7 +35,7 @@ import { ParseContactIdentifierPipe } from '../../common/pipes';
 @ApiForbiddenResponse({ description: 'Forbidden: Requires ADMIN role' })
 @Controller('admin/contact-submissions')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENT)
 export class AdminContactSubmissionsController {
   constructor(
     private readonly contactSubmissionsService: ContactSubmissionsService,

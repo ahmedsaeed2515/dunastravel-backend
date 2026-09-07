@@ -39,18 +39,18 @@ export class NotificationsController {
   }
 
   @Get()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'List notification delivery logs with pagination' })
   async findAll(@Query() filters: NotificationDeliveryLogQueryFilters) {
     return this.notificationsService.findAllLogs(filters);
   }
 
   @Post(':id/retry')
-  @Roles('SUPER_ADMIN')
-  @Throttle({ default: { limit: 5, ttl: 60 * 60_000 } })
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Throttle({ default: { limit: 10, ttl: 60 * 60_000 } })
   @ApiOperation({ summary: 'Manually retry a failed notification' })
   @ApiResponse({ status: 200, description: 'Retry was accepted by the notification service.' })
-  @ApiResponse({ status: 403, description: 'Only a super admin may retry a notification.' })
+  @ApiResponse({ status: 403, description: 'Requires ADMIN or SUPER_ADMIN role.' })
   @ApiResponse({ status: 404, description: 'Notification delivery log not found.' })
   @ApiResponse({ status: 429, description: 'Retry throttle exceeded.' })
   async retryNotification(

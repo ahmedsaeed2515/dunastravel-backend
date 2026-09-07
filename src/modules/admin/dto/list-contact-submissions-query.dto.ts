@@ -9,6 +9,7 @@ import {
   IsDateString,
   IsIn,
   IsEmail,
+  IsString,
 } from 'class-validator';
 import { ContactSubmissionStatus } from '@prisma/client';
 
@@ -59,6 +60,13 @@ export class ListContactSubmissionsQueryDto {
   @IsOptional()
   @IsDateString()
   dateTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search query for reference, name, email, or message',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({
     description: 'Sort field',

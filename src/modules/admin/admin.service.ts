@@ -592,6 +592,12 @@ export class AdminService {
       );
     }
 
+    if (['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(booking.status)) {
+      throw new BadRequestException(
+        `Cannot record a payment for a booking with status ${booking.status}`,
+      );
+    }
+
     const isFullyPaid = newPaidAmount.equals(booking.totalAmountUsd);
     const targetStatus = isFullyPaid ? 'CONFIRMED' : 'PARTIALLY_PAID';
 
@@ -1234,6 +1240,54 @@ export class AdminService {
     };
   }
 
+  async getInquiryMetrics(adminUserId: string, isAgent: boolean = false) {
+    const where: Prisma.TailorMadeInquiryWhereInput = {};
+    if (isAgent) {
+      where.assigneeId = adminUserId;
+    }
+
+    const [
+      total,
+      newlyReceived,
+      inProgress,
+      quoted,
+      approved,
+      converted,
+      closed,
+      activeInquiries,
+    ] = await Promise.all([
+      this.prisma.tailorMadeInquiry.count({ where }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'NEWLY_RECEIVED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'IN_PROGRESS' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'QUOTED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'APPROVED' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CONVERTED_TO_BOOKING' } }),
+      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CLOSED' } }),
+      this.prisma.tailorMadeInquiry.findMany({
+        where: { ...where, status: { notIn: ['CLOSED'] } },
+        select: { quotedAmountUsd: true, budgetAmount: true },
+      }),
+    ]);
+
+    const pipelineValue = activeInquiries.reduce((acc, curr) => {
+      const val = curr.quotedAmountUsd
+        ? Number(curr.quotedAmountUsd)
+        : (curr.budgetAmount ? Number(curr.budgetAmount) : 0);
+      return acc + val;
+    }, 0);
+
+    return {
+      total,
+      newlyReceived,
+      inProgress,
+      quoted,
+      approved,
+      converted,
+      closed,
+      pipelineValue,
+    };
+  }
+
   async getInquiryByReferenceCode(
     referenceCode: string,
     adminUserId: string,
@@ -1365,13 +1419,47 @@ export class AdminService {
     }
 
     if (dto.status && inquiry.status !== dto.status) {
+      // CONVERTED_TO_BOOKING may ONLY be set via the dedicated /convert-to-booking endpoint
+      // which creates the actual booking + invoice. Setting it directly corrupts data.
+      if (dto.status === 'CONVERTED_TO_BOOKING') {
+        throw new BadRequestException(
+          'Cannot set status to CONVERTED_TO_BOOKING directly. Use the Convert to Booking action instead.',
+        );
+      }
+
       const validTransitions: Record<string, string[]> = {
-        NEWLY_RECEIVED: ['IN_PROGRESS', 'QUOTED', 'CLOSED'],
-        IN_PROGRESS: ['QUOTED', 'APPROVED', 'CLOSED'],
-        QUOTED: ['APPROVED', 'IN_PROGRESS', 'CONVERTED_TO_BOOKING', 'CLOSED'],
-        APPROVED: ['CONVERTED_TO_BOOKING', 'QUOTED', 'CLOSED'],
-        CONVERTED_TO_BOOKING: ['CLOSED'],
-        CLOSED: ['IN_PROGRESS', 'NEWLY_RECEIVED'],
+        NEWLY_RECEIVED: [
+          'IN_PROGRESS',
+          'QUOTED',
+          'APPROVED',
+          'CLOSED',
+        ],
+        IN_PROGRESS: [
+          'QUOTED',
+          'APPROVED',
+          'CLOSED',
+          'NEWLY_RECEIVED',
+        ],
+        QUOTED: [
+          'APPROVED',
+          'IN_PROGRESS',
+          'CLOSED',
+          'NEWLY_RECEIVED',
+        ],
+        APPROVED: [
+          'QUOTED',
+          'IN_PROGRESS',
+          'CLOSED',
+        ],
+        CONVERTED_TO_BOOKING: [
+          'CLOSED',
+          'APPROVED', // Admin can revert a mis-converted inquiry back to APPROVED
+        ],
+        CLOSED: [
+          'IN_PROGRESS',
+          'NEWLY_RECEIVED',
+          'QUOTED',
+        ],
       };
 
       const allowed = validTransitions[inquiry.status] || [];
@@ -1490,6 +1578,13 @@ export class AdminService {
           booking: existingBooking,
         };
       }
+    }
+
+    // Status guard: only APPROVED inquiries can be converted
+    if (inquiry.status !== 'APPROVED') {
+      throw new BadRequestException(
+        `Only APPROVED inquiries can be converted to a booking. Current status: ${inquiry.status}`,
+      );
     }
 
     // Determine total amount
@@ -1645,6 +1740,7 @@ export class AdminService {
       dateTo,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      search,
     } = query;
     this.logger.log(
       `listContactSubmissions invoked by admin ${adminUserId} with filters: ${JSON.stringify(query)}`,
@@ -1653,6 +1749,17 @@ export class AdminService {
     const where: any = {};
     if (status) where.status = status;
     if (email) where.email = { contains: email, mode: 'insensitive' };
+    if (search?.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { referenceCode: { contains: term, mode: 'insensitive' } },
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+        { subject: { contains: term, mode: 'insensitive' } },
+        { message: { contains: term, mode: 'insensitive' } },
+      ];
+    }
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
@@ -1734,8 +1841,8 @@ export class AdminService {
 
     const validTransitions: Record<string, string[]> = {
       NEW: ['READ', 'ARCHIVED'],
-      READ: ['ARCHIVED'],
-      ARCHIVED: [],
+      READ: ['NEW', 'ARCHIVED'],
+      ARCHIVED: ['READ', 'NEW'],
     };
 
     const allowed = validTransitions[contact.status] || [];

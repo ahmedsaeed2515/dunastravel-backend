@@ -1274,6 +1274,26 @@
         ]
       }
     },
+    "/api/admin/inquiries/metrics": {
+      "get": {
+        "operationId": "AdminTailorMadeController_getMetrics[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get inquiry pipeline aggregated metrics",
+        "tags": [
+          "admin-tailor-made"
+        ]
+      }
+    },
     "/api/admin/inquiries/{referenceCode}": {
       "get": {
         "operationId": "AdminController_getInquiryByReferenceCode",
@@ -2725,6 +2745,26 @@
           }
         ],
         "summary": "List all tailor-made inquiries",
+        "tags": [
+          "admin-tailor-made"
+        ]
+      }
+    },
+    "/api/admin/tailor-made-inquiries/metrics": {
+      "get": {
+        "operationId": "AdminTailorMadeController_getMetrics[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get inquiry pipeline aggregated metrics",
         "tags": [
           "admin-tailor-made"
         ]
@@ -5994,6 +6034,15 @@
             }
           },
           {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search query for reference, name, email, or message",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sortBy",
             "required": false,
             "in": "query",
@@ -7719,7 +7768,7 @@
             "description": "Retry was accepted by the notification service."
           },
           "403": {
-            "description": "Only a super admin may retry a notification."
+            "description": "Requires ADMIN or SUPER_ADMIN role."
           },
           "404": {
             "description": "Notification delivery log not found."
