@@ -80,8 +80,8 @@ export class PaymentsService {
       ) {
         isAuthorized = true;
       }
-    } else if (!booking.userId) {
-      // Allow guest booking invoice payment
+    } else if (!booking.userId && !booking.guestTokenHash) {
+      // Allow unauthenticated access only if no guest token hash is enforced
       isAuthorized = true;
     }
 
@@ -663,7 +663,7 @@ export class PaymentsService {
           { transactionId },
           { providerPaymentId: transactionId },
         ],
-        status: 'PENDING',
+        status: { in: ['PENDING', 'EXPIRED'] },
         isRefund: false,
       },
     });
@@ -962,7 +962,20 @@ export class PaymentsService {
           { providerPaymentId: providerInvoiceId },
         ],
       },
-      include: { booking: { select: { userId: true, guestTokenHash: true } } },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            referenceCode: true,
+            status: true,
+            totalAmountUsd: true,
+            paidAmountUsd: true,
+            userId: true,
+            guestTokenHash: true,
+            invoice: { select: { invoiceNumber: true } },
+          },
+        },
+      },
     });
     if (!callbackPayment) {
       throw new NotFoundException('Payment not found');
@@ -1005,7 +1018,18 @@ export class PaymentsService {
           ],
         },
       });
-      return { paymentId: p?.id, status: p?.status };
+      return {
+        paymentId: p?.id,
+        status: p?.status,
+        invoiceNumber: callbackPayment.booking.invoice?.invoiceNumber ?? null,
+        booking: {
+          id: callbackPayment.booking.id,
+          referenceCode: callbackPayment.booking.referenceCode,
+          status: callbackPayment.booking.status,
+          totalAmountUsd: callbackPayment.booking.totalAmountUsd,
+          paidAmountUsd: callbackPayment.booking.paidAmountUsd,
+        },
+      };
     }
     return {
       paymentId: outcome.paymentId,
@@ -1015,6 +1039,17 @@ export class PaymentsService {
           : outcome.transition === 'REVERSED'
             ? 'REFUNDED'
             : 'PENDING',
+      invoiceNumber: callbackPayment.booking.invoice?.invoiceNumber ?? null,
+      booking: {
+        id: callbackPayment.booking.id,
+        referenceCode: callbackPayment.booking.referenceCode,
+        status:
+          outcome.transition === 'SUCCEEDED'
+            ? 'CONFIRMED'
+            : callbackPayment.booking.status,
+        totalAmountUsd: callbackPayment.booking.totalAmountUsd,
+        paidAmountUsd: callbackPayment.booking.paidAmountUsd,
+      },
     };
   }
 
@@ -1423,7 +1458,13 @@ export class PaymentsService {
   ) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      include: { booking: true },
+      include: {
+        booking: {
+          include: {
+            invoice: true,
+          },
+        },
+      },
     });
 
     let authorized = Boolean(
@@ -1441,7 +1482,7 @@ export class PaymentsService {
           Buffer.from(guestTokenHash, 'hex'),
           Buffer.from(expectedHash, 'hex'),
         );
-    } else if (!authorized && payment && !payment.booking.userId) {
+    } else if (!authorized && payment && !payment.booking.userId && !payment.booking.guestTokenHash) {
       authorized = true;
     }
 
@@ -1450,9 +1491,18 @@ export class PaymentsService {
     }
 
     return {
+      paymentId: payment.id,
       status: payment.status,
       amount: payment.amount.toFixed(2),
       currency: payment.currency,
+      invoiceNumber: payment.booking.invoice?.invoiceNumber ?? null,
+      booking: {
+        id: payment.booking.id,
+        referenceCode: payment.booking.referenceCode,
+        status: payment.booking.status,
+        totalAmountUsd: payment.booking.totalAmountUsd,
+        paidAmountUsd: payment.booking.paidAmountUsd,
+      },
       updatedAt: payment.updatedAt,
     };
   }

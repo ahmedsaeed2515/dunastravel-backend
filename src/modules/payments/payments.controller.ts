@@ -69,7 +69,7 @@ export class PaymentsController {
     };
   }
 
-  @Post(['webhook/:provider', 'geitpatin/webhook', 'getpayin/webhook'])
+  @Post(['webhook/:provider', 'getpayin/webhook'])
   @Public()
   @SkipCsrf()
   @Throttle({ default: { limit: 120, ttl: 60000 } })
@@ -78,9 +78,7 @@ export class PaymentsController {
     @Param('provider') paramProvider: string | undefined,
     @Req() req: RawBodyRequest<ExpressRequest>,
   ) {
-    const provider =
-      paramProvider ||
-      (req.path?.toLowerCase().includes('geitpatin') ? 'getpayin' : 'getpayin');
+    const provider = paramProvider || 'getpayin';
 
     if (!provider) {
       throw new BadRequestException('Payment provider is required');

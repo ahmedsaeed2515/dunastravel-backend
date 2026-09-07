@@ -18270,6 +18270,11 @@
             "description": "New password (min 12 chars)",
             "minLength": 12
           },
+          "confirmPassword": {
+            "type": "string",
+            "example": "NewSecurePass!23",
+            "description": "Confirm password for verification (optional)"
+          },
           "role": {
             "type": "string",
             "example": "ADMIN",

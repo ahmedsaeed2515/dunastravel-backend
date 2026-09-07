@@ -56,6 +56,7 @@ import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
 import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
 import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
+import { RecordManualBookingPaymentDto } from './dto/record-manual-payment.dto';
 import { BookingsService } from '../bookings/bookings.service';
 import {
   ParseBookingRefPipe,
@@ -209,10 +210,11 @@ export class AdminController {
   @Post('bookings/:referenceCode/payments')
   @ApiOperation({ summary: 'Record manual offline payment for a booking.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
+  @ApiBody({ type: RecordManualBookingPaymentDto })
   @ApiOkResponse({ description: 'Payment recorded and booking updated' })
   async recordManualPayment(
     @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
-    @Body() dto: { amount: number; method?: string; transactionId?: string; notes?: string },
+    @Body() dto: RecordManualBookingPaymentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.recordManualBookingPayment(referenceCode, dto, user.id);
