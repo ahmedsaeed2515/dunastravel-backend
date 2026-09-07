@@ -116,6 +116,16 @@ export const envValidationSchema = Joi.object({
     .valid('true', 'false')
     .default('false'),
 
+  // Auth Verification & Bot Defense
+  AUTH_REQUIRE_EMAIL_VERIFICATION: Joi.string()
+    .valid('true', 'false')
+    .default('true'),
+  TURNSTILE_SECRET_KEY: Joi.string().optional().allow(''),
+  TURNSTILE_SITE_KEY: Joi.string().optional().allow(''),
+  SKIP_TURNSTILE: Joi.string()
+    .valid('true', 'false')
+    .default('false'),
+
   MAIL_TRANSPORT: Joi.when('NODE_ENV', {
     is: 'production',
     then: Joi.string().valid('resend').default('resend'),

@@ -6,6 +6,7 @@ export interface EmailPayload {
   text: string;
   replyTo?: string;
   tags?: Record<string, string>;
+  idempotencyKey?: string;
 }
 
 export interface EmailResult {

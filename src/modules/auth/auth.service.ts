@@ -71,6 +71,15 @@ export class AuthService {
     @Inject(SettingsService) private readonly settingsService: SettingsService,
   ) {}
 
+  private shouldRequireEmailVerification(): boolean {
+    const rawVal = this.configService.get<boolean | string>(
+      'auth.requireEmailVerification',
+    );
+    if (rawVal === true || rawVal === 'true') return true;
+    if (rawVal === false || rawVal === 'false') return false;
+    return this.configService.get<string>('nodeEnv') === 'production';
+  }
+
   async register(dto: RegisterDto): Promise<SafeUser> {
     assertStrongPassword(dto.password);
     const existingUser = await this.userService.findByEmail(dto.email);
@@ -79,16 +88,18 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const requireEmailVerification = false;
+    const requireEmailVerification = this.shouldRequireEmailVerification();
+
     const otpCode = requireEmailVerification
-      ? Math.floor(100000 + Math.random() * 900000).toString()
+      ? crypto.randomInt(100000, 1000000).toString()
       : null;
     const verifyTokenHash = otpCode
       ? crypto.createHash('sha256').update(otpCode).digest('hex')
       : null;
     const verifyTokenExp = otpCode
-      ? new Date(Date.now() + 15 * 60 * 1000) // 15 minutes validity
+      ? new Date(Date.now() + 10 * 60 * 1000) // 10 minutes validity
       : null;
+    const verifySentAt = otpCode ? new Date() : null;
 
     const user = await this.prisma.user.create({
       data: {
@@ -99,12 +110,16 @@ export class AuthService {
         isVerified: !requireEmailVerification,
         verifyToken: verifyTokenHash,
         verifyTokenExp,
+        verifyAttempts: 0,
+        verifySentAt,
       },
     });
 
     this.logger.log(`User registered: userId=${user.id}, email=${user.email}`);
     if (otpCode) {
-      this.logger.warn(`🔐 [SECURITY OTP] Verification code for ${user.email} (userId=${user.id}): [ ${otpCode} ]`);
+      this.logger.log(
+        `Dispatched initial verification OTP for userId=${user.id}`,
+      );
       try {
         await this.notificationsService.sendVerificationEmail(
           user.email,
@@ -137,7 +152,6 @@ export class AuthService {
       user = await this.prisma.user.findFirst({
         where: {
           email: dto.email.trim().toLowerCase(),
-          verifyToken: tokenHash,
           deletedAt: null,
         },
       });
@@ -151,21 +165,76 @@ export class AuthService {
       throw new BadRequestException('Invalid or incorrect verification code');
     }
 
-    if (user.verifyTokenExp && user.verifyTokenExp < new Date()) {
+    if (user.isVerified) {
+      return { message: 'Email is already verified' };
+    }
+
+    // Check brute-force attempts: max 5 failed attempts
+    if (user.verifyAttempts >= 5) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verifyToken: null,
+          verifyTokenExp: null,
+        },
+      });
+      throw new BadRequestException(
+        'Too many failed verification attempts. This code has been invalidated. Please request a new verification code.',
+      );
+    }
+
+    // Check expiry
+    if (!user.verifyTokenExp || user.verifyTokenExp < new Date()) {
       throw new BadRequestException(
         'Verification code has expired. Please request a new code.',
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
+    // Match check
+    if (user.verifyToken !== tokenHash) {
+      const updatedAttempts = user.verifyAttempts + 1;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verifyAttempts: { increment: 1 },
+          ...(updatedAttempts >= 5
+            ? { verifyToken: null, verifyTokenExp: null }
+            : {}),
+        },
+      });
+
+      if (updatedAttempts >= 5) {
+        throw new BadRequestException(
+          'Too many failed verification attempts. This code has been invalidated. Please request a new verification code.',
+        );
+      }
+
+      throw new BadRequestException('Invalid or incorrect verification code');
+    }
+
+    // Atomic conditional update to verify and clear challenge
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: user.id,
+        verifyToken: tokenHash,
+        isVerified: false,
+      },
       data: {
         isVerified: true,
+        emailVerifiedAt: new Date(),
         verifyToken: null,
         verifyTokenExp: null,
+        verifyAttempts: 0,
       },
     });
 
+    if (result.count === 0) {
+      throw new BadRequestException(
+        'Verification code was already used or invalidated.',
+      );
+    }
+
+    this.logger.log(`Email successfully verified for userId=${user.id}`);
     return { message: 'Email verified successfully' };
   }
 
@@ -191,7 +260,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const requireEmailVerification = false;
+    const requireEmailVerification = this.shouldRequireEmailVerification();
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
@@ -507,36 +576,49 @@ export class AuthService {
   async resendVerification(
     dto: ResendVerificationDto,
   ): Promise<{ message: string }> {
-    const requireEmailVerification = true;
-    if (!requireEmailVerification) {
-      return { message: 'Email verification is currently disabled.' };
-    }
-
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email.trim().toLowerCase(), deletedAt: null },
     });
     if (!user || user.isVerified) {
       return {
         message:
-          'If that email is registered, a verification code has been sent.',
+          'If that email is registered and unverified, a verification code has been sent.',
       };
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // 60-second cooldown enforcement
+    if (user.verifySentAt) {
+      const elapsedSeconds = Math.floor(
+        (Date.now() - user.verifySentAt.getTime()) / 1000,
+      );
+      const cooldownSeconds = 60;
+      if (elapsedSeconds < cooldownSeconds) {
+        const remaining = cooldownSeconds - elapsedSeconds;
+        throw new BadRequestException(
+          `Please wait ${remaining} second${remaining === 1 ? '' : 's'} before requesting another verification code.`,
+        );
+      }
+    }
+
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
     const verifyTokenHash = crypto
       .createHash('sha256')
       .update(otpCode)
       .digest('hex');
-    const verifyTokenExp = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const verifyTokenExp = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { verifyToken: verifyTokenHash, verifyTokenExp },
+      data: {
+        verifyToken: verifyTokenHash,
+        verifyTokenExp,
+        verifyAttempts: 0,
+        verifySentAt: new Date(),
+      },
     });
 
     this.logger.log(`Resent verification OTP code for userId=${user.id}`);
-    this.logger.warn(
-      `🔐 [SECURITY OTP] Verification code for ${user.email} (userId=${user.id}): [ ${otpCode} ]`,
-    );
+
     try {
       await this.notificationsService.sendVerificationEmail(
         user.email,
@@ -545,12 +627,12 @@ export class AuthService {
       );
     } catch (error: any) {
       this.logger.error(
-        `Could not send verification email to ${user.email}: ${error?.message || error}. Code logged to server console.`,
+        `Could not send verification email to ${user.email}: ${error?.message || error}.`,
       );
     }
     return {
       message:
-        'If that email is registered, a verification code has been sent.',
+        'If that email is registered and unverified, a verification code has been sent.',
     };
   }
 }

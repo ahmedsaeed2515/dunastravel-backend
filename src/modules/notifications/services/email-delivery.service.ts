@@ -10,6 +10,7 @@ import {
   IEmailProvider,
   EMAIL_PROVIDER_TOKEN,
 } from '../providers/email-provider.interface';
+import { EmailDeliveryException } from '../exceptions/email-delivery.exception';
 
 @Injectable()
 export class EmailDeliveryService {
@@ -77,11 +78,14 @@ export class EmailDeliveryService {
         }
       } catch (error: unknown) {
         const err = error as Error;
+        const isNonTransient =
+          error instanceof EmailDeliveryException && error.isTransient === false;
+
         this.logger.warn(
-          `Failed to send ${notificationType} (attempt ${attempts}): ${err.message}`,
+          `Failed to send ${notificationType} (attempt ${attempts}${isNonTransient ? ', non-transient' : ''}): ${err.message}`,
         );
 
-        const isExhausted = attempts >= this.MAX_RETRIES;
+        const isExhausted = attempts >= this.MAX_RETRIES || isNonTransient;
 
         if (logRecord && this.prisma?.notificationDeliveryLog) {
           await this.prisma.notificationDeliveryLog.update({
@@ -99,8 +103,9 @@ export class EmailDeliveryService {
 
         if (isExhausted) {
           this.logger.error(
-            `[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts. Reference: ${originReferenceCode}`,
+            `[CRITICAL] Terminal failure for ${notificationType} after ${attempts} attempts (permanent/exhausted). Reference: ${originReferenceCode}`,
           );
+          break;
         } else {
           // In-process backoff
           await new Promise((res) => setTimeout(res, 1000 * attempts));

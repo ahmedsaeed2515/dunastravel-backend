@@ -10,6 +10,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 import { SettingsModule } from '../settings/settings.module';
 import { LoginSecurityStateService } from '../../common/security/login-security-state.service';
+import { TurnstileService } from '../../common/security/turnstile.service';
+import { TurnstileGuard } from '../../common/security/turnstile.guard';
 
 @Module({
   imports: [
@@ -35,7 +37,13 @@ import { LoginSecurityStateService } from '../../common/security/login-security-
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LoginSecurityStateService],
-  exports: [AuthService, JwtModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LoginSecurityStateService,
+    TurnstileService,
+    TurnstileGuard,
+  ],
+  exports: [AuthService, JwtModule, TurnstileService, TurnstileGuard],
 })
 export class AuthModule {}

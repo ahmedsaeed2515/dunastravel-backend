@@ -18,6 +18,13 @@ export default () => ({
   },
   auth: {
     guestTokenSecret: process.env.GUEST_TOKEN_SECRET,
+    requireEmailVerification:
+      process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== 'false',
+  },
+  turnstile: {
+    secretKey: process.env.TURNSTILE_SECRET_KEY,
+    siteKey: process.env.TURNSTILE_SITE_KEY,
+    skip: process.env.SKIP_TURNSTILE === 'true',
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,

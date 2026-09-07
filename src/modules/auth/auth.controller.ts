@@ -41,6 +41,8 @@ import { Public, CurrentUser, SkipCsrf } from '../../common/decorators';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/guards';
 import { AuthenticatedUser } from '../../common/types';
 import { UserService } from '../users/users.service';
+import { TurnstileGuard } from '../../common/security/turnstile.guard';
+import { RequireTurnstile } from '../../common/security/require-turnstile.decorator';
 
 import { Inject } from '@nestjs/common';
 
@@ -56,6 +58,8 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
+  @UseGuards(TurnstileGuard)
+  @RequireTurnstile('register')
   @Post('register')
   @HttpCode(201)
   @ApiOperation({ summary: 'Register a new user' })
@@ -199,6 +203,8 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
+  @UseGuards(TurnstileGuard)
+  @RequireTurnstile('forgot_password')
   @Post('forgot-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Request password reset' })
@@ -240,6 +246,8 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
+  @UseGuards(TurnstileGuard)
+  @RequireTurnstile('resend_verification')
   @Post('resend-verification')
   @HttpCode(200)
   @ApiOperation({ summary: 'Resend verification email' })

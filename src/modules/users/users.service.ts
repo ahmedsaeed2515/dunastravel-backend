@@ -41,6 +41,8 @@ export type SafeUser = Omit<
   | 'resetTokenExp'
   | 'verifyToken'
   | 'verifyTokenExp'
+  | 'verifyAttempts'
+  | 'verifySentAt'
 >;
 
 export type SessionUser = SafeUser;
@@ -386,6 +388,7 @@ export class UserService {
       phone: user.phone,
       role: user.role,
       isVerified: user.isVerified,
+      emailVerifiedAt: user.emailVerifiedAt,
       customerNumber: user.customerNumber,
       isVip: user.isVip,
       tags: user.tags,

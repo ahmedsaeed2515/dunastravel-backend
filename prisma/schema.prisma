@@ -29,6 +29,7 @@ model User {
   futureWalletId         String?                 @map("future_wallet_id") @db.VarChar(100)
   gender                 String?                 @db.VarChar(50)
   isVerified             Boolean                 @default(false) @map("is_verified")
+  emailVerifiedAt        DateTime?               @map("email_verified_at")
   isVip                  Boolean                 @default(false) @map("is_vip")
   marketingConsent       Boolean                 @default(true) @map("marketing_consent")
   nationality            String?                 @db.VarChar(100)
@@ -49,6 +50,8 @@ model User {
   travelCompanions       Json?                   @map("travel_companions")
   verifyToken            String?                 @map("verify_token") @db.VarChar(255)
   verifyTokenExp         DateTime?               @map("verify_token_exp")
+  verifyAttempts         Int                     @default(0) @map("verify_attempts")
+  verifySentAt           DateTime?               @map("verify_sent_at")
   suspendedAt            DateTime?               @map("suspended_at")
   suspendReason          String?                 @map("suspend_reason")
   activityLogs           BookingActivityLog[]

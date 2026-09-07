@@ -56,4 +56,12 @@ export class RegisterDto {
   @MinLength(12)
   @MaxLength(128)
   password!: string;
+
+  @ApiPropertyOptional({
+    description: 'Cloudflare Turnstile challenge token',
+    example: '0.xxxx.yyyy',
+  })
+  @IsOptional()
+  @IsString()
+  turnstileToken?: string;
 }
