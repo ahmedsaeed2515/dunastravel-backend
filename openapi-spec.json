@@ -3831,7 +3831,7 @@
         ]
       }
     },
-    "/api/payments/geitpatin/initiate": {
+    "/api/payments/getpayin/initiate": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[2]",
         "parameters": [],
@@ -3855,7 +3855,7 @@
         ]
       }
     },
-    "/api/payments/getpayin/initiate": {
+    "/api/admin/payments/initiate": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[3]",
         "parameters": [],
@@ -3879,7 +3879,7 @@
         ]
       }
     },
-    "/api/admin/payments/initiate": {
+    "/api/admin/payments/checkout-session": {
       "post": {
         "operationId": "PaymentsController_initiatePayment[4]",
         "parameters": [],
@@ -3903,57 +3903,9 @@
         ]
       }
     },
-    "/api/admin/payments/checkout-session": {
-      "post": {
-        "operationId": "PaymentsController_initiatePayment[5]",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Payments"
-        ]
-      }
-    },
-    "/api/admin/payments/geitpatin/initiate": {
-      "post": {
-        "operationId": "PaymentsController_initiatePayment[6]",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Payments"
-        ]
-      }
-    },
     "/api/admin/payments/getpayin/initiate": {
       "post": {
-        "operationId": "PaymentsController_initiatePayment[7]",
+        "operationId": "PaymentsController_initiatePayment[5]",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -16087,22 +16039,18 @@
           "amount": {
             "type": "number",
             "example": 450,
-            "description": "Amount paid in USD (must be positive, minimum 0.01)"
+            "description": "Payment amount in USD (positive, max 2 decimal places)"
           },
           "method": {
             "type": "string",
-            "example": "CASH",
-            "description": "Payment method (CASH, BANK_TRANSFER, POS, etc.)"
+            "example": "CASH"
           },
           "transactionId": {
             "type": "string",
-            "example": "TX-OFFLINE-98234",
-            "description": "External transaction reference or receipt number"
+            "example": "TXN-12345"
           },
           "notes": {
-            "type": "string",
-            "example": "Received in office by Ahmed",
-            "description": "Internal accounting or audit notes"
+            "type": "string"
           }
         },
         "required": [

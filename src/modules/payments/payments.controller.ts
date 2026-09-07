@@ -36,7 +36,7 @@ export class PaymentsController {
     return this.paymentsService.getReadiness();
   }
 
-  @Post(['initiate', 'checkout-session', 'geitpatin/initiate', 'getpayin/initiate'])
+  @Post(['initiate', 'checkout-session', 'getpayin/initiate'])
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 15, ttl: 60000 } })

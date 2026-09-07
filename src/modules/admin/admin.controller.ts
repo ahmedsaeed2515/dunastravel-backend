@@ -54,7 +54,7 @@ import { AddTourItineraryDto } from './dto/add-tour-itinerary.dto';
 import { UpdateTourItineraryDto } from './dto/update-tour-itinerary.dto';
 import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
-import { RecordManualBookingPaymentDto } from './dto/record-manual-payment.dto';
+import { RecordManualBookingPaymentDto } from './dto/record-manual-booking-payment.dto';
 import { BookingsService } from '../bookings/bookings.service';
 import {
   ParseBookingRefPipe,
