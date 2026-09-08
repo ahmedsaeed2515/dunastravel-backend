@@ -268,22 +268,12 @@ export class AdminInvoicesService {
   }
 
   async refundInvoice(
-    id: string,
-    dto: RefundPaymentDto,
-    actor: AuthenticatedUser,
+    _id: string,
+    _dto: RefundPaymentDto,
+    _actor: AuthenticatedUser,
   ) {
-    const invoice = await this.findOne(id);
-    if (invoice.status !== InvoiceStatus.PAID || !invoice.paymentId) {
-      throw new BadRequestException(
-        'Cannot refund an unpaid invoice or invoice without payment',
-      );
-    }
-    return this.paymentsService.refundPayment(
-      invoice.paymentId,
-      dto.amount,
-      dto.reason,
-      dto.idempotencyKey,
-      actor,
+    throw new BadRequestException(
+      'Online refunds are disabled. All refunds are processed offline directly by company finance.',
     );
   }
 }

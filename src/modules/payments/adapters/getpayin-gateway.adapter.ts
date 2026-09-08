@@ -206,26 +206,13 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
   }
 
   async refund(
-    providerInvoiceId: string,
-    amount: string,
-    idempotencyKey: string,
+    _providerInvoiceId: string,
+    _amount: string,
+    _idempotencyKey: string,
   ): Promise<GatewayRefundResult> {
-    this.assertConfigured();
-    const result = await this.wrapProviderCall(() =>
-      this.client().payments.refund(
-        { invoiceId: this.invoiceId(providerInvoiceId), amount },
-        { idempotencyKey: this.toProviderIdempotencyKey(idempotencyKey) },
-      ),
+    throw new BadRequestException(
+      'Online payment gateway refunds are disabled. All refunds are processed offline directly by company finance.',
     );
-    return {
-      providerInvoiceId: String(result.invoiceId),
-      providerStatus: result.paidStatus,
-      authCode: result.authCode,
-      refundAmount:
-        result.refundAmount === null
-          ? null
-          : Number(result.refundAmount).toFixed(2),
-    };
   }
 
   async checkStatus(providerInvoiceId: string): Promise<GatewayPaymentStatus> {

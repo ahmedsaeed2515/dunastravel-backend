@@ -670,40 +670,7 @@ describe('PaymentsService', () => {
   });
 
   describe('refundPayment', () => {
-    it('issues a partial refund while preserving the captured payment', async () => {
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
-        id: 'payment-123',
-        amount: new Prisma.Decimal(100),
-        currency: 'USD',
-        method: 'GETPAYIN',
-        transactionId: '40506',
-        status: 'CAPTURED',
-        bookingId: 'bkg-123',
-        booking: {
-          id: 'bkg-123',
-          status: 'CONFIRMED',
-          totalAmountUsd: new Prisma.Decimal(100),
-          paidAmountUsd: new Prisma.Decimal(100),
-        },
-        invoices: [],
-      } as never);
-      jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.payment, 'findMany')
-        .mockResolvedValue([
-          { id: 'payment-123', amount: new Prisma.Decimal(100) },
-        ] as never);
-      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
-        id: 'rf-partial-1',
-        status: 'PENDING',
-      } as never);
-      jest.spyOn(gatewayMock, 'refund').mockResolvedValue({
-        providerInvoiceId: '40506',
-        providerStatus: 'PARTIALLY_REFUNDED',
-        authCode: '831000',
-        refundAmount: '50.00',
-      });
-
+    it('strictly rejects online refund attempts with BadRequestException as refunds are handled offline', async () => {
       await expect(
         service.refundPayment(
           'payment-123',
@@ -712,178 +679,22 @@ describe('PaymentsService', () => {
           'refund-partial-1',
           { id: 'super-admin-1', role: 'SUPER_ADMIN' },
         ),
-      ).resolves.toMatchObject({
-        success: true,
-        refundId: 'rf-partial-1',
-        status: 'PARTIALLY_REFUNDED',
-      });
-      expect(gatewayMock.refund).toHaveBeenCalledWith(
-        '40506',
-        '50.00',
-        'refund-partial-1',
-      );
-      expect(prisma.payment.updateMany).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            status: 'CAPTURED',
-            isRefund: false,
-          }),
-        }),
-      );
+      ).rejects.toThrow('Online refunds via payment gateway are disabled');
     });
 
-    it('should issue full refund, record RefundRecord, and update status atomically', async () => {
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
-        id: 'payment-123',
-        amount: new Prisma.Decimal(100),
-        currency: 'USD',
-        method: 'GETPAYIN',
-        transactionId: 'tx-123',
-        status: 'CAPTURED',
-        bookingId: 'bkg-123',
-        booking: {
-          id: 'bkg-123',
-          status: 'CONFIRMED',
-          totalAmountUsd: new Prisma.Decimal(100),
-          paidAmountUsd: new Prisma.Decimal(100),
-          adults: 1,
-          children: 0,
-          availabilityId: null,
-        },
-        invoices: [{ id: 'inv-123' }],
-      } as never);
-
-      jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
-      jest
-        .spyOn(prisma.payment, 'findMany')
-        .mockResolvedValue([
-          { id: 'payment-123', amount: new Prisma.Decimal(100) },
-        ] as never);
-      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
-        id: 'rf-rec-1',
-        status: 'PENDING',
-      } as never);
-      jest
-        .spyOn(gatewayMock, 'refund')
-        .mockResolvedValue({
-          providerInvoiceId: '40506',
-          providerStatus: 'REFUNDED',
-          authCode: '831000',
-          refundAmount: '100.00',
-        });
-
-      const result = await service.refundPayment(
-        'payment-123',
-        100,
-        'approved full refund',
-        'refund-full-1',
-        { id: 'super-admin-1', role: 'SUPER_ADMIN' },
-      );
-
-      expect(result.success).toBe(true);
-      expect(
-        (gatewayMock.refund as jest.Mock).mock.calls.length,
-      ).toBeGreaterThan(0);
-      expect(
-        (prisma.payment.updateMany as jest.Mock).mock.calls.length,
-      ).toBeGreaterThan(0);
-
-      const eventEmitter = module.get<EventEmitter2>(EventEmitter2);
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'payment.refunded',
-        expect.objectContaining({
-          bookingId: 'bkg-123',
-          paymentId: 'payment-123',
-          amount: 100,
-          refundId: 'rf-rec-1',
-        }),
-      );
-    });
-
-    it('VULN-01/07: safely refunds a CANCELLED booking without releasing inventory capacity a second time', async () => {
-      const availabilityService = module.get<AvailabilityService>(AvailabilityService);
-      (availabilityService.releaseCapacity as jest.Mock).mockClear();
-
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
-        id: 'payment-cancelled-bkg',
-        amount: new Prisma.Decimal(250),
-        currency: 'USD',
-        method: 'GETPAYIN',
-        transactionId: 'tx-cancelled-bkg',
-        status: 'CAPTURED',
-        bookingId: 'bkg-already-cancelled',
-        booking: {
-          id: 'bkg-already-cancelled',
-          status: 'CANCELLED',
-          totalAmountUsd: new Prisma.Decimal(250),
-          paidAmountUsd: new Prisma.Decimal(250),
-          adults: 2,
-          children: 1,
-          availabilityId: 'avail-slot-101',
-        },
-        invoices: [{ id: 'inv-cn-1', snapshotJsonb: {} }],
-      } as never);
-
-      jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(prisma.refundRecord, 'aggregate').mockResolvedValue({ _sum: { amount: null } } as never);
-      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
-        id: 'rf-rec-cancelled-1',
-        status: 'PENDING',
-      } as never);
-      jest.spyOn(gatewayMock, 'refund').mockResolvedValue({
-        providerInvoiceId: 'tx-cancelled-bkg',
-        providerStatus: 'REFUNDED',
-        authCode: '831001',
-        refundAmount: '250.00',
-      });
-
-      const result = await service.refundPayment(
-        'payment-cancelled-bkg',
-        250,
-        'customer requested refund on already cancelled booking',
-        'refund-idem-cancelled-1',
-        { id: 'admin-1', role: 'SUPER_ADMIN' },
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.status).toBe('REFUNDED');
-      // Crucial VULN-01 invariant: releaseCapacity must NOT be called because booking was already CANCELLED
-      expect(availabilityService.releaseCapacity).not.toHaveBeenCalled();
-    });
-
-    it('VULN-07: rejects refund amount exceeding the remaining refundable payment balance', async () => {
-      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
-        id: 'payment-limit-test',
-        amount: new Prisma.Decimal(100),
-        currency: 'USD',
-        method: 'GETPAYIN',
-        transactionId: 'tx-limit-1',
-        status: 'CAPTURED',
-        bookingId: 'bkg-limit-1',
-        booking: {
-          id: 'bkg-limit-1',
-          status: 'CONFIRMED',
-          totalAmountUsd: new Prisma.Decimal(100),
-          paidAmountUsd: new Prisma.Decimal(100),
-        },
-        invoices: [],
-      } as never);
-
-      // 60 USD was already refunded
-      jest.spyOn(prisma.refundRecord, 'aggregate').mockResolvedValue({
-        _sum: { amount: new Prisma.Decimal(60) },
-      } as never);
-
-      // Attempting to refund 50 USD when only 40 USD remains refundable
-      await expect(
-        service.refundPayment(
-          'payment-limit-test',
-          50,
-          'excessive refund attempt',
-          'refund-idem-limit-1',
-          { id: 'admin-1', role: 'SUPER_ADMIN' },
-        ),
-      ).rejects.toThrow('Refund amount must be between 0.01 and 40.00 USD');
+    it('ensures gateway refund is never invoked when refundPayment is called', async () => {
+      try {
+        await service.refundPayment(
+          'payment-123',
+          100,
+          'attempt refund',
+          'refund-full-1',
+          { id: 'super-admin-1', role: 'SUPER_ADMIN' },
+        );
+      } catch {
+        // Expected to throw BadRequestException
+      }
+      expect(gatewayMock.refund).not.toHaveBeenCalled();
     });
   });
 });

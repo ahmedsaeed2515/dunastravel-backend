@@ -1321,8 +1321,8 @@ export class BookingsService {
     const validTransitions: Record<string, string[]> = {
       PENDING: ['CONFIRMED', 'CANCELLED'],
       CONFIRMED: ['CANCELLED'],
-      PARTIALLY_PAID: [],
-      PAID: ['COMPLETED'],
+      PARTIALLY_PAID: ['CANCELLED'],
+      PAID: ['COMPLETED', 'CANCELLED'],
       COMPLETED: ['ARCHIVED'],
       CANCELLED: ['CONFIRMED', 'PENDING', 'ARCHIVED'],
       REFUNDED: ['ARCHIVED'],
@@ -1351,10 +1351,12 @@ export class BookingsService {
     const totalPassengers = booking.adults + booking.children;
     if (
       targetStatus === 'CANCELLED' &&
-      !booking.paidAmountUsd.equals(0)
+      !booking.paidAmountUsd.equals(0) &&
+      actor.role !== 'SUPER_ADMIN' &&
+      actor.role !== 'ADMIN'
     ) {
       throw new ForbiddenException(
-        'A booking with captured funds must use the refund workflow',
+        'Only administrators can cancel a booking with captured funds',
       );
     }
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminFinanceQueryDto } from './dto/admin-finance-query.dto';
 import { AdminRefundDto } from './dto/admin-refund.dto';
@@ -288,15 +288,11 @@ export class AdminFinanceService {
   }
 
   async processRefund(
-    dto: AdminRefundDto,
-    actor?: { id: string; role: string },
+    _dto: AdminRefundDto,
+    _actor?: { id: string; role: string },
   ) {
-    return this.paymentsService.refundPayment(
-      dto.paymentId,
-      dto.amount,
-      dto.reason,
-      dto.idempotencyKey,
-      actor,
+    throw new BadRequestException(
+      'Online refunds are disabled. All refunds are processed offline directly by company finance.',
     );
   }
 }
