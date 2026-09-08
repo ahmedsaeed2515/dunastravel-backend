@@ -91,6 +91,11 @@ export class AdminInvoicesService {
               },
             },
             billingInfo: true,
+            passengers: true,
+            payments: {
+              where: { isRefund: false },
+              orderBy: { createdAt: 'desc' },
+            },
           },
         },
         payment: {
@@ -131,6 +136,7 @@ export class AdminInvoicesService {
             },
           },
           billingInfo: true,
+          passengers: true,
           payments: {
             where: { isRefund: false },
             orderBy: { createdAt: 'desc' },
@@ -215,6 +221,7 @@ export class AdminInvoicesService {
                 },
               },
               billingInfo: true,
+              passengers: true,
             },
           },
           payment: {
