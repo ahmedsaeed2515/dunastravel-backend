@@ -4829,7 +4829,7 @@
             "description": "Tour not available"
           }
         },
-        "summary": "Create a tour booking (Guest or Authenticated)",
+        "summary": "Create a tour booking (Authenticated and verified users only)",
         "tags": [
           "Bookings"
         ]
@@ -4909,6 +4909,42 @@
           }
         },
         "summary": "Get booking summary by reference code",
+        "tags": [
+          "Bookings"
+        ]
+      }
+    },
+    "/api/bookings/{referenceCode}/invoice": {
+      "get": {
+        "operationId": "BookingsController_getInvoiceByReferenceCode",
+        "parameters": [
+          {
+            "name": "referenceCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "BKG-A4X7Z2",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-guest-token",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full booking invoice"
+          },
+          "404": {
+            "description": "Booking or invoice not found"
+          }
+        },
+        "summary": "Get full invoice for a booking by reference code",
         "tags": [
           "Bookings"
         ]
@@ -11745,6 +11781,26 @@
         ]
       }
     },
+    "/api/admin/communications/templates/presets": {
+      "get": {
+        "operationId": "AdminTemplatesController_getPresets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get built-in luxury email template presets",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
     "/api/admin/communications/templates": {
       "get": {
         "operationId": "AdminTemplatesController_listTemplates",
@@ -11788,6 +11844,66 @@
           }
         ],
         "summary": "Create a new email template",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/test-send": {
+      "post": {
+        "operationId": "AdminTemplatesController_sendTestEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTestEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a test email with sample variables",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/broadcast": {
+      "post": {
+        "operationId": "AdminTemplatesController_broadcastCampaign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastCampaignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Broadcast an email campaign to audience",
         "tags": [
           "Admin Templates"
         ]
@@ -19714,6 +19830,75 @@
         },
         "required": [
           "promoCode"
+        ]
+      },
+      "SendTestEmailDto": {
+        "type": "object",
+        "properties": {
+          "recipientEmail": {
+            "type": "string",
+            "description": "Target email address for test"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject of the email"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the email"
+          },
+          "sampleVariables": {
+            "type": "object",
+            "description": "Sample variables to replace during preview"
+          }
+        },
+        "required": [
+          "recipientEmail",
+          "subject",
+          "bodyHtml"
+        ]
+      },
+      "BroadcastCampaignDto": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Campaign subject line"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the campaign"
+          },
+          "recipientGroup": {
+            "type": "string",
+            "enum": [
+              "ALL_USERS",
+              "VERIFIED_CUSTOMERS",
+              "MARKETING_OPT_IN",
+              "CUSTOM_LIST"
+            ],
+            "description": "Audience group to receive the broadcast"
+          },
+          "customEmails": {
+            "description": "List of specific email addresses if recipientGroup is CUSTOM_LIST",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "campaignName": {
+            "type": "string",
+            "description": "Optional campaign identifier or title"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Originating template ID"
+          }
+        },
+        "required": [
+          "subject",
+          "bodyHtml",
+          "recipientGroup"
         ]
       },
       "CreateEmailTemplateDto": {

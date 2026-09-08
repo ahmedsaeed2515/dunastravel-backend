@@ -266,11 +266,10 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
       providerStatus: 'PAID',
       authCode: '831000',
     });
-    await expect(adapter.refund('40506', '50.00', 'refund:1')).resolves.toEqual({
-      providerInvoiceId: '40506',
-      providerStatus: 'PARTIALLY_REFUNDED',
-      authCode: '831000',
-      refundAmount: '50.00',
-    });
+    await expect(
+      adapter.refund('40506', '50.00', 'refund:1'),
+    ).rejects.toThrow(
+      'Online payment gateway refunds are disabled. All refunds are processed offline directly by company finance.',
+    );
   });
 });

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "users"
+  ADD COLUMN IF NOT EXISTS "email_verified_at" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "verify_attempts" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "verify_sent_at" TIMESTAMP(3);
