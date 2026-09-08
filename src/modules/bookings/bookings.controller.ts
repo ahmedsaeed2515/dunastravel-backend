@@ -43,20 +43,25 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(201)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Create a tour booking (Guest or Authenticated)' })
+  @ApiOperation({ summary: 'Create a tour booking (Authenticated and verified users only)' })
   @ApiCreatedResponse({ description: 'Booking created successfully' })
   @ApiBadRequestResponse({ description: 'Validation failed or invalid tour' })
   @ApiUnprocessableEntityResponse({ description: 'Tour not available' })
   async createBooking(
     @Body() dto: CreateBookingDto,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    const effectiveKey = idempotencyKey || `bkg_idem_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    return this.bookingsService.createBooking(dto, user?.id, effectiveKey);
+    if (!user?.id) {
+      throw new UnauthorizedException('Authentication required: You must be logged in to book a tour');
+    }
+    if (!idempotencyKey || !idempotencyKey.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required for creating a booking');
+    }
+    return this.bookingsService.createBooking(dto, user.id, idempotencyKey.trim());
   }
 
   @Post('calculate')
@@ -100,6 +105,27 @@ export class BookingsController {
   ) {
     const userId = user?.id ?? undefined;
     return this.bookingsService.findByReferenceCode(
+      referenceCode,
+      userId,
+      guestToken,
+    );
+  }
+
+  @Get(':referenceCode/invoice')
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Get full invoice for a booking by reference code' })
+  @ApiOkResponse({ description: 'Full booking invoice' })
+  @ApiNotFoundResponse({ description: 'Booking or invoice not found' })
+  @ApiParam({ name: 'referenceCode', example: 'BKG-A4X7Z2' })
+  async getInvoiceByReferenceCode(
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
+    @CurrentUser() user: AuthenticatedUser | null,
+    @Headers('x-guest-token') guestToken?: string,
+  ) {
+    const userId = user?.id ?? undefined;
+    return this.bookingsService.getInvoiceByReferenceCode(
       referenceCode,
       userId,
       guestToken,

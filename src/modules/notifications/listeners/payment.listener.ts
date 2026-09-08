@@ -15,6 +15,7 @@ interface PaymentEventPayload {
   bookingId: string;
   paymentId?: string;
   amount?: number;
+  amountUsd?: number | string;
   currency?: string;
   refundId?: string;
   refundAmount?: number;
@@ -66,16 +67,23 @@ export class PaymentEventsListener {
         booking.tour?.slug ||
         'Tour Package';
 
+      const rawPaid = payload.amountUsd ?? payload.amount;
+      const paidAmountNumber =
+        rawPaid !== undefined
+          ? Number(rawPaid)
+          : Number(booking.paidAmountUsd || booking.totalAmountUsd);
+      const formattedAmount = paidAmountNumber.toFixed(2);
+
       // In-App Notification for Admins
       await this.inAppNotifications.notifyAdmins({
         category: InAppNotificationCategory.PAYMENT,
         priority: InAppNotificationPriority.HIGH,
         title: `Payment Confirmed: #${booking.referenceCode}`,
-        message: `Payment of $${booking.totalAmountUsd} confirmed for booking #${booking.referenceCode}`,
+        message: `Payment of $${formattedAmount} confirmed for booking #${booking.referenceCode}`,
         entityType: 'BOOKING',
         entityId: booking.referenceCode,
         deepLink: '/admin/finance',
-        metadata: { bookingId: booking.id, amount: booking.totalAmountUsd },
+        metadata: { bookingId: booking.id, amount: formattedAmount },
       });
 
       if (customerUserId) {
@@ -84,12 +92,12 @@ export class PaymentEventsListener {
           category: InAppNotificationCategory.PAYMENT,
           priority: InAppNotificationPriority.HIGH,
           title: `Payment Received: #${booking.referenceCode}`,
-          message: `Your payment of $${booking.totalAmountUsd} for booking #${booking.referenceCode} was successful!`,
+          message: `Your payment of $${formattedAmount} for booking #${booking.referenceCode} was successful!`,
           targetApp: 'CUSTOMER',
           entityType: 'BOOKING',
           entityId: booking.referenceCode,
           deepLink: '/account/bookings',
-          metadata: { bookingId: booking.id, amount: booking.totalAmountUsd },
+          metadata: { bookingId: booking.id, amount: formattedAmount },
         });
       }
 
@@ -117,7 +125,7 @@ export class PaymentEventsListener {
             customerName,
             referenceCode: booking.referenceCode,
             tourTitle,
-            amountUsd: Number(booking.totalAmountUsd),
+            amountUsd: paidAmountNumber,
             paidAt,
           });
 
@@ -139,7 +147,7 @@ export class PaymentEventsListener {
           customerName,
           referenceCode: booking.referenceCode,
           tourTitle,
-          amountUsd: Number(booking.totalAmountUsd),
+          amountUsd: paidAmountNumber,
           paidAt,
         });
 
@@ -220,7 +228,8 @@ export class PaymentEventsListener {
 
     if (!booking) return;
 
-    const refundAmount = payload.amount ?? payload.refundAmount ?? 0;
+    const refundAmount =
+      (payload as any).amountUsd ?? payload.amount ?? payload.refundAmount ?? 0;
 
     try {
       if (booking.userId) {

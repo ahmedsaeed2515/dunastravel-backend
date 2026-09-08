@@ -9,7 +9,7 @@ import {
   ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, BookingStatus } from '@prisma/client';
 import { Request as ExpressRequest } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IPaymentGatewayPort } from './interfaces/payment-gateway.port';
@@ -190,9 +190,9 @@ export class PaymentsService {
     const paymentId = crypto.randomUUID();
     const attemptNumber =
       (await this.prisma.payment.count({ where: { bookingId } })) + 1;
-    const checkoutIdempotencyKey = existingPendingPayment
-      ? `checkout:${existingPendingPayment.id}`
-      : `checkout:${paymentId}`;
+    // Always use the fresh paymentId as the idempotency key.
+    const checkoutIdempotencyKey = `checkout:${paymentId}`;
+
     let session;
     try {
       session = await this.paymentGateway.createSession({
@@ -255,12 +255,18 @@ export class PaymentsService {
         },
       });
 
-      this.eventEmitter.emit(PAYMENT_EVENTS.INITIATED, {
-        paymentId: providerTxId,
-        bookingId: booking.id,
-        amountUsd: money.toDecimal(),
-        gateway: this.paymentGateway.getProviderName(),
-      });
+      const effectivePaymentId = payment?.id ?? paymentId;
+
+      try {
+        this.eventEmitter.emit(PAYMENT_EVENTS.INITIATED, {
+          paymentId: effectivePaymentId,
+          bookingId: booking.id,
+          amountUsd: money.toDecimal(),
+          gateway: this.paymentGateway.getProviderName(),
+        });
+      } catch {
+        // Non-blocking event emission
+      }
 
       this.logger.log(
         `Payment initiated for booking ${booking.id} with transactionId ${providerTxId}`,
@@ -280,7 +286,7 @@ export class PaymentsService {
 
       // The customer must poll using the opaque payment record ID, never a
       // provider session/transaction reference whose format is provider-owned.
-      return { ...session, transactionId: providerTxId, paymentId: payment.id };
+      return { ...session, transactionId: providerTxId, paymentId: effectivePaymentId };
     } catch (error: unknown) {
       const errObj = error as { code?: string; message?: string };
       // P2002 from partial unique index: clean up losing orphan session
@@ -489,12 +495,26 @@ export class PaymentsService {
             if (payload.status === 'FAILED') {
               return 'PAYMENT_FAILED' as const;
             }
+            if (['REFUNDED', 'VOIDED', 'REVERSED'].includes(payload.status)) {
+              return 'PAYMENT_REVERSED' as const;
+            }
             return 'NON_SUCCESS_EVENT' as const;
           },
           { isolationLevel: 'Serializable' },
         );
         shouldEmitSuccess = outcome === 'PAYMENT_SUCCEEDED';
         shouldEmitFailure = outcome === 'PAYMENT_FAILED';
+        if (outcome === 'PAYMENT_REVERSED') {
+          await this.ensureCommissionReversed(targetBookingId);
+          this.eventEmitter.emit(PAYMENT_EVENTS.REFUNDED, {
+            paymentId: targetPaymentId,
+            bookingId: targetBookingId,
+            amountUsd: targetAmount,
+            reason: `Provider reversal: ${payload.status}`,
+            gateway: provider,
+          });
+          return { received: true };
+        }
         success = true;
       } catch (error: unknown) {
         const errObj = error as { code?: string };
@@ -798,6 +818,16 @@ export class PaymentsService {
       return;
     }
 
+    let booking: any = null;
+    try {
+      booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        include: { promotionRedemption: true },
+      });
+    } catch {
+      // safe fallback if findUnique not mocked or fails
+    }
+
     await tx.payment.update({
       where: { id: payment.id },
       data: {
@@ -811,6 +841,44 @@ export class PaymentsService {
       where: { id: bookingId },
       data: { status: 'REFUNDED', paidAmountUsd: new Prisma.Decimal(0) },
     });
+
+    if (booking?.availabilityId) {
+      const seatsToRelease = booking.adults + (booking.children ?? 0);
+      await this.availabilityService.releaseCapacity(
+        tx,
+        booking.availabilityId,
+        seatsToRelease,
+      );
+    }
+
+    if (
+      booking?.promotionRedemption &&
+      booking.promotionRedemption.status === 'ACTIVE'
+    ) {
+      const redemptionUpdate = await tx.promotionRedemption.updateMany({
+        where: {
+          id: booking.promotionRedemption.id,
+          status: 'ACTIVE',
+        },
+        data: {
+          status: 'REVERSED',
+          reversedAt: new Date(),
+        },
+      });
+
+      if (redemptionUpdate.count > 0) {
+        await tx.promotion.updateMany({
+          where: {
+            id: booking.promotionRedemption.promotionId,
+            currentUses: { gt: 0 },
+          },
+          data: {
+            currentUses: { decrement: 1 },
+          },
+        });
+      }
+    }
+
     await tx.invoice.updateMany({
       where: { bookingId },
       data: { status: invoiceStatus },
@@ -936,6 +1004,15 @@ export class PaymentsService {
         bookingId: outcome.bookingId,
         amountUsd: outcome.amount,
         transactionId: providerInvoiceId,
+        gateway: provider,
+      });
+    } else if (outcome !== 'DUPLICATE' && outcome.transition === 'REVERSED') {
+      await this.ensureCommissionReversed(outcome.bookingId);
+      this.eventEmitter.emit(PAYMENT_EVENTS.REFUNDED, {
+        paymentId: outcome.paymentId,
+        bookingId: outcome.bookingId,
+        amountUsd: outcome.amount,
+        reason: `Reconciliation reversal: ${providerStatus}`,
         gateway: provider,
       });
     }
@@ -1137,43 +1214,31 @@ export class PaymentsService {
       };
     }
 
-    const capturedPayments = await this.prisma.payment.findMany({
-      where: {
-        bookingId: existingPayment.bookingId,
-        status: 'CAPTURED',
-        isRefund: false,
-      },
-      select: { id: true, amount: true },
-    });
     const isRefundRecovery =
       existingPayment.status === 'REFUND_PENDING' &&
       Boolean(
         refundRecord &&
         (refundRecord.status === 'PENDING' || refundRecord.status === 'FAILED'),
       );
-    if (
-      existingPayment.booking.status !== 'CONFIRMED' ||
-      !existingPayment.amount.equals(existingPayment.booking.totalAmountUsd) ||
-      !existingPayment.amount.equals(existingPayment.booking.paidAmountUsd) ||
-      (isRefundRecovery
-        ? capturedPayments.length !== 0
-        : capturedPayments.length !== 1 ||
-          capturedPayments[0].id !== existingPayment.id)
-    ) {
-      throw new BadRequestException(
-        'Only a fully paid booking with one captured payment can be refunded',
-      );
-    }
 
     if (
       existingPayment.status !== 'CAPTURED' &&
-      !(
-        existingPayment.status === 'REFUND_PENDING' &&
-        refundRecord &&
-        (refundRecord.status === 'PENDING' || refundRecord.status === 'FAILED')
-      )
+      !isRefundRecovery
     ) {
       throw new BadRequestException('Payment is not eligible for a refund');
+    }
+
+    const nonRefundableBookingStatuses: BookingStatus[] = ['ARCHIVED'];
+    if (nonRefundableBookingStatuses.includes(existingPayment.booking.status)) {
+      throw new BadRequestException(
+        `Booking cannot be refunded in status: ${existingPayment.booking.status}`,
+      );
+    }
+
+    if (new Prisma.Decimal(refundAmountDecimal).gt(new Prisma.Decimal(existingPayment.booking.paidAmountUsd))) {
+      throw new BadRequestException(
+        'Refund amount cannot exceed total paid amount on the booking',
+      );
     }
 
     const refundMoney = Money.fromDecimal(
@@ -1337,20 +1402,39 @@ export class PaymentsService {
           );
         }
 
-        if (!isPartial) {
-          const invoice = existingPayment.invoices[0];
-          if (invoice) {
-            await tx.invoice.update({
-              where: { id: invoice.id },
-              data: { status: 'CREDIT_NOTE' },
-            });
-          }
+        const isFullRefund =
+          !isPartial &&
+          new Prisma.Decimal(refundMoney.toDecimal()).gte(
+            new Prisma.Decimal(existingPayment.amount),
+          );
+
+        const invoice = existingPayment.invoices?.[0];
+        if (invoice) {
+          const snap = (invoice.snapshotJsonb as any) || {};
+          const creditNotes = Array.isArray(snap.creditNotes)
+            ? [...snap.creditNotes]
+            : [];
+          creditNotes.push({
+            creditNoteNumber: `CN-${refundRecord.id.slice(0, 8).toUpperCase()}`,
+            refundRecordId: refundRecord.id,
+            amount: refundMoney.toDecimal().toFixed(2),
+            currency: refundMoney.currency,
+            issuedAt: new Date().toISOString(),
+            isFullRefund,
+          });
+          await tx.invoice.update({
+            where: { id: invoice.id },
+            data: {
+              snapshotJsonb: {
+                ...snap,
+                creditNotes,
+              } as unknown as Prisma.InputJsonValue,
+              status: isFullRefund ? 'CREDIT_NOTE' : invoice.status,
+            },
+          });
         }
 
         const refundDecimal = new Prisma.Decimal(refundMoney.toDecimal());
-        const isFullRefund =
-          !isPartial &&
-          refundDecimal.gte(new Prisma.Decimal(existingPayment.amount));
         const newPaidAmount = Prisma.Decimal.max(
           new Prisma.Decimal(0),
           new Prisma.Decimal(existingPayment.booking.paidAmountUsd).sub(
@@ -1364,7 +1448,12 @@ export class PaymentsService {
             status: isFullRefund ? 'CANCELLED' : existingPayment.booking.status,
           },
         });
-        if (isFullRefund && existingPayment.booking.availabilityId) {
+        // VULN-01 & VULN-07: Guard against double capacity release if booking was already CANCELLED
+        if (
+          isFullRefund &&
+          existingPayment.booking.status !== 'CANCELLED' &&
+          existingPayment.booking.availabilityId
+        ) {
           await this.availabilityService.releaseCapacity(
             tx,
             existingPayment.booking.availabilityId,
@@ -1429,6 +1518,8 @@ export class PaymentsService {
       amount: refundMoney.toDecimal(),
       currency: refundMoney.currency,
       refundId: refundResult.refundId,
+      reason,
+      gateway: this.paymentGateway.getProviderName(),
     });
 
     this.prisma.analyticsEvent

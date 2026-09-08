@@ -65,9 +65,14 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
               'https://www.dunastravel.com/payment/return',
             webhook_url:
               'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
-            order_details: 'payment:payment-1',
           }),
         );
+        // BUG-4: order_details must be a valid JSON array of {label,value} objects
+        expect(() => JSON.parse(body.order_details)).not.toThrow();
+        const details = JSON.parse(body.order_details) as Array<{ label: string; value: string }>;
+        expect(Array.isArray(details)).toBe(true);
+        expect(details.some((d) => d.label === 'Booking Reference' && d.value === 'DUNAS-1')).toBe(true);
+        expect(details.some((d) => d.label === 'Payment ID' && d.value === 'payment-1')).toBe(true);
         expect(body.signature).toMatch(/^[A-Za-z0-9+/]+=*$/);
         expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
           'checkout:payment-1',

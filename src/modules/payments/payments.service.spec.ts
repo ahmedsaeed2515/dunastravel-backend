@@ -17,9 +17,10 @@ describe('PaymentsService', () => {
   let service: PaymentsService;
   let prisma: PrismaService;
   let gatewayMock: IPaymentGatewayPort;
+  let module: import('@nestjs/testing').TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         PaymentsService,
         {
@@ -318,6 +319,115 @@ describe('PaymentsService', () => {
         expect.objectContaining({ bookingId: 'bkg-race' }),
       );
       expect(result.providerInvoiceId).toBe('40507');
+    });
+
+    it('BUG-1: uses fresh paymentId as idempotency key when a stale session is expired', async () => {
+      const staleCreatedAt = new Date(Date.now() - 35 * 60 * 1000); // 35 minutes ago — past TTL
+      const stalePayment = {
+        id: 'stale-payment-id',
+        bookingId: 'bkg-stale',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        method: 'GETPAYIN',
+        transactionId: '99999',
+        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=99999',
+        status: 'PENDING',
+        isRefund: false,
+        createdAt: staleCreatedAt,
+      };
+      const mockBooking = {
+        id: 'bkg-stale',
+        status: 'PENDING',
+        totalAmountUsd: new Prisma.Decimal(100),
+        referenceCode: 'REF-STALE',
+        userId: 'usr-123',
+        guestTokenHash: null,
+        tour: { currency: 'USD' },
+        invoice: { currency: 'USD', total: new Prisma.Decimal(100), status: 'DRAFT' },
+        billingInfo: { fullName: 'Stale Customer', email: 'stale@example.com', phone: '+201' },
+        payments: [],
+      };
+
+      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue(mockBooking as never);
+      // First findFirst returns the stale payment (triggers expiry path)
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(stalePayment as never);
+      jest.spyOn(prisma.payment, 'update').mockResolvedValue({ ...stalePayment, status: 'EXPIRED' } as never);
+      jest.spyOn(gatewayMock, 'expireSession').mockResolvedValue(undefined);
+
+      const newPaymentRow = {
+        id: 'new-payment-id',
+        bookingId: 'bkg-stale',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        status: 'PENDING',
+        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=88888',
+        transactionId: '88888',
+        providerPaymentId: '88888',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        createdAt: new Date(),
+      };
+      jest.spyOn(prisma.payment, 'create').mockResolvedValue(newPaymentRow as never);
+      jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
+        providerInvoiceId: '88888',
+        url: 'https://pay.getpayin.com/integration/checkout?invoice_id=88888',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      });
+
+      await service.initiatePayment('bkg-stale', 'usr-123');
+
+      // The idempotency key passed to the gateway MUST use the new paymentId,
+      // NOT stale-payment-id (BUG 1 regression guard).
+      const createSessionCall = (gatewayMock.createSession as jest.Mock).mock.calls[0][0];
+      expect(createSessionCall.idempotencyKey).not.toContain('stale-payment-id');
+      expect(createSessionCall.idempotencyKey).toMatch(/^checkout:[0-9a-f-]{36}$/);
+    });
+
+    it('BUG-2: PAYMENT_EVENTS.INITIATED carries the internal DB UUID not the GetPayIn invoice ID', async () => {
+      const mockBooking = {
+        id: 'bkg-event',
+        status: 'PENDING',
+        totalAmountUsd: new Prisma.Decimal(100),
+        referenceCode: 'REF-EVENT',
+        userId: 'usr-event',
+        guestTokenHash: null,
+        tour: { currency: 'USD' },
+        invoice: { currency: 'USD', total: new Prisma.Decimal(100), status: 'DRAFT' },
+        billingInfo: { fullName: 'Event Customer', email: 'event@example.com', phone: '+201' },
+        payments: [],
+      };
+
+      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue(mockBooking as never);
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
+        providerInvoiceId: '40506',
+        url: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      });
+
+      const dbPaymentId = 'db-uuid-not-40506';
+      jest.spyOn(prisma.payment, 'create').mockResolvedValue({
+        id: dbPaymentId,
+        bookingId: 'bkg-event',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        status: 'PENDING',
+        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        transactionId: '40506',
+        providerPaymentId: '40506',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        createdAt: new Date(),
+      } as never);
+
+      const eventEmitter = module.get<EventEmitter2>(EventEmitter2);
+      const emitSpy = jest.spyOn(eventEmitter, 'emit');
+
+      await service.initiatePayment('bkg-event', 'usr-event');
+
+      const initiatedCall = emitSpy.mock.calls.find(([evt]) => evt === 'payment.initiated');
+      expect(initiatedCall).toBeDefined();
+      // Must be the DB UUID, never the GetPayIn numeric invoice ID string
+      expect(initiatedCall![1].paymentId).toBe(dbPaymentId);
+      expect(initiatedCall![1].paymentId).not.toBe('40506');
     });
   });
 
@@ -677,6 +787,103 @@ describe('PaymentsService', () => {
       expect(
         (prisma.payment.updateMany as jest.Mock).mock.calls.length,
       ).toBeGreaterThan(0);
+
+      const eventEmitter = module.get<EventEmitter2>(EventEmitter2);
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'payment.refunded',
+        expect.objectContaining({
+          bookingId: 'bkg-123',
+          paymentId: 'payment-123',
+          amount: 100,
+          refundId: 'rf-rec-1',
+        }),
+      );
+    });
+
+    it('VULN-01/07: safely refunds a CANCELLED booking without releasing inventory capacity a second time', async () => {
+      const availabilityService = module.get<AvailabilityService>(AvailabilityService);
+      (availabilityService.releaseCapacity as jest.Mock).mockClear();
+
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-cancelled-bkg',
+        amount: new Prisma.Decimal(250),
+        currency: 'USD',
+        method: 'GETPAYIN',
+        transactionId: 'tx-cancelled-bkg',
+        status: 'CAPTURED',
+        bookingId: 'bkg-already-cancelled',
+        booking: {
+          id: 'bkg-already-cancelled',
+          status: 'CANCELLED',
+          totalAmountUsd: new Prisma.Decimal(250),
+          paidAmountUsd: new Prisma.Decimal(250),
+          adults: 2,
+          children: 1,
+          availabilityId: 'avail-slot-101',
+        },
+        invoices: [{ id: 'inv-cn-1', snapshotJsonb: {} }],
+      } as never);
+
+      jest.spyOn(prisma.refundRecord, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(prisma.refundRecord, 'aggregate').mockResolvedValue({ _sum: { amount: null } } as never);
+      jest.spyOn(prisma.refundRecord, 'create').mockResolvedValue({
+        id: 'rf-rec-cancelled-1',
+        status: 'PENDING',
+      } as never);
+      jest.spyOn(gatewayMock, 'refund').mockResolvedValue({
+        providerInvoiceId: 'tx-cancelled-bkg',
+        providerStatus: 'REFUNDED',
+        authCode: '831001',
+        refundAmount: '250.00',
+      });
+
+      const result = await service.refundPayment(
+        'payment-cancelled-bkg',
+        250,
+        'customer requested refund on already cancelled booking',
+        'refund-idem-cancelled-1',
+        { id: 'admin-1', role: 'SUPER_ADMIN' },
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.status).toBe('REFUNDED');
+      // Crucial VULN-01 invariant: releaseCapacity must NOT be called because booking was already CANCELLED
+      expect(availabilityService.releaseCapacity).not.toHaveBeenCalled();
+    });
+
+    it('VULN-07: rejects refund amount exceeding the remaining refundable payment balance', async () => {
+      jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
+        id: 'payment-limit-test',
+        amount: new Prisma.Decimal(100),
+        currency: 'USD',
+        method: 'GETPAYIN',
+        transactionId: 'tx-limit-1',
+        status: 'CAPTURED',
+        bookingId: 'bkg-limit-1',
+        booking: {
+          id: 'bkg-limit-1',
+          status: 'CONFIRMED',
+          totalAmountUsd: new Prisma.Decimal(100),
+          paidAmountUsd: new Prisma.Decimal(100),
+        },
+        invoices: [],
+      } as never);
+
+      // 60 USD was already refunded
+      jest.spyOn(prisma.refundRecord, 'aggregate').mockResolvedValue({
+        _sum: { amount: new Prisma.Decimal(60) },
+      } as never);
+
+      // Attempting to refund 50 USD when only 40 USD remains refundable
+      await expect(
+        service.refundPayment(
+          'payment-limit-test',
+          50,
+          'excessive refund attempt',
+          'refund-idem-limit-1',
+          { id: 'admin-1', role: 'SUPER_ADMIN' },
+        ),
+      ).rejects.toThrow('Refund amount must be between 0.01 and 40.00 USD');
     });
   });
 });

@@ -202,18 +202,17 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       language: 'en',
     };
 
-    it('creates guest booking without JWT authentication (201 Created)', async () => {
+    it('rejects unauthenticated booking creation with 401 Unauthorized (AUTH-REQUIRED)', async () => {
       const res = await request(
         app.getHttpServer() as Parameters<typeof request>[0],
       )
         .post('/api/bookings')
         .set('Idempotency-Key', 'idem-key-unauth')
         .send(validPayload)
-        .expect(201);
+        .expect(401);
 
-      const body = res.body as ApiResponse<typeof mockBookingResponse>;
-      expect(body.success).toBe(true);
-      expect(body.data?.referenceCode).toBe('BKG-A4X7Z2');
+      const body = res.body as ApiResponse;
+      expect(body.success).toBe(false);
     });
 
     it('rejects unauthenticated access to /api/bookings/me with 401 Unauthorized (AUTH-001)', async () => {

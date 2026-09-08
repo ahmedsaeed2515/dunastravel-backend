@@ -55,6 +55,6 @@ import configuration from '../../config/configuration';
     BookingCreatedListener,
     PaymentEventsListener,
   ],
-  exports: [NotificationsService],
+  exports: [NotificationsService, EmailDeliveryService],
 })
 export class NotificationsModule {}

@@ -119,7 +119,10 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
             : {}),
           redirectionUrl: this.requireUrl('GETPAYIN_REDIRECT_URL'),
           webhookUrl: this.requireUrl('GETPAYIN_WEBHOOK_URL'),
-          orderDetails: `payment:${input.paymentId}`,
+          orderDetails: JSON.stringify([
+            { label: 'Booking Reference', value: input.referenceCode },
+            { label: 'Payment ID', value: input.paymentId },
+          ]),
         },
         { idempotencyKey: this.toProviderIdempotencyKey(input.idempotencyKey) },
       ),

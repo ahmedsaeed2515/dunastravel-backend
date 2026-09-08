@@ -208,6 +208,22 @@ export class BookingsService {
       throw new BadRequestException('Invalid idempotency key');
     }
 
+    if (userId) {
+      try {
+        const userRecord = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, isVerified: true, status: true, suspendedAt: true },
+        });
+        if (userRecord && userRecord.isVerified === false) {
+          throw new ForbiddenException(
+            'EMAIL_VERIFICATION_REQUIRED: Please verify your email with the 6-digit OTP code before booking a tour',
+          );
+        }
+      } catch (err: any) {
+        if (err instanceof ForbiddenException) throw err;
+      }
+    }
+
     const requestHash = this.computeRequestHash(dto, userId);
 
     {
@@ -906,6 +922,176 @@ export class BookingsService {
       paymentStatus: (booking.payments ?? [])[0]?.status ?? null,
       paymentAttemptId: (booking.payments ?? [])[0]?.id ?? null,
       createdAt: booking.createdAt.toISOString(),
+    };
+  }
+
+  async getInvoiceByReferenceCode(
+    referenceCode: string,
+    userId?: string,
+    guestToken?: string,
+  ) {
+    const booking = (await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
+      include: {
+        tour: { select: { titleJsonb: true, slug: true } },
+        invoice: true,
+        billingInfo: true,
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        payments: {
+          where: { isRefund: false },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    })) as any;
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    let authorized = false;
+    if (userId && booking.userId === userId) {
+      authorized = true;
+    } else if (guestToken && booking.guestTokenHash) {
+      const computedHash = crypto
+        .createHash('sha256')
+        .update(guestToken)
+        .digest('hex');
+      const hashBufferA = Buffer.from(computedHash, 'utf8');
+      const hashBufferB = Buffer.from(booking.guestTokenHash, 'utf8');
+      if (
+        hashBufferA.length === hashBufferB.length &&
+        crypto.timingSafeEqual(hashBufferA, hashBufferB)
+      ) {
+        authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (!booking.invoice) {
+      const currentYear = new Date().getFullYear();
+      const count = await this.prisma.invoice.count();
+      const invoiceNumber = `INV-${currentYear}-${(count + 1).toString().padStart(4, '0')}`;
+      const totalDec = new Prisma.Decimal(booking.totalAmountUsd);
+      const subtotalVal = totalDec.toFixed(2);
+      const taxVal = '0.00';
+      const totalAmount = totalDec.toNumber();
+      const recipientName = booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest';
+      const recipientEmail = booking.billingInfo?.email || booking.user?.email || 'guest@dunastravel.com';
+
+      const snap = {
+        version: 1,
+        tourTitle: extractI18n(booking.tour?.titleJsonb, 'en') || 'Exclusive Luxury Tour',
+        tourSlug: booking.tour?.slug || 'luxury-tour',
+        arrivalDate: booking.arrivalDate.toISOString().split('T')[0],
+        departureDate: booking.departureDate ? booking.departureDate.toISOString().split('T')[0] : null,
+        adults: booking.adults,
+        children: booking.children,
+        infants: booking.infants,
+        baseSubtotal: subtotalVal,
+        tax: taxVal,
+        total: totalAmount.toFixed(2),
+        currency: 'USD',
+        billingRecipient: {
+          fullName: recipientName,
+          email: recipientEmail,
+          phone: booking.billingInfo?.phone || booking.user?.phone || '—',
+          invoiceType: booking.billingInfo?.invoiceType || 'PERSONAL',
+          companyName: booking.billingInfo?.companyName || null,
+          taxId: booking.billingInfo?.taxId || null,
+          address: booking.billingInfo?.address || null,
+          city: booking.billingInfo?.city || null,
+          country: booking.billingInfo?.country || null,
+        },
+      };
+
+      const isPaid = booking.status === 'CONFIRMED' || Number(booking.paidAmountUsd) >= totalAmount;
+
+      const created = await this.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          bookingId: booking.id,
+          issuedAt: booking.createdAt,
+          status: isPaid ? 'PAID' : 'SENT',
+          subtotal: new Prisma.Decimal(subtotalVal),
+          tax: new Prisma.Decimal(taxVal),
+          total: new Prisma.Decimal(totalAmount.toFixed(2)),
+          currency: 'USD',
+          paymentId: booking.payments[0]?.id || null,
+          snapshotJsonb: snap as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return {
+        id: created.id,
+        invoiceNumber: created.invoiceNumber,
+        bookingId: booking.id,
+        referenceCode: booking.referenceCode,
+        issuedAt: created.issuedAt.toISOString(),
+        status: created.status,
+        subtotal: created.subtotal.toString(),
+        tax: created.tax.toString(),
+        total: created.total.toString(),
+        currency: created.currency,
+        tourTitle: snap.tourTitle,
+        arrivalDate: snap.arrivalDate,
+        departureDate: snap.departureDate,
+        adults: snap.adults,
+        children: snap.children,
+        infants: snap.infants,
+        snapshot: snap,
+        billing: snap.billingRecipient,
+        booking: {
+          referenceCode: booking.referenceCode,
+          status: booking.status,
+          totalAmountUsd: booking.totalAmountUsd.toString(),
+          paidAmountUsd: booking.paidAmountUsd.toString(),
+        },
+        payment: booking.payments[0] || null,
+      };
+    }
+
+    const snap = (booking.invoice.snapshotJsonb as any) || {};
+
+    return {
+      id: booking.invoice.id,
+      invoiceNumber: booking.invoice.invoiceNumber,
+      bookingId: booking.id,
+      referenceCode: booking.referenceCode,
+      issuedAt: booking.invoice.issuedAt.toISOString(),
+      status: booking.invoice.status,
+      subtotal: booking.invoice.subtotal.toString(),
+      tax: booking.invoice.tax.toString(),
+      total: booking.invoice.total.toString(),
+      currency: booking.invoice.currency,
+      tourTitle: snap.tourTitle || extractI18n(booking.tour.titleJsonb, 'en'),
+      arrivalDate: snap.arrivalDate || booking.arrivalDate.toISOString().split('T')[0],
+      departureDate: snap.departureDate || (booking.departureDate ? booking.departureDate.toISOString().split('T')[0] : null),
+      adults: snap.adults ?? booking.adults,
+      children: snap.children ?? booking.children,
+      infants: snap.infants ?? booking.infants,
+      snapshot: snap,
+      billing: snap.billingRecipient || {
+        fullName: booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest',
+        email: booking.billingInfo?.email || booking.user?.email || '—',
+        phone: booking.billingInfo?.phone || booking.user?.phone || '—',
+        invoiceType: booking.billingInfo?.invoiceType || 'PERSONAL',
+        companyName: booking.billingInfo?.companyName || null,
+        taxId: booking.billingInfo?.taxId || null,
+        address: booking.billingInfo?.address || null,
+        city: booking.billingInfo?.city || null,
+        country: booking.billingInfo?.country || null,
+      },
+      booking: {
+        referenceCode: booking.referenceCode,
+        status: booking.status,
+        totalAmountUsd: booking.totalAmountUsd.toString(),
+        paidAmountUsd: booking.paidAmountUsd.toString(),
+      },
+      payment: booking.payments[0] || null,
     };
   }
 

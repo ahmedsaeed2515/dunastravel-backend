@@ -18,6 +18,10 @@ import { UserRole } from '@prisma/client';
 import { AdminTemplatesService } from './admin-templates.service';
 import { CreateEmailTemplateDto } from '../dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from '../dto/update-email-template.dto';
+import {
+  SendTestEmailDto,
+  BroadcastCampaignDto,
+} from '../dto/email-template-broadcast.dto';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../../common/types';
 import { AuditService } from '../../audit/audit.service';
@@ -34,10 +38,68 @@ export class AdminTemplatesController {
     private readonly auditService: AuditService,
   ) {}
 
+  @Get('presets')
+  @ApiOperation({ summary: 'Get built-in luxury email template presets' })
+  getPresets() {
+    return this.adminTemplatesService.getPresets();
+  }
+
   @Get()
   @ApiOperation({ summary: 'List all email templates' })
   async listTemplates() {
     return this.adminTemplatesService.listTemplates();
+  }
+
+  @Post('test-send')
+  @ApiOperation({ summary: 'Send a test email with sample variables' })
+  async sendTestEmail(
+    @Body() dto: SendTestEmailDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const result = await this.adminTemplatesService.sendTestEmail(
+      dto,
+      actor.id,
+    );
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'EMAIL_TEST_SENT',
+      entityType: 'EmailTemplate',
+      entityId: dto.recipientEmail,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    return result;
+  }
+
+  @Post('broadcast')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Broadcast an email campaign to audience' })
+  async broadcastCampaign(
+    @Body() dto: BroadcastCampaignDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const result = await this.adminTemplatesService.broadcastCampaign(
+      dto,
+      actor.id,
+    );
+    await this.auditService.log({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'EMAIL_CAMPAIGN_BROADCAST',
+      entityType: 'EmailCampaign',
+      entityId: result.campaignId,
+      metadata: {
+        recipientGroup: dto.recipientGroup,
+        totalRecipients: result.totalRecipients,
+        sentCount: result.sentCount,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    return result;
   }
 
   @Get(':id')

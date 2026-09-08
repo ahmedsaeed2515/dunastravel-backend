@@ -77,7 +77,7 @@ export class AuthService {
     );
     if (rawVal === true || rawVal === 'true') return true;
     if (rawVal === false || rawVal === 'false') return false;
-    return this.configService.get<string>('nodeEnv') === 'production';
+    return true; // Default to true: real email verification is required
   }
 
   async register(dto: RegisterDto): Promise<SafeUser> {
@@ -97,7 +97,7 @@ export class AuthService {
       ? crypto.createHash('sha256').update(otpCode).digest('hex')
       : null;
     const verifyTokenExp = otpCode
-      ? new Date(Date.now() + 10 * 60 * 1000) // 10 minutes validity
+      ? new Date(Date.now() + 15 * 60 * 1000) // 15 minutes validity
       : null;
     const verifySentAt = otpCode ? new Date() : null;
 
@@ -136,7 +136,9 @@ export class AuthService {
     return this.userService.toSafeUser(user);
   }
 
-  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(
+    dto: VerifyEmailDto,
+  ): Promise<{ message: string; user?: SafeUser }> {
     const rawCodeOrToken = (dto.code || dto.token)?.trim();
     if (!rawCodeOrToken) {
       throw new BadRequestException('Verification code or token is required');
@@ -235,7 +237,12 @@ export class AuthService {
     }
 
     this.logger.log(`Email successfully verified for userId=${user.id}`);
-    return { message: 'Email verified successfully' };
+    const safeUser = this.userService.toSafeUser({
+      ...user,
+      isVerified: true,
+      emailVerifiedAt: new Date(),
+    });
+    return { message: 'Email verified successfully', user: safeUser };
   }
 
   async login(dto: LoginDto, ip: string): Promise<SessionUser> {
@@ -264,7 +271,7 @@ export class AuthService {
 
     if (requireEmailVerification && !user.isVerified) {
       throw new UnauthorizedException(
-        'Please verify your email before logging in',
+        'EMAIL_NOT_VERIFIED: Please verify your email before logging in',
       );
     }
 
@@ -605,7 +612,7 @@ export class AuthService {
       .createHash('sha256')
       .update(otpCode)
       .digest('hex');
-    const verifyTokenExp = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const verifyTokenExp = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes validity
 
     await this.prisma.user.update({
       where: { id: user.id },

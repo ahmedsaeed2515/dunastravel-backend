@@ -49,6 +49,7 @@ describe('AuthService', () => {
     sendVerificationEmail: jest.Mock;
   };
   let settingsService: { getSetting: jest.Mock };
+  let configService: { get: jest.Mock };
   let jwtService: jest.Mocked<JwtService> = undefined as any;
   let prisma: {
     user: {
@@ -189,6 +190,10 @@ describe('AuthService', () => {
       ),
     };
 
+    configService = {
+      get: jest.fn().mockReturnValue('mock-secret-key-at-least-32-chars-long'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -221,11 +226,7 @@ describe('AuthService', () => {
         },
         {
           provide: ConfigService,
-          useValue: {
-            get: jest
-              .fn()
-              .mockReturnValue('mock-secret-key-at-least-32-chars-long'),
-          },
+          useValue: configService,
         },
         {
           provide: PrismaService,
@@ -287,9 +288,31 @@ describe('AuthService', () => {
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should create a new user ready for immediate login in dev test mode', async () => {
+    it('should create an unverified user and dispatch verification email by default', async () => {
       userService.findByEmail.mockResolvedValueOnce(null);
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
+
+      await authService.register(registerDto);
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          isVerified: false,
+          verifyToken: expect.any(String),
+        }),
+      });
+      expect(notificationsService.sendVerificationEmail).toHaveBeenCalledWith(
+        'test@test.com',
+        'Test User',
+        expect.stringMatching(/^\d{6}$/),
+      );
+    });
+
+    it('should create a verified user when requireEmailVerification is explicitly disabled', async () => {
+      userService.findByEmail.mockResolvedValueOnce(null);
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'auth.requireEmailVerification') return false;
+        return 'mock-secret-key-at-least-32-chars-long';
+      });
 
       await authService.register(registerDto);
 

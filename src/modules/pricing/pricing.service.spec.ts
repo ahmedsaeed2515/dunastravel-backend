@@ -56,6 +56,8 @@ describe('PricingService Unit Tests', () => {
       expect(res.childTotalUsd).toBe('50.00');
       expect(res.seasonalAdjustmentUsd).toBe('0.00');
       expect(res.discountAmountUsd).toBe('0.00');
+      expect(res.subtotalUsd).toBe('250.00');
+      expect(res.taxAmountUsd).toBe('0.00');
       expect(res.totalAmountUsd).toBe('250.00');
       expect(res.currency).toBe('USD');
     });

@@ -1,0 +1,3251 @@
+{
+ "info": {
+  "_postman_id": "56b0d3de-5174-468d-ba50-9d7ff9fe2549",
+  "name": "PayLink - Payment Integration API",
+  "description": "## Overview\n\nThe Paylink Payment Integration API enables merchants to seamlessly integrate secure payment processing into their applications.\n\n## How It Works\n\n1. **Payment Initialization** - Call `/api/integration/init` with customer details, order info, and HMAC signature\n2. **Customer Payment** - Redirect customer to the returned `checkout_url`\n3. **Webhooks** - Receive real-time POST notifications for enabled event types at your configured webhook URL\n4. **Return** - On success or failure, the customer is returned based on the integration **Type**: **Website** integrations redirect to your configured **Redirect URL**; **Mobile App** integrations return to your configured **Mobile App Return Scheme** deep link\n\n## v2 Endpoint (signed callbacks)\n\n`POST /api/v2/integration/init` accepts two optional per-request fields — `redirection_url` and `webhook_url` — that override your configured Redirect URL and Webhook URL for that invoice. On v2 both are **included in the signature** and must use HTTPS on your integration's registered domain (its Origin or the matching configured URL host). v2 signature order: `first_name + last_name + email + order_title + order_amount + address + city + country + state + currency + redirection_url + webhook_url + order_details`. `redirection_url` is not supported for Mobile App integrations. See the API reference for the full v2 schema.\n\n## Setup\n\n1. Log in to your Paylink dashboard\n2. Navigate to **Settings > Payment Integrations**\n3. Click **Add Integration** and configure:\n   - **Name**: Friendly name for the integration\n   - **Origin**: Your website domain\n   - **Type**: `Website` or `Mobile App` (choose Mobile App only for native-app checkouts; existing integrations default to Website)\n   - **Webhook URL**: Endpoint to receive payment notifications\n   - **Redirect URL**: Where website customers return after payment\n   - **Mobile App Return Scheme**: (Mobile App only) custom-scheme deep link, e.g. `payindemo://payment-return`\n4. Enable desired **Webhook Events** (defaults: `invoice.paid`, `invoice.not_paid`)\n5. Copy the **Authentication Token** and **Hash Token**\n\n## Variables\n\nSet these collection variables before making requests:\n- `base_url` - API base URL (default: https://pay.getpayin.com)\n- `auth_token` - Your integration's authentication token\n- `hash_token` - Your secret hash token (used for signature generation)\n\n## Testing Cards\n\nIn the **sandbox/test environment**, payment outcomes are driven by the **transaction amount** and by the card data you enter - not by special \"decline card numbers\". Use a valid test card from the table below and set the amount to a trigger value to simulate an approval or a specific decline.\n\n> **Important:** Test cards from other providers (for example `4000 0000 0000 0127` or `4000 0000 0000 0069`) do **not** work here. The sandbox authorizes any well-formed card number, so they return a successful/PAID result. Use the cards and amounts on this page instead.\n\n### Test Cards\n\n| Card Type | Card Number | Expiry | CVV |\n|-----------|-------------|--------|-----|\n| Visa | 4111 1111 1111 1111 | Any future date | Any 3 digits |\n| Mastercard | 5555 5555 5555 4444 | Any future date | Any 3 digits |\n| Mastercard (2-series) | 2222 4200 0000 1113 | Any future date | Any 3 digits |\n\n### Simulating Declines\n\nUse any valid test card above and set the **transaction amount** to one of these values to force a specific decline:\n\n| Amount | Result |\n|--------|--------|\n| 4051.00 | Insufficient funds |\n| 4054.00 | Expired card |\n| 4005.00 | Do not honor (general decline) |\n| 4043.00 | Stolen card |\n| 4041.00 | Lost card |\n| 7001.00 | Rejected - invalid card |\n\nYou can also force a failure with invalid card data:\n\n| Input | Result |\n|-------|--------|\n| Card `4111 1111 1111 1112` (invalid checksum) | Declined |\n| Past expiry year (e.g. `1998`) | Declined |\n| Amount `-1` or `100000000000` | Invalid request |\n\nA declined payment returns `success=0` and leaves the invoice unpaid - no booking is confirmed.\n\n> **Note:** These triggers work only in the sandbox/test environment, never in production. In production, use real card details.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "_exporter_id": "37272210",
+  "_collection_link": "https://go.postman.co/collection/37272210-56b0d3de-5174-468d-ba50-9d7ff9fe2549?source=collection_link"
+ },
+ "item": [
+  {
+   "name": "Payment Integration",
+   "item": [
+    {
+     "name": "Initialize Payment",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "",
+         "    const firstName = getValue('first_name');",
+         "    const lastName = getValue('last_name');",
+         "    const email = getValue('email');",
+         "    const orderTitle = getValue('order_title');",
+         "    const orderAmount = getValue('order_amount');",
+         "    const address = getValue('address');",
+         "    const city = getValue('city');",
+         "    const country = getValue('country');",
+         "    const state = getValue('state');",
+         "    const currency = getValue('currency');",
+         "",
+         "    const concatenated = firstName + lastName + email + orderTitle + orderAmount + address + city + country + state + currency;",
+         "",
+         "    // Use pmlib crypto (no CryptoJS dependency)",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "",
+         "    // Set signature via collection variable (avoids formdata.upsert bug)",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 200', function () {",
+         "    pm.response.to.have.status(200);",
+         "});",
+         "",
+         "pm.test('Response contains checkout_url', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('checkout_url');",
+         "    pm.expect(jsonData.data).to.have.property('invoice_id');",
+         "    pm.expect(jsonData.data).to.have.property('expires_at');",
+         "    console.log('Checkout URL: ' + jsonData.data.checkout_url);",
+         "    console.log('Invoice ID: ' + jsonData.data.invoice_id);",
+         "    console.log('Expires at: ' + jsonData.data.expires_at);",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"order_title\": \"Test Order\",\n  \"order_amount\": \"250\",\n  \"address\": \"Baker Street\",\n  \"city\": \"6th Of October\",\n  \"country\": \"EG\",\n  \"state\": \"Giza\",\n  \"currency\": \"EGP\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/init",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "init"
+       ]
+      },
+      "description": "Initialize a payment checkout session.\n\n**How it works:**\n1. Send customer details, order info, and signature\n2. Receive a `checkout_url` to redirect the customer to\n3. Customer completes payment on PayLink's hosted page\n4. You receive webhook notifications and customer is redirected back\n\n**Signature Generation:**\nThe pre-request script automatically generates the HMAC-SHA256 signature. Just ensure `hash_token` is set in collection variables.\n\nManual signature generation:\n1. Concatenate: first_name + last_name + email + order_title + order_amount + address + city + country + state + currency\n2. HMAC-SHA256 with your hash_token\n\nAll of address, city, country, and state are optional; include a field in the concatenation only when you send it (send them to prefill the checkout billing form). country must be an ISO 3166-1 alpha-2 code; for US/CA, state must be the 2-letter state/province code.\n3. Base64 encode the result\n\n**Response:**\n```json\n{\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?...\",\n    \"invoice_id\": 40506,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  },\n  \"success\": true\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success Response",
+       "originalRequest": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "your-auth-token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "John",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "john.doe@example.com",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Test Order",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "250",
+           "type": "text"
+          },
+          {
+           "key": "address",
+           "value": "Baker Street",
+           "type": "text"
+          },
+          {
+           "key": "city",
+           "value": "6th Of October",
+           "type": "text"
+          },
+          {
+           "key": "country",
+           "value": "Egypt",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "type": "text"
+          },
+          {
+           "key": "signature",
+           "value": "generated-signature",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "init"
+         ]
+        }
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40506&order_title=Test%20Order&signature=f18e03b546e60031152e7dd3e13de788727ac814b71118236fef6f688f3bef99\",\n    \"invoice_id\": 40506,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  },\n  \"success\": true\n}"
+      },
+      {
+       "name": "Error Response - Invalid Signature",
+       "originalRequest": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "your-auth-token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "John",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "john.doe@example.com",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Test Order",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "250",
+           "type": "text"
+          },
+          {
+           "key": "address",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "city",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "country",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "type": "text"
+          },
+          {
+           "key": "signature",
+           "value": "invalid-signature",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "init"
+         ]
+        }
+       },
+       "status": "Forbidden",
+       "code": 403,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": [],\n  \"success\": false,\n  \"message\": \"Invalid signature\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "Initialize Payment (v2)",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "",
+         "    const firstName = getValue('first_name');",
+         "    const lastName = getValue('last_name');",
+         "    const email = getValue('email');",
+         "    const orderTitle = getValue('order_title');",
+         "    const orderAmount = getValue('order_amount');",
+         "    const address = getValue('address');",
+         "    const city = getValue('city');",
+         "    const country = getValue('country');",
+         "    const state = getValue('state');",
+         "    const currency = getValue('currency');",
+         "    const redirectionUrl = getValue('redirection_url');",
+         "    const webhookUrl = getValue('webhook_url');",
+         "    const orderDetails = getValue('order_details');",
+         "",
+         "    const concatenated = firstName + lastName + email + orderTitle + orderAmount + address + city + country + state + currency + redirectionUrl + webhookUrl + orderDetails;",
+         "",
+         "    // Use pmlib crypto (no CryptoJS dependency)",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "",
+         "    // Set signature via collection variable (avoids formdata.upsert bug)",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 200', function () {",
+         "    pm.response.to.have.status(200);",
+         "});",
+         "",
+         "pm.test('Response contains checkout_url', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('checkout_url');",
+         "    pm.expect(jsonData.data).to.have.property('invoice_id');",
+         "    pm.expect(jsonData.data).to.have.property('expires_at');",
+         "    console.log('Checkout URL: ' + jsonData.data.checkout_url);",
+         "    console.log('Invoice ID: ' + jsonData.data.invoice_id);",
+         "    console.log('Expires at: ' + jsonData.data.expires_at);",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Idempotency-Key",
+        "value": "init-req-0001",
+        "description": "[OPTIONAL] Idempotency key. Replaying the same key returns the original invoice and checkout_url instead of creating a duplicate. Enable to use.",
+        "disabled": true
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"order_title\": \"Test Order\",\n  \"order_amount\": \"250\",\n  \"address\": \"Baker Street\",\n  \"city\": \"6th Of October\",\n  \"country\": \"EG\",\n  \"state\": \"Giza\",\n  \"currency\": \"EGP\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/init",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "init"
+       ]
+      },
+      "description": "Initialize a payment checkout session (v2).\n\n**v2 adds** optional per-request `redirection_url` and `webhook_url` (override your configured Redirect/Webhook URLs for this invoice) and **signs** `redirection_url`, `webhook_url`, and `order_details`. Both URLs must be HTTPS on your integration's registered domain (Origin or the matching configured URL host); `redirection_url` is not supported for Mobile App integrations.\n\n**Signature (v2):** base64(HMAC-SHA256) of: first_name + last_name + email + order_title + order_amount + address + city + country + state + currency + redirection_url + webhook_url + order_details. The pre-request script generates it automatically and skips disabled fields — enable redirection_url/webhook_url/order_details (and set them to your registered domain) to use them.\n\n**Installments (Pay in N):** set `installments_enabled=true` and `installments=<N>` to charge this order as a fixed installment plan instead of a single payment. Both fields are optional and NOT part of the signature. The customer sees the fixed schedule and authorises the scheduled charges before paying; the first installment is charged at checkout and the rest are scheduled to the saved card. `installments` must match a plan count your company offers and requires the Installments capability.\n\n**Response:** same shape as v1 (`checkout_url`, `invoice_id`, `expires_at`)."
+     },
+     "response": [
+      {
+       "name": "Success Response",
+       "originalRequest": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "your-auth-token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "John",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "john.doe@example.com",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Test Order",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "250",
+           "type": "text"
+          },
+          {
+           "key": "address",
+           "value": "Baker Street",
+           "type": "text"
+          },
+          {
+           "key": "city",
+           "value": "6th Of October",
+           "type": "text"
+          },
+          {
+           "key": "country",
+           "value": "Egypt",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "type": "text"
+          },
+          {
+           "key": "signature",
+           "value": "generated-signature",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "init"
+         ]
+        }
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40506&order_title=Test%20Order&signature=f18e03b546e60031152e7dd3e13de788727ac814b71118236fef6f688f3bef99\",\n    \"invoice_id\": 40506,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  },\n  \"success\": true\n}"
+      },
+      {
+       "name": "Error Response - Invalid Signature",
+       "originalRequest": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "your-auth-token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "John",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "john.doe@example.com",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Test Order",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "250",
+           "type": "text"
+          },
+          {
+           "key": "address",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "city",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "country",
+           "value": "",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "type": "text"
+          },
+          {
+           "key": "signature",
+           "value": "invalid-signature",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "init"
+         ]
+        }
+       },
+       "status": "Forbidden",
+       "code": 403,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": [],\n  \"success\": false,\n  \"message\": \"Invalid signature\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "VCC Charge (v2)",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature for the VCC charge",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "",
+         "    // Signed field order (everything except token and signature).",
+         "    const concatenated = getValue('first_name') + getValue('last_name') + getValue('email')",
+         "        + getValue('phone') + getValue('currency_id') + getValue('price') + getValue('product')",
+         "        + getValue('reference_number') + getValue('card_number') + getValue('card_expiry_month')",
+         "        + getValue('card_expiry_year') + getValue('card_cvv') + getValue('country')",
+         "        + getValue('address') + getValue('city') + getValue('us_state')",
+         "        + getValue('canada_state') + getValue('postal_code');",
+         "",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 200', function () {",
+         "    pm.response.to.have.status(200);",
+         "});",
+         "",
+         "pm.test('Charge succeeded', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('invoice_id');",
+         "    pm.expect(jsonData.data).to.have.property('invoice_number');",
+         "    pm.expect(jsonData.data).to.have.property('paid_status');",
+         "    console.log('Invoice ID: ' + jsonData.data.invoice_id);",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Idempotency-Key",
+        "value": "vcc-req-0001",
+        "description": "[OPTIONAL] Idempotency key. Replaying the same key after a transient failure returns the original charge instead of charging the card again. Enable to use.",
+        "disabled": true
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"phone\": \"+201000000000\",\n  \"currency_id\": \"1\",\n  \"price\": \"100\",\n  \"product\": \"Order #1234\",\n  \"reference_number\": \"REF-1234\",\n  \"card_number\": \"4111111111111111\",\n  \"card_expiry_month\": \"12\",\n  \"card_expiry_year\": \"2030\",\n  \"card_cvv\": \"123\",\n  \"country\": \"EG\",\n  \"address\": \"Baker Street\",\n  \"city\": \"Cairo\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/vcc/charge",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "vcc",
+        "charge"
+       ]
+      },
+      "description": "Charge a Virtual Credit Card server-to-server, authenticated by the integration token + HMAC-SHA256 signature (same scheme as v2 init). Requires the VCC module and an active VCC subscription. Sends raw card data — call only from a PCI-compliant backend."
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "Payment Operations",
+   "item": [
+    {
+     "name": "Void Payment",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(String(body.invoice_id), hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/void",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "void"
+       ]
+      },
+      "description": "Voids a paid invoice within 24 hours of payment. The full payment is reversed and the invoice returns to unpaid state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"VOIDED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been voided successfully.\"\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/void",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "void"
+         ]
+        },
+        "description": "Voids a paid invoice within 24 hours of payment. The full payment is reversed and the invoice returns to unpaid state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"VOIDED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been voided successfully.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"VOIDED\", \"auth_code\": \"831000\"\n  },\n  \"success\": true,\n  \"message\": \"Invoice has been voided successfully.\"\n}"
+      },
+      {
+       "name": "Error - Not voidable",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/void",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "void"
+         ]
+        },
+        "description": "Voids a paid invoice within 24 hours of payment. The full payment is reversed and the invoice returns to unpaid state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"VOIDED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been voided successfully.\"\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": null,\n  \"success\": false,\n  \"message\": \"Invoice is not in a voidable state.\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "Refund Payment",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(String(body.invoice_id) + String(body.amount), hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Idempotency-Key",
+        "value": "refund-req-0001",
+        "description": "[OPTIONAL] Idempotency key. Replaying the same key returns the original refund instead of refunding again. Enable to use.",
+        "disabled": true
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 100.00,\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/refund",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "refund"
+       ]
+      },
+      "description": "Refunds a paid or partially refunded invoice. Supports partial refunds by specifying the amount.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00 },\n  \"success\": true,\n  \"message\": \"Invoice has been fully refunded.\"\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success - Full refund",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 100.00,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/refund",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "refund"
+         ]
+        },
+        "description": "Refunds a paid or partially refunded invoice. Supports partial refunds by specifying the amount.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00 },\n  \"success\": true,\n  \"message\": \"Invoice has been fully refunded.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00\n  },\n  \"success\": true,\n  \"message\": \"Invoice has been fully refunded.\"\n}"
+      },
+      {
+       "name": "Success - Partial refund",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 100.00,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/refund",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "refund"
+         ]
+        },
+        "description": "Refunds a paid or partially refunded invoice. Supports partial refunds by specifying the amount.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00 },\n  \"success\": true,\n  \"message\": \"Invoice has been fully refunded.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"PARTIALLY_REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00\n  },\n  \"success\": true,\n  \"message\": \"Partial refund processed successfully.\"\n}"
+      },
+      {
+       "name": "Error - Not refundable",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 100.00,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/refund",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "refund"
+         ]
+        },
+        "description": "Refunds a paid or partially refunded invoice. Supports partial refunds by specifying the amount.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REFUNDED\", \"auth_code\": \"831000\", \"refund_amount\": 100.00 },\n  \"success\": true,\n  \"message\": \"Invoice has been fully refunded.\"\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": null,\n  \"success\": false,\n  \"message\": \"Invoice is not in a refundable state.\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "Settle (Capture) Payment",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(String(body.invoice_id) + String(body.amount), hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 250.00,\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/settle",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "settle"
+       ]
+      },
+      "description": "Captures (settles) a previously authorized payment. Only available for invoices created with `payment_mode: authorize`. Supports partial captures.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been settled successfully.\"\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 250.00,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/settle",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "settle"
+         ]
+        },
+        "description": "Captures (settles) a previously authorized payment. Only available for invoices created with `payment_mode: authorize`. Supports partial captures.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been settled successfully.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"PAID\", \"auth_code\": \"831000\"\n  },\n  \"success\": true,\n  \"message\": \"Invoice has been settled successfully.\"\n}"
+      },
+      {
+       "name": "Error - Not authorized",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"amount\": 250.00,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/settle",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "settle"
+         ]
+        },
+        "description": "Captures (settles) a previously authorized payment. Only available for invoices created with `payment_mode: authorize`. Supports partial captures.\n\n**Signature:** HMAC-SHA256 of `invoice_id` + `amount` concatenated (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Invoice has been settled successfully.\"\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": null,\n  \"success\": false,\n  \"message\": \"Invoice is no longer in an authorized state.\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "Reverse Authorization",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(String(body.invoice_id), hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/reverse-authorization",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "reverse-authorization"
+       ]
+      },
+      "description": "Reverses (voids) a previously authorized payment that has not yet been captured. Only available for invoices created with `payment_mode: authorize` that have not been settled.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REVERSED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Authorization has been reversed successfully.\"\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/reverse-authorization",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "reverse-authorization"
+         ]
+        },
+        "description": "Reverses (voids) a previously authorized payment that has not yet been captured. Only available for invoices created with `payment_mode: authorize` that have not been settled.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REVERSED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Authorization has been reversed successfully.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"REVERSED\", \"auth_code\": \"831000\"\n  },\n  \"success\": true,\n  \"message\": \"Authorization has been reversed successfully.\"\n}"
+      },
+      {
+       "name": "Error - Not authorized",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/reverse-authorization",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "reverse-authorization"
+         ]
+        },
+        "description": "Reverses (voids) a previously authorized payment that has not yet been captured. Only available for invoices created with `payment_mode: authorize` that have not been settled.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"REVERSED\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Authorization has been reversed successfully.\"\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": null,\n  \"success\": false,\n  \"message\": \"Invoice is not in an authorized state.\"\n}"
+      }
+     ]
+    },
+    {
+     "name": "Check Gateway Status",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(String(body.invoice_id), hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/integration/check-status",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "integration",
+        "check-status"
+       ]
+      },
+      "description": "Checks the payment status directly with the payment gateway and syncs the invoice status. Useful when webhook delivery fails or you need to verify the current state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Payment confirmed at the gateway. Invoice has been marked as paid.\"\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/check-status",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "check-status"
+         ]
+        },
+        "description": "Checks the payment status directly with the payment gateway and syncs the invoice status. Useful when webhook delivery fails or you need to verify the current state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Payment confirmed at the gateway. Invoice has been marked as paid.\"\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": {\n    \"invoice_id\": 40506,\n    \"paid_status\": \"PAID\", \"auth_code\": \"831000\"\n  },\n  \"success\": true,\n  \"message\": \"Payment confirmed at the gateway. Invoice has been marked as paid.\"\n}"
+      },
+      {
+       "name": "Error - No transaction found",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"invoice_id\": 40506,\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/integration/check-status",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "integration",
+          "check-status"
+         ]
+        },
+        "description": "Checks the payment status directly with the payment gateway and syncs the invoice status. Useful when webhook delivery fails or you need to verify the current state.\n\n**Signature:** HMAC-SHA256 of `invoice_id` only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"data\": { \"invoice_id\": 40506, \"paid_status\": \"PAID\", \"auth_code\": \"831000\" },\n  \"success\": true,\n  \"message\": \"Payment confirmed at the gateway. Invoice has been marked as paid.\"\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"data\": null,\n  \"success\": false,\n  \"message\": \"No transaction found at the payment gateway for this invoice.\"\n}"
+      }
+     ]
+    }
+   ],
+   "description": "Post-payment operations including void, refund, settle (capture), reverse authorization, and gateway status checks. These endpoints use HMAC-SHA256 signature verification with your hash_token."
+  },
+  {
+   "name": "Card Tokenization",
+   "description": "Vault a card via secure network tokenization and charge the saved token later (MIT or CIT). Same HMAC-SHA256 auth as the other integration endpoints; the raw-PAN tokenize call must be made from a PCI-compliant backend. This capability must be enabled for your account (contact the business team).",
+   "item": [
+    {
+     "name": "Tokenize Card (v2)",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature for the tokenize request",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "    // Signed field order (everything except token and signature).",
+         "    const concatenated = getValue('first_name') + getValue('last_name') + getValue('email') + getValue('customer_reference') + getValue('external_reference') + getValue('card_number') + getValue('card_expiry_month') + getValue('card_expiry_year') + getValue('card_cvv') + getValue('country') + getValue('address') + getValue('city') + getValue('us_state') + getValue('canada_state') + getValue('postal_code');",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 201', function () { pm.response.to.have.status(201); });",
+         "pm.test('Card tokenized', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('token');",
+         "    pm.collectionVariables.set('card_token', jsonData.data.token);",
+         "    console.log('Card token: ' + jsonData.data.token);",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"customer_reference\": \"cust-42\",\n  \"external_reference\": \"tok-req-1\",\n  \"card_number\": \"4111111111111111\",\n  \"card_expiry_month\": \"12\",\n  \"card_expiry_year\": \"2030\",\n  \"card_cvv\": \"123\",\n  \"country\": \"EG\",\n  \"address\": \"Baker Street\",\n  \"city\": \"Cairo\",\n  \"us_state\": \"\",\n  \"canada_state\": \"\",\n  \"postal_code\": \"\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/tokens/card",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "tokens",
+        "card"
+       ]
+      }
+     }
+    },
+    {
+     "name": "Charge Token (v2)",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature for the token charge",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "    // Signed field order (everything except token and signature).",
+         "    const concatenated = getValue('card_token') + getValue('initiator') + getValue('first_name') + getValue('last_name') + getValue('email') + getValue('currency') + getValue('price') + getValue('product') + getValue('reference_number') + getValue('country') + getValue('address') + getValue('city') + getValue('us_state') + getValue('canada_state') + getValue('postal_code');",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 201', function () { pm.response.to.have.status(201); });",
+         "pm.test('Charge succeeded', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('invoice_id');",
+         "    console.log('Invoice ID: ' + jsonData.data.invoice_id);",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Idempotency-Key",
+        "value": "tok-req-0001",
+        "description": "[OPTIONAL] Idempotency key. Replaying the same key after a transient failure returns the original charge instead of charging the stored card again. Enable to use.",
+        "disabled": true
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"card_token\": \"{{card_token}}\",\n  \"initiator\": \"merchant\",\n  \"currency\": \"EGP\",\n  \"price\": \"100\",\n  \"product\": \"Order #1234\",\n  \"reference_number\": \"REF-1234\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/tokens/charge",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "tokens",
+        "charge"
+       ]
+      },
+      "description": "Charge a previously vaulted card token as a merchant-initiated (MIT) or customer-initiated (CIT) transaction.\n\n**Billing is optional.** When you omit the cardholder name and address, the charge reuses the customer captured when the card was tokenized and the gateway falls back to the billing stored on the token — so a saved card can be re-charged with only `card_token`, `initiator`, `currency`, `price`, and `product`. To override the stored billing, add `first_name`, `last_name`, `email`, `country`, `address`, `city` (plus `us_state`/`canada_state` and `postal_code` for US/CA).\n\n**Signature order:** `card_token + initiator + first_name + last_name + email + currency + price + product + reference_number + country + address + city + us_state + canada_state + postal_code` — concatenate only the fields you actually send, in that order, then HMAC-SHA256 with your `hash_token` and base64-encode. The pre-request script does this automatically.\n\n**Idempotency:** send an `Idempotency-Key` header; replaying the same key after a transient failure returns the original charge instead of charging the card again."
+     }
+    },
+    {
+     "name": "Revoke Token (v2)",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature for the token revoke",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "    // Signed field order (everything except token and signature).",
+         "    const concatenated = getValue('card_token');",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "pm.test('Response status is 200', function () { pm.response.to.have.status(200); });",
+         "pm.test('Token revoked', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "});"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"card_token\": \"{{card_token}}\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/tokens/revoke",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "tokens",
+        "revoke"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Recurring Subscriptions",
+   "item": [
+    {
+     "name": "Create Recurring Mandate",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "// Auto-generate HMAC-SHA256 signature for recurring/init",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set. Please set it in collection variables.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "",
+         "    const getValue = (key) => (body[key] === undefined || body[key] === null) ? '' : pm.variables.replaceIn(String(body[key]));",
+         "",
+         "    // Fields in rule definition order, excluding token/signature/payment_mode",
+         "    // Nullable fields are included only when present (not disabled)",
+         "    const requiredFields = [",
+         "        getValue('first_name'),",
+         "        getValue('last_name'),",
+         "        getValue('email'),",
+         "        getValue('order_title'),",
+         "        getValue('order_amount'),",
+         "        getValue('currency'),",
+         "        getValue('cadence_interval'),",
+         "        getValue('cadence_count'),",
+         "    ];",
+         "    const optionalFields = [",
+         "        getValue('total_cycles'),",
+         "        getValue('end_date'),",
+         "    ];",
+         "    const afterOptional = [",
+         "        getValue('consent_text'),",
+         "    ];",
+         "    const trailingOptional = [",
+         "        getValue('external_reference'),",
+         "        getValue('redirection_url'),",
+         "        getValue('webhook_url'),",
+         "    ];",
+         "",
+         "    // Filter out null (absent/disabled) optional fields",
+         "    const allFields = [",
+         "        ...requiredFields,",
+         "        ...optionalFields.filter(v => v !== null),",
+         "        ...afterOptional,",
+         "        ...trailingOptional.filter(v => v !== null),",
+         "    ];",
+         "",
+         "    const concatenated = allFields.join('');",
+         "    const signature = CryptoJS.HmacSHA256(concatenated, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ]
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Response status is 200', function () {",
+         "    pm.response.to.have.status(200);",
+         "});",
+         "",
+         "pm.test('Response contains mandate_id and checkout_url', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('checkout_url');",
+         "    pm.expect(jsonData.data).to.have.property('mandate_id');",
+         "    pm.expect(jsonData.data).to.have.property('invoice_id');",
+         "    pm.expect(jsonData.data).to.have.property('expires_at');",
+         "    // Store mandate_id for subsequent requests",
+         "    pm.collectionVariables.set('mandate_id', jsonData.data.mandate_id);",
+         "    console.log('Mandate ID: ' + jsonData.data.mandate_id);",
+         "    console.log('Checkout URL: ' + jsonData.data.checkout_url);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Idempotency-Key",
+        "value": "sub-req-0001",
+        "description": "[OPTIONAL] Dedup key used when external_reference is omitted. Replaying with the same terms returns the original mandate; different terms return 409. Enable to use.",
+        "disabled": true
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"order_title\": \"Monthly Premium Plan\",\n  \"order_amount\": \"99.99\",\n  \"currency\": \"EGP\",\n  \"cadence_interval\": \"month\",\n  \"cadence_count\": \"1\",\n  \"consent_text\": \"By subscribing you authorise monthly charges of EGP 99.99 until cancelled.\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/recurring/init",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "recurring",
+        "init"
+       ]
+      },
+      "description": "Creates a subscription mandate and the first setup invoice. Returns a `checkout_url` to redirect the subscriber for the first (3DS-authenticated) payment.\n\n**Signature (init):** Concatenate all provided validated fields (no delimiter) in rule order, excluding `token`, `signature`, and `payment_mode`. HMAC-SHA256 with hash_token, base64-encode.\n\nField order: `first_name + last_name + email + order_title + order_amount + currency + cadence_interval + cadence_count + [total_cycles if enabled] + [end_date if enabled] + consent_text + [external_reference if enabled] + [redirection_url if enabled] + [webhook_url if enabled]`\n\nThe pre-request script generates the signature automatically. Disable optional fields to exclude them from the signature.\n\n**Idempotency:** The dedup key is `external_reference` when provided; otherwise the `Idempotency-Key` request header. Deduplication is scoped to `(company, integration, key)`. A replay with the **same terms** returns the same `mandate_id` with a fresh `checkout_url`. A replay with **different terms** returns **409 Conflict** — the compared terms are `order_amount`, `currency`, `cadence_interval`, `cadence_count`, `total_cycles`, and `end_date`. Reusing a reference whose subscription is `cancelled`, `failed`, or `completed` starts a **new** subscription (the old mandate is preserved).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?...\",\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"invoice_id\": 40601,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  }\n}\n```\nThe test script stores `mandate_id` in `{{mandate_id}}` for subsequent requests."
+     },
+     "response": [
+      {
+       "name": "Success Response",
+       "originalRequest": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "your-auth-token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "Jane",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "jane.doe@example.com",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Monthly Premium Plan",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "99.99",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "type": "text"
+          },
+          {
+           "key": "cadence_interval",
+           "value": "month",
+           "type": "text"
+          },
+          {
+           "key": "cadence_count",
+           "value": "1",
+           "type": "text"
+          },
+          {
+           "key": "consent_text",
+           "value": "By subscribing you authorise monthly charges of EGP 99.99 until cancelled.",
+           "type": "text"
+          },
+          {
+           "key": "signature",
+           "value": "generated-signature",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "init"
+         ]
+        }
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": true,\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40601&order_title=Monthly+Premium+Plan&signature=abc123\",\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"invoice_id\": 40601,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  }\n}"
+      },
+      {
+       "name": "Error Response - Invalid Signature",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Idempotency-Key",
+          "value": "sub-req-0001",
+          "description": "[OPTIONAL] Dedup key used when external_reference is omitted. Replaying with the same terms returns the original mandate; different terms return 409. Enable to use.",
+          "disabled": true
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "{{auth_token}}",
+           "description": "Your integration's public authentication token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "Jane",
+           "description": "Subscriber's first name",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "description": "Subscriber's last name",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "jane.doe@example.com",
+           "description": "Subscriber's email address",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Monthly Premium Plan",
+           "description": "Subscription plan title shown at checkout",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "99.99",
+           "description": "Amount charged per cycle (must be > 0)",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "description": "ISO currency code (EGP, USD, EUR, etc.)",
+           "type": "text"
+          },
+          {
+           "key": "cadence_interval",
+           "value": "month",
+           "description": "Billing interval unit: day|week|month|year",
+           "type": "text"
+          },
+          {
+           "key": "cadence_count",
+           "value": "1",
+           "description": "Number of interval units between charges (min 1)",
+           "type": "text"
+          },
+          {
+           "key": "total_cycles",
+           "value": "12",
+           "description": "[OPTIONAL] Total billing cycles including setup charge. Omit or set null for open-ended subscription.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "end_date",
+           "value": "2027-01-01",
+           "description": "[OPTIONAL] Hard end date (future date, format: YYYY-MM-DD).",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "consent_text",
+           "value": "By subscribing you authorise monthly charges of EGP 99.99 until cancelled.",
+           "description": "Subscription terms shown to and accepted by the cardholder (max 2000 chars)",
+           "type": "text"
+          },
+          {
+           "key": "external_reference",
+           "value": "sub_customer_789",
+           "description": "[OPTIONAL] Your own subscription ID for idempotency. Replayed requests with the same value return the original mandate.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "redirection_url",
+           "value": "https://your-domain.com/subscription/return",
+           "description": "[OPTIONAL] HTTPS redirect URL after first checkout. Must be on your registered domain. Included in signature.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "webhook_url",
+           "value": "https://your-domain.com/api/subscription/webhook",
+           "description": "[OPTIONAL] Per-request webhook URL override. Must be HTTPS on your registered domain. Included in signature.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "signature",
+           "value": "{{generated_signature}}",
+           "description": "HMAC-SHA256 signature (auto-generated by pre-request script)",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "init"
+         ]
+        },
+        "description": "Creates a subscription mandate and the first setup invoice. Returns a `checkout_url` to redirect the subscriber for the first (3DS-authenticated) payment.\n\n**Signature (init):** Concatenate all provided validated fields (no delimiter) in rule order, excluding `token`, `signature`, and `payment_mode`. HMAC-SHA256 with hash_token, base64-encode.\n\nField order: `first_name + last_name + email + order_title + order_amount + currency + cadence_interval + cadence_count + [total_cycles if enabled] + [end_date if enabled] + consent_text + [external_reference if enabled] + [redirection_url if enabled] + [webhook_url if enabled]`\n\nThe pre-request script generates the signature automatically. Disable optional fields to exclude them from the signature.\n\n**Idempotency:** The dedup key is `external_reference` when provided; otherwise the `Idempotency-Key` request header. Deduplication is scoped to `(company, integration, key)`. A replay with the **same terms** returns the same `mandate_id` with a fresh `checkout_url`. A replay with **different terms** returns **409 Conflict** — the compared terms are `order_amount`, `currency`, `cadence_interval`, `cadence_count`, `total_cycles`, and `end_date`. Reusing a reference whose subscription is `cancelled`, `failed`, or `completed` starts a **new** subscription (the old mandate is preserved).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?...\",\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"invoice_id\": 40601,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  }\n}\n```\nThe test script stores `mandate_id` in `{{mandate_id}}` for subsequent requests."
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"signature\": [\"Invalid signature.\"]\n  }\n}"
+      },
+      {
+       "name": "Error - Idempotency conflict (different terms)",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Idempotency-Key",
+          "value": "sub-req-0001",
+          "description": "[OPTIONAL] Dedup key used when external_reference is omitted. Replaying with the same terms returns the original mandate; different terms return 409. Enable to use.",
+          "disabled": true
+         }
+        ],
+        "body": {
+         "mode": "formdata",
+         "formdata": [
+          {
+           "key": "token",
+           "value": "{{auth_token}}",
+           "description": "Your integration's public authentication token",
+           "type": "text"
+          },
+          {
+           "key": "first_name",
+           "value": "Jane",
+           "description": "Subscriber's first name",
+           "type": "text"
+          },
+          {
+           "key": "last_name",
+           "value": "Doe",
+           "description": "Subscriber's last name",
+           "type": "text"
+          },
+          {
+           "key": "email",
+           "value": "jane.doe@example.com",
+           "description": "Subscriber's email address",
+           "type": "text"
+          },
+          {
+           "key": "order_title",
+           "value": "Monthly Premium Plan",
+           "description": "Subscription plan title shown at checkout",
+           "type": "text"
+          },
+          {
+           "key": "order_amount",
+           "value": "99.99",
+           "description": "Amount charged per cycle (must be > 0)",
+           "type": "text"
+          },
+          {
+           "key": "currency",
+           "value": "EGP",
+           "description": "ISO currency code (EGP, USD, EUR, etc.)",
+           "type": "text"
+          },
+          {
+           "key": "cadence_interval",
+           "value": "month",
+           "description": "Billing interval unit: day|week|month|year",
+           "type": "text"
+          },
+          {
+           "key": "cadence_count",
+           "value": "1",
+           "description": "Number of interval units between charges (min 1)",
+           "type": "text"
+          },
+          {
+           "key": "total_cycles",
+           "value": "12",
+           "description": "[OPTIONAL] Total billing cycles including setup charge. Omit or set null for open-ended subscription.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "end_date",
+           "value": "2027-01-01",
+           "description": "[OPTIONAL] Hard end date (future date, format: YYYY-MM-DD).",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "consent_text",
+           "value": "By subscribing you authorise monthly charges of EGP 99.99 until cancelled.",
+           "description": "Subscription terms shown to and accepted by the cardholder (max 2000 chars)",
+           "type": "text"
+          },
+          {
+           "key": "external_reference",
+           "value": "sub_customer_789",
+           "description": "[OPTIONAL] Your own subscription ID for idempotency. Replayed requests with the same value return the original mandate.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "redirection_url",
+           "value": "https://your-domain.com/subscription/return",
+           "description": "[OPTIONAL] HTTPS redirect URL after first checkout. Must be on your registered domain. Included in signature.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "webhook_url",
+           "value": "https://your-domain.com/api/subscription/webhook",
+           "description": "[OPTIONAL] Per-request webhook URL override. Must be HTTPS on your registered domain. Included in signature.",
+           "type": "text",
+           "disabled": true
+          },
+          {
+           "key": "signature",
+           "value": "{{generated_signature}}",
+           "description": "HMAC-SHA256 signature (auto-generated by pre-request script)",
+           "type": "text"
+          }
+         ]
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/init",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "init"
+         ]
+        },
+        "description": "Creates a subscription mandate and the first setup invoice. Returns a `checkout_url` to redirect the subscriber for the first (3DS-authenticated) payment.\n\n**Signature (init):** Concatenate all provided validated fields (no delimiter) in rule order, excluding `token`, `signature`, and `payment_mode`. HMAC-SHA256 with hash_token, base64-encode.\n\nField order: `first_name + last_name + email + order_title + order_amount + currency + cadence_interval + cadence_count + [total_cycles if enabled] + [end_date if enabled] + consent_text + [external_reference if enabled] + [redirection_url if enabled] + [webhook_url if enabled]`\n\nThe pre-request script generates the signature automatically. Disable optional fields to exclude them from the signature.\n\n**Idempotency:** The dedup key is `external_reference` when provided; otherwise the `Idempotency-Key` request header. Deduplication is scoped to `(company, integration, key)`. A replay with the **same terms** returns the same `mandate_id` with a fresh `checkout_url`. A replay with **different terms** returns **409 Conflict** — the compared terms are `order_amount`, `currency`, `cadence_interval`, `cadence_count`, `total_cycles`, and `end_date`. Reusing a reference whose subscription is `cancelled`, `failed`, or `completed` starts a **new** subscription (the old mandate is preserved).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"checkout_url\": \"https://pay.getpayin.com/integration/checkout?...\",\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"invoice_id\": 40601,\n    \"expires_at\": \"2025-08-01T19:06:36.205559Z\"\n  }\n}\n```\nThe test script stores `mandate_id` in `{{mandate_id}}` for subsequent requests."
+       },
+       "status": "Conflict",
+       "code": 409,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"data\": {\n    \"message\": \"This external_reference was already used with different subscription terms.\"\n  }\n}"
+      }
+     ]
+    },
+    {
+     "name": "Get Mandate Status",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "// Mandate action signature: HMAC-SHA256 of mandate UID only",
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "const mandateUid = pm.collectionVariables.get('mandate_id') || 'mnd_01j9abc123def456';",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const signature = CryptoJS.HmacSHA256(mandateUid, hashToken).toString(CryptoJS.enc.Base64);",
+         "    pm.collectionVariables.set('generated_signature', signature);",
+         "    console.log('Mandate UID: ' + mandateUid);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ]
+       }
+      },
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Response status is 200', function () {",
+         "    pm.response.to.have.status(200);",
+         "});",
+         "pm.test('Response contains mandate data', function () {",
+         "    var jsonData = pm.response.json();",
+         "    pm.expect(jsonData.success).to.be.true;",
+         "    pm.expect(jsonData.data).to.have.property('mandate_id');",
+         "    pm.expect(jsonData.data).to.have.property('status');",
+         "    pm.expect(jsonData.data).to.have.property('amount');",
+         "    console.log('Mandate status: ' + jsonData.data.status);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}?token={{auth_token}}&signature={{generated_signature}}",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "recurring",
+        "{{mandate_id}}"
+       ],
+       "query": [
+        {
+         "key": "token",
+         "value": "{{auth_token}}",
+         "description": "Your integration's public authentication token"
+        },
+        {
+         "key": "signature",
+         "value": "{{generated_signature}}",
+         "description": "HMAC-SHA256 of the mandate UID (auto-generated by pre-request script)"
+        }
+       ]
+      },
+      "description": "Returns the current state of a recurring mandate.\n\n**Signature (mandate action):** HMAC-SHA256 of the mandate UID string only — not any request fields.\n\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\nSet `{{mandate_id}}` in collection variables (auto-populated by the Create Recurring Mandate test script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"status\": \"active\",\n    \"amount\": 9999,\n    \"completed_cycles\": 3,\n    \"total_cycles\": 12,\n    \"next_charge_at\": \"2025-09-01T00:00:00.000000Z\"\n  }\n}\n```\nStatus values: `pending` | `active` | `paused` | `past_due` | `completed` | `cancelled` | `failed`"
+     },
+     "response": [
+      {
+       "name": "Success - Active mandate",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}?token={{auth_token}}&signature={{generated_signature}}",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}"
+         ],
+         "query": [
+          {
+           "key": "token",
+           "value": "{{auth_token}}",
+           "description": "Your integration's public authentication token"
+          },
+          {
+           "key": "signature",
+           "value": "{{generated_signature}}",
+           "description": "HMAC-SHA256 of the mandate UID (auto-generated by pre-request script)"
+          }
+         ]
+        },
+        "description": "Returns the current state of a recurring mandate.\n\n**Signature (mandate action):** HMAC-SHA256 of the mandate UID string only — not any request fields.\n\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\nSet `{{mandate_id}}` in collection variables (auto-populated by the Create Recurring Mandate test script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"status\": \"active\",\n    \"amount\": 9999,\n    \"completed_cycles\": 3,\n    \"total_cycles\": 12,\n    \"next_charge_at\": \"2025-09-01T00:00:00.000000Z\"\n  }\n}\n```\nStatus values: `pending` | `active` | `paused` | `past_due` | `completed` | `cancelled` | `failed`"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": true,\n  \"data\": {\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"status\": \"active\",\n    \"amount\": 9999,\n    \"completed_cycles\": 3,\n    \"total_cycles\": 12,\n    \"next_charge_at\": \"2025-09-01T00:00:00.000000Z\"\n  }\n}"
+      },
+      {
+       "name": "Error - Mandate not found",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}?token={{auth_token}}&signature={{generated_signature}}",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}"
+         ],
+         "query": [
+          {
+           "key": "token",
+           "value": "{{auth_token}}",
+           "description": "Your integration's public authentication token"
+          },
+          {
+           "key": "signature",
+           "value": "{{generated_signature}}",
+           "description": "HMAC-SHA256 of the mandate UID (auto-generated by pre-request script)"
+          }
+         ]
+        },
+        "description": "Returns the current state of a recurring mandate.\n\n**Signature (mandate action):** HMAC-SHA256 of the mandate UID string only — not any request fields.\n\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\nSet `{{mandate_id}}` in collection variables (auto-populated by the Create Recurring Mandate test script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"mandate_id\": \"mnd_01j9abc123def456\",\n    \"status\": \"active\",\n    \"amount\": 9999,\n    \"completed_cycles\": 3,\n    \"total_cycles\": 12,\n    \"next_charge_at\": \"2025-09-01T00:00:00.000000Z\"\n  }\n}\n```\nStatus values: `pending` | `active` | `paused` | `past_due` | `completed` | `cancelled` | `failed`"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"mandate\": [\"Mandate not found for this integration.\"]\n  }\n}"
+      }
+     ]
+    },
+    {
+     "name": "Cancel Mandate",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "const mandateUid = pm.collectionVariables.get('mandate_id') || 'mnd_01j9abc123def456';",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(mandateUid, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Mandate UID: ' + mandateUid);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/cancel",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "recurring",
+        "{{mandate_id}}",
+        "cancel"
+       ]
+      },
+      "description": "Cancels an active or paused mandate. No further charges will occur. A `subscription.cancelled` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"cancelled\": true, \"status\": \"cancelled\" }\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/cancel",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "cancel"
+         ]
+        },
+        "description": "Cancels an active or paused mandate. No further charges will occur. A `subscription.cancelled` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"cancelled\": true, \"status\": \"cancelled\" }\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": true,\n  \"data\": {\n    \"cancelled\": true,\n    \"status\": \"cancelled\"\n  }\n}"
+      },
+      {
+       "name": "Error - Cannot cancel",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/cancel",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "cancel"
+         ]
+        },
+        "description": "Cancels an active or paused mandate. No further charges will occur. A `subscription.cancelled` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"cancelled\": true, \"status\": \"cancelled\" }\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"signature\": [\"Invalid signature.\"]\n  }\n}"
+      }
+     ]
+    },
+    {
+     "name": "Pause Mandate",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "const mandateUid = pm.collectionVariables.get('mandate_id') || 'mnd_01j9abc123def456';",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(mandateUid, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Mandate UID: ' + mandateUid);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/pause",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "recurring",
+        "{{mandate_id}}",
+        "pause"
+       ]
+      },
+      "description": "Pauses an active recurring mandate. Scheduled charges are suspended until resumed. A `subscription.suspended` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"paused\": true, \"status\": \"paused\" }\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/pause",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "pause"
+         ]
+        },
+        "description": "Pauses an active recurring mandate. Scheduled charges are suspended until resumed. A `subscription.suspended` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"paused\": true, \"status\": \"paused\" }\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": true,\n  \"data\": {\n    \"paused\": true,\n    \"status\": \"paused\"\n  }\n}"
+      },
+      {
+       "name": "Error - Cannot pause",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/pause",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "pause"
+         ]
+        },
+        "description": "Pauses an active recurring mandate. Scheduled charges are suspended until resumed. A `subscription.suspended` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"paused\": true, \"status\": \"paused\" }\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"signature\": [\"Invalid signature.\"]\n  }\n}"
+      }
+     ]
+    },
+    {
+     "name": "Resume Mandate",
+     "event": [
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "const hashToken = pm.collectionVariables.get('hash_token');",
+         "const mandateUid = pm.collectionVariables.get('mandate_id') || 'mnd_01j9abc123def456';",
+         "if (!hashToken) {",
+         "    console.warn('hash_token is not set.');",
+         "} else {",
+         "    const body = JSON.parse(pm.request.body.raw);",
+         "    const signature = CryptoJS.HmacSHA256(mandateUid, hashToken).toString(CryptoJS.enc.Base64);",
+         "    body.signature = signature;",
+         "    pm.request.body.raw = JSON.stringify(body, null, 2);",
+         "    console.log('Mandate UID: ' + mandateUid);",
+         "    console.log('Signature generated: ' + signature);",
+         "}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/resume",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "api",
+        "v2",
+        "integration",
+        "recurring",
+        "{{mandate_id}}",
+        "resume"
+       ]
+      },
+      "description": "Resumes a paused recurring mandate. Scheduled charges restart on the next cadence. A `subscription.activated` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"resumed\": true, \"status\": \"active\" }\n}\n```"
+     },
+     "response": [
+      {
+       "name": "Success",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/resume",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "resume"
+         ]
+        },
+        "description": "Resumes a paused recurring mandate. Scheduled charges restart on the next cadence. A `subscription.activated` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"resumed\": true, \"status\": \"active\" }\n}\n```"
+       },
+       "status": "OK",
+       "code": 200,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": true,\n  \"data\": {\n    \"resumed\": true,\n    \"status\": \"active\"\n  }\n}"
+      },
+      {
+       "name": "Error - Cannot resume",
+       "originalRequest": {
+        "auth": {
+         "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"token\": \"{{auth_token}}\",\n  \"signature\": \"auto-generated\"\n}"
+        },
+        "url": {
+         "raw": "{{base_url}}/api/v2/integration/recurring/{{mandate_id}}/resume",
+         "host": [
+          "{{base_url}}"
+         ],
+         "path": [
+          "api",
+          "v2",
+          "integration",
+          "recurring",
+          "{{mandate_id}}",
+          "resume"
+         ]
+        },
+        "description": "Resumes a paused recurring mandate. Scheduled charges restart on the next cadence. A `subscription.activated` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (auto-generated by pre-request script).\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": { \"resumed\": true, \"status\": \"active\" }\n}\n```"
+       },
+       "status": "Unprocessable Entity",
+       "code": 422,
+       "_postman_previewlanguage": "json",
+       "header": [
+        {
+         "key": "Content-Type",
+         "value": "application/json"
+        }
+       ],
+       "cookie": [],
+       "body": "{\n  \"success\": false,\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"signature\": [\"Invalid signature.\"]\n  }\n}"
+      }
+     ]
+    }
+   ],
+   "description": "Subscription mandate lifecycle endpoints.\n\n**Flow:**\n1. Call `Create Recurring Mandate` to create a mandate and get a `checkout_url`\n2. Redirect the subscriber to `checkout_url` for the first (3DS-authenticated) payment — card is vaulted\n3. Subsequent charges run unattended on the configured cadence\n4. Receive `subscription.*` webhook events for lifecycle updates\n\n**Idempotency:** Dedup key is `external_reference` when provided, else the `Idempotency-Key` header, scoped to `(company, integration, key)`. Same terms → same mandate (fresh checkout_url); different terms → `409 Conflict`; reusing a terminal (`cancelled`/`failed`/`completed`) reference starts a new subscription.\n\n**Init signature:** Concatenate all validated fields (no delimiter) in rule order, excluding `token`, `signature`, and `payment_mode`. HMAC-SHA256 with hash_token, base64-encode.\n\n**Mandate action signature (status/cancel/pause/resume):** HMAC-SHA256 of the mandate UID string only, base64-encode.\n\n**Availability:** Recurring payments must be enabled for your account."
+  },
+  {
+   "name": "Webhook Verification (Reference)",
+   "item": [
+    {
+     "name": "Webhook Payload Example",
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"event\": \"invoice.paid\",\n  \"event_triggered_at\": \"2026-07-22T13:46:06+00:00\",\n  \"timezone\": \"UTC\",\n  \"success\": 1,\n  \"invoice_id\": 40506,\n  \"invoice_status\": \"PAID\",\n  \"message\": \"Invoice Paid\",\n  \"signature\": \"a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "https://your-server.com/webhook/paylink",
+       "protocol": "https",
+       "host": [
+        "your-server",
+        "com"
+       ],
+       "path": [
+        "webhook",
+        "paylink"
+       ]
+      },
+      "description": "## Webhook Reference (Not an actual request to send)\n\nThis is an example of the payload PayLink sends to your configured webhook URL when a subscribed event occurs.\n\n**Available Event Types:**\n- `invoice.paid` - Invoice was successfully paid (enabled by default)\n- `invoice.not_paid` - Payment attempt failed (enabled by default)\n- `invoice.voided` - Payment was voided within 24h\n- `invoice.refunded` - Payment was refunded (full or partial)\n- `invoice.authorization_reversed` - Authorized payment was reversed\n- `subscription.activated` - Subscription mandate activated after first payment\n- `subscription.charged` - A recurring cycle charge succeeded\n- `subscription.payment_failed` - A cycle charge attempt failed\n- `subscription.suspended` - Mandate suspended after repeated failures\n- `subscription.cancelled` - Mandate was cancelled\n- `subscription.completed` - All billing cycles completed\n\nConfigure which events trigger webhooks under **Settings > Payment Integrations > Webhook Events**.\n\n**Your webhook endpoint should:**\n1. Verify the HMAC signature\n2. Check the `event` field to determine the event type\n3. Process the status update accordingly\n4. Return HTTP 200 OK\n\n**Webhook Payload Fields:**\n- `event` (string) - Event type that triggered the webhook (excluded from signature)\n- `event_triggered_at` (string) - ISO 8601 timestamp of when the event fired (excluded from signature)\n- `timezone` (string) - Timezone code for the timestamp, e.g. UTC (excluded from signature)\n- `success` (integer) - 1 for successful operations, 0 for failed\n- `invoice_id` (integer) - Unique invoice identifier\n- `invoice_status` (string) - PAID, UNPAID, VOIDED, REFUNDED, PARTIALLY_REFUNDED, or REVERSED\n- `message` (string) - Human-readable status message\n- `signature` (string) - HMAC-SHA256 signature for verification\n\n**Signature Verification:**\nConcatenate: success + invoice_id + invoice_status + message (exclude `event`)\nThen verify using HMAC-SHA256 with your hash token.\n\n**Retry Policy:**\nIf your endpoint doesn't return 200, PayLink retries up to 3 times with 100ms intervals.\n\n**PHP Verification Example:**\n```php\n$data = $request->all();\n// Note: 'event' is excluded from signature calculation\n$concatenated = $data['success'] . $data['invoice_id'] . $data['invoice_status'] . $data['message'];\n$expectedSignature = base64_encode(hash_hmac('sha256', $concatenated, $hashToken, true));\n\nif (!hash_equals($expectedSignature, $data['signature'])) {\n    return response()->json(['error' => 'Invalid signature'], 403);\n}\n\n// Route by event type\nswitch ($data['event']) {\n    case 'invoice.paid':\n        // Handle successful payment\n        break;\n    case 'invoice.not_paid':\n        // Handle failed payment\n        break;\n    case 'invoice.voided':\n        // Handle voided payment\n        break;\n    case 'invoice.refunded':\n        // Handle refund\n        break;\n    case 'invoice.authorization_reversed':\n        // Handle authorization reversal\n        break;\n}\n\nreturn response()->json(['success' => true, 'message' => 'Webhook processed successfully']);\n```"
+     },
+     "response": []
+    },
+    {
+     "name": "Subscription Webhook Payload Example",
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"event\": \"subscription.charged\",\n  \"event_triggered_at\": \"2026-07-22T13:46:06+00:00\",\n  \"timezone\": \"UTC\",\n  \"success\": 1,\n  \"invoice_id\": 40607,\n  \"invoice_status\": \"PAID\",\n  \"message\": \"Subscription cycle charged\",\n  \"mandate_id\": \"mnd_01j9abc123def456\",\n  \"external_reference\": \"sub_customer_789\",\n  \"subscription_status\": \"active\",\n  \"signature\": \"a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "https://your-server.com/webhook/paylink",
+       "protocol": "https",
+       "host": [
+        "your-server",
+        "com"
+       ],
+       "path": [
+        "webhook",
+        "paylink"
+       ]
+      },
+      "description": "## Subscription Webhook Reference (Not an actual request to send)\n\nRecurring `subscription.*` events are POSTed to your configured webhook URL. They carry the same base fields as invoice webhooks **plus** subscription-correlation fields.\n\n**Subscription Event Types:**\n- `subscription.activated` — mandate activated after the first (3DS) payment\n- `subscription.charged` — a recurring cycle charge succeeded\n- `subscription.payment_failed` — a cycle charge attempt failed\n- `subscription.suspended` — mandate suspended after repeated failures\n- `subscription.cancelled` — mandate cancelled\n- `subscription.completed` — all billing cycles completed\n\n**Payload Fields:**\n- `event` (string) — event type (excluded from signature)\n- `event_triggered_at` (string) — ISO 8601 timestamp of when the event fired (excluded from signature)\n- `timezone` (string) — Timezone code for the timestamp, e.g. UTC (excluded from signature)\n- `success` (integer) — 1 success, 0 failed\n- `invoice_id` (integer) — the invoice for **this cycle** (a new invoice each cycle)\n- `invoice_status` (string) — PAID, UNPAID, …\n- `message` (string) — human-readable status\n- `mandate_id` (string) — subscription mandate UID — stable across cycles\n- `external_reference` (string|null) — your reference passed at init\n- `subscription_status` (string) — pending | active | paused | past_due | completed | cancelled | failed\n- `signature` (string) — HMAC-SHA256 verification\n\n**Correlate by `mandate_id` or `external_reference`, never by `invoice_id`** — each billing cycle bills a new invoice.\n\n**Signature Verification (subscription webhooks):**\nConcatenate, in this order (exclude `event` and `signature`): `success + invoice_id + invoice_status + message + mandate_id + external_reference + subscription_status`, then Base64(HMAC-SHA256) with your hash token.\n\n**PHP Example:**\n```php\n$data = $request->all();\n$concatenated = $data['success'] . $data['invoice_id'] . $data['invoice_status'] . $data['message']\n    . $data['mandate_id'] . ($data['external_reference'] ?? '') . $data['subscription_status'];\n$expected = base64_encode(hash_hmac('sha256', $concatenated, $hashToken, true));\n\nif (!hash_equals($expected, $data['signature'])) {\n    return response()->json(['error' => 'Invalid signature'], 403);\n}\n\nswitch ($data['event']) {\n    case 'subscription.charged':        // grant/extend access for this cycle\n        break;\n    case 'subscription.payment_failed': // notify the customer / start dunning\n        break;\n    case 'subscription.suspended':\n    case 'subscription.cancelled':\n    case 'subscription.completed':      // revoke access\n        break;\n}\n\nreturn response()->json(['success' => true]);\n```"
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "Redirect Callback (Reference)",
+   "item": [
+    {
+     "name": "Redirect URL Parameters Example",
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "https://your-website.com/payment/callback?success=true&invoice_id=40506&invoice_status=PAID&message=Payment completed successfully&signature=a1b2c3d4e5f6789012345678901234567890abcdef",
+       "protocol": "https",
+       "host": [
+        "your-website",
+        "com"
+       ],
+       "path": [
+        "payment",
+        "callback"
+       ],
+       "query": [
+        {
+         "key": "success",
+         "value": "true",
+         "description": "Whether payment was successful (true/false)"
+        },
+        {
+         "key": "invoice_id",
+         "value": "40506",
+         "description": "Unique invoice identifier"
+        },
+        {
+         "key": "invoice_status",
+         "value": "PAID",
+         "description": "Payment status: PAID or UNPAID"
+        },
+        {
+         "key": "message",
+         "value": "Payment completed successfully",
+         "description": "Human-readable result message"
+        },
+        {
+         "key": "signature",
+         "value": "a1b2c3d4e5f6789012345678901234567890abcdef",
+         "description": "HMAC-SHA256 signature for verification"
+        }
+       ]
+      },
+      "description": "## Redirect Callback Reference (Not an actual request to send)\n\nAfter payment completion, the customer is redirected to your configured redirect URL with these query parameters.\n\n**Your redirect page should:**\n1. Verify the HMAC signature from query parameters\n2. Display appropriate success/failure message to the customer\n3. Update your UI accordingly\n\n**Query Parameters:**\n- `success` (boolean) - Whether payment succeeded\n- `invoice_id` (integer) - Unique invoice identifier\n- `invoice_status` (string) - \"PAID\" or \"UNPAID\"\n- `message` (string, optional) - Human-readable outcome message\n- `signature` (string) - HMAC-SHA256 for verification\n\n**Signature Verification:**\nSame method as webhook - concatenate: success + invoice_id + invoice_status + message, then verify with HMAC-SHA256 using your hash token."
+     },
+     "response": []
+    }
+   ]
+  }
+ ],
+ "event": [
+  {
+   "listen": "prerequest",
+   "script": {
+    "type": "text/javascript",
+    "packages": {},
+    "requests": {},
+    "exec": [
+     ""
+    ]
+   }
+  },
+  {
+   "listen": "test",
+   "script": {
+    "type": "text/javascript",
+    "packages": {},
+    "requests": {},
+    "exec": [
+     ""
+    ]
+   }
+  }
+ ],
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "https://pay.getpayin.com"
+  },
+  {
+   "key": "auth_token",
+   "value": "",
+   "description": "Your integration's authentication token (from dashboard)"
+  },
+  {
+   "key": "hash_token",
+   "value": "",
+   "description": "Your secret hash token for HMAC signature generation (from dashboard)"
+  },
+  {
+   "key": "generated_signature",
+   "value": "",
+   "description": "Auto-populated by pre-request script"
+  },
+  {
+   "key": "mandate_id",
+   "value": "",
+   "description": "Mandate UID returned by Create Recurring Mandate (auto-populated by test script)"
+  },
+  {
+   "key": "card_token",
+   "value": "",
+   "type": "string"
+  }
+ ]
+}

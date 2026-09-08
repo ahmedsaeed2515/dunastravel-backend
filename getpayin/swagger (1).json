@@ -1,0 +1,3820 @@
+{
+ "openapi": "3.0.0",
+ "info": {
+  "title": "Paylink Payment Integration API",
+  "version": "1.0.0",
+  "description": "## Overview\n\nThe Paylink Payment Integration API enables merchants to seamlessly integrate secure payment processing into their applications. This API follows a simple yet robust flow that handles payment initialization, processing, and completion notifications.\n\n## How It Works\n\n### 1. **Payment Initialization**\nMerchants call the `/api/integration/init` endpoint with customer details, order information, and a security signature. This creates a secure checkout session and returns:\n- A hosted checkout URL where customers complete their payment\n- A unique invoice ID for tracking\n- An expiration timestamp for the payment session\n\n### 2. **Customer Payment Flow**\nCustomers are redirected to the provided checkout URL where they:\n- Review their order details\n- Select their preferred payment method\n- Complete the payment securely on Paylink's hosted page\n\n### 3. **Real-time Notifications (Webhooks)**\nAs the payment progresses through different states, Paylink automatically sends POST requests to your configured webhook URL for enabled event types:\n- `invoice.paid` / `invoice.not_paid` (enabled by default)\n- `invoice.voided` / `invoice.refunded` / `invoice.authorization_reversed` (opt-in)\n\nEach webhook includes an `event` field, transaction details (including the gateway `auth_code` when available), and HMAC signatures for security verification. Configure which events trigger webhooks under **Settings → Payment Integrations → Webhook Events**.\n\n### 4. **Customer Return (Website or Mobile App)**\nAfter payment completion — on both **success and failure** — the customer is returned to the destination determined by your integration's **Type**:\n- **Website** integrations return the customer to your configured **Redirect URL** (e.g. `https://mywebsite.com/return`).\n- **Mobile App** integrations return the customer to your app through the configured **Mobile App Return Scheme**, a custom-scheme deep link (e.g. `payindemo://payment-return`).\n\nIn both cases the same transaction details are delivered as query parameters:\n- Transaction results as URL parameters\n- Status information (completed/failed/cancelled)\n- Security signature for verification\n\n## Key Features\n\n- **🔒 Security First**: All requests and callbacks use HMAC-SHA256 signatures for verification\n- **⚡ Real-time Updates**: Instant webhook notifications for all transaction events\n- **🌍 Multi-currency**: Support for EGP, EUR, and USD\n- **📱 Hosted Checkout**: No PCI compliance burden - customers pay on Paylink's secure pages\n- **🔄 Automatic Retries**: Failed webhook deliveries are retried up to 5 times\n- **⚙️ Admin Configuration**: Integration type, webhook URL, redirect URL, and mobile app return scheme are configured once in your dashboard\n\n## Configuration Requirements\n\nBefore using this API, ensure you have configured the following in your Paylink dashboard:\n- **Type**: `Website` or `Mobile App` — determines where customers are returned after payment\n- **Webhook URL**: Where you'll receive transaction status updates\n- **Redirect URL**: Where website customers return after payment completion\n- **Mobile App Return Scheme**: (Mobile App integrations only) the custom-scheme deep link your app is returned to after payment\n- **Hash Token**: Used for generating and verifying HMAC signatures\n- **Webhook Events**: Choose which events trigger notifications (defaults: `invoice.paid`, `invoice.not_paid`)\n\n## Authentication\n\nThis API uses token-based authentication combined with HMAC signatures:\n- **Authentication Token**: Included in API requests for identification\n- **Hash Token**: Used for signature generation (keep this secret)\n- **Signatures**: Required for all requests and verified on all callbacks\n\n---\n\n## Getting Started\n\nFollow these steps to set up your payment integration:\n\n### Step 1: Get Your API Credentials\n1. Log in to your Paylink dashboard\n2. Navigate to **Settings → Payment Integrations**\n3. Click **Add Integration** to create a new integration\n4. Fill in the integration details:\n   - **Name**: A friendly name for this integration (e.g., \"My Website Checkout\")\n   - **Origin**: The domain of your website (e.g., `https://mywebsite.com`)\n   - **Type**: `Website` or `Mobile App`. Choose **Mobile App** only when customers pay inside a native app; choose **Website** for browser-based checkouts. Existing integrations created before this option default to **Website**.\n   - **Webhook URL**: The endpoint on your server that will receive payment notifications\n   - **Redirect URL**: Where website customers are sent after completing payment\n   - **Mobile App Return Scheme**: (Mobile App integrations only) the custom-scheme deep link your app is returned to, e.g. `payindemo://payment-return`\n5. After saving, you'll receive:\n   - **Authentication Token**: Used in API requests to identify your integration\n   - **Hash Token**: Used to generate HMAC signatures (keep this secret!)\n\n### Step 2: Configure Your Server\n- Set up your **Webhook endpoint** to receive POST requests with transaction updates\n- Set up your **Redirect page** to handle customers returning from the checkout\n- Store your **Hash Token** securely (environment variable recommended)\n\n### Step 3: Make Your First Request\nUse the `/api/integration/init` endpoint below to create a checkout session, then redirect the customer to the returned `checkout_url`.\n\n---\n\n## Testing Cards\n\nIn the **sandbox/test environment**, payment outcomes are driven by the **transaction amount** and by the card data you enter - not by special \"decline card numbers\". Use a valid test card from the table below and set the amount to a trigger value to simulate an approval or a specific decline.\n\n> **Important:** Test cards from other providers (for example `4000 0000 0000 0127` or `4000 0000 0000 0069`) do **not** work here. The sandbox authorizes any well-formed card number, so they return a successful/PAID result. Use the cards and amounts on this page instead.\n\n### Test Cards\n\n| Card Type | Card Number | Expiry | CVV |\n|-----------|-------------|--------|-----|\n| Visa | 4111 1111 1111 1111 | Any future date | Any 3 digits |\n| Mastercard | 5555 5555 5555 4444 | Any future date | Any 3 digits |\n| Mastercard (2-series) | 2222 4200 0000 1113 | Any future date | Any 3 digits |\n\n### Simulating Declines\n\nUse any valid test card above and set the **transaction amount** to one of these values to force a specific decline:\n\n| Amount | Result |\n|--------|--------|\n| 4051.00 | Insufficient funds |\n| 4054.00 | Expired card |\n| 4005.00 | Do not honor (general decline) |\n| 4043.00 | Stolen card |\n| 4041.00 | Lost card |\n| 7001.00 | Rejected - invalid card |\n\nYou can also force a failure with invalid card data:\n\n| Input | Result |\n|-------|--------|\n| Card `4111 1111 1111 1112` (invalid checksum) | Declined |\n| Past expiry year (e.g. `1998`) | Declined |\n| Amount `-1` or `100000000000` | Invalid request |\n\nA declined payment returns `success=0` and leaves the invoice unpaid - no booking is confirmed.\n\n> **Note:** These triggers work only in the sandbox/test environment, never in production. In production, use real card details.\n\n---\n\n*Ready to get started? Begin with the `/api/integration/init` endpoint below.*## Recurring subscriptions\n\nTo charge a customer automatically on a schedule (subscriptions / card-on-file), use the **Recurring Subscriptions** endpoints. The customer authenticates once (3DS) on the first payment; PayLink then charges automatically each cycle and notifies you with signed `subscription.*` webhooks. See the dedicated **Recurring Subscriptions Integration Guide** (`RECURRING_INTEGRATION_GUIDE.md`, in this docs folder) for a complete step-by-step walkthrough."
+ },
+ "servers": [
+  {
+   "url": "https://pay.getpayin.com"
+  }
+ ],
+ "tags": [
+  {
+   "name": "Payment Initialization",
+   "description": "Initialize checkout sessions for payment processing"
+  },
+  {
+   "name": "VCC Charge",
+   "description": "Server-to-server Virtual Credit Card charge, authenticated by the same public_token + HMAC-SHA256 signature as the v2 init endpoint. Requires the VCC module and an active VCC subscription; sends raw card data, so call it only from a PCI-compliant backend."
+  },
+  {
+   "name": "Payment Operations",
+   "description": "Post-payment operations including void, refund, settle (capture), reverse authorization, and gateway status checks. These endpoints use the same HMAC-SHA256 signature mechanism as the init endpoint, with the hash_token from your integration settings."
+  },
+  {
+   "name": "Card Tokenization",
+   "description": "Vault a customer's card via secure network tokenization and charge the saved token later (MIT or CIT). Same HMAC-SHA256 auth as the other integration endpoints. Raw-PAN tokenization must be called from a PCI-compliant backend."
+  },
+  {
+   "name": "Recurring Subscriptions",
+   "description": "Subscription mandate lifecycle endpoints. Create a mandate with the customer's first payment (card vaulted, 3DS-authenticated), then query status or manage the lifecycle (cancel/pause/resume). All endpoints use the same public_token + HMAC-SHA256 signature authentication as the v2 init endpoint. The recurring payments feature must be enabled for your account.\n\n**Webhooks.** Subscription events (`subscription.activated`, `subscription.charged`, `subscription.payment_failed`, `subscription.suspended`, `subscription.cancelled`, `subscription.completed`) are POSTed to your webhook URL. The JSON payload includes `event`, `success`, `invoice_id`, `invoice_status`, `message`, `mandate_id`, `external_reference`, `subscription_status`, an optional `auth_code` (the gateway approval code, present only when available) and `signature`. Correlate a charge to its subscription using `mandate_id` or `external_reference` — not `invoice_id` (each billing cycle bills a new invoice). Verify the signature as Base64(HMAC-SHA256) over the concatenated payload values except `event`, `auth_code` and `signature`, in order: `success, invoice_id, invoice_status, message, mandate_id, external_reference, subscription_status`.\n\n**Full step-by-step guide:** see `RECURRING_INTEGRATION_GUIDE.md` in this documentation folder."
+  }
+ ],
+ "paths": {
+  "/api/integration/init": {
+   "parameters": [],
+   "post": {
+    "tags": [
+     "Payment Initialization"
+    ],
+    "summary": "Init",
+    "description": "**Base URL:** `https://pay.getpayin.com`",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "first_name": {
+          "type": "string",
+          "description": "Customer's first name",
+          "example": "john"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Customer's last name",
+          "example": "doe"
+         },
+         "email": {
+          "type": "string",
+          "description": "Customer's email",
+          "example": "foe.bar@gmail.com"
+         },
+         "order_title": {
+          "type": "string",
+          "description": "The order title shown to the customer",
+          "example": "Test Order"
+         },
+         "order_amount": {
+          "type": "number",
+          "description": "The order amount the customer will pay",
+          "example": "250"
+         },
+         "address": {
+          "type": "string",
+          "description": "The user's address [OPTIONAL]",
+          "example": "Baker Street"
+         },
+         "city": {
+          "type": "string",
+          "description": "The user's city [OPTIONAL]",
+          "example": "6th Of October"
+         },
+         "country": {
+          "type": "string",
+          "description": "The user's country as an ISO 3166-1 alpha-2 code (e.g. EG, US, GB). Prefills the checkout billing form; a non-ISO value is ignored for country prefill. [OPTIONAL]",
+          "example": "EG"
+         },
+         "state": {
+          "type": "string",
+          "description": "The user's state / province / administrative area. Prefills the checkout billing form; for US/CA send the 2-letter code (e.g. NY, ON), which the card network requires there. When sent, it is signed in position immediately after country (before currency). [OPTIONAL]",
+          "example": "Giza"
+         },
+         "currency": {
+          "type": "string",
+          "description": "Short code of the currency to be paid with. Only Supported (EGP, EUR, USD)",
+          "example": "EGP"
+         },
+         "order_details": {
+          "type": "string",
+          "description": "Optional. A JSON-encoded array of `{label, value}` objects shown on the checkout page, each rendered on its own line (e.g. Guest, Reservation, Room, Check-In, Check-Out). When omitted, the checkout falls back to displaying the single `order_title`. Max 2000 characters.\n\n**Important:** This field is OPTIONAL and is NOT included in the signature calculation, so it can be added without changing how the signature is generated. Rows with an empty value are ignored.",
+          "example": "[{\"label\":\"Guest\",\"value\":\"John Doe\"},{\"label\":\"Check-In\",\"value\":\"Mon, Jun 09, 2026\"},{\"label\":\"Check-Out\",\"value\":\"Tue, Jun 10, 2026\"}]"
+         },
+         "iframe": {
+          "type": "boolean",
+          "description": "Set to true to enable iframe mode. When enabled, the checkout URL can be embedded in an iframe on your website. Payment results will be sent via postMessage to the parent window instead of redirecting.\n\n**Important:** This field is NOT included in the signature calculation.\n\n**Iframe Integration Example:**\n```html\n<iframe id=\"paylink-checkout\"\n    src=\"{checkout_url}\"\n    style=\"width: 100%; height: 600px; border: none;\"\n    allow=\"payment\"></iframe>\n\n<script>\nwindow.addEventListener('message', function(event) {\n    if (event.data && event.data.type === 'paylink_payment') {\n        console.log('Payment result:', event.data);\n        // event.data.success - boolean\n        // event.data.invoice_id - integer\n        // event.data.invoice_status - 'PAID' or 'UNPAID'\n        // event.data.message - string\n    }\n});\n</script>\n```",
+          "example": true
+         },
+         "payment_mode": {
+          "type": "string",
+          "enum": [
+           "capture",
+           "authorize"
+          ],
+          "description": "Payment mode. `capture` (default) charges the customer immediately upon checkout. `authorize` places a hold on the funds without charging — you can then settle (capture) or reverse the authorization using the payment operation endpoints.\n\n**Important:** This field is NOT included in the signature calculation, so it can be added without changing how the signature is generated. Requires the authorize-mode capability to be enabled for your company when using `authorize`.",
+          "example": "capture"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification. This signature ensures the request authenticity and prevents tampering.\n\n**How to generate the signature:**\n1. Concatenate all field values (except 'token' and 'signature') in the exact order they appear in the request\n2. Create HMAC-SHA256 hash using your secret hash token (from account settings)\n3. Encode the result in base64\n\n**Code Examples:**\n\n**PHP:**\n```php\n// Step 1: Prepare data (exclude token and signature)\n$data = [\n    $first_name,\n    $last_name, \n    $email,\n    $order_title,\n    $order_amount,\n    $address,     // include even if empty\n    $city,        // include even if empty  \n    $country,     // include even if empty\n    $currency\n];\n\n// Step 2: Generate signature\n$concatenated = implode('', $data);\n$signature = base64_encode(hash_hmac('sha256', $concatenated, $hashKey, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\n\n// Step 1: Prepare data array\nconst data = [\n    first_name,\n    last_name,\n    email, \n    order_title,\n    order_amount,\n    address || '',   // handle optional fields\n    city || '',\n    country || '',\n    currency\n];\n\n// Step 2: Generate signature\nconst concatenated = data.join('');\nconst signature = crypto\n    .createHmac('sha256', hashKey)\n    .update(concatenated)\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac\nimport hashlib\nimport base64\n\n# Step 1: Prepare data\ndata = [\n    first_name,\n    last_name,\n    email,\n    order_title, \n    order_amount,\n    address or '',   # handle optional fields\n    city or '',\n    country or '',\n    currency\n]\n\n# Step 2: Generate signature\nconcatenated = ''.join(data)\nsignature = base64.b64encode(\n    hmac.new(\n        hash_key.encode('utf-8'),\n        concatenated.encode('utf-8'),\n        hashlib.sha256\n    ).digest()\n).decode('utf-8')\n```\n\n**Important Notes:**\n- Use the hash token from your Paylink account settings (not the public token)\n- Include optional fields in concatenation even if they're empty strings\n- Field order matters - follow the exact sequence shown above\n- If you send the optional `state` field, include it in the concatenation immediately after `country` (before `currency`); the code snippets above omit it for brevity\n- The signature must be recalculated for every request"
+         }
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "callbacks": {
+     "transactionStatusUpdate": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Transaction Status Update Webhook",
+        "description": "Called whenever a transaction status changes for an event your integration is subscribed to. The webhook URL is configured per-integration in the Paylink dashboard, and event types are managed under **Settings → Payment Integrations → Webhook Events** (or **Settings → Webhook Notifications**). By default only `invoice.paid` and `invoice.not_paid` are enabled.\n\n**Available event types (produced by the hosted checkout):**\n- `invoice.paid` – Invoice was successfully paid\n- `invoice.not_paid` – Payment attempt failed\n\nEvery other event (`invoice.voided`, `invoice.refunded`, `invoice.authorization_reversed`, `vcc.payment_success`/`vcc.payment_failed`, `card_token.charge_succeeded`/`card_token.charge_failed`, and the `subscription.*` events) is delivered to this same webhook URL and is documented as a **Callback** on the operation that produces it.\n\n**Server-to-server charges.** VCC (`/api/v2/integration/vcc/charge`) and Card Tokenization (`/api/v2/integration/tokens/charge`) charges are delivered over this same signed integration webhook, verified with the identical signature scheme (`success + invoice_id + invoice_status + message`).\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "The event type that triggered this webhook. This field is excluded from the HMAC signature calculation for backward compatibility.",
+              "enum": [
+               "invoice.paid",
+               "invoice.not_paid"
+              ],
+              "example": "invoice.paid"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Whether the operation was successful (1 for paid/voided/refunded/reversed, 0 for not_paid)",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the invoice/transaction",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Current paid status of the invoice",
+              "enum": [
+               "PAID",
+               "UNPAID",
+               "VOIDED",
+               "REFUNDED",
+               "PARTIALLY_REFUNDED",
+               "REVERSED"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable message or context about the status",
+              "example": "Payment completed successfully"
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the transaction. Present only when a successful payment attempt supplied one; omitted otherwise. Excluded from the HMAC signature calculation (like `event`), so it can be consumed without changing signature verification.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) in the webhook payload for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully",
+          "content": {
+           "application/json": {
+            "schema": {
+             "type": "object",
+             "properties": {
+              "success": {
+               "type": "boolean",
+               "example": true
+              },
+              "message": {
+               "type": "string",
+               "example": "Webhook processed successfully"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "redirectCallback": {
+      "{$redirectUrl}": {
+       "get": {
+        "summary": "Payment Completion Return Callback (Website Redirect or App Deep Link)",
+        "description": "After payment completion (success or failure), the customer is returned to the merchant. The destination depends on the integration **Type** configured in the Paylink dashboard:\n\n- **Website** integrations redirect the customer's browser to the configured **Redirect URL** ($redirectUrl) documented here, carrying the query parameters below.\n- **Mobile App** integrations instead return the customer to the configured **Mobile App Return Scheme** — a custom-scheme deep link such as `payindemo://payment-return` — carrying the same query parameters. The return scheme is ignored for Website integrations, so website customers are never sent to an app deep link.\n\nTransaction status and details are passed as query parameters.",
+        "parameters": [
+         {
+          "name": "success",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "boolean"
+          },
+          "description": "Whether the payment was successful",
+          "example": true
+         },
+         {
+          "name": "invoice_id",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "integer"
+          },
+          "description": "The unique identifier of the invoice/transaction",
+          "example": 40506
+         },
+         {
+          "name": "invoice_status",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "string",
+           "enum": [
+            "PAID",
+            "UNPAID"
+           ]
+          },
+          "description": "Paid status of the invoice",
+          "example": "PAID"
+         },
+         {
+          "name": "message",
+          "in": "query",
+          "required": false,
+          "schema": {
+           "type": "string"
+          },
+          "description": "Optional human-readable message about the outcome",
+          "example": "Payment completed successfully"
+         },
+         {
+          "name": "auth_code",
+          "in": "query",
+          "required": false,
+          "schema": {
+           "type": "string"
+          },
+          "description": "The payment gateway's authorization (approval) code. Present only when available. Appended after the signature and excluded from the signature calculation, so it does not affect verification.",
+          "example": "831000"
+         },
+         {
+          "name": "signature",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "string"
+          },
+          "description": "HMAC signature for redirect verification using the same hash key as the integration. Calculated using SHA256 over the concatenation (in the same deterministic order as your `buildSignatureString`) of: success + invoice_id + invoice_status + message. **Note:** the `auth_code` query parameter (when present) is appended after the signature and is NOT part of the signature calculation.",
+          "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+         }
+        ],
+        "responses": {
+         "200": {
+          "description": "Redirect page displayed to customer",
+          "content": {
+           "text/html": {
+            "schema": {
+             "type": "string"
+            },
+            "example": "<!DOCTYPE html><html><body><h1>Payment Completed Successfully</h1></body></html>"
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "headers": {
+       "Server": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "nginx/1.25.2"
+       },
+       "Content-Type": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "application/json"
+       },
+       "Transfer-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "chunked"
+       },
+       "Connection": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "keep-alive"
+       },
+       "Vary": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Accept-Encoding"
+       },
+       "X-Powered-By": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "PHP/8.2.29"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "no-cache, private"
+       },
+       "Date": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Fri, 01 Aug 2025 18:36:36 GMT"
+       },
+       "X-RateLimit-Limit": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "60"
+       },
+       "X-RateLimit-Remaining": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "59"
+       },
+       "phpdebugbar-id": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "X9ec7a97c11edbad7ef82c6b1ac3224bb"
+       },
+       "Content-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "gzip"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "data": {
+          "checkout_url": "https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40506&order_title=Test%20Order&signature=f18e03b546e60031152e7dd3e13de788727ac814b71118236fef6f688f3bef99",
+          "invoice_id": 40506,
+          "expires_at": "2025-08-01T19:06:36.205559Z"
+         },
+         "success": true
+        }
+       }
+      },
+      "description": "Success Response"
+     },
+     "403": {
+      "headers": {
+       "Server": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "nginx/1.25.2"
+       },
+       "Content-Type": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "application/json"
+       },
+       "Transfer-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "chunked"
+       },
+       "Connection": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "keep-alive"
+       },
+       "Vary": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Accept-Encoding"
+       },
+       "X-Powered-By": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "PHP/8.2.29"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "no-cache, private"
+       },
+       "Date": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Fri, 01 Aug 2025 18:37:39 GMT"
+       },
+       "X-RateLimit-Limit": {
+        "schema": {
+         "type": "integer"
+        },
+        "example": "60"
+       },
+       "X-RateLimit-Remaining": {
+        "schema": {
+         "type": "integer"
+        },
+        "example": "59"
+       },
+       "phpdebugbar-id": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "X210d944425ae5e6faad336cb4979c2e8"
+       },
+       "Content-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "gzip"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "data": [],
+         "success": false,
+         "message": "Invalid signature"
+        }
+       }
+      },
+      "description": "Error Response"
+     }
+    }
+   }
+  },
+  "/api/v2/integration/init": {
+   "parameters": [],
+   "post": {
+    "tags": [
+     "Payment Initialization"
+    ],
+    "summary": "Init (v2)",
+    "description": "**Base URL:** `https://pay.getpayin.com`\n\nv2 of the init endpoint. Adds an optional per-request `webhook_url`, and **includes `redirection_url` and `webhook_url` in the signature**. Both must use HTTPS and be on the integration's registered domain (its Origin or the matching configured URL host).",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "first_name": {
+          "type": "string",
+          "description": "Customer's first name",
+          "example": "john"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Customer's last name",
+          "example": "doe"
+         },
+         "email": {
+          "type": "string",
+          "description": "Customer's email",
+          "example": "foe.bar@gmail.com"
+         },
+         "order_title": {
+          "type": "string",
+          "description": "The order title shown to the customer",
+          "example": "Test Order"
+         },
+         "order_amount": {
+          "type": "number",
+          "description": "The order amount the customer will pay",
+          "example": "250"
+         },
+         "address": {
+          "type": "string",
+          "description": "The user's address [OPTIONAL]",
+          "example": "Baker Street"
+         },
+         "city": {
+          "type": "string",
+          "description": "The user's city [OPTIONAL]",
+          "example": "6th Of October"
+         },
+         "country": {
+          "type": "string",
+          "description": "The user's country as an ISO 3166-1 alpha-2 code (e.g. EG, US, GB). Prefills the checkout billing form; a non-ISO value is ignored for country prefill. [OPTIONAL]",
+          "example": "EG"
+         },
+         "state": {
+          "type": "string",
+          "description": "The user's state / province / administrative area. Prefills the checkout billing form; for US/CA send the 2-letter code (e.g. NY, ON), which the card network requires there. When sent, it is signed in position immediately after country (before currency). [OPTIONAL]",
+          "example": "Giza"
+         },
+         "currency": {
+          "type": "string",
+          "description": "Short code of the currency to be paid with. Only Supported (EGP, EUR, USD)",
+          "example": "EGP"
+         },
+         "order_details": {
+          "type": "string",
+          "description": "Optional. A JSON-encoded array of `{label, value}` objects shown on the checkout page, each rendered on its own line (e.g. Guest, Reservation, Room, Check-In, Check-Out). When omitted, the checkout falls back to displaying the single `order_title`. Max 2000 characters.\n\n**Important:** This field is OPTIONAL and IS part of the signature calculation on v2 (unlike v1). Rows with an empty value are ignored.",
+          "example": "[{\"label\":\"Guest\",\"value\":\"John Doe\"},{\"label\":\"Check-In\",\"value\":\"Mon, Jun 09, 2026\"},{\"label\":\"Check-Out\",\"value\":\"Tue, Jun 10, 2026\"}]"
+         },
+         "iframe": {
+          "type": "boolean",
+          "description": "Set to true to enable iframe mode. When enabled, the checkout URL can be embedded in an iframe on your website. Payment results will be sent via postMessage to the parent window instead of redirecting.\n\n**Important:** This field is NOT included in the signature calculation.\n\n**Iframe Integration Example:**\n```html\n<iframe id=\"paylink-checkout\"\n    src=\"{checkout_url}\"\n    style=\"width: 100%; height: 600px; border: none;\"\n    allow=\"payment\"></iframe>\n\n<script>\nwindow.addEventListener('message', function(event) {\n    if (event.data && event.data.type === 'paylink_payment') {\n        console.log('Payment result:', event.data);\n        // event.data.success - boolean\n        // event.data.invoice_id - integer\n        // event.data.invoice_status - 'PAID' or 'UNPAID'\n        // event.data.message - string\n    }\n});\n</script>\n```",
+          "example": true
+         },
+         "payment_mode": {
+          "type": "string",
+          "enum": [
+           "capture",
+           "authorize"
+          ],
+          "description": "Payment mode. `capture` (default) charges the customer immediately upon checkout. `authorize` places a hold on the funds without charging — you can then settle (capture) or reverse the authorization using the payment operation endpoints.\n\n**Important:** This field is NOT included in the signature calculation, so it can be added without changing how the signature is generated. Requires the authorize-mode capability to be enabled for your company when using `authorize`.",
+          "example": "capture"
+         },
+         "installments_enabled": {
+          "type": "boolean",
+          "description": "Optional. Set to `true` to charge this order as a fixed installment plan (Pay in N) instead of a single payment. The checkout then shows the fixed schedule and an authorisation consent the customer must accept before paying; the first installment is charged at checkout and the remaining installments are scheduled automatically to the saved card. Requires the Installments (Pay in N) capability to be enabled for your company.\n\n**Important:** This field is NOT included in the signature calculation, so it can be added without changing how the signature is generated.",
+          "example": true
+         },
+         "installments": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 24,
+          "description": "The number of installments for the plan. Required when `installments_enabled` is `true`, and must match one of the installment counts your company offers (the cadence — e.g. monthly — is taken from your company's configured plan for that count). Rejected with a 422 validation error if the count is not offered, the account does not have the Installments capability enabled, or the order amount is below your configured installment minimum.\n\n**Important:** This field is NOT included in the signature calculation.",
+          "example": 3
+         },
+         "redirection_url": {
+          "type": "string",
+          "description": "Optional. A per-request URL the customer is redirected to after payment. It MUST use HTTPS and be on the same domain as your integration's Origin (or your configured Redirect URL host). **INCLUDED in the signature on v2.** When omitted, your configured Redirect URL is used. Not supported for Mobile App integrations.",
+          "example": "https://your-domain.com/payment/callback"
+         },
+         "webhook_url": {
+          "type": "string",
+          "description": "Optional. A per-request webhook URL that overrides your configured Webhook URL for this invoice only. It MUST use HTTPS and be on the same domain as your integration's Origin (or your configured Webhook URL host) — other domains are rejected. **INCLUDED in the signature on v2.** When omitted, your configured Webhook URL is used.",
+          "example": "https://your-domain.com/api/payment/webhook"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature that authenticates the request and protects it from tampering. This is the **v2 init** rule — it differs from v1, which does **not** sign `order_details`, `redirection_url`, or `webhook_url`.\n\n**The four rules**\n\n1. **Signed fields** — every field you send **except** `token`, `signature`, `payment_mode`, `installments_enabled`, and `installments`. An optional field you do not send is skipped (it contributes nothing).\n2. **Order & separator** — concatenate the values in this fixed order, with **no separator**. This is the server's canonical order, not the order of the keys in your JSON body:\n\n   `first_name`, `last_name`, `email`, `order_title`, `order_amount`, `address`, `city`, `country`, `state`, `currency`, `redirection_url`, `webhook_url`, `order_details`\n3. **Digest** — `HMAC-SHA256(concatenated, hash_token)` over the **raw bytes**, then **Base64** (standard Base64 of the raw digest — not hex, not base64url).\n4. **Key** — your secret **hash token** from the integration settings, never the public `token` (which only identifies the integration and is sent unsigned in the body).\n\n**Code Examples:**\n\n**PHP:**\n```php\n// Signed values, in the fixed order. Use '' for any optional field you don't send.\n$data = [\n    $first_name,\n    $last_name,\n    $email,\n    $order_title,\n    $order_amount,\n    $address,          // optional\n    $city,             // optional\n    $country,          // optional\n    $state,            // optional\n    $currency,\n    $redirection_url,  // optional (v2)\n    $webhook_url,      // optional (v2)\n    $order_details,    // optional (v2)\n];\n\n$signature = base64_encode(hash_hmac('sha256', implode('', $data), $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\n\nconst data = [\n    first_name,\n    last_name,\n    email,\n    order_title,\n    order_amount,\n    address || '',\n    city || '',\n    country || '',\n    state || '',\n    currency,\n    redirection_url || '',\n    webhook_url || '',\n    order_details || ''\n];\n\nconst signature = crypto\n    .createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\n\ndata = [\n    first_name,\n    last_name,\n    email,\n    order_title,\n    str(order_amount),\n    address or '',\n    city or '',\n    country or '',\n    state or '',\n    currency,\n    redirection_url or '',\n    webhook_url or '',\n    order_details or ''\n]\n\ndigest = hmac.new(hash_token.encode('utf-8'), ''.join(data).encode('utf-8'), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode('utf-8')\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public `token`.\n- No separator between values, and sign each value exactly as you send it (e.g. `order_amount` \"250\" must match the body).\n- A field you omit and the same field sent as an empty string produce the same signature, so `... || ''` is always safe.\n- `state` is signed (right after `country`). A common cause of \"Invalid signature\" is signing a US/CA billing state that an older sample leaves out — include it here.\n- The digest is Base64 of the **raw** HMAC bytes, not a hex string.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Idempotency-Key",
+      "in": "header",
+      "required": false,
+      "description": "Optional. If the same key is replayed, the original invoice and checkout_url are returned instead of creating a duplicate invoice. Max 64 characters.",
+      "example": "init-req-0001",
+      "schema": {
+       "type": "string",
+       "maxLength": 64
+      }
+     }
+    ],
+    "callbacks": {
+     "transactionStatusUpdate": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Transaction Status Update Webhook",
+        "description": "Called whenever a transaction status changes for an event your integration is subscribed to. The webhook URL is configured per-integration in the Paylink dashboard, and event types are managed under **Settings → Payment Integrations → Webhook Events** (or **Settings → Webhook Notifications**). By default only `invoice.paid` and `invoice.not_paid` are enabled.\n\n**Available event types (produced by the hosted checkout):**\n- `invoice.paid` – Invoice was successfully paid\n- `invoice.not_paid` – Payment attempt failed\n\nEvery other event (`invoice.voided`, `invoice.refunded`, `invoice.authorization_reversed`, `vcc.payment_success`/`vcc.payment_failed`, `card_token.charge_succeeded`/`card_token.charge_failed`, and the `subscription.*` events) is delivered to this same webhook URL and is documented as a **Callback** on the operation that produces it.\n\n**Server-to-server charges.** VCC (`/api/v2/integration/vcc/charge`) and Card Tokenization (`/api/v2/integration/tokens/charge`) charges are delivered over this same signed integration webhook, verified with the identical signature scheme (`success + invoice_id + invoice_status + message`).\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "The event type that triggered this webhook. This field is excluded from the HMAC signature calculation for backward compatibility.",
+              "enum": [
+               "invoice.paid",
+               "invoice.not_paid"
+              ],
+              "example": "invoice.paid"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Whether the operation was successful (1 for paid/voided/refunded/reversed, 0 for not_paid)",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the invoice/transaction",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Current paid status of the invoice",
+              "enum": [
+               "PAID",
+               "UNPAID",
+               "VOIDED",
+               "REFUNDED",
+               "PARTIALLY_REFUNDED",
+               "REVERSED"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable message or context about the status",
+              "example": "Payment completed successfully"
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the transaction. Present only when a successful payment attempt supplied one; omitted otherwise. Excluded from the HMAC signature calculation (like `event`), so it can be consumed without changing signature verification.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) in the webhook payload for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully",
+          "content": {
+           "application/json": {
+            "schema": {
+             "type": "object",
+             "properties": {
+              "success": {
+               "type": "boolean",
+               "example": true
+              },
+              "message": {
+               "type": "string",
+               "example": "Webhook processed successfully"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "redirectCallback": {
+      "{$redirectUrl}": {
+       "get": {
+        "summary": "Payment Completion Return Callback (Website Redirect or App Deep Link)",
+        "description": "After payment completion (success or failure), the customer is returned to the merchant. The destination depends on the integration **Type** configured in the Paylink dashboard:\n\n- **Website** integrations redirect the customer's browser to the configured **Redirect URL** ($redirectUrl) documented here, carrying the query parameters below.\n- **Mobile App** integrations instead return the customer to the configured **Mobile App Return Scheme** — a custom-scheme deep link such as `payindemo://payment-return` — carrying the same query parameters. The return scheme is ignored for Website integrations, so website customers are never sent to an app deep link.\n\nTransaction status and details are passed as query parameters.",
+        "parameters": [
+         {
+          "name": "success",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "boolean"
+          },
+          "description": "Whether the payment was successful",
+          "example": true
+         },
+         {
+          "name": "invoice_id",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "integer"
+          },
+          "description": "The unique identifier of the invoice/transaction",
+          "example": 40506
+         },
+         {
+          "name": "invoice_status",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "string",
+           "enum": [
+            "PAID",
+            "UNPAID"
+           ]
+          },
+          "description": "Paid status of the invoice",
+          "example": "PAID"
+         },
+         {
+          "name": "message",
+          "in": "query",
+          "required": false,
+          "schema": {
+           "type": "string"
+          },
+          "description": "Optional human-readable message about the outcome",
+          "example": "Payment completed successfully"
+         },
+         {
+          "name": "auth_code",
+          "in": "query",
+          "required": false,
+          "schema": {
+           "type": "string"
+          },
+          "description": "The payment gateway's authorization (approval) code. Present only when available. Appended after the signature and excluded from the signature calculation, so it does not affect verification.",
+          "example": "831000"
+         },
+         {
+          "name": "signature",
+          "in": "query",
+          "required": true,
+          "schema": {
+           "type": "string"
+          },
+          "description": "HMAC signature for redirect verification using the same hash key as the integration. Calculated using SHA256 over the concatenation (in the same deterministic order as your `buildSignatureString`) of: success + invoice_id + invoice_status + message. **Note:** the `auth_code` query parameter (when present) is appended after the signature and is NOT part of the signature calculation.",
+          "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+         }
+        ],
+        "responses": {
+         "200": {
+          "description": "Redirect page displayed to customer",
+          "content": {
+           "text/html": {
+            "schema": {
+             "type": "string"
+            },
+            "example": "<!DOCTYPE html><html><body><h1>Payment Completed Successfully</h1></body></html>"
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "headers": {
+       "Server": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "nginx/1.25.2"
+       },
+       "Content-Type": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "application/json"
+       },
+       "Transfer-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "chunked"
+       },
+       "Connection": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "keep-alive"
+       },
+       "Vary": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Accept-Encoding"
+       },
+       "X-Powered-By": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "PHP/8.2.29"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "no-cache, private"
+       },
+       "Date": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Fri, 01 Aug 2025 18:36:36 GMT"
+       },
+       "X-RateLimit-Limit": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "60"
+       },
+       "X-RateLimit-Remaining": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "59"
+       },
+       "phpdebugbar-id": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "X9ec7a97c11edbad7ef82c6b1ac3224bb"
+       },
+       "Content-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "gzip"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "data": {
+          "checkout_url": "https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40506&order_title=Test%20Order&signature=f18e03b546e60031152e7dd3e13de788727ac814b71118236fef6f688f3bef99",
+          "invoice_id": 40506,
+          "expires_at": "2025-08-01T19:06:36.205559Z"
+         },
+         "success": true
+        }
+       }
+      },
+      "description": "Success Response"
+     },
+     "403": {
+      "headers": {
+       "Server": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "nginx/1.25.2"
+       },
+       "Content-Type": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "application/json"
+       },
+       "Transfer-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "chunked"
+       },
+       "Connection": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "keep-alive"
+       },
+       "Vary": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Accept-Encoding"
+       },
+       "X-Powered-By": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "PHP/8.2.29"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "no-cache, private"
+       },
+       "Date": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "Fri, 01 Aug 2025 18:37:39 GMT"
+       },
+       "X-RateLimit-Limit": {
+        "schema": {
+         "type": "integer"
+        },
+        "example": "60"
+       },
+       "X-RateLimit-Remaining": {
+        "schema": {
+         "type": "integer"
+        },
+        "example": "59"
+       },
+       "phpdebugbar-id": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "X210d944425ae5e6faad336cb4979c2e8"
+       },
+       "Content-Encoding": {
+        "schema": {
+         "type": "string"
+        },
+        "example": "gzip"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "data": [],
+         "success": false,
+         "message": "Invalid signature"
+        }
+       }
+      },
+      "description": "Error Response"
+     }
+    }
+   }
+  },
+  "/api/v2/integration/vcc/charge": {
+   "post": {
+    "tags": [
+     "VCC Charge"
+    ],
+    "summary": "VCC Charge (v2)",
+    "description": "**Base URL:** `https://pay.getpayin.com`\n\nCharges a Virtual Credit Card (VCC) **server-to-server** using your integration's HMAC signature — no hosted checkout page and no customer redirect. It is the same charge as the dashboard VCC endpoint, only authenticated by the integration `token` + `signature` (identical scheme to `/api/v2/integration/init`), so the request is HMAC-secured.\n\n**Requirements:** Payment Integrations must be enabled for your company, the integration must be active, the **VCC module** must be enabled, and you must hold an active **VCC subscription**. Because raw card data is sent directly to this endpoint, call it **only from your PCI-compliant backend** — never from a browser or mobile client.\n\n**Webhooks:** a successful charge fires the `vcc.payment_success` webhook event and a declined one fires `vcc.payment_failed` — delivered exactly like the dashboard VCC charge.",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication (public) token"
+         },
+         "first_name": {
+          "type": "string",
+          "description": "Cardholder first name (letters and spaces)",
+          "example": "Jane"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Cardholder last name (letters and spaces)",
+          "example": "Doe"
+         },
+         "email": {
+          "type": "string",
+          "description": "Customer email [OPTIONAL]",
+          "example": "jane.doe@example.com"
+         },
+         "phone": {
+          "type": "string",
+          "description": "Customer phone [OPTIONAL]",
+          "example": "+201000000000"
+         },
+         "currency_id": {
+          "type": "integer",
+          "description": "PayLink currency id to charge in (the same id used by the VCC and Invoice APIs)",
+          "example": 1
+         },
+         "price": {
+          "type": "number",
+          "description": "Amount to charge in major units; must be greater than 0",
+          "example": 100
+         },
+         "product": {
+          "type": "string",
+          "description": "Product / order description shown on the invoice",
+          "example": "Order #1234"
+         },
+         "reference_number": {
+          "type": "string",
+          "description": "Your own reference for this charge [OPTIONAL]",
+          "example": "REF-1234"
+         },
+         "card_number": {
+          "type": "string",
+          "description": "Card number (PAN)",
+          "example": "4111111111111111"
+         },
+         "card_expiry_month": {
+          "type": "string",
+          "description": "Card expiry month (MM)",
+          "example": "12"
+         },
+         "card_expiry_year": {
+          "type": "string",
+          "description": "Card expiry year (YYYY)",
+          "example": "2030"
+         },
+         "card_cvv": {
+          "type": "string",
+          "description": "Card verification value [OPTIONAL]",
+          "example": "123"
+         },
+         "country": {
+          "type": "string",
+          "description": "Billing country as an ISO 3166-1 alpha-2 code (e.g. EG, US, CA)",
+          "example": "EG"
+         },
+         "address": {
+          "type": "string",
+          "description": "Billing address line",
+          "example": "Baker Street"
+         },
+         "city": {
+          "type": "string",
+          "description": "Billing city",
+          "example": "Cairo"
+         },
+         "us_state": {
+          "type": "string",
+          "description": "2-letter US state code. Required and signed only when country = US.",
+          "example": "NY"
+         },
+         "canada_state": {
+          "type": "string",
+          "description": "2-letter Canadian province code. Required and signed only when country = CA.",
+          "example": "ON"
+         },
+         "postal_code": {
+          "type": "string",
+          "description": "Postal / ZIP code. Required and signed only when country = US or CA.",
+          "example": "10001"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `first_name`, `last_name`, `email`, `phone`, `currency_id`, `price`, `product`, `reference_number`, `card_number`, `card_expiry_month`, `card_expiry_year`, `card_cvv`, `country`, `address`, `city`, `us_state`, `canada_state`, `postal_code`. Send `us_state` + `postal_code` only when `country = US`, `canada_state` + `postal_code` only when `country = CA`.\n\n**PHP:**\n```php\n$data = [\n    $first_name,\n    $last_name,\n    $email ?? '',\n    $phone ?? '',\n    $currency_id,\n    $price,\n    $product,\n    $reference_number ?? '',\n    $card_number,\n    $card_expiry_month,\n    $card_expiry_year,\n    $card_cvv ?? '',\n    $country,\n    $address,\n    $city,\n    $us_state ?? '',\n    $canada_state ?? '',\n    $postal_code ?? '',\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    first_name,\n    last_name,\n    email || '',\n    phone || '',\n    currency_id,\n    price,\n    product,\n    reference_number || '',\n    card_number,\n    card_expiry_month,\n    card_expiry_year,\n    card_cvv || '',\n    country,\n    address,\n    city,\n    us_state || '',\n    canada_state || '',\n    postal_code || ''\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    first_name,\n    last_name,\n    email or '',\n    phone or '',\n    str(currency_id),\n    str(price),\n    product,\n    reference_number or '',\n    card_number,\n    card_expiry_month,\n    card_expiry_year,\n    card_cvv or '',\n    country,\n    address,\n    city,\n    us_state or '',\n    canada_state or '',\n    postal_code or ''\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Idempotency-Key",
+      "in": "header",
+      "required": false,
+      "description": "Optional. If the same key is replayed after a transient failure, the original charge result is returned instead of charging the card again. Max 64 characters.",
+      "example": "vcc-req-0001",
+      "schema": {
+       "type": "string",
+       "maxLength": 64
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Charge approved",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": true,
+         "message": "Payment successful",
+         "data": {
+          "invoice_id": 40510,
+          "invoice_number": "INV-000123",
+          "amount": 10000,
+          "currency": "USD",
+          "paid_status": "PAID"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Charge declined, or a validation / signature error",
+      "content": {
+       "application/json": {
+        "examples": {
+         "declined": {
+          "summary": "Card declined by the gateway",
+          "value": {
+           "success": false,
+           "message": "Do not honor"
+          }
+         },
+         "invalid_signature": {
+          "summary": "Invalid signature",
+          "value": {
+           "message": "The given data was invalid.",
+           "errors": {
+            "signature": [
+             "Invalid signature."
+            ]
+           }
+          }
+         },
+         "invalid_token": {
+          "summary": "Unknown or disabled integration",
+          "value": {
+           "message": "The given data was invalid.",
+           "errors": {
+            "token": [
+             "Integration is disabled."
+            ]
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "VCC module not enabled, or no active VCC subscription",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "message": "VCC is not enabled for this company."
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "vccChargeResult": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "VCC Charge Result Webhook",
+        "description": "Sent to your configured webhook URL after a server-to-server VCC charge resolves: `vcc.payment_success` on approval and `vcc.payment_failed` on decline. Delivered over the same signed integration webhook as every other event, verified with the identical signature scheme (`success + invoice_id + invoice_status + message`).\n\nThe `event` and `auth_code` fields are excluded from the signature.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "`vcc.payment_success` on approval, `vcc.payment_failed` on decline. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "vcc.payment_success",
+               "vcc.payment_failed"
+              ],
+              "example": "vcc.payment_success"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "1 for an approved charge, 0 for a decline.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the invoice created for this charge.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the charge.",
+              "enum": [
+               "PAID",
+               "UNPAID"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the charge.",
+              "example": "Payment successful"
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the transaction, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/tokens/card": {
+   "post": {
+    "tags": [
+     "Card Tokenization"
+    ],
+    "summary": "Tokenize a card (v2)",
+    "description": "**Base URL:** `https://pay.getpayin.com`\n\nTokenizes a customer's card through secure network tokenization and returns an **opaque card token**. The raw PAN is sent server-to-server, network-tokenized, and never stored by PayLink — only the brand and last four digits are kept. Charge the returned token later with `/api/v2/integration/tokens/charge`.\n\nBecause raw card data is sent, call this **only from your PCI-compliant backend**.\n\n**Authentication:** the same HMAC-SHA256 scheme as `/api/v2/integration/init`. Concatenate the field values below **in the order listed** (excluding `token` and `signature`), HMAC-SHA256 them with your integration's `hash_token`, and base64-encode the result into `signature`. Omitted optional fields contribute an empty string.\n\n**Requirement:** this capability must be enabled for your account (contact the business team). While it is off these endpoints return HTTP 403 with a message telling the integrator the product is not enabled and to contact the business team.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "first_name": {
+          "type": "string",
+          "description": "Cardholder first name (letters and spaces)",
+          "example": "Jane"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Cardholder last name (letters and spaces)",
+          "example": "Doe"
+         },
+         "email": {
+          "type": "string",
+          "description": "Customer email [OPTIONAL]",
+          "example": "jane.doe@example.com"
+         },
+         "customer_reference": {
+          "type": "string",
+          "description": "Your own identifier for this customer (groups cards under one customer profile) [OPTIONAL]",
+          "example": "cust-42"
+         },
+         "external_reference": {
+          "type": "string",
+          "description": "Idempotency reference; repeating it returns the same token [OPTIONAL]",
+          "example": "tok-req-1"
+         },
+         "card_number": {
+          "type": "string",
+          "description": "Card number (PAN)",
+          "example": "4111111111111111"
+         },
+         "card_expiry_month": {
+          "type": "string",
+          "description": "Card expiry month (MM)",
+          "example": "12"
+         },
+         "card_expiry_year": {
+          "type": "string",
+          "description": "Card expiry year (YYYY)",
+          "example": "2030"
+         },
+         "card_cvv": {
+          "type": "string",
+          "description": "Card verification value [OPTIONAL]",
+          "example": "123"
+         },
+         "country": {
+          "type": "string",
+          "description": "Billing country as an ISO 3166-1 alpha-2 code",
+          "example": "EG"
+         },
+         "address": {
+          "type": "string",
+          "description": "Billing address line",
+          "example": "Baker Street"
+         },
+         "city": {
+          "type": "string",
+          "description": "Billing city",
+          "example": "Cairo"
+         },
+         "us_state": {
+          "type": "string",
+          "description": "US state (required when country is US) [OPTIONAL]",
+          "example": "CA"
+         },
+         "canada_state": {
+          "type": "string",
+          "description": "Canadian province (required when country is CA) [OPTIONAL]",
+          "example": "ON"
+         },
+         "postal_code": {
+          "type": "string",
+          "description": "Postal code (required for US/CA) [OPTIONAL]",
+          "example": "10001"
+         },
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication (public) token"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `first_name`, `last_name`, `email`, `customer_reference`, `external_reference`, `card_number`, `card_expiry_month`, `card_expiry_year`, `card_cvv`, `country`, `address`, `city`, `us_state`, `canada_state`, `postal_code`. Send `us_state` + `postal_code` only when `country = US`, `canada_state` + `postal_code` only when `country = CA`.\n\n**PHP:**\n```php\n$data = [\n    $first_name,\n    $last_name,\n    $email ?? '',\n    $customer_reference ?? '',\n    $external_reference ?? '',\n    $card_number,\n    $card_expiry_month,\n    $card_expiry_year,\n    $card_cvv ?? '',\n    $country,\n    $address,\n    $city,\n    $us_state ?? '',\n    $canada_state ?? '',\n    $postal_code ?? '',\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    first_name,\n    last_name,\n    email || '',\n    customer_reference || '',\n    external_reference || '',\n    card_number,\n    card_expiry_month,\n    card_expiry_year,\n    card_cvv || '',\n    country,\n    address,\n    city,\n    us_state || '',\n    canada_state || '',\n    postal_code || ''\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    first_name,\n    last_name,\n    email or '',\n    customer_reference or '',\n    external_reference or '',\n    card_number,\n    card_expiry_month,\n    card_expiry_year,\n    card_cvv or '',\n    country,\n    address,\n    city,\n    us_state or '',\n    canada_state or '',\n    postal_code or ''\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Card tokenized",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "token": "6650f0c3a1b2c",
+          "card": {
+           "brand": "visa",
+           "last4": "1111",
+           "exp_month": "12",
+           "exp_year": "2030"
+          },
+          "status": "active"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation, signature, disabled-integration, unsupported-brand, or tokenization error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": false,
+         "message": "Unsupported card brand"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/tokens/charge": {
+   "post": {
+    "tags": [
+     "Card Tokenization"
+    ],
+    "summary": "Charge a card token (v2)",
+    "description": "**Base URL:** `https://pay.getpayin.com`\n\nCharges a previously vaulted card **token** server-to-server. Set `initiator` to `merchant` for an unattended merchant-initiated (MIT) rebill of the stored credential, or `customer` for a customer-initiated (CIT) card-on-file charge. A token can only be charged by the integration that created it.\n\n**Webhooks:** a successful charge fires `card_token.charge_succeeded`, a declined one fires `card_token.charge_failed`.\n\n**Authentication:** the same HMAC-SHA256 scheme as `/api/v2/integration/init`. Concatenate the field values below **in the order listed** (excluding `token` and `signature`), HMAC-SHA256 them with your integration's `hash_token`, and base64-encode the result into `signature`. Omitted optional fields contribute an empty string.\n\n**Billing is optional.** Omit the cardholder name and address to reuse the customer captured when the card was tokenized (the gateway falls back to the billing stored on the token), so a token can be charged with only `card_token`, `initiator`, `currency`, `price`, and `product`. Send the billing fields only to override the stored billing.\n\n**Requirement:** this capability must be enabled for your account (contact the business team). While it is off these endpoints return HTTP 403 with a message telling the integrator the product is not enabled and to contact the business team.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "card_token": {
+          "type": "string",
+          "description": "The opaque token returned by /tokens/card",
+          "example": "6650f0c3a1b2c"
+         },
+         "initiator": {
+          "type": "string",
+          "description": "merchant (MIT rebill) or customer (CIT card-on-file)",
+          "example": "merchant"
+         },
+         "first_name": {
+          "type": "string",
+          "description": "Cardholder first name (optional — reused from the token when omitted)",
+          "example": "Jane"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Cardholder last name (optional — reused from the token when omitted)",
+          "example": "Doe"
+         },
+         "email": {
+          "type": "string",
+          "description": "Customer email [OPTIONAL] (optional — reused from the token when omitted)",
+          "example": "jane.doe@example.com"
+         },
+         "currency": {
+          "type": "string",
+          "description": "ISO 4217 currency code to charge in (e.g. EGP, USD, EUR, GBP)",
+          "example": "EGP"
+         },
+         "price": {
+          "type": "number",
+          "description": "Amount to charge in major units; must be greater than 0",
+          "example": 100
+         },
+         "product": {
+          "type": "string",
+          "description": "Product / order description shown on the invoice",
+          "example": "Order #1234"
+         },
+         "reference_number": {
+          "type": "string",
+          "description": "Your own reference for this charge [OPTIONAL]",
+          "example": "REF-1234"
+         },
+         "country": {
+          "type": "string",
+          "description": "Billing country (ISO 3166-1 alpha-2) (optional — reused from the token when omitted)",
+          "example": "EG"
+         },
+         "address": {
+          "type": "string",
+          "description": "Billing address line (optional — reused from the token when omitted)",
+          "example": "Baker Street"
+         },
+         "city": {
+          "type": "string",
+          "description": "Billing city (optional — reused from the token when omitted)",
+          "example": "Cairo"
+         },
+         "us_state": {
+          "type": "string",
+          "description": "US state (required when country = US) [OPTIONAL]",
+          "example": "NY"
+         },
+         "canada_state": {
+          "type": "string",
+          "description": "Canadian province (required when country = CA) [OPTIONAL]",
+          "example": "ON"
+         },
+         "postal_code": {
+          "type": "string",
+          "description": "Postal code (required for US/CA) [OPTIONAL]",
+          "example": "10001"
+         },
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication (public) token"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `card_token`, `initiator`, `first_name`, `last_name`, `email`, `currency`, `price`, `product`, `reference_number`, `country`, `address`, `city`, `us_state`, `canada_state`, `postal_code`. Send `us_state` + `postal_code` only when `country = US`, `canada_state` + `postal_code` only when `country = CA`.\n\n**PHP:**\n```php\n$data = [\n    $card_token,\n    $initiator,\n    $first_name,\n    $last_name,\n    $email ?? '',\n    $currency,\n    $price,\n    $product,\n    $reference_number ?? '',\n    $country,\n    $address,\n    $city,\n    $us_state ?? '',\n    $canada_state ?? '',\n    $postal_code ?? '',\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    card_token,\n    initiator,\n    first_name,\n    last_name,\n    email || '',\n    currency,\n    price,\n    product,\n    reference_number || '',\n    country,\n    address,\n    city,\n    us_state || '',\n    canada_state || '',\n    postal_code || ''\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    card_token,\n    initiator,\n    first_name,\n    last_name,\n    email or '',\n    currency,\n    str(price),\n    product,\n    reference_number or '',\n    country,\n    address,\n    city,\n    us_state or '',\n    canada_state or '',\n    postal_code or ''\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Charge successful",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "invoice_id": 123,
+          "invoice_number": "INV-000123",
+          "amount": 100,
+          "currency": "EGP",
+          "paid_status": "paid",
+          "card_token": "6650f0c3a1b2c"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Declined, unknown/foreign token, invalid signature, or validation error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": false,
+         "message": "Declined",
+         "reason_code": "202"
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "cardTokenChargeResult": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Card Token Charge Result Webhook",
+        "description": "Sent to your configured webhook URL after a stored card-token charge resolves: `card_token.charge_succeeded` on approval and `card_token.charge_failed` on decline. Delivered over the same signed integration webhook as every other event, verified with the identical signature scheme (`success + invoice_id + invoice_status + message`).\n\nThe `event` and `auth_code` fields are excluded from the signature.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "`card_token.charge_succeeded` on approval, `card_token.charge_failed` on decline. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "card_token.charge_succeeded",
+               "card_token.charge_failed"
+              ],
+              "example": "card_token.charge_succeeded"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "1 for an approved charge, 0 for a decline.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the invoice created for this charge.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the charge.",
+              "enum": [
+               "PAID",
+               "UNPAID"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the charge.",
+              "example": "Payment successful"
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the transaction, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "Idempotency-Key",
+      "in": "header",
+      "required": false,
+      "description": "Optional. If the same key is replayed after a transient failure, the original charge result is returned instead of charging the stored card again. Max 64 characters.",
+      "example": "tok-req-0001",
+      "schema": {
+       "type": "string",
+       "maxLength": 64
+      }
+     }
+    ]
+   }
+  },
+  "/api/v2/integration/tokens/revoke": {
+   "post": {
+    "tags": [
+     "Card Tokenization"
+    ],
+    "summary": "Revoke a card token (v2)",
+    "description": "**Base URL:** `https://pay.getpayin.com`\n\nRevokes a card token so it can no longer be charged and deletes the stored card from the vault (the Payment Instrument and Customer, plus the card reference when no other token still uses it). Idempotent — revoking an already-revoked or unknown token still returns success. A token can only be revoked by the integration that created it.\n\n**Authentication:** the same HMAC-SHA256 scheme as `/api/v2/integration/init`. Concatenate the field values below **in the order listed** (excluding `token` and `signature`), HMAC-SHA256 them with your integration's `hash_token`, and base64-encode the result into `signature`. Omitted optional fields contribute an empty string.\n\n**Requirement:** this capability must be enabled for your account (contact the business team). While it is off these endpoints return HTTP 403 with a message telling the integrator the product is not enabled and to contact the business team.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "card_token": {
+          "type": "string",
+          "description": "The opaque token to revoke",
+          "example": "6650f0c3a1b2c"
+         },
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication (public) token"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `card_token`.\n\n**PHP:**\n```php\n$data = [\n    $card_token,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    card_token\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    card_token\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Token revoked",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        },
+        "example": {
+         "success": true,
+         "message": "Token revoked."
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/integration/void": {
+   "post": {
+    "tags": [
+     "Payment Operations"
+    ],
+    "summary": "Void Payment",
+    "description": "Voids a paid invoice within 24 hours of payment. The full payment is reversed and the invoice returns to unpaid state.",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "invoice_id",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "invoice_id": {
+          "type": "integer",
+          "description": "The unique identifier of the invoice to void",
+          "example": 40506
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `invoice_id`.\n\n**PHP:**\n```php\n$data = [\n    $invoice_id,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    invoice_id\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    str(invoice_id)\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Payment voided successfully",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "object",
+           "properties": {
+            "invoice_id": {
+             "type": "integer"
+            },
+            "paid_status": {
+             "type": "string"
+            },
+            "auth_code": {
+             "type": "string",
+             "nullable": true,
+             "description": "The payment gateway's authorization (approval) code for the transaction, or null when none is available.",
+             "example": "831000"
+            }
+           }
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": {
+          "invoice_id": 40506,
+          "paid_status": "VOIDED",
+          "auth_code": "831000"
+         },
+         "success": true,
+         "message": "Invoice has been voided successfully."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation or business logic error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "nullable": true
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": null,
+         "success": false,
+         "message": "Invoice is not paid, cannot void."
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "invoiceVoided": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Invoice Voided Webhook",
+        "description": "Sent to your configured webhook URL when a paid invoice is voided (a same-day reversal of the payment), provided the `invoice.voided` event is enabled for your integration under **Settings → Payment Integrations → Webhook Events**. Delivered over the same signed integration webhook as every other event.\n\nVerify the signature as Base64(HMAC-SHA256) over the concatenation of `success + invoice_id + invoice_status + message`; the `event` and `auth_code` fields are excluded.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "Always `invoice.voided` for this callback. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "invoice.voided"
+              ],
+              "example": "invoice.voided"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Always 1 for a recorded void.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the voided invoice.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the void.",
+              "enum": [
+               "VOIDED"
+              ],
+              "example": "VOIDED"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the void.",
+              "example": "Invoice has been voided successfully."
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the original transaction, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/integration/refund": {
+   "post": {
+    "tags": [
+     "Payment Operations"
+    ],
+    "summary": "Refund Payment",
+    "description": "Refunds a paid or partially refunded invoice. Supports partial refunds by specifying the amount.",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Idempotency-Key",
+      "in": "header",
+      "required": false,
+      "description": "Optional. Replaying the same key returns the original refund result instead of refunding again. Max 64 characters.",
+      "example": "refund-req-0001",
+      "schema": {
+       "type": "string",
+       "maxLength": 64
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "invoice_id",
+         "amount",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "invoice_id": {
+          "type": "integer",
+          "description": "The unique identifier of the invoice to refund",
+          "example": 40506
+         },
+         "amount": {
+          "type": "number",
+          "description": "The refund amount in the invoice currency. Must be at least 0.01.",
+          "minimum": 0.01,
+          "example": 100.0
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `invoice_id`, `amount`.\n\n**PHP:**\n```php\n$data = [\n    $invoice_id,\n    $amount,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    invoice_id,\n    amount\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    str(invoice_id),\n    str(amount)\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Payment refunded successfully",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "object",
+           "properties": {
+            "invoice_id": {
+             "type": "integer"
+            },
+            "paid_status": {
+             "type": "string"
+            },
+            "auth_code": {
+             "type": "string",
+             "nullable": true,
+             "description": "The payment gateway's authorization (approval) code for the transaction, or null when none is available.",
+             "example": "831000"
+            },
+            "refund_amount": {
+             "type": "number",
+             "description": "The amount actually refunded by this request, in major currency units (e.g. 1276.94), in the invoice currency. For a partial refund this is the partial amount — not the invoice total.",
+             "example": 1276.94
+            }
+           }
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": {
+          "invoice_id": 40506,
+          "paid_status": "PARTIALLY_REFUNDED",
+          "auth_code": "831000",
+          "refund_amount": 1276.94
+         },
+         "success": true,
+         "message": "Partial refund processed successfully."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation or business logic error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "nullable": true
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": null,
+         "success": false,
+         "message": "Invoice is not in a refundable state."
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "invoiceRefunded": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Invoice Refunded Webhook",
+        "description": "Sent to your configured webhook URL when a paid invoice is refunded (full or partial), provided the `invoice.refunded` event is enabled for your integration under **Settings → Payment Integrations → Webhook Events**. Delivered over the same signed integration webhook as other events, with two refund-specific fields — `refund_amount` and `refund_currency` — describing the amount actually refunded by this operation (the partial amount on a partial refund, not the invoice total).\n\nVerify the signature exactly as for other events: Base64(HMAC-SHA256) over the concatenation of `success + invoice_id + invoice_status + message`. The `event`, `auth_code`, `refund_amount` and `refund_currency` fields are excluded from the signature.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "Always `invoice.refunded` for this callback. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "invoice.refunded"
+              ],
+              "example": "invoice.refunded"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Always 1 for a recorded refund.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the refunded invoice.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the refund.",
+              "enum": [
+               "REFUNDED",
+               "PARTIALLY_REFUNDED"
+              ],
+              "example": "PARTIALLY_REFUNDED"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the refund.",
+              "example": "Partial refund processed successfully."
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the original transaction, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "refund_amount": {
+              "type": "number",
+              "description": "The amount actually refunded by this operation, in major currency units (e.g. 1276.94). For a partial refund this is the partial amount, not the invoice total. Excluded from the HMAC signature calculation (like `event` and `auth_code`), so it can be consumed without changing signature verification.",
+              "example": 1276.94
+             },
+             "refund_currency": {
+              "type": "string",
+              "description": "The ISO currency code of `refund_amount`.",
+              "example": "USD"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event`, `auth_code`, `refund_amount` and `refund_currency` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/integration/settle": {
+   "post": {
+    "tags": [
+     "Payment Operations"
+    ],
+    "summary": "Settle (Capture) Payment",
+    "description": "Captures (settles) a previously authorized payment. Only available for invoices created with `payment_mode: authorize`. Supports partial captures.",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "invoice_id",
+         "amount",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "invoice_id": {
+          "type": "integer",
+          "description": "The unique identifier of the authorized invoice to settle",
+          "example": 40506
+         },
+         "amount": {
+          "type": "number",
+          "description": "The capture amount in the invoice currency. Must be at least 0.01.",
+          "minimum": 0.01,
+          "example": 250.0
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `invoice_id`, `amount`.\n\n**PHP:**\n```php\n$data = [\n    $invoice_id,\n    $amount,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    invoice_id,\n    amount\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    str(invoice_id),\n    str(amount)\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Payment settled (captured) successfully",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "object",
+           "properties": {
+            "invoice_id": {
+             "type": "integer"
+            },
+            "paid_status": {
+             "type": "string"
+            },
+            "auth_code": {
+             "type": "string",
+             "nullable": true,
+             "description": "The payment gateway's authorization (approval) code for the transaction, or null when none is available.",
+             "example": "831000"
+            }
+           }
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": {
+          "invoice_id": 40506,
+          "paid_status": "PAID",
+          "auth_code": "831000"
+         },
+         "success": true,
+         "message": "Invoice has been settled successfully."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation or business logic error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "nullable": true
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": null,
+         "success": false,
+         "message": "Invoice is no longer in an authorized state."
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "invoicePaid": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Payment Captured (Settled) Webhook",
+        "description": "Sent to your configured webhook URL when an authorized payment is captured (settled), provided the `invoice.paid` event is enabled for your integration under **Settings → Payment Integrations → Webhook Events**. A settle fires the same `invoice.paid` event as a directly-paid invoice; a partial capture reports `invoice_status: PARTIALLY_PAID`. Delivered over the same signed integration webhook as every other event.\n\nVerify the signature as Base64(HMAC-SHA256) over the concatenation of `success + invoice_id + invoice_status + message`; the `event` and `auth_code` fields are excluded.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "Always `invoice.paid` for this callback. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "invoice.paid"
+              ],
+              "example": "invoice.paid"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Always 1 for a successful capture.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the captured invoice.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the capture — `PARTIALLY_PAID` for a partial capture.",
+              "enum": [
+               "PAID",
+               "PARTIALLY_PAID"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the capture.",
+              "example": "Payment Successful"
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the transaction, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/integration/reverse-authorization": {
+   "post": {
+    "tags": [
+     "Payment Operations"
+    ],
+    "summary": "Reverse Authorization",
+    "description": "Reverses (voids) a previously authorized payment that has not yet been captured. Only available for invoices created with `payment_mode: authorize` that have not been settled.",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "invoice_id",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "invoice_id": {
+          "type": "integer",
+          "description": "The unique identifier of the authorized invoice to reverse",
+          "example": 40506
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `invoice_id`.\n\n**PHP:**\n```php\n$data = [\n    $invoice_id,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    invoice_id\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    str(invoice_id)\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Authorization reversed successfully",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "object",
+           "properties": {
+            "invoice_id": {
+             "type": "integer"
+            },
+            "paid_status": {
+             "type": "string"
+            },
+            "auth_code": {
+             "type": "string",
+             "nullable": true,
+             "description": "The payment gateway's authorization (approval) code for the transaction, or null when none is available.",
+             "example": "831000"
+            }
+           }
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": {
+          "invoice_id": 40506,
+          "paid_status": "REVERSED",
+          "auth_code": "831000"
+         },
+         "success": true,
+         "message": "Authorization has been reversed successfully."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation or business logic error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "nullable": true
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": null,
+         "success": false,
+         "message": "Invoice is no longer in an authorized state."
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "invoiceAuthorizationReversed": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Authorization Reversed Webhook",
+        "description": "Sent to your configured webhook URL when a previously authorized (uncaptured) payment is reversed, provided the `invoice.authorization_reversed` event is enabled for your integration under **Settings → Payment Integrations → Webhook Events**. Delivered over the same signed integration webhook as every other event.\n\nVerify the signature as Base64(HMAC-SHA256) over the concatenation of `success + invoice_id + invoice_status + message`; the `event` and `auth_code` fields are excluded.\n\n**Paylink expects a 200 OK response; if it does not receive 200, the delivery will be retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "Always `invoice.authorization_reversed` for this callback. Excluded from the HMAC signature calculation.",
+              "enum": [
+               "invoice.authorization_reversed"
+              ],
+              "example": "invoice.authorization_reversed"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "Always 1 for a recorded authorization reversal.",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The unique identifier of the invoice whose authorization was reversed.",
+              "example": 40506
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Paid status of the invoice after the reversal.",
+              "enum": [
+               "REVERSED"
+              ],
+              "example": "REVERSED"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable context about the reversal.",
+              "example": "Authorization reversed successfully."
+             },
+             "auth_code": {
+              "type": "string",
+              "description": "The payment gateway's authorization (approval) code for the original authorization, when available. Excluded from the HMAC signature calculation.",
+              "example": "831000"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC signature for webhook verification using the same hash key as the integration. Calculated using SHA256 over the concatenation of: success + invoice_id + invoice_status + message. **Note:** The `event` and `auth_code` fields are excluded from the signature calculation for backward compatibility. Success is sent as integer (1 or 0) for cross-language compatibility.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            },
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ]
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully"
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/integration/check-status": {
+   "post": {
+    "tags": [
+     "Payment Operations"
+    ],
+    "summary": "Check Gateway Status",
+    "description": "Checks the payment status directly with the payment gateway and syncs the invoice status. Useful when webhook delivery fails or you need to verify the current state.",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "invoice_id",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's authentication token"
+         },
+         "invoice_id": {
+          "type": "integer",
+          "description": "The unique identifier of the invoice to check",
+          "example": 40506
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature authenticating the request — identical scheme to `/api/v2/integration/init`, using the **hash token** from your integration settings.\n\n**How to generate:**\n1. Concatenate the signed field values (everything except `token` and `signature`) in the exact order below, with no separator. Include the optional fields you send; for any field you omit, concatenate an empty string.\n2. HMAC-SHA256 the concatenated string with your secret hash token.\n3. Base64-encode the digest.\n\n**Field order:** `invoice_id`.\n\n**PHP:**\n```php\n$data = [\n    $invoice_id,\n];\n$signature = base64_encode(\n    hash_hmac('sha256', implode('', $data), $hashToken, true)\n);\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst data = [\n    invoice_id\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(data.join(''))\n    .digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\ndata = [\n    str(invoice_id)\n]\ndigest = hmac.new(hash_token.encode(), ''.join(data).encode(), hashlib.sha256).digest()\nsignature = base64.b64encode(digest).decode()\n```\n\n**Notes:**\n- Use the **hash token** (secret), not the public token.\n- Numeric values are concatenated exactly as sent — make sure the string form matches your submitted value.\n- Recalculate the signature for every request."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Gateway status checked successfully",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "object",
+           "properties": {
+            "invoice_id": {
+             "type": "integer"
+            },
+            "paid_status": {
+             "type": "string"
+            },
+            "auth_code": {
+             "type": "string",
+             "nullable": true,
+             "description": "The payment gateway's authorization (approval) code for the transaction, or null when none is available.",
+             "example": "831000"
+            }
+           }
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": {
+          "invoice_id": 40506,
+          "paid_status": "PAID",
+          "auth_code": "831000"
+         },
+         "success": true,
+         "message": "Payment confirmed at the gateway. Invoice has been marked as paid."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation or business logic error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "nullable": true
+          },
+          "success": {
+           "type": "boolean"
+          },
+          "message": {
+           "type": "string"
+          }
+         }
+        },
+        "example": {
+         "data": null,
+         "success": false,
+         "message": "No transaction found at the payment gateway for this invoice."
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/init": {
+   "post": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Create Recurring Mandate (v2)",
+    "description": "Creates a subscription mandate and the first setup invoice, returning a signed `checkout_url`. The first charge is customer-present (3DS-authenticated, card vaulted); subsequent charges run unattended on the configured cadence.\n\n**Availability:** Recurring payments must be enabled for your account.\n\n**Idempotency:** The dedup key is `external_reference` when provided; otherwise the `Idempotency-Key` request header is used. Deduplication is scoped to `(company, integration, key)`. A replay with the **same terms** returns the same `mandate_id` and a fresh `checkout_url`. A replay with **different terms** returns `409 Conflict`; the compared terms are `order_amount`, `currency`, `cadence_interval`, `cadence_count`, `total_cycles`, and `end_date`. Reusing a reference whose subscription is `cancelled`, `failed`, or `completed` creates a new subscription (the old mandate is preserved).\n\n**Base URL:** `https://pay.getpayin.com`",
+    "parameters": [
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Idempotency-Key",
+      "in": "header",
+      "required": false,
+      "description": "Optional dedup key used when `external_reference` is not in the request body. If the same key is replayed the original mandate and checkout_url are returned unchanged.",
+      "example": "sub_abc123",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "first_name",
+         "last_name",
+         "email",
+         "order_title",
+         "order_amount",
+         "currency",
+         "cadence_interval",
+         "cadence_count",
+         "consent_text",
+         "token",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's public authentication token."
+         },
+         "first_name": {
+          "type": "string",
+          "description": "Subscriber's first name.",
+          "example": "Jane"
+         },
+         "last_name": {
+          "type": "string",
+          "description": "Subscriber's last name.",
+          "example": "Doe"
+         },
+         "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Subscriber's email address.",
+          "example": "jane.doe@example.com"
+         },
+         "order_title": {
+          "type": "string",
+          "description": "Subscription plan title shown to the subscriber at checkout.",
+          "example": "Monthly Premium Plan"
+         },
+         "order_amount": {
+          "type": "number",
+          "description": "Amount charged per cycle (must be greater than 0).",
+          "example": 99.99
+         },
+         "currency": {
+          "type": "string",
+          "description": "ISO currency code (e.g. EGP, USD, EUR). Must be a currency supported by your company.",
+          "example": "EGP"
+         },
+         "cadence_interval": {
+          "type": "string",
+          "enum": [
+           "day",
+           "week",
+           "month",
+           "year"
+          ],
+          "description": "The interval unit for the billing cadence.",
+          "example": "month"
+         },
+         "cadence_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of interval units between charges. E.g. `cadence_count=1` with `cadence_interval=month` = every month; `cadence_count=3` = every quarter.",
+          "example": 1
+         },
+         "total_cycles": {
+          "type": "integer",
+          "minimum": 1,
+          "nullable": true,
+          "description": "Total number of billing cycles including the setup charge. When null or omitted the subscription continues until cancelled.",
+          "example": 12
+         },
+         "end_date": {
+          "type": "string",
+          "format": "date",
+          "nullable": true,
+          "description": "Optional hard end date for the subscription (must be a future date). No charge will occur after this date.",
+          "example": "2027-01-01"
+         },
+         "consent_text": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "The exact subscription terms text that the cardholder sees and accepts at checkout. Required for regulatory/mandate compliance. Max 2000 characters.",
+          "example": "By subscribing you authorise monthly charges of EGP 99.99 until cancelled."
+         },
+         "external_reference": {
+          "type": "string",
+          "maxLength": 255,
+          "nullable": true,
+          "description": "Your own subscription identifier. Used as the idempotency key — repeated requests with the same value return the original mandate. When omitted the `Idempotency-Key` header is used instead.",
+          "example": "sub_customer_789"
+         },
+         "redirection_url": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true,
+          "description": "Optional HTTPS redirect URL for the customer after the first checkout. Must be on your integration's registered domain. **Included in the signature when provided.**",
+          "example": "https://your-domain.com/subscription/return"
+         },
+         "webhook_url": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true,
+          "description": "Optional per-request webhook URL override. Must be HTTPS on your integration's registered domain. **Included in the signature when provided.**",
+          "example": "https://your-domain.com/api/subscription/webhook"
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification.\n\n**How to generate:**\n1. Take all validated request fields in rule-definition order, EXCLUDING `token`, `signature`, and `payment_mode`\n2. Concatenate with **no delimiter** in this exact order:\n   `first_name + last_name + email + order_title + order_amount + currency + cadence_interval + cadence_count + [total_cycles if provided] + [end_date if provided] + consent_text + [external_reference if provided] + [redirection_url if provided] + [webhook_url if provided]`\n3. Nullable fields are included ONLY when present in the request (absent fields are skipped)\n4. HMAC-SHA256 over the concatenated string using your hash_token\n5. Base64-encode the raw HMAC bytes\n\n**PHP:**\n```php\n// Build ordered field array, skip null/absent fields\n$fields = array_values(array_filter(\n    [$first_name, $last_name, $email, $order_title, $order_amount,\n     $currency, $cadence_interval, $cadence_count,\n     $total_cycles ?? null, $end_date ?? null, $consent_text,\n     $external_reference ?? null, $redirection_url ?? null, $webhook_url ?? null],\n    fn($v) => $v !== null\n));\n$signature = base64_encode(hash_hmac('sha256', implode('', $fields), $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst fields = [\n    first_name, last_name, email, order_title, order_amount,\n    currency, cadence_interval, cadence_count,\n    ...(total_cycles != null ? [total_cycles] : []),\n    ...(end_date != null ? [end_date] : []),\n    consent_text,\n    ...(external_reference != null ? [external_reference] : []),\n    ...(redirection_url != null ? [redirection_url] : []),\n    ...(webhook_url != null ? [webhook_url] : []),\n];\nconst signature = crypto.createHmac('sha256', hashToken)\n    .update(fields.join('')).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nfields = [f for f in [\n    first_name, last_name, email, order_title, str(order_amount),\n    currency, cadence_interval, str(cadence_count),\n    str(total_cycles) if total_cycles is not None else None,\n    end_date if end_date is not None else None,\n    consent_text,\n    external_reference if external_reference is not None else None,\n    redirection_url if redirection_url is not None else None,\n    webhook_url if webhook_url is not None else None,\n] if f is not None]\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), ''.join(fields).encode(), hashlib.sha256).digest()\n).decode()\n```"
+         }
+        }
+       }
+      }
+     }
+    },
+    "callbacks": {
+     "subscriptionStatusUpdate": {
+      "{$webhookUrl}": {
+       "post": {
+        "summary": "Subscription Status Update Webhook",
+        "description": "Delivered to the integration's webhook URL whenever a subscription lifecycle event occurs that the integration is subscribed to. Uses the same signed-webhook mechanism as `invoice.*` events — the `event` field is **excluded** from the HMAC signature calculation for backward compatibility.\n\n**Subscription event types:**\n- `subscription.activated` – Mandate activated after successful first payment\n- `subscription.charged` – A recurring cycle charge succeeded\n- `subscription.payment_failed` – A cycle charge attempt failed\n- `subscription.suspended` – Mandate suspended after repeated failures\n- `subscription.cancelled` – Mandate was cancelled\n- `subscription.completed` – All billing cycles completed\n\nEnable these events under **Settings → Payment Integrations → Webhook Events**.\n\n**Paylink expects a 200 OK response; delivery is retried up to 3 times with 100ms intervals.**",
+        "requestBody": {
+         "required": true,
+         "content": {
+          "application/json": {
+           "schema": {
+            "type": "object",
+            "required": [
+             "event",
+             "success",
+             "invoice_id",
+             "invoice_status",
+             "signature"
+            ],
+            "properties": {
+             "event": {
+              "type": "string",
+              "description": "The subscription event type. Excluded from HMAC signature calculation for backward compatibility.",
+              "enum": [
+               "subscription.activated",
+               "subscription.charged",
+               "subscription.payment_failed",
+               "subscription.suspended",
+               "subscription.cancelled",
+               "subscription.completed"
+              ],
+              "example": "subscription.charged"
+             },
+             "success": {
+              "type": "integer",
+              "enum": [
+               0,
+               1
+              ],
+              "description": "1 for successful operations (activated/charged/cancelled/completed), 0 for failures (payment_failed/suspended).",
+              "example": 1
+             },
+             "invoice_id": {
+              "type": "integer",
+              "description": "The cycle invoice ID associated with this event.",
+              "example": 40601
+             },
+             "invoice_status": {
+              "type": "string",
+              "description": "Current paid status of the cycle invoice.",
+              "enum": [
+               "PAID",
+               "UNPAID"
+              ],
+              "example": "PAID"
+             },
+             "message": {
+              "type": "string",
+              "description": "Human-readable description of the event.",
+              "example": "Subscription cycle charged successfully"
+             },
+             "signature": {
+              "type": "string",
+              "description": "HMAC-SHA256 signature computed over `success + invoice_id + invoice_status + message` (the `event`, `event_triggered_at`, and `timezone` fields are excluded). Verify using the same hash_token as the integration.",
+              "example": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+             }
+            }
+           }
+          }
+         }
+        },
+        "responses": {
+         "200": {
+          "description": "Webhook received and processed successfully.",
+          "content": {
+           "application/json": {
+            "schema": {
+             "type": "object",
+             "properties": {
+              "success": {
+               "type": "boolean",
+               "example": true
+              },
+              "message": {
+               "type": "string",
+               "example": "Webhook processed successfully"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Mandate created successfully. Redirect the subscriber to `checkout_url` for the first payment.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "checkout_url": {
+             "type": "string",
+             "description": "Signed URL for the subscriber's first (3DS-authenticated) payment. Expires after 60 minutes.",
+             "example": "https://pay.getpayin.com/integration/checkout?expires=1754075196&..."
+            },
+            "mandate_id": {
+             "type": "string",
+             "description": "Unique mandate UID. Use this in subsequent `/api/v2/integration/recurring/{mandate}` calls.",
+             "example": "mnd_01j9abc123def456"
+            },
+            "invoice_id": {
+             "type": "integer",
+             "description": "Invoice ID of the first setup charge.",
+             "example": 40601
+            },
+            "expires_at": {
+             "type": "string",
+             "format": "date-time",
+             "description": "Expiry timestamp of the checkout URL (ISO 8601).",
+             "example": "2025-08-01T19:06:36.205559Z"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "checkout_url": "https://pay.getpayin.com/integration/checkout?expires=1754075196&integration_id=2&invoice_id=40601&order_title=Monthly+Premium+Plan&signature=abc123",
+          "mandate_id": "mnd_01j9abc123def456",
+          "invoice_id": 40601,
+          "expires_at": "2025-08-01T19:06:36.205559Z"
+         }
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "The external_reference / Idempotency-Key was reused with different subscription terms.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": false
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "message": {
+             "type": "string"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation error or signature mismatch.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "The given data was invalid.",
+         "errors": {
+          "signature": [
+           "Invalid signature."
+          ]
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/{mandate}": {
+   "get": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Get Mandate Status (v2)",
+    "description": "Returns the current state of a recurring mandate.\n\n**Signature (mandate action):** `base64(HMAC-SHA256(mandate_uid, hash_token))` — the HMAC input is the mandate UID string only (not any request fields).",
+    "parameters": [
+     {
+      "name": "mandate",
+      "in": "path",
+      "required": true,
+      "description": "The mandate UID returned by `POST /api/v2/integration/recurring/init` (`data.mandate_id`).",
+      "schema": {
+       "type": "string"
+      },
+      "example": "mnd_01j9abc123def456"
+     },
+     {
+      "name": "token",
+      "in": "query",
+      "required": true,
+      "description": "The integration's public authentication token.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "signature",
+      "in": "query",
+      "required": true,
+      "description": "HMAC-SHA256 signature for request verification. **Mandate action signature** differs from the init signature: only the mandate UID (path parameter) is signed, not the request body fields.\n\n**How to generate:**\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\n**PHP:**\n```php\n$signature = base64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', hashToken).update(mandateUid).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), mandate_uid.encode(), hashlib.sha256).digest()\n).decode()\n```",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Mandate status retrieved successfully.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "mandate_id": {
+             "type": "string",
+             "example": "mnd_01j9abc123def456"
+            },
+            "status": {
+             "type": "string",
+             "enum": [
+              "pending",
+              "active",
+              "paused",
+              "past_due",
+              "completed",
+              "cancelled",
+              "failed"
+             ],
+             "example": "active"
+            },
+            "amount": {
+             "type": "integer",
+             "description": "Per-cycle charge amount in the smallest currency unit (cents/piastres).",
+             "example": 9999
+            },
+            "completed_cycles": {
+             "type": "integer",
+             "description": "Number of billing cycles successfully charged so far.",
+             "example": 3
+            },
+            "total_cycles": {
+             "type": "integer",
+             "nullable": true,
+             "description": "Total configured cycles, or null if open-ended.",
+             "example": 12
+            },
+            "next_charge_at": {
+             "type": "string",
+             "format": "date-time",
+             "nullable": true,
+             "description": "ISO 8601 timestamp of the next scheduled charge, or null if paused/completed/cancelled.",
+             "example": "2025-09-01T00:00:00.000000Z"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "mandate_id": "mnd_01j9abc123def456",
+          "status": "active",
+          "amount": 9999,
+          "completed_cycles": 3,
+          "total_cycles": 12,
+          "next_charge_at": "2025-09-01T00:00:00.000000Z"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation error or mandate not found / action not allowed.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "The given data was invalid.",
+         "errors": {
+          "signature": [
+           "Invalid signature."
+          ]
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/{mandate}/cancel": {
+   "post": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Cancel Mandate (v2)",
+    "description": "Cancels an active or paused recurring mandate. No further charges will occur. A `subscription.cancelled` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (see Get Mandate Status for code examples).",
+    "parameters": [
+     {
+      "name": "mandate",
+      "in": "path",
+      "required": true,
+      "description": "The mandate UID returned by `POST /api/v2/integration/recurring/init` (`data.mandate_id`).",
+      "schema": {
+       "type": "string"
+      },
+      "example": "mnd_01j9abc123def456"
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's public authentication token."
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification. **Mandate action signature** differs from the init signature: only the mandate UID (path parameter) is signed, not the request body fields.\n\n**How to generate:**\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\n**PHP:**\n```php\n$signature = base64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', hashToken).update(mandateUid).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), mandate_uid.encode(), hashlib.sha256).digest()\n).decode()\n```"
+         }
+        }
+       },
+       "example": {
+        "token": "{{auth_token}}",
+        "signature": "auto-generated"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Mandate cancelled successfully.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "cancelled": {
+             "type": "boolean",
+             "example": true
+            },
+            "status": {
+             "type": "string",
+             "example": "cancelled"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "cancelled": true,
+          "status": "cancelled"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation error or mandate not found / action not allowed.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "The given data was invalid.",
+         "errors": {
+          "signature": [
+           "Invalid signature."
+          ]
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/{mandate}/pause": {
+   "post": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Pause Mandate (v2)",
+    "description": "Pauses an active recurring mandate. Scheduled charges are suspended until the mandate is resumed. A `subscription.suspended` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only.",
+    "parameters": [
+     {
+      "name": "mandate",
+      "in": "path",
+      "required": true,
+      "description": "The mandate UID returned by `POST /api/v2/integration/recurring/init` (`data.mandate_id`).",
+      "schema": {
+       "type": "string"
+      },
+      "example": "mnd_01j9abc123def456"
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's public authentication token."
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification. **Mandate action signature** differs from the init signature: only the mandate UID (path parameter) is signed, not the request body fields.\n\n**How to generate:**\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\n**PHP:**\n```php\n$signature = base64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', hashToken).update(mandateUid).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), mandate_uid.encode(), hashlib.sha256).digest()\n).decode()\n```"
+         }
+        }
+       },
+       "example": {
+        "token": "{{auth_token}}",
+        "signature": "auto-generated"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Mandate paused successfully.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "paused": {
+             "type": "boolean",
+             "example": true
+            },
+            "status": {
+             "type": "string",
+             "example": "paused"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "paused": true,
+          "status": "paused"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation error or mandate not found / action not allowed.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "The given data was invalid.",
+         "errors": {
+          "signature": [
+           "Invalid signature."
+          ]
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/{mandate}/resume": {
+   "post": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Resume Mandate (v2)",
+    "description": "Resumes a paused recurring mandate. Scheduled charges will restart on the next cadence. A `subscription.activated` webhook event is dispatched.\n\n**Signature:** HMAC-SHA256 of the mandate UID only.",
+    "parameters": [
+     {
+      "name": "mandate",
+      "in": "path",
+      "required": true,
+      "description": "The mandate UID returned by `POST /api/v2/integration/recurring/init` (`data.mandate_id`).",
+      "schema": {
+       "type": "string"
+      },
+      "example": "mnd_01j9abc123def456"
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "signature"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's public authentication token."
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification. **Mandate action signature** differs from the init signature: only the mandate UID (path parameter) is signed, not the request body fields.\n\n**How to generate:**\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\n**PHP:**\n```php\n$signature = base64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', hashToken).update(mandateUid).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), mandate_uid.encode(), hashlib.sha256).digest()\n).decode()\n```"
+         }
+        }
+       },
+       "example": {
+        "token": "{{auth_token}}",
+        "signature": "auto-generated"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Mandate resumed successfully.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "resumed": {
+             "type": "boolean",
+             "example": true
+            },
+            "status": {
+             "type": "string",
+             "example": "active"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "resumed": true,
+          "status": "active"
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation error or mandate not found / action not allowed.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "The given data was invalid.",
+         "errors": {
+          "signature": [
+           "Invalid signature."
+          ]
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v2/integration/recurring/{mandate}/pay-early": {
+   "post": {
+    "tags": [
+     "Recurring Subscriptions"
+    ],
+    "summary": "Pay Installment Early (v2)",
+    "description": "Charges an installment ahead of schedule on an active installment (Pay in N) plan. The customer can pay **the next installment** or **the entire remaining balance** early.\n\nReturns a signed hosted-checkout URL (valid for 60 minutes) that carries the chosen intent — open it for the customer to complete the on-session payment. After the payment succeeds the plan advances automatically: `next` records the paid cycle and re-anchors the following scheduled charge to the cadence; `remaining` settles every outstanding cycle and completes the plan. The request is refused (422) when the plan is not active, or when the target cycle is already being charged by the scheduler, so an early payment can never double-charge a cycle.\n\n**Signature:** HMAC-SHA256 of the mandate UID only (see Get Mandate Status for code examples).",
+    "parameters": [
+     {
+      "name": "mandate",
+      "in": "path",
+      "required": true,
+      "description": "The mandate UID returned by `POST /api/v2/integration/recurring/init` (`data.mandate_id`).",
+      "schema": {
+       "type": "string"
+      },
+      "example": "mnd_01j9abc123def456"
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "required": true,
+      "example": "application/json",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "token",
+         "signature",
+         "intent"
+        ],
+        "properties": {
+         "token": {
+          "type": "string",
+          "description": "The integration's public authentication token."
+         },
+         "intent": {
+          "type": "string",
+          "enum": [
+           "next",
+           "remaining"
+          ],
+          "description": "Which slice of the plan to charge early:\n- `next` — the next scheduled installment only. The plan advances one cycle and the following charge is re-anchored to the cadence.\n- `remaining` — the entire outstanding balance across all remaining installments, settling the plan in a single payment.\n\nThis field is NOT part of the signature calculation."
+         },
+         "signature": {
+          "type": "string",
+          "description": "HMAC-SHA256 signature for request verification. **Mandate action signature** differs from the init signature: only the mandate UID (path parameter) is signed, not the request body fields.\n\n**How to generate:**\n```\nbase64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true))\n```\n\n**PHP:**\n```php\n$signature = base64_encode(hash_hmac('sha256', $mandateUid, $hashToken, true));\n```\n\n**Node.js:**\n```javascript\nconst crypto = require('crypto');\nconst signature = crypto.createHmac('sha256', hashToken).update(mandateUid).digest('base64');\n```\n\n**Python:**\n```python\nimport hmac, hashlib, base64\nsignature = base64.b64encode(\n    hmac.new(hash_token.encode(), mandate_uid.encode(), hashlib.sha256).digest()\n).decode()\n```"
+         }
+        }
+       },
+       "example": {
+        "token": "{{auth_token}}",
+        "signature": "auto-generated",
+        "intent": "next"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Early payment is allowed. Open `checkout_url` for the customer to complete the on-session payment.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "success": {
+           "type": "boolean",
+           "example": true
+          },
+          "data": {
+           "type": "object",
+           "properties": {
+            "checkout_url": {
+             "type": "string",
+             "description": "Signed hosted-checkout URL carrying the chosen intent. Valid for 60 minutes.",
+             "example": "https://pay.paylink.sa/integration/checkout?invoice_id=123&integration_id=45&installment_intent=next&signature=..."
+            },
+            "mandate_id": {
+             "type": "string",
+             "example": "mnd_01j9abc123def456"
+            },
+            "invoice_id": {
+             "type": "integer",
+             "example": 123
+            },
+            "intent": {
+             "type": "string",
+             "example": "next"
+            },
+            "amount": {
+             "type": "integer",
+             "description": "Indicative amount for the chosen intent at request time, in minor units (e.g. halalas / cents). Not binding: the on-session checkout re-resolves the amount when the customer pays, so a scheduled charge landing in between can change what is finally charged. Reconcile against the payment webhook.",
+             "example": 5000
+            },
+            "currency": {
+             "type": "string",
+             "example": "SAR"
+            },
+            "cycle": {
+             "type": "integer",
+             "description": "Indicative installment cycle this early payment applies to at request time (see `amount`).",
+             "example": 2
+            },
+            "expires_at": {
+             "type": "string",
+             "format": "date-time",
+             "example": "2026-08-22T12:00:00.000000Z"
+            }
+           }
+          }
+         }
+        },
+        "example": {
+         "success": true,
+         "data": {
+          "checkout_url": "https://pay.paylink.sa/integration/checkout?invoice_id=123&integration_id=45&installment_intent=next&signature=...",
+          "mandate_id": "mnd_01j9abc123def456",
+          "invoice_id": 123,
+          "intent": "next",
+          "amount": 5000,
+          "currency": "SAR",
+          "cycle": 2,
+          "expires_at": "2026-08-22T12:00:00.000000Z"
+         }
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "The Installments (Pay in N) capability is not enabled for the account.",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "Installments is disabled for this company."
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "The intent is missing/invalid, the mandate is not an installment plan, or the target cycle cannot be paid early (plan inactive, already completed, or the cycle is already being charged by the scheduler).",
+      "content": {
+       "application/json": {
+        "example": {
+         "success": false,
+         "message": "This installment cannot be paid early right now."
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

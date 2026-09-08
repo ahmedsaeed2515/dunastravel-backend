@@ -164,7 +164,9 @@ describe('AuthService - Email Verification & Hardening', () => {
         code: validOtp,
       });
 
-      expect(response).toEqual({ message: 'Email verified successfully' });
+      expect(response.message).toBe('Email verified successfully');
+      expect(response.user).toBeDefined();
+      expect(response.user?.isVerified).toBe(true);
       expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: {
           id: 'user-1',

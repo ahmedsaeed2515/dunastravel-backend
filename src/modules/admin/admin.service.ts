@@ -6,7 +6,10 @@ import {
   Inject,
   ForbiddenException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PAYMENT_EVENTS } from '../../common/events/payment-events';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -67,6 +70,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly bookingsService: BookingsService,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   async assertActiveBookingCustomer(
@@ -577,7 +581,7 @@ export class AdminService {
     }
     const paymentAmount = new Prisma.Decimal(amountNum.toFixed(2));
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const [lockedBooking] = await tx.$queryRaw<any[]>`
         SELECT id, "total_amount_usd" AS "totalAmountUsd", "paid_amount_usd" AS "paidAmountUsd", status
         FROM bookings
@@ -664,8 +668,22 @@ export class AdminService {
         newPaidAmount: newPaidAmount.toFixed(2),
         balanceDue: total.minus(newPaidAmount).toFixed(2),
         status: targetStatus,
+        bookingId: lockedBooking.id,
       };
     });
+
+    if (this.eventEmitter) {
+      this.eventEmitter.emit(PAYMENT_EVENTS.SUCCEEDED, {
+        paymentId: result.payment.id,
+        bookingId: result.bookingId,
+        amountUsd: paymentAmount.toNumber(),
+        transactionId: result.payment.transactionId,
+        gateway: 'MANUAL_ADMIN',
+      });
+    }
+
+    const { bookingId: _bId, ...response } = result;
+    return response;
   }
 
   async addBookingNote(

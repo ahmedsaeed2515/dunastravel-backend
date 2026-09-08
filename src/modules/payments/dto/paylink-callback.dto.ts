@@ -8,6 +8,7 @@ export class PayLinkCallbackDto {
   invoice_id!: string | number;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   invoice_status!: string;
 
@@ -16,6 +17,7 @@ export class PayLinkCallbackDto {
   message!: string;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(512)
   signature!: string;
 }

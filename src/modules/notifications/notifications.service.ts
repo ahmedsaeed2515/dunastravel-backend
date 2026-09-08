@@ -341,23 +341,119 @@ export class NotificationsService {
       'user_verification',
       { name, otpCode, verifyUrl },
       (vars: Record<string, string>) => ({
-        subject: 'Your Dunas Travel Verification Code',
+        subject: `${vars['otpCode']} is your Dunas Travel verification code | رمز التحقق الخاص بك`,
         html: `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 550px; margin: 0 auto; padding: 30px; border: 1px solid rgba(201, 162, 39, 0.3); border-radius: 16px; background-color: #121118; color: #f5edd6; text-align: center;">
-            <h2 style="color: #c9a227; margin-bottom: 8px; font-size: 24px;">Verify Your Account</h2>
-            <p style="color: #d1cbbd; font-size: 15px; margin-bottom: 24px;">Hi ${vars['name']}, thank you for registering with Dunas Travel. Please use the 6-digit verification code below to complete your registration:</p>
-            <div style="margin: 28px 0;">
-              <span style="font-size: 34px; font-weight: 800; letter-spacing: 10px; color: #0a0a0d; background: linear-gradient(135deg, #c9a227, #f0d575); padding: 14px 32px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.25);">
-                ${vars['otpCode']}
-              </span>
-            </div>
-            <p style="color: #a0998a; font-size: 13px; margin-top: 20px;">This code will expire in 15 minutes.</p>
-            <div style="margin-top: 30px; padding-top: 20px; border-t: 1px solid rgba(201, 162, 39, 0.15); font-size: 13px; color: #8e8777;">
-              Or verify directly via link: <a href="${vars['verifyUrl']}" style="color: #c9a227; text-decoration: underline;">Click Here to Verify</a>
-            </div>
-          </div>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dunas Travel Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #07060a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #f5edd6;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #07060a; padding: 35px 15px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card Container -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #121018; border: 1px solid rgba(201, 162, 39, 0.35); border-radius: 18px; overflow: hidden; box-shadow: 0 15px 50px rgba(0, 0, 0, 0.85);">
+          
+          <!-- Top Gold Accent Bar -->
+          <tr>
+            <td style="height: 4px; background: linear-gradient(90deg, #996515, #c9a227, #f7e7a0, #c9a227, #996515);"></td>
+          </tr>
+
+          <!-- Header / Brand Wordmark -->
+          <tr>
+            <td align="center" style="padding: 36px 30px 20px 30px; text-align: center;">
+              <div style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 24px; font-weight: 700; letter-spacing: 5px; color: #c9a227; text-transform: uppercase; margin-bottom: 4px;">
+                DUNAS TRAVEL
+              </div>
+              <div style="font-size: 10.5px; letter-spacing: 3px; color: #8e8777; text-transform: uppercase; font-weight: 500;">
+                Luxury Journeys & Bespoke Experiences
+              </div>
+              <div style="margin: 18px auto 0 auto; width: 60px; height: 1px; background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.6), transparent);"></div>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 10px 35px 30px 35px; text-align: center;">
+              <!-- Bilingual Heading -->
+              <h1 style="color: #f7e7a0; font-family: 'Georgia', serif; font-size: 22px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: 0.5px;">
+                Account & Booking Verification
+              </h1>
+              <div style="color: #c9a227; font-size: 16px; font-weight: 600; margin-bottom: 22px; font-family: 'Segoe UI', Tahoma, sans-serif;" dir="rtl">
+                تفعيل الحساب وتأكيد حجز رحلتك
+              </div>
+
+              <!-- Greeting & Instructions -->
+              <p style="color: #d1cbbd; font-size: 14.5px; line-height: 1.65; margin: 0 0 10px 0;">
+                Dear <strong style="color: #ffffff;">${vars['name']}</strong>, thank you for registering with Dunas Travel. To verify your email and proceed with your luxury booking reservation, please use the 6-digit confirmation code below:
+              </p>
+              <p style="color: #a8a090; font-size: 13.5px; line-height: 1.65; margin: 0 0 26px 0;" dir="rtl">
+                عزيزنا <strong style="color: #f7e7a0;">${vars['name']}</strong>، لتفعيل حسابك وتأكيد حجز رحلتك الفاخرة، يرجى إدخال رمز التحقق التالي:
+              </p>
+
+              <!-- Luxury OTP Code Box -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 25px 0;">
+                <tr>
+                  <td align="center">
+                    <div style="background-color: #1a1724; border: 1px solid rgba(201, 162, 39, 0.4); border-radius: 14px; padding: 18px 24px; display: inline-block; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);">
+                      <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 12px; color: #f7e7a0; text-shadow: 0 0 15px rgba(201, 162, 39, 0.5); display: inline-block; padding-left: 12px;">
+                        ${vars['otpCode']}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiry Badge -->
+              <div style="display: inline-block; background-color: rgba(201, 162, 39, 0.12); border: 1px solid rgba(201, 162, 39, 0.25); border-radius: 20px; padding: 5px 16px; font-size: 12px; color: #c9a227; margin-bottom: 24px;">
+                ⏳ Valid for 15 minutes • صالح لمدة 15 دقيقة
+              </div>
+
+              <!-- One-Click Button -->
+              <div style="margin: 15px 0 28px 0;">
+                <a href="${vars['verifyUrl']}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #c9a227 0%, #dfba47 50%, #b88f1a 100%); color: #0a090f; font-size: 13.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 13px 32px; border-radius: 10px; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.35);">
+                  Verify Instantly • تفعيل الحساب بنقرة واحدة
+                </a>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 14px 18px; text-align: left; font-size: 12px; color: #8e8777; line-height: 1.5;">
+                <div style="color: #c9a227; font-weight: 600; margin-bottom: 4px;">🛡️ Security Notice • تنبيه أمني:</div>
+                Never share this verification code with anyone. Dunas Travel staff will never ask for your code. If you did not create an account or request a booking, you can safely disregard this message.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 22px 30px; background-color: #0d0c13; border-top: 1px solid rgba(201, 162, 39, 0.15); text-align: center; font-size: 11px; color: #6e675b; line-height: 1.6;">
+              <div style="color: #8e8777; font-weight: 500; margin-bottom: 4px;">
+                Dunas Travel Group • Cairo — Headquarters
+              </div>
+              <div>
+                Spain • Italy • Brazil • Mexico • Colombia • Egypt
+              </div>
+              <div style="margin-top: 8px;">
+                <a href="https://www.dunastravel.com" style="color: #c9a227; text-decoration: none;">www.dunastravel.com</a> &nbsp;|&nbsp;
+                <a href="mailto:concierge@dunastravel.com" style="color: #c9a227; text-decoration: none;">concierge@dunastravel.com</a>
+              </div>
+              <div style="margin-top: 10px; color: #524e45;">
+                &copy; ${new Date().getFullYear()} Dunas Travel. All rights reserved.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
         `,
-        text: `Hi ${vars['name']},\n\nYour 6-digit verification code for Dunas Travel is: ${vars['otpCode']}\nThis code will expire in 15 minutes.\n\nDirect verification link: ${vars['verifyUrl']}`,
+        text: `DUNAS TRAVEL — Account & Booking Verification\n\nDear ${vars['name']},\n\nYour 6-digit verification code to activate your account and complete your booking reservation is:\n\n${vars['otpCode']}\n\nThis code will expire in 15 minutes.\n\nOr verify instantly by clicking this link:\n${vars['verifyUrl']}\n\nSecurity notice: Never share this code with anyone. Dunas Travel will never ask for your code. If you did not request this, please disregard this email.\n\nwww.dunastravel.com`,
       }),
     );
 

@@ -478,9 +478,9 @@ export class CmsService {
       },
       footer_info: {
         copyright: {
-          en: "© 2026 Dunas Travel. All rights reserved. Registered Tourism License #1892.",
-          ar: "© 2026 ديوناس ترافيل. جميع الحقوق محفوظة. ترخيص وزارة السياحة رقم 1892.",
-          es: "© 2026 Dunas Travel. Todos los derechos reservados. Licencia de Turismo #1892.",
+          en: "© 2026 Dunas Travel. All rights reserved. Registered Tourism License #1882.",
+          ar: "© 2026 ديوناس ترافيل. جميع الحقوق محفوظة. ترخيص وزارة السياحة رقم 1882.",
+          es: "© 2026 Dunas Travel. Todos los derechos reservados. Licencia de Turismo #1882.",
         },
         supportEmail: "concierge@dunastravel.com",
         vipWhatsapp: "+20 100 000 0000",

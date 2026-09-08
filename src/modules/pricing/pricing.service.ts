@@ -272,12 +272,13 @@ export class PricingService {
       );
     }
 
+    // Prices are final and all-inclusive; no separate tax surcharge or deduction.
     const response: CalculatedPriceResponse = {
       basePriceUsd: basePrice.toFixed(2),
       adultTotalUsd: adultTotal.toFixed(2),
       childTotalUsd: childTotal.toFixed(2),
       seasonalAdjustmentUsd: seasonalAdjustment.toFixed(2),
-      subtotalUsd: adjustedSubtotal.toFixed(2),
+      subtotalUsd: finalTotal.toFixed(2),
       discountAmountUsd: discountAmount.toFixed(2),
       taxAmountUsd: '0.00',
       totalAmountUsd: finalTotal.toFixed(2),

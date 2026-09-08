@@ -229,8 +229,37 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify user email' })
   @ApiOkResponse()
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto);
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyEmail(dto);
+    if (result.user) {
+      const token = this.authService.generateToken(result.user);
+      const refreshToken = await this.authService.generateRefreshToken(
+        result.user.id,
+      );
+      const nodeEnv =
+        this.configService.get<string>('nodeEnv') || 'development';
+      const csrfToken = crypto.randomBytes(32).toString('hex');
+      res.cookie('access_token', token, getCookieOptions(nodeEnv));
+      res.cookie(
+        'refresh_token',
+        refreshToken,
+        getRefreshCookieOptions(nodeEnv),
+      );
+      res.cookie('csrf_token', csrfToken, {
+        ...getCookieOptions(nodeEnv),
+        httpOnly: false,
+      });
+      return {
+        message: result.message,
+        user: result.user,
+        ...result.user,
+        csrfToken,
+      };
+    }
+    return result;
   }
 
   @Post('change-password')
