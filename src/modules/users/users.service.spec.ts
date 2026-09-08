@@ -165,4 +165,86 @@ describe('UserService - Create Admin User', () => {
       }),
     });
   });
+
+  describe('Role Escalation & Hardening Guards', () => {
+    it('should throw ForbiddenException if an ADMIN tries to grant SUPER_ADMIN role', async () => {
+      prisma.user.findFirst.mockResolvedValue(mockUser);
+
+      await expect(
+        service.update(
+          'user-uuid-123',
+          { role: UserRole.SUPER_ADMIN },
+          UserRole.ADMIN,
+        ),
+      ).rejects.toThrow('Only SUPER_ADMIN can grant the SUPER_ADMIN role');
+    });
+
+    it('should throw ForbiddenException if an ADMIN tries to modify a SUPER_ADMIN account', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        role: UserRole.SUPER_ADMIN,
+      });
+
+      await expect(
+        service.update(
+          'user-uuid-123',
+          { name: 'Hacked Name' },
+          UserRole.ADMIN,
+        ),
+      ).rejects.toThrow('Only SUPER_ADMIN can modify another SUPER_ADMIN account');
+    });
+
+    it('should throw BadRequestException if attempting to demote the last SUPER_ADMIN', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        role: UserRole.SUPER_ADMIN,
+      });
+      prisma.user.count.mockResolvedValue(0);
+
+      await expect(
+        service.update(
+          'user-uuid-123',
+          { role: UserRole.ADMIN },
+          UserRole.SUPER_ADMIN,
+        ),
+      ).rejects.toThrow('Cannot demote the last SUPER_ADMIN. Promote another user first.');
+    });
+
+    it('should invalidate session and refreshToken when role changes', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        role: UserRole.USER,
+      });
+      (prisma as any).user.update = jest.fn().mockResolvedValue({
+        ...mockUser,
+        role: UserRole.AGENT,
+      });
+
+      await service.update(
+        'user-uuid-123',
+        { role: UserRole.AGENT },
+        UserRole.SUPER_ADMIN,
+      );
+
+      expect((prisma as any).user.update).toHaveBeenCalledWith({
+        where: { id: 'user-uuid-123' },
+        data: expect.objectContaining({
+          role: UserRole.AGENT,
+          refreshToken: null,
+          sessionVersion: { increment: 1 },
+        }),
+      });
+    });
+
+    it('should throw ForbiddenException if attempting to softDelete a SUPER_ADMIN account', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        ...mockUser,
+        role: UserRole.SUPER_ADMIN,
+      });
+
+      await expect(service.softDelete('user-uuid-123')).rejects.toThrow(
+        'SUPER_ADMIN accounts cannot be deleted. Demote the user first.',
+      );
+    });
+  });
 });

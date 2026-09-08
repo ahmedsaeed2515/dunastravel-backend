@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AdminTailorMadeService } from './admin-tailor-made.service';
 import {
@@ -69,6 +70,9 @@ export class AdminTailorMadeController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (body.assigneeId !== undefined) {
+      if (user.role === UserRole.AGENT) {
+        throw new ForbiddenException('Agents cannot reassign inquiries');
+      }
       await this.service.assignInquiry(id, body.assigneeId, user);
     }
     if (body.status !== undefined) {

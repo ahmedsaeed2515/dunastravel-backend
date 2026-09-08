@@ -371,6 +371,9 @@ export class AdminTailorMadeService {
     assigneeId: string,
     actor: AuthenticatedUser,
   ) {
+    if (actor.role === UserRole.AGENT) {
+      throw new ForbiddenException('Agents cannot reassign inquiries');
+    }
     const [inquiry, assignee] = await Promise.all([
       this.getInquiry(id),
       this.prisma.user.findFirst({

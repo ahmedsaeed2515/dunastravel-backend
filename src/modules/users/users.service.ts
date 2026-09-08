@@ -4,6 +4,7 @@ import {
   ConflictException,
   Logger,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { User, UserRole, Prisma, MediaEntityType } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -163,14 +164,59 @@ export class UserService {
     });
   }
 
-  async update(id: string, data: UpdateUserData): Promise<User> {
+  async update(
+    id: string,
+    data: UpdateUserData,
+    actorRole?: string,
+  ): Promise<User> {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
+
+    if (
+      data.role &&
+      data.role === UserRole.SUPER_ADMIN &&
+      actorRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only SUPER_ADMIN can grant the SUPER_ADMIN role',
+      );
+    }
+
+    if (
+      user.role === UserRole.SUPER_ADMIN &&
+      actorRole &&
+      actorRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only SUPER_ADMIN can modify another SUPER_ADMIN account',
+      );
+    }
+
+    if (
+      user.role === UserRole.SUPER_ADMIN &&
+      data.role &&
+      data.role !== UserRole.SUPER_ADMIN
+    ) {
+      const superAdminCount = await this.prisma.user.count({
+        where: {
+          role: UserRole.SUPER_ADMIN,
+          deletedAt: null,
+          id: { not: id },
+        },
+      });
+      if (superAdminCount === 0) {
+        throw new BadRequestException(
+          'Cannot demote the last SUPER_ADMIN. Promote another user first.',
+        );
+      }
+    }
 
     if (data.email && data.email !== user.email) {
       const existing = await this.findByEmail(data.email);
       if (existing) throw new ConflictException('Email already in use');
     }
+
+    const roleIsChanging = Boolean(data.role && data.role !== user.role);
 
     return this.prisma.user.update({
       where: { id },
@@ -184,7 +230,7 @@ export class UserService {
           : undefined,
         passwordHash: data.passwordHash,
         role: data.role,
-        ...(data.passwordHash || data.role
+        ...(data.passwordHash || roleIsChanging
           ? {
               refreshToken: null,
               sessionVersion: { increment: 1 },
@@ -342,10 +388,22 @@ export class UserService {
     });
   }
 
-  async softDelete(id: string): Promise<void> {
+  async softDelete(id: string, actorRole?: string): Promise<void> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'SUPER_ADMIN accounts cannot be deleted. Demote the user first.',
+      );
+    }
+
+    if (actorRole && actorRole !== UserRole.SUPER_ADMIN && user.role === UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'Only SUPER_ADMIN can delete administrator accounts',
+      );
     }
 
     const activeBookings = await this.prisma.booking.count({

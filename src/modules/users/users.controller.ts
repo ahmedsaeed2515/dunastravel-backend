@@ -380,13 +380,17 @@ export class UsersController {
       passwordHash = await bcrypt.hash(cleanPassword, 12);
     }
 
-    const updatedUser = await this.userService.update(id, {
-      name: dto.name,
-      email: dto.email,
-      phone: dto.phone,
-      role: dto.role,
-      passwordHash,
-    });
+    const updatedUser = await this.userService.update(
+      id,
+      {
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        role: dto.role,
+        passwordHash,
+      },
+      user.role,
+    );
 
     if (dto.role) {
       await this.auditService.log({
@@ -422,7 +426,7 @@ export class UsersController {
     @Req() req: Request,
   ) {
     await this.assertCanManageTarget(user, id, undefined, false, true);
-    await this.userService.softDelete(id);
+    await this.userService.softDelete(id, user.role);
     await this.auditService.log({
       actorId: user.id,
       actorRole: user.role,

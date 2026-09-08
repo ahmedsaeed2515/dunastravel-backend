@@ -21,10 +21,12 @@ export class SuperAdminEscalationGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithUserAndBody>();
     const user = request.user;
     const body = request.body;
+    const query = (request.query || {}) as Record<string, any>;
+
+    const targetRole = body?.role || query?.role;
 
     if (
-      body &&
-      body.role === UserRole.SUPER_ADMIN &&
+      targetRole === UserRole.SUPER_ADMIN &&
       user?.role !== UserRole.SUPER_ADMIN
     ) {
       throw new ForbiddenException(
