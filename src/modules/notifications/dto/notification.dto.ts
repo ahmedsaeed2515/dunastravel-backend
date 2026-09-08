@@ -1,7 +1,7 @@
 import {
   IsOptional,
   IsEnum,
-  IsEmail,
+  IsString,
   IsInt,
   Max,
   MaxLength,
@@ -27,7 +27,7 @@ export class NotificationDeliveryLogQueryFilters {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
+  @IsString()
   @MaxLength(254)
   recipientEmail?: string;
 
