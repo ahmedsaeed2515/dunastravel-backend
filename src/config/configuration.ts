@@ -25,6 +25,7 @@ export default () => ({
     secretKey: process.env.TURNSTILE_SECRET_KEY,
     siteKey: process.env.TURNSTILE_SITE_KEY,
     skip: process.env.SKIP_TURNSTILE === 'true',
+    enforce: process.env.ENFORCE_TURNSTILE === 'true',
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,

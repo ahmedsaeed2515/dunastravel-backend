@@ -125,6 +125,9 @@ export const envValidationSchema = Joi.object({
   SKIP_TURNSTILE: Joi.string()
     .valid('true', 'false')
     .default('false'),
+  ENFORCE_TURNSTILE: Joi.string()
+    .valid('true', 'false')
+    .default('false'),
 
   MAIL_TRANSPORT: Joi.when('NODE_ENV', {
     is: 'production',

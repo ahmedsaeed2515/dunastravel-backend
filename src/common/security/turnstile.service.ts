@@ -42,18 +42,27 @@ export class TurnstileService {
     const secretKey =
       this.configService.get<string>('turnstile.secretKey') ||
       process.env.TURNSTILE_SECRET_KEY;
+    const enforce =
+      this.configService.get<boolean>('turnstile.enforce') ??
+      process.env.ENFORCE_TURNSTILE === 'true';
 
-    // In local dev/testing, allow explicit skip or missing secret key
-    if (skip || (!secretKey && !isProd)) {
-      this.logger.debug(
-        'Turnstile verification bypassed due to skip flag or missing secret key in non-production environment.',
-      );
+    // Allow explicit skip, or graceful bypass when secret key is not provisioned without strict enforcement
+    if (skip || (!secretKey && !enforce)) {
+      if (!secretKey && isProd) {
+        this.logger.warn(
+          'Turnstile secret key is not configured in production/staging environment. Bypassing Turnstile verification.',
+        );
+      } else {
+        this.logger.debug(
+          'Turnstile verification bypassed due to skip flag or unconfigured secret key.',
+        );
+      }
       return { success: true };
     }
 
     if (!secretKey) {
       this.logger.error(
-        'Turnstile secret key is not configured in production/staging environment.',
+        'Turnstile secret key is not configured in production/staging environment with enforcement enabled.',
       );
       throw new InternalServerErrorException(
         'CAPTCHA verification service is not properly configured.',

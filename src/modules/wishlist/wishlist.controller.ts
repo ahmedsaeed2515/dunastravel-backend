@@ -4,9 +4,9 @@ import {
   Post,
   Delete,
   Param,
+  Query,
   UseGuards,
   HttpCode,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WishlistService } from './wishlist.service';
@@ -22,8 +22,11 @@ export class WishlistController {
 
   @Get('auth/favorites')
   @ApiOperation({ summary: 'Get user favorites' })
-  async getFavorites(@CurrentUser() user: { id: string }) {
-    return this.wishlistService.getFavorites(user.id);
+  async getFavorites(
+    @CurrentUser() user: { id: string },
+    @Query('lang') lang?: string,
+  ) {
+    return this.wishlistService.getFavorites(user.id, lang);
   }
 
   @Post('tours/:tourId/favorite')

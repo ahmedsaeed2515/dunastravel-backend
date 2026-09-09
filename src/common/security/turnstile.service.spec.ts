@@ -52,10 +52,23 @@ describe('TurnstileService', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should throw InternalServerErrorException if secret key is missing in production', async () => {
+  it('should bypass verification if secret key is missing in production and enforce is not enabled', async () => {
     configService.get.mockImplementation((key: string) => {
       if (key === 'nodeEnv') return 'production';
       if (key === 'turnstile.secretKey') return undefined;
+      if (key === 'turnstile.enforce') return false;
+      return undefined;
+    });
+
+    const result = await service.validateToken(undefined);
+    expect(result.success).toBe(true);
+  });
+
+  it('should throw InternalServerErrorException if secret key is missing in production when enforce is true', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'nodeEnv') return 'production';
+      if (key === 'turnstile.secretKey') return undefined;
+      if (key === 'turnstile.enforce') return true;
       return undefined;
     });
 
