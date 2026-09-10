@@ -53,7 +53,7 @@ const GROUP_2_SPECIAL_PROGRAMS_7: Record<string, { category: string; tags: strin
   }
 };
 
-const GROUP_3_MULTI_COUNTRY_8 = [
+const GROUP_3_MULTI_COUNTRY_9 = [
   'estrellas-medio-oriente-19d',
   'cairo-and-athens-11-days',
   'essences-of-egypt-and-turkey-15-days',
@@ -61,7 +61,8 @@ const GROUP_3_MULTI_COUNTRY_8 = [
   'treasures-of-egypt-and-tunisia-16-days',
   'egypt-and-dubai-13-days',
   'spices-of-egypt-and-morocco',
-  'jewels-of-egypt-and-jordan-11-days'
+  'jewels-of-egypt-and-jordan-11-days',
+  'marvels-of-dubai-and-turkey-14-days'
 ];
 
 async function alignEgypt3Groups() {
