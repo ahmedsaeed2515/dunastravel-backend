@@ -2228,7 +2228,7 @@ export class AdminService {
         include: {
           _count: { select: { bookings: true, reviews: true } },
           images: {
-            where: { isHero: true },
+            orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
             take: 1,
             select: { imageUrl: true },
           },

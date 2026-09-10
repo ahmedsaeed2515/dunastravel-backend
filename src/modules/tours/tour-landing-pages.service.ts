@@ -721,10 +721,7 @@ export class TourLandingPagesService {
             include: {
               tour: {
                 include: {
-                  images: {
-                    orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
-                    take: 1,
-                  },
+                  images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
                 },
               },
             },
