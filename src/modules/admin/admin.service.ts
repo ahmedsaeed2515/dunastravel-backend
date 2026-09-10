@@ -3880,6 +3880,7 @@ export class AdminService {
   private async invalidateTourCache(slug: string): Promise<void> {
     for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
       await this.cacheManager.del(`tour:${slug}:${locale}`);
+      await this.cacheManager.del(`tour:detail:${slug}:${locale}`);
     }
   }
 
