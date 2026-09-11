@@ -61,7 +61,7 @@ export class AssignTailorMadeInquiryDto {
 export class QuoteTailorMadeInquiryDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2, allowInfinity: false, allowNaN: false })
-  @Min(0.01)
+  @Min(0)
   @Max(10_000_000)
   quotedAmountUsd!: number;
 

@@ -2946,15 +2946,21 @@ export class AdminService {
     country?: string | null,
     category?: string | null,
   ) {
+    const isMulti =
+      Boolean(category && (category.toLowerCase().includes('multi') || category.includes('متعدد'))) ||
+      Boolean(country && (country.toLowerCase().includes('multi') || country.includes('متعدد')));
+    const targetSlug = isMulti ? 'multi-country' : this.canonicalDestinationSlugForCountry(country);
+
     const existing = await tx.tourLandingPageTour.findFirst({
       where: {
         tourId,
         landingPage: { type: 'DESTINATION', deletedAt: null },
       },
+      include: { landingPage: true },
     });
-    if (existing) return;
 
-    const targetSlug = this.canonicalDestinationSlugForCountry(country);
+    if (existing && existing.landingPage?.slug === targetSlug) return;
+
     const target = await tx.tourLandingPage.findFirst({
       where: {
         slug: targetSlug,
@@ -2964,6 +2970,17 @@ export class AdminService {
       select: { id: true },
     });
     if (!target) return;
+
+    if (existing) {
+      await tx.tourLandingPageTour.update({
+        where: { id: existing.id },
+        data: {
+          landingPageId: target.id,
+          isVisible: true,
+        },
+      });
+      return;
+    }
 
     const maxSortOrder = await tx.tourLandingPageTour.aggregate({
       where: { landingPageId: target.id },

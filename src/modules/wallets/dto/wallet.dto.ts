@@ -1,5 +1,12 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  WalletOwnerType,
+  WalletTransactionStatus,
+  WalletTransactionType,
+} from '@prisma/client';
 import {
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -9,13 +16,7 @@ import {
   Matches,
   Min,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OmitType } from '@nestjs/swagger';
-import {
-  WalletOwnerType,
-  WalletTransactionType,
-  WalletTransactionStatus,
-} from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class CreateWalletTransactionDto {
   @ApiProperty({ enum: WalletOwnerType })
@@ -79,11 +80,14 @@ export class ManualWalletTransactionDto {
   @IsEnum(WalletTransactionType)
   type!: WalletTransactionType;
 
-  @ApiProperty()
+  // Optional: the dashboard does not send a reference; the controller generates
+  // a unique one when omitted so the idempotency unique key still holds.
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   @Matches(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/)
-  referenceId!: string;
+  referenceId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -121,6 +125,21 @@ export class WalletTransactionQueryFilters {
   @MaxLength(50)
   @Matches(/^[A-Z][A-Z0-9_]*$/)
   referenceType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  limit?: number;
 }
 
 export class ListWalletsQueryDto {
@@ -159,4 +178,3 @@ export class ListWalletsQueryDto {
   @IsString()
   sortOrder?: 'asc' | 'desc';
 }
-

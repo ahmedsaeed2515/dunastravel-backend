@@ -265,16 +265,35 @@ export class WalletsService {
     walletId: string,
     filters: WalletTransactionQueryFilters,
   ) {
-    const { referenceType } = filters;
-    const where: any = { walletId };
+    const { referenceType, page = 1, limit = 100 } = filters;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(500, Number(limit) || 100));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: Prisma.WalletTransactionWhereInput = { walletId };
     if (referenceType) {
       where.referenceType = referenceType;
     }
 
-    return this.prisma.walletTransaction.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.walletTransaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      this.prisma.walletTransaction.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
+    };
   }
 
   async getMetrics() {
@@ -299,12 +318,50 @@ export class WalletsService {
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.WalletWhereInput = {};
     if (query.ownerType) {
       where.ownerType = query.ownerType;
     }
     if (query.status) {
       where.status = query.status;
+    }
+
+    // Server-side search BEFORE pagination so results are complete and correct.
+    // Wallet has no direct relation to Company/User, so resolve matching owner
+    // IDs first and then filter wallets by those IDs (or by wallet id itself).
+    const searchValue = query.search?.trim();
+    if (searchValue) {
+      const [matchedCompanies, matchedUsers] = await Promise.all([
+        this.prisma.company.findMany({
+          where: {
+            OR: [
+              { name: { contains: searchValue, mode: 'insensitive' } },
+              { email: { contains: searchValue, mode: 'insensitive' } },
+              { referenceCode: { contains: searchValue, mode: 'insensitive' } },
+            ],
+          },
+          select: { id: true },
+        }),
+        this.prisma.user.findMany({
+          where: {
+            OR: [
+              { name: { contains: searchValue, mode: 'insensitive' } },
+              { email: { contains: searchValue, mode: 'insensitive' } },
+            ],
+          },
+          select: { id: true },
+        }),
+      ]);
+
+      const matchedOwnerIds = [
+        ...matchedCompanies.map((c) => c.id),
+        ...matchedUsers.map((u) => u.id),
+      ];
+
+      where.OR = [
+        { ownerId: { in: matchedOwnerIds } },
+        { id: searchValue },
+      ];
     }
 
     const [total, wallets] = await Promise.all([
@@ -402,24 +459,13 @@ export class WalletsService {
       };
     });
 
-    // Optional in-memory search filter if search term is provided
-    if (query.search && query.search.trim()) {
-      const s = query.search.trim().toLowerCase();
-      data = data.filter((item) => {
-        const ownerName = item.owner?.name?.toLowerCase() || '';
-        const ownerRef = (item.owner as any)?.referenceCode?.toLowerCase() || '';
-        const ownerEmail = item.owner?.email?.toLowerCase() || '';
-        return ownerName.includes(s) || ownerRef.includes(s) || ownerEmail.includes(s) || item.id.includes(s);
-      });
-    }
-
     return {
       data,
       meta: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limit) || 1,
       },
     };
   }

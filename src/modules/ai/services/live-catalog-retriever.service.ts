@@ -249,7 +249,10 @@ export class LiveCatalogRetrieverService {
         name: s.name,
         vehicleType: s.vehicleType || 'Mercedes Luxury Sedan',
         capacity: s.capacity || 4,
-        priceUsd: Number(s.basePriceUsd || 75),
+        priceUsd:
+          s.basePriceUsd !== undefined && s.basePriceUsd !== null && !isNaN(Number(s.basePriceUsd))
+            ? Number(s.basePriceUsd)
+            : 75,
         origin: s.serviceType === 'AIRPORT' ? 'Cairo Airport' : 'Cairo City',
         destination: s.serviceType === 'AIRPORT' ? 'Cairo Hotel' : 'Alexandria / Giza',
         isAvailable: true,

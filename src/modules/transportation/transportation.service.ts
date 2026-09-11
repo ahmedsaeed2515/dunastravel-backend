@@ -489,7 +489,11 @@ export class TransportationService {
         capacity: dto.capacity !== undefined ? Number(dto.capacity) : 50,
         doors: dto.doors !== undefined ? Number(dto.doors) : 2,
         transmission: dto.transmission || 'AUTO',
-        basePriceUsd: new Prisma.Decimal(dto.basePriceUsd || 150),
+        basePriceUsd: new Prisma.Decimal(
+          dto.basePriceUsd !== undefined && dto.basePriceUsd !== null
+            ? dto.basePriceUsd
+            : 150,
+        ),
         heroImageUrl: dto.heroImageUrl || this.getFallbackVehicleImage(dto.vehicleCategory),
         heroMediaId: dto.heroMediaId || null,
         isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : false,
@@ -558,7 +562,10 @@ export class TransportationService {
         capacity: dto.capacity !== undefined ? Number(dto.capacity) : existing.capacity,
         doors: dto.doors !== undefined ? Number(dto.doors) : existing.doors,
         transmission: dto.transmission !== undefined ? dto.transmission : existing.transmission,
-        basePriceUsd: dto.basePriceUsd !== undefined ? new Prisma.Decimal(dto.basePriceUsd) : existing.basePriceUsd,
+        basePriceUsd:
+          dto.basePriceUsd !== undefined && dto.basePriceUsd !== null
+            ? new Prisma.Decimal(dto.basePriceUsd)
+            : existing.basePriceUsd,
         heroImageUrl: dto.heroImageUrl !== undefined ? dto.heroImageUrl : existing.heroImageUrl,
         heroMediaId: dto.heroMediaId !== undefined ? dto.heroMediaId : existing.heroMediaId,
         isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : existing.isPrivate,

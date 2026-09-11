@@ -9,6 +9,7 @@ import {
   ParseEnumPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { WalletsService } from './wallets.service';
 import {
   ManualWalletTransactionDto,
@@ -101,8 +102,14 @@ export class WalletsController {
     @Body() dto: ManualWalletTransactionDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
+    // referenceId is NOT provided by the dashboard; generate a stable unique one
+    // so the idempotency unique key (walletId, referenceType, referenceId) holds
+    // and repeated submissions of the same request are deduplicated.
+    const referenceId = dto.referenceId ?? `MANUAL-${randomUUID()}`;
+
     const transaction = await this.walletsService.addTransaction({
       ...dto,
+      referenceId,
       referenceType: 'MANUAL',
       status: WalletTransactionStatus.COMPLETED,
     });
@@ -117,7 +124,7 @@ export class WalletsController {
         ownerId: dto.ownerId,
         type: dto.type,
         amount: dto.amount,
-        referenceId: dto.referenceId,
+        referenceId,
       },
     });
     return transaction;

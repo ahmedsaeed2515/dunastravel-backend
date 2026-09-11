@@ -196,16 +196,27 @@ export class CommissionsService {
       (commission.status === CommissionStatus.APPROVED ||
         commission.status === CommissionStatus.PAID)
     ) {
-      // Check if wallet credit transaction already exists to ensure idempotency
-      const existingTx = await this.prisma.walletTransaction.findFirst({
-        where: {
-          referenceType: 'COMMISSION',
-          referenceId: commission.id,
-          type: WalletTransactionType.CREDIT,
-        },
-      });
+      // Check if wallet credit transaction already exists to ensure idempotency.
+      // Also skip re-crediting if a reversal DEBIT already exists (A -> CANCELLED -> re-APPROVED)
+      // to avoid crediting the same commission twice.
+      const [existingTx, existingReversal] = await Promise.all([
+        this.prisma.walletTransaction.findFirst({
+          where: {
+            referenceType: 'COMMISSION',
+            referenceId: commission.id,
+            type: WalletTransactionType.CREDIT,
+          },
+        }),
+        this.prisma.walletTransaction.findFirst({
+          where: {
+            referenceType: 'COMMISSION_REVERSAL',
+            referenceId: commission.id,
+            type: WalletTransactionType.DEBIT,
+          },
+        }),
+      ]);
 
-      if (!existingTx) {
+      if (!existingTx && !existingReversal) {
         await this.walletsService.addTransaction({
           ownerType: WalletOwnerType.COMPANY,
           ownerId: commission.companyId,
@@ -225,6 +236,19 @@ export class CommissionsService {
       where: { id: commissionId },
     });
     if (commission && commission.status === CommissionStatus.CANCELLED) {
+      // Only debit the wallet if the commission was previously credited
+      // (APPROVED/PAID). Reversing a PENDING commission must NOT create a
+      // DEBIT, otherwise the partner balance goes negative without reason.
+      const wasCredited =
+        commission.status === CommissionStatus.CANCELLED &&
+        ((await this.prisma.walletTransaction.findFirst({
+          where: {
+            referenceType: 'COMMISSION',
+            referenceId: commission.id,
+            type: WalletTransactionType.CREDIT,
+          },
+        })) != null);
+
       // Check if reversal transaction already exists for idempotency
       const existingReversal = await this.prisma.walletTransaction.findFirst({
         where: {
@@ -234,7 +258,7 @@ export class CommissionsService {
         },
       });
 
-      if (!existingReversal) {
+      if (wasCredited && !existingReversal) {
         await this.walletsService.addTransaction({
           ownerType: WalletOwnerType.COMPANY,
           ownerId: commission.companyId,

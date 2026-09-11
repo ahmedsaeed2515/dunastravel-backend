@@ -103,21 +103,54 @@ export class ToursService {
       deletedAt: null,
     };
     if (query.category) {
-      where.category = { equals: query.category, mode: 'insensitive' };
+      const catTrim = query.category.trim();
+      const catLower = catTrim.toLowerCase();
+      if (catLower.includes('multi')) {
+        where.OR = [
+          { category: { contains: 'multi', mode: 'insensitive' } },
+          { category: { contains: 'متعددة' } },
+        ];
+      } else {
+        where.category = { contains: catTrim, mode: 'insensitive' };
+      }
     }
     if (query.destination) {
-      where.landingPages = {
-        some: {
-          isVisible: true,
-          landingPage: {
-            slug: canonicalDestinationSlug(query.destination),
-            type: 'DESTINATION',
-            status: 'PUBLISHED',
-            isActive: true,
-            deletedAt: null,
+      const canonSlug = canonicalDestinationSlug(query.destination);
+      const isMulti = canonSlug === 'multi-country';
+      const destinationCondition: Prisma.TourWhereInput = {
+        landingPages: {
+          some: {
+            isVisible: true,
+            landingPage: {
+              slug: canonSlug,
+              type: 'DESTINATION',
+              status: 'PUBLISHED',
+              isActive: true,
+              deletedAt: null,
+            },
           },
         },
       };
+
+      if (isMulti) {
+        const multiConditions: Prisma.TourWhereInput[] = [
+          destinationCondition,
+          { category: { contains: 'multi', mode: 'insensitive' } },
+          { category: { contains: 'متعددة' } },
+          { country: { equals: 'Multi-Country', mode: 'insensitive' } },
+        ];
+        if (where.OR) {
+          where.AND = [
+            { OR: where.OR },
+            { OR: multiConditions },
+          ];
+          delete where.OR;
+        } else {
+          where.OR = multiConditions;
+        }
+      } else {
+        where.landingPages = destinationCondition.landingPages;
+      }
     }
     if (query.country) {
       where.country = { equals: query.country, mode: 'insensitive' };
@@ -179,9 +212,9 @@ export class ToursService {
           isFeatured: true,
           displayOrder: true,
           images: {
-            take: 1,
+            take: 10,
             orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
-            select: { imageUrl: true },
+            select: { imageUrl: true, isHero: true, sortOrder: true },
           },
         },
       }),
@@ -191,25 +224,30 @@ export class ToursService {
       `Tours catalog queried | category=${query.category ?? 'all'} lang=${query.lang} page=${page} limit=${limit}`,
     );
 
-    const mappedItems: TourSummaryResponse[] = records.map((record) => ({
-      id: record.id,
-      slug: record.slug,
-      title: extractI18n(record.titleJsonb, query.lang),
-      category: record.category,
-      basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
-      currency: record.currency,
-      duration: extractI18n(record.durationJsonb, query.lang),
-      overview: extractI18n(record.overviewJsonb, query.lang),
-      highlights: extractI18nList(record.highlightsJsonb, query.lang),
-      includedServices: extractI18nList(record.includedServicesJsonb, query.lang),
-      excludedServices: extractI18nList(record.excludedServicesJsonb, query.lang),
-      heroImage: record.images[0]?.imageUrl ?? null,
-      country: record.country,
-      city: record.city,
-      languages: record.languages,
-      isFeatured: record.isFeatured,
-      displayOrder: record.displayOrder ?? 0,
-    }));
+    const mappedItems: TourSummaryResponse[] = records.map((record) => {
+      const heroUrl = record.images.find((img) => img.isHero)?.imageUrl ?? record.images[0]?.imageUrl ?? null;
+      return {
+        id: record.id,
+        slug: record.slug,
+        title: extractI18n(record.titleJsonb, query.lang),
+        category: record.category,
+        basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
+        currency: record.currency,
+        duration: extractI18n(record.durationJsonb, query.lang),
+        overview: extractI18n(record.overviewJsonb, query.lang),
+        highlights: extractI18nList(record.highlightsJsonb, query.lang),
+        includedServices: extractI18nList(record.includedServicesJsonb, query.lang),
+        excludedServices: extractI18nList(record.excludedServicesJsonb, query.lang),
+        heroImage: heroUrl,
+        heroImageUrl: heroUrl,
+        images: record.images.map((img) => img.imageUrl),
+        country: record.country,
+        city: record.city,
+        languages: record.languages,
+        isFeatured: record.isFeatured,
+        displayOrder: record.displayOrder ?? 0,
+      };
+    });
 
     // Visibility may change through either a tour lifecycle action or an
     // interface relation action.  Do not cache this public catalogue without
