@@ -2673,6 +2673,18 @@ export class AdminService {
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
     const { itineraries, images, expectedUpdatedAt, ...tourData } = dto;
     this.assertTourImages(images);
+
+    if (tourData.slug && tourData.slug.toLowerCase() !== slug.toLowerCase()) {
+      const existingWithSlug = await this.prisma.tour.findUnique({
+        where: { slug: tourData.slug.toLowerCase() },
+      });
+      if (existingWithSlug && existingWithSlug.id !== tour.id) {
+        throw new ConflictException(
+          `Tour with slug "${tourData.slug}" already exists. Please choose a different slug.`,
+        );
+      }
+    }
+
     const safeTourData = this.prepareTourData(
       tourData,
       false,
@@ -2748,10 +2760,13 @@ export class AdminService {
       return res;
     });
 
-    // Invalidate cache
+    // Invalidate cache for both current and updated slug
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const l of langs) {
       await this.cacheManager.del(`tour:${slug}:${l}`);
+      if (updated.slug !== slug) {
+        await this.cacheManager.del(`tour:${updated.slug}:${l}`);
+      }
     }
 
     return { success: true, slug: updated.slug };
@@ -2946,56 +2961,81 @@ export class AdminService {
     country?: string | null,
     category?: string | null,
   ) {
-    const isMulti =
-      Boolean(category && (category.toLowerCase().includes('multi') || category.includes('متعدد'))) ||
-      Boolean(country && (country.toLowerCase().includes('multi') || country.includes('متعدد')));
-    const targetSlug = isMulti ? 'multi-country' : this.canonicalDestinationSlugForCountry(country);
+    try {
+      const isMulti =
+        Boolean(category && (category.toLowerCase().includes('multi') || category.includes('متعدد'))) ||
+        Boolean(country && (country.toLowerCase().includes('multi') || country.includes('متعدد')));
+      const targetSlug = isMulti ? 'multi-country' : this.canonicalDestinationSlugForCountry(country);
 
-    const existing = await tx.tourLandingPageTour.findFirst({
-      where: {
-        tourId,
-        landingPage: { type: 'DESTINATION', deletedAt: null },
-      },
-      include: { landingPage: true },
-    });
+      const target = await tx.tourLandingPage.findFirst({
+        where: {
+          slug: targetSlug,
+          type: 'DESTINATION',
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!target) return;
 
-    if (existing && existing.landingPage?.slug === targetSlug) return;
-
-    const target = await tx.tourLandingPage.findFirst({
-      where: {
-        slug: targetSlug,
-        type: 'DESTINATION',
-        deletedAt: null,
-      },
-      select: { id: true },
-    });
-    if (!target) return;
-
-    if (existing) {
-      await tx.tourLandingPageTour.update({
-        where: { id: existing.id },
-        data: {
-          landingPageId: target.id,
-          isVisible: true,
+      // Check if tour is already linked to the target landing page
+      const alreadyLinked = await tx.tourLandingPageTour.findUnique({
+        where: {
+          landingPageId_tourId: {
+            landingPageId: target.id,
+            tourId,
+          },
         },
       });
-      return;
+
+      if (alreadyLinked) {
+        if (!alreadyLinked.isVisible) {
+          await tx.tourLandingPageTour.update({
+            where: { id: alreadyLinked.id },
+            data: { isVisible: true },
+          });
+        }
+        return;
+      }
+
+      // If not multi-country, clean up other single DESTINATION links so tour moves cleanly to new destination
+      if (!isMulti) {
+        await tx.tourLandingPageTour.deleteMany({
+          where: {
+            tourId,
+            landingPageId: { not: target.id },
+            landingPage: { type: 'DESTINATION' },
+          },
+        });
+      }
+
+      const maxSortOrder = await tx.tourLandingPageTour.aggregate({
+        where: { landingPageId: target.id },
+        _max: { sortOrder: true },
+      });
+
+      await tx.tourLandingPageTour.upsert({
+        where: {
+          landingPageId_tourId: {
+            landingPageId: target.id,
+            tourId,
+          },
+        },
+        update: {
+          isVisible: true,
+        },
+        create: {
+          landingPageId: target.id,
+          tourId,
+          sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+          isVisible: true,
+          isFeatured: false,
+        },
+      });
+    } catch (err: any) {
+      this.logger.warn(
+        `autoLinkDestinationInterface non-fatal error for tour ${tourId}: ${err?.message}`,
+      );
     }
-
-    const maxSortOrder = await tx.tourLandingPageTour.aggregate({
-      where: { landingPageId: target.id },
-      _max: { sortOrder: true },
-    });
-
-    await tx.tourLandingPageTour.create({
-      data: {
-        landingPageId: target.id,
-        tourId,
-        sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
-        isVisible: true,
-        isFeatured: false,
-      },
-    });
   }
 
   private assertTourImages(images?: CreateTourDto['images']): void {
