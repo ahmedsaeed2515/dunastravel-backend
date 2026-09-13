@@ -188,3 +188,75 @@ export class OptimizeAssetDto {
   @IsNumber()
   height?: number;
 }
+
+export class UploadVideoDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  altText?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categorySlug?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  addToShowcase?: string | boolean;
+
+  @ApiPropertyOptional({ description: 'Optional video URL if registering by link' })
+  @IsOptional()
+  @IsString()
+  videoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Optional poster image URL' })
+  @IsOptional()
+  @IsString()
+  posterUrl?: string;
+}
+
+export class AddVideoUrlDto {
+  @ApiProperty({ description: 'Direct or embed video URL (MP4, YouTube, Vimeo, etc.)' })
+  @IsString()
+  videoUrl!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  altText?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categorySlug?: string;
+
+  @ApiPropertyOptional({ description: 'Optional poster / thumbnail image URL' })
+  @IsOptional()
+  @IsString()
+  posterUrl?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  addToShowcase?: boolean;
+}

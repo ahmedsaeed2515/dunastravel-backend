@@ -1697,69 +1697,195 @@ export class MediaService {
   }
 
   async uploadVideoAsset(
-    file: UploadableFile,
-    dto: { title?: string; altText?: string; categorySlug?: string; addToShowcase?: boolean },
+    file: UploadableFile | undefined,
+    dto: {
+      title?: string;
+      description?: string;
+      altText?: string;
+      categorySlug?: string;
+      addToShowcase?: boolean;
+      videoUrl?: string;
+      posterUrl?: string;
+    },
     userId: string,
+    posterFile?: UploadableFile,
   ): Promise<IMediaAsset> {
-    const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
-    const maxSizeBytes = 100 * 1024 * 1024; // 100MB
-
-    if (!file || !file.mimetype || !allowedVideoMimes.includes(file.mimetype.toLowerCase())) {
-      throw new BadRequestException('Invalid video format. Allowed: MP4, WebM, QuickTime, MKV');
+    if (!file && (!dto.videoUrl || !dto.videoUrl.trim())) {
+      throw new BadRequestException('Either a video file or a video URL must be provided');
     }
 
-    if (file.size > maxSizeBytes) {
-      throw new BadRequestException('Video exceeds maximum size of 100MB');
+    let resolvedPosterUrl = dto.posterUrl ? dto.posterUrl.trim() : null;
+
+    // 1. Process custom poster image file if provided
+    if (posterFile) {
+      const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+      if (!allowedImageMimes.includes(posterFile.mimetype.toLowerCase())) {
+        throw new BadRequestException('Invalid poster image format. Allowed: JPG, PNG, WebP, AVIF');
+      }
+
+      const posterFolder = `${this.configService.get<string>('storage.uploadFolder') || 'dunas-travel'}/videos/posters`;
+      const posterOptions: UploadOptions = {
+        folder: posterFolder,
+        entityType: MediaEntityType.GENERAL,
+        entityId: dto.categorySlug || 'posters',
+        altText: dto.title ? `${dto.title} Poster` : 'Video Poster',
+        eager: [],
+        resourceType: 'image',
+      };
+
+      const posterResult = await this.storageProvider.upload(posterFile, posterOptions);
+      if (posterResult.success && posterResult.secureUrl) {
+        resolvedPosterUrl = posterResult.secureUrl;
+      }
     }
 
-    const folder = `${this.configService.get<string>('storage.uploadFolder') || 'dunas-travel'}/videos/${dto.categorySlug || 'showcase'}`;
-    const options: UploadOptions = {
-      folder,
-      entityType: MediaEntityType.GENERAL,
-      entityId: dto.categorySlug || 'videos',
-      altText: dto.altText || dto.title || null,
-      eager: [],
-      resourceType: 'video',
-    };
-
-    const result = await this.storageProvider.upload(file, options);
-    if (!result.success) {
-      throw new HttpException(
-        `Video upload failed: ${result.error || 'Provider error'}`,
-        HttpStatus.BAD_GATEWAY,
-      );
+    // 2. Determine showcase position if adding to showcase
+    let showcasePosition: number | null = null;
+    const shouldAddToShowcase = dto.addToShowcase ?? true;
+    if (shouldAddToShowcase) {
+      const maxItem = await this.prisma.mediaAsset.findFirst({
+        where: { isShowcase: true, showcaseSection: 'VIDEO', deletedAt: null },
+        orderBy: { showcasePosition: 'desc' },
+        select: { showcasePosition: true },
+      });
+      showcasePosition = (maxItem?.showcasePosition ?? 0) + 1;
     }
 
-    const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
-    const posterUrl = `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${result.publicId}.jpg`;
-    const optimizedUrl = `https://res.cloudinary.com/${cloudName}/video/upload/q_auto/${result.publicId}.mp4`;
+    let asset;
 
-    const asset = await this.prisma.mediaAsset.create({
-      data: {
-        publicId: result.publicId,
-        url: result.url,
-        secureUrl: result.secureUrl,
-        providerName: 'cloudinary',
-        format: result.format || 'mp4',
-        mimeType: file.mimetype,
-        bytes: result.bytes,
-        width: result.width,
-        height: result.height,
-        duration: result.duration,
+    // 3A. File Upload Flow
+    if (file) {
+      const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+      const maxSizeBytes = 100 * 1024 * 1024; // 100MB
+
+      if (!file.mimetype || !allowedVideoMimes.includes(file.mimetype.toLowerCase())) {
+        throw new BadRequestException('Invalid video format. Allowed: MP4, WebM, QuickTime, MKV');
+      }
+
+      if (file.size > maxSizeBytes) {
+        throw new BadRequestException('Video exceeds maximum size of 100MB');
+      }
+
+      const folder = `${this.configService.get<string>('storage.uploadFolder') || 'dunas-travel'}/videos/${dto.categorySlug || 'showcase'}`;
+      const options: UploadOptions = {
+        folder,
         entityType: MediaEntityType.GENERAL,
         entityId: dto.categorySlug || 'videos',
-        mediaType: 'VIDEO',
-        cloudinaryResourceType: 'video',
-        title: dto.title || dto.altText || file.originalname,
         altText: dto.altText || dto.title || null,
-        thumbnailUrl: posterUrl,
-        optimizedUrl,
-        provenance: MediaProvenance.UPLOADED,
-        uploadedBy: userId,
-        isShowcase: dto.addToShowcase ?? true,
-        showcaseSection: 'VIDEO',
-      },
-    });
+        eager: [],
+        resourceType: 'video',
+      };
+
+      const result = await this.storageProvider.upload(file, options);
+      if (!result.success) {
+        throw new HttpException(
+          `Video upload failed: ${result.error || 'Provider error'}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+      const autoPosterUrl = `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${result.publicId}.jpg`;
+      const optimizedUrl = `https://res.cloudinary.com/${cloudName}/video/upload/q_auto/${result.publicId}.mp4`;
+
+      asset = await this.prisma.mediaAsset.create({
+        data: {
+          publicId: result.publicId,
+          url: result.url,
+          secureUrl: result.secureUrl,
+          providerName: 'cloudinary',
+          format: result.format || 'mp4',
+          mimeType: file.mimetype,
+          bytes: result.bytes,
+          width: result.width,
+          height: result.height,
+          duration: result.duration,
+          entityType: MediaEntityType.GENERAL,
+          entityId: dto.categorySlug || 'videos',
+          mediaType: 'VIDEO',
+          cloudinaryResourceType: 'video',
+          title: dto.title || dto.altText || file.originalname,
+          description: dto.description || null,
+          altText: dto.altText || dto.title || null,
+          thumbnailUrl: resolvedPosterUrl || autoPosterUrl,
+          optimizedUrl,
+          provenance: MediaProvenance.UPLOADED,
+          uploadedBy: userId,
+          isShowcase: shouldAddToShowcase,
+          showcaseSection: 'VIDEO',
+          showcasePosition,
+        },
+      });
+    } else {
+      // 3B. Video via URL / Link Flow
+      const videoUrl = dto.videoUrl!.trim();
+      if (!/^https?:\/\//i.test(videoUrl)) {
+        throw new BadRequestException('Video URL must be a valid HTTP or HTTPS address');
+      }
+
+      let providerName = 'url';
+      const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      const vimeoMatch = videoUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+
+      if (ytMatch) {
+        providerName = 'youtube';
+        if (!resolvedPosterUrl) {
+          resolvedPosterUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+        }
+      } else if (vimeoMatch) {
+        providerName = 'vimeo';
+      }
+
+      const publicId = `video_url_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      asset = await this.prisma.mediaAsset.create({
+        data: {
+          publicId,
+          url: videoUrl,
+          secureUrl: videoUrl,
+          providerName,
+          format: 'mp4',
+          mimeType: 'video/mp4',
+          bytes: 0,
+          width: 1920,
+          height: 1080,
+          duration: null,
+          entityType: MediaEntityType.GENERAL,
+          entityId: dto.categorySlug || 'videos',
+          mediaType: 'VIDEO',
+          cloudinaryResourceType: 'video',
+          title: dto.title || dto.altText || 'Showcase Video',
+          description: dto.description || null,
+          altText: dto.altText || dto.title || null,
+          thumbnailUrl: resolvedPosterUrl || null,
+          optimizedUrl: videoUrl,
+          provenance: MediaProvenance.UPLOADED,
+          uploadedBy: userId,
+          isShowcase: shouldAddToShowcase,
+          showcaseSection: 'VIDEO',
+          showcasePosition,
+        },
+      });
+    }
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: userId,
+          action: 'VIDEO_ASSET_CREATED',
+          entityType: 'MEDIA_ASSET',
+          entityId: asset.id,
+          metadata: {
+            source: file ? 'file' : 'url',
+            hasCustomPoster: !!resolvedPosterUrl,
+            addToShowcase: shouldAddToShowcase,
+            position: showcasePosition,
+          },
+        },
+      });
+    } catch {
+      // Non-blocking audit log
+    }
 
     return asset as IMediaAsset;
   }

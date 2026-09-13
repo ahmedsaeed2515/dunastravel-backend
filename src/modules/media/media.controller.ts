@@ -31,7 +31,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -62,6 +62,8 @@ import {
   HomepageMediaShowcaseResponseDto,
   ShowcasePhotoItemDto,
   ShowcaseVideoItemDto,
+  UploadVideoDto,
+  AddVideoUrlDto,
 } from './dto/showcase-media.dto';
 
 @ApiTags('Admin — Media')
@@ -333,36 +335,73 @@ export class MediaAdminController {
   @Post('upload-video')
   @Throttle({ default: { limit: 30, ttl: 3_600_000 } })
   @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 100 * 1024 * 1024,
+    FileFieldsInterceptor(
+      [
+        { name: 'file', maxCount: 1 },
+        { name: 'poster', maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: {
+          fileSize: 100 * 1024 * 1024,
+        },
       },
-      fileFilter: (req, file, cb) => {
-        const allowed = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
-        if (!allowed.includes(file.mimetype.toLowerCase())) {
-          return cb(new BadRequestException('Invalid video file format'), false);
-        }
-        cb(null, true);
-      },
-    }),
+    ),
   )
-  @ApiOperation({ summary: 'Upload a video asset (up to 100MB)' })
+  @ApiOperation({ summary: 'Upload a video asset (up to 100MB) with optional poster image' })
   @ApiConsumes('multipart/form-data')
   async uploadVideo(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: { title?: string; altText?: string; categorySlug?: string; addToShowcase?: string | boolean },
+    @UploadedFiles()
+    files: {
+      file?: Express.Multer.File[];
+      poster?: Express.Multer.File[];
+    },
+    @Body() dto: UploadVideoDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    if (!file) throw new BadRequestException('No video file provided');
-    const addToShowcase = body.addToShowcase === true || body.addToShowcase === 'true';
+    const videoFile = files?.file?.[0];
+    const posterFile = files?.poster?.[0];
+
+    const addToShowcase =
+      dto.addToShowcase === true ||
+      dto.addToShowcase === 'true' ||
+      dto.addToShowcase === undefined;
+
     const asset = await this.mediaService.uploadVideoAsset(
-      file,
+      videoFile,
       {
-        title: body.title,
-        altText: body.altText,
-        categorySlug: body.categorySlug,
+        videoUrl: dto.videoUrl,
+        posterUrl: dto.posterUrl,
+        title: dto.title,
+        description: dto.description,
+        altText: dto.altText,
+        categorySlug: dto.categorySlug,
         addToShowcase,
+      },
+      user.id,
+      posterFile,
+    );
+    return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Post('add-video-url')
+  @Throttle({ default: { limit: 60, ttl: 3_600_000 } })
+  @ApiOperation({ summary: 'Register an external video URL with optional poster and details' })
+  @ApiOkResponse({ type: MediaAssetResponseDto })
+  async addVideoUrl(
+    @Body() dto: AddVideoUrlDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MediaAssetResponseDto> {
+    const asset = await this.mediaService.uploadVideoAsset(
+      undefined,
+      {
+        videoUrl: dto.videoUrl,
+        posterUrl: dto.posterUrl,
+        title: dto.title,
+        description: dto.description,
+        altText: dto.altText,
+        categorySlug: dto.categorySlug,
+        addToShowcase: dto.addToShowcase ?? true,
       },
       user.id,
     );
