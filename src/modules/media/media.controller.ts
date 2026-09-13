@@ -372,12 +372,14 @@ export class MediaAdminController {
   @Post('optimize/:id')
   @ApiOperation({ summary: 'Generate and verify server-side WebP optimization for an existing asset' })
   @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({ type: MediaAssetResponseDto })
   async optimizeAsset(
     @Param('id') id: string,
     @Body() dto: OptimizeAssetDto,
     @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.mediaService.optimizeAsset(id, dto, user);
+  ): Promise<MediaAssetResponseDto> {
+    const asset = await this.mediaService.optimizeAsset(id, dto, user);
+    return MediaAssetResponseDto.fromPrisma(asset);
   }
 
   @Get(':id/usage')

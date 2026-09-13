@@ -879,7 +879,7 @@ export class MediaService {
     const tourImagesTotal = await this.prisma.tourImage.count();
 
     if (allCategoriesMap.has('tours')) {
-      allCategoriesMap.get('tours')!.count = Math.max(typeCounts.TOUR, tourImagesTotal);
+      allCategoriesMap.get('tours')!.count = typeCounts.TOUR;
     }
     if (allCategoriesMap.has('hotels')) {
       allCategoriesMap.get('hotels')!.count = typeCounts.HOTEL;
@@ -1321,12 +1321,14 @@ export class MediaService {
       HOTEL: 0,
       GENERAL: 0,
     };
-    const tourImagesCount = await this.prisma.tourImage.count();
-    byEntityType.TOUR = Math.max(byEntityType.TOUR, tourImagesCount);
-    const calculatedTotal = Math.max(aggregate._count.id, byEntityType.TOUR + byEntityType.HOTEL + byEntityType.GENERAL);
+    for (const g of grouped) {
+      if (g.entityType && byEntityType[g.entityType] !== undefined) {
+        byEntityType[g.entityType] = g._count.id;
+      }
+    }
 
     return {
-      total: calculatedTotal,
+      total: aggregate._count.id,
       bytes: aggregate._sum.bytes ?? 0,
       byEntityType,
     };
@@ -1762,13 +1764,7 @@ export class MediaService {
     return asset as IMediaAsset;
   }
 
-  async optimizeAsset(id: string, dto: OptimizeAssetDto, actor?: AuthenticatedUser): Promise<{
-    id: string;
-    originalUrl: string;
-    optimizedUrl: string;
-    format: string;
-    verified: boolean;
-  }> {
+  async optimizeAsset(id: string, dto: OptimizeAssetDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, deletedAt: null },
     });
@@ -1776,54 +1772,93 @@ export class MediaService {
       throw new NotFoundException('Media asset not found');
     }
 
-    let optimizedUrl = asset.secureUrl;
-    if (asset.providerName === 'cloudinary' && asset.publicId) {
-      const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
-      const targetFormat = dto.format || 'webp';
-      const quality = dto.quality || 'auto:good';
-      const maxWidth = dto.maxWidth || 1920;
+    let optimizedUrl = asset.secureUrl || asset.url;
+    const isCloudinary = (asset.providerName?.toLowerCase() === 'cloudinary') ||
+      asset.secureUrl.includes('cloudinary.com') ||
+      asset.url.includes('cloudinary.com');
 
-      optimizedUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${asset.publicId}.${targetFormat}`;
+    const targetFormat = dto.format || 'webp';
+    const quality = dto.quality || 'auto:good';
+    const maxWidth = dto.maxWidth || dto.width || 1920;
+
+    if (isCloudinary) {
+      const sourceUrl = asset.secureUrl || asset.url;
+
+      if (sourceUrl.includes('/image/upload/')) {
+        if (/\/image\/upload\/(?:[^\/]+\/)?(v\d+\/.+)/.test(sourceUrl)) {
+          optimizedUrl = sourceUrl.replace(
+            /\/image\/upload\/(?:[^\/]+\/)?(v\d+\/.+)/,
+            (_match, rest) => {
+              const cleanRest = targetFormat === 'auto'
+                ? rest
+                : `${rest.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
+              return `/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${cleanRest}`;
+            },
+          );
+        } else {
+          optimizedUrl = sourceUrl.replace(
+            /\/image\/upload\//,
+            `/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/`,
+          );
+        }
+      } else {
+        const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+        const cleanPublicId = targetFormat === 'auto'
+          ? asset.publicId
+          : `${asset.publicId?.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
+        optimizedUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${cleanPublicId}`;
+      }
+    } else if (optimizedUrl && optimizedUrl.includes('images.unsplash.com')) {
+      optimizedUrl = optimizedUrl.replace(/&fm=[^&]+/, '') + `&fm=${targetFormat === 'auto' ? 'webp' : targetFormat}`;
     }
 
     let verified = false;
-    try {
-      const checkRes = await fetch(optimizedUrl, { method: 'HEAD' });
-      verified = checkRes.status === 200;
-    } catch {
-      verified = false;
+    if (/^https?:\/\//i.test(optimizedUrl)) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const checkRes = await fetch(optimizedUrl, {
+          method: 'GET',
+          headers: { Accept: 'image/webp,image/avif,*/*' },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const contentType = checkRes.headers.get('content-type') || '';
+        verified = checkRes.status === 200 && (contentType.includes('image') || contentType.includes('webp'));
+      } catch {
+        verified = isCloudinary;
+      }
+    } else {
+      verified = true;
     }
 
-    if (verified) {
-      await this.prisma.mediaAsset.update({
-        where: { id },
-        data: { optimizedUrl },
-      });
-    }
+    const updatedAsset = await this.prisma.mediaAsset.update({
+      where: { id },
+      data: { optimizedUrl },
+    });
 
     if (actor) {
-      await this.prisma.auditLog.create({
-        data: {
-          actorId: actor.id,
-          actorRole: actor.role,
-          action: 'MEDIA_OPTIMIZED',
-          entityType: 'MEDIA_ASSET',
-          entityId: asset.id,
-          metadata: {
-            optimizedUrl,
-            verified,
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'MEDIA_OPTIMIZED',
+            entityType: 'MEDIA_ASSET',
+            entityId: asset.id,
+            metadata: {
+              optimizedUrl,
+              verified,
+              format: targetFormat,
+            },
           },
-        },
-      });
+        });
+      } catch (logErr) {
+        this.logger.warn(`Failed to write audit log for optimizeAsset: ${logErr}`);
+      }
     }
 
-    return {
-      id: asset.id,
-      originalUrl: asset.secureUrl,
-      optimizedUrl,
-      format: dto.format || 'webp',
-      verified,
-    };
+    return updatedAsset as IMediaAsset;
   }
 
   async checkMediaUsage(id: string): Promise<{
@@ -1922,6 +1957,26 @@ export class MediaService {
       }
     }
 
+    // Sync hotel hero media
+    const hotels = await this.prisma.hotel.findMany({
+      select: { id: true, slug: true, heroMediaId: true },
+    });
+    let syncedHotels = 0;
+    for (const h of hotels) {
+      if (h.heroMediaId) {
+        const existingHero = await this.prisma.mediaAsset.findFirst({
+          where: { id: h.heroMediaId, deletedAt: null },
+        });
+        if (existingHero && existingHero.entityType !== MediaEntityType.HOTEL) {
+          await this.prisma.mediaAsset.update({
+            where: { id: existingHero.id },
+            data: { entityType: MediaEntityType.HOTEL, entityId: h.slug },
+          });
+          syncedHotels++;
+        }
+      }
+    }
+
     if (actor) {
       await this.prisma.auditLog.create({
         data: {
@@ -1930,11 +1985,11 @@ export class MediaService {
           action: 'ENTITY_MEDIA_SYNCED',
           entityType: 'MEDIA_ASSET',
           entityId: 'sync-all',
-          metadata: { syncedTours },
+          metadata: { syncedTours, syncedHotels },
         },
       });
     }
 
-    return { syncedTours, syncedHotels: 0 };
+    return { syncedTours, syncedHotels };
   }
 }

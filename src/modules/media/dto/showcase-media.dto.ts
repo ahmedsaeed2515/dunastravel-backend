@@ -173,8 +173,18 @@ export class OptimizeAssetDto {
   @IsNumber()
   maxWidth?: number;
 
+  @ApiPropertyOptional({ default: 1920 })
+  @IsOptional()
+  @IsNumber()
+  width?: number;
+
   @ApiPropertyOptional({ default: 1080 })
   @IsOptional()
   @IsNumber()
   maxHeight?: number;
+
+  @ApiPropertyOptional({ default: 1080 })
+  @IsOptional()
+  @IsNumber()
+  height?: number;
 }
