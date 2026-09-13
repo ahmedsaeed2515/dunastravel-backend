@@ -43,6 +43,18 @@ export interface ProcessChatMessageDto {
   idempotencyKey?: string;
 }
 
+export type GuiderAvailabilityStatus = 'ACTIVE' | 'DISABLED' | 'MAINTENANCE';
+
+export interface GuiderAvailabilityResult {
+  enabled: boolean;
+  status: GuiderAvailabilityStatus;
+  version: string;
+  message: string | null;
+  statusChangedAt: string | null;
+  statusChangedBy: string | null;
+  reason: string | null;
+}
+
 export interface AiPersona {
   code: string;
   icon: string;
@@ -310,6 +322,95 @@ export class ChatOrchestratorService {
     return this.keyPoolService.getAiConfig();
   }
 
+  async getPublicAvailabilityStatus(): Promise<GuiderAvailabilityResult> {
+    const config = await this.getOrCreateConfig();
+    const tourSettings = (config.tourSettings && typeof config.tourSettings === 'object') ? (config.tourSettings as any) : {};
+
+    let status: GuiderAvailabilityStatus = 'ACTIVE';
+    if (tourSettings.guiderStatus === 'MAINTENANCE' || tourSettings.guiderStatus === 'DISABLED' || tourSettings.guiderStatus === 'ACTIVE') {
+      status = tourSettings.guiderStatus;
+    } else if (!config.isEnabled || !config.isPublicEnabled) {
+      status = 'DISABLED';
+    }
+
+    // Explicit override if isEnabled or isPublicEnabled is false
+    if (!config.isEnabled || !config.isPublicEnabled) {
+      if (status !== 'MAINTENANCE') {
+        status = 'DISABLED';
+      }
+    }
+
+    const isAvailable = status === 'ACTIVE' && Boolean(config.isEnabled) && Boolean(config.isPublicEnabled);
+
+    let defaultMsg: string | null = null;
+    if (status === 'MAINTENANCE') {
+      defaultMsg = 'The GuideR AI Concierge service is currently undergoing scheduled maintenance. Please check back shortly or contact our travel specialists.';
+    } else if (status === 'DISABLED') {
+      defaultMsg = 'The GuideR AI Concierge service is currently offline. Please explore our curated tours or contact our team directly.';
+    }
+
+    const message = tourSettings.disabledMessage || defaultMsg;
+
+    return {
+      enabled: isAvailable,
+      status,
+      version: '2.0.0',
+      message,
+      statusChangedAt: tourSettings.statusChangedAt || null,
+      statusChangedBy: tourSettings.statusChangedBy || null,
+      reason: tourSettings.statusReason || null,
+    };
+  }
+
+  async updateGuiderStatus(
+    dto: { status: GuiderAvailabilityStatus; disabledMessage?: string; reason?: string },
+    changedBy: string = 'admin',
+  ): Promise<GuiderAvailabilityResult> {
+    const config = await this.getOrCreateConfig();
+    const existingTourSettings = (config.tourSettings && typeof config.tourSettings === 'object') ? (config.tourSettings as any) : {};
+
+    const isEnabled = dto.status === 'ACTIVE';
+    const isPublicEnabled = dto.status === 'ACTIVE';
+
+    const updatedTourSettings = {
+      ...existingTourSettings,
+      guiderStatus: dto.status,
+      disabledMessage: dto.disabledMessage || null,
+      statusChangedAt: new Date().toISOString(),
+      statusChangedBy: changedBy,
+      statusReason: dto.reason || null,
+    };
+
+    await (this.prisma as any).aiConfig.update({
+      where: { id: config.id },
+      data: {
+        isEnabled,
+        isPublicEnabled,
+        tourSettings: updatedTourSettings,
+        updatedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`GuideR operational status updated to ${dto.status} by ${changedBy}`);
+
+    let defaultMsg = 'GuideR AI Concierge is currently available.';
+    if (dto.status === 'MAINTENANCE') {
+      defaultMsg = 'GuideR AI Concierge is currently undergoing scheduled maintenance. Please reach out via WhatsApp or visit our tour pages.';
+    } else if (dto.status === 'DISABLED') {
+      defaultMsg = 'GuideR AI Concierge is currently offline. Please browse our tours directly or contact our concierge team.';
+    }
+
+    return {
+      enabled: isPublicEnabled,
+      status: dto.status,
+      version: '2.0.0',
+      message: dto.disabledMessage || defaultMsg,
+      statusChangedAt: updatedTourSettings.statusChangedAt,
+      statusChangedBy: changedBy,
+      reason: updatedTourSettings.statusReason,
+    };
+  }
+
   getActivePersonas(locale: string = 'en') {
     const loc = (locale || 'en').toLowerCase().split('-')[0];
     return AI_PERSONAS.map((p) => ({
@@ -323,42 +424,9 @@ export class ChatOrchestratorService {
   }
 
   async bookTourFromChat(dto: BookTourChatDto) {
-    const config = await this.getOrCreateConfig();
-    const tourSettings = (config.tourSettings as any) || {};
-    const isInChatBookingEnabled = tourSettings.isInChatBookingEnabled !== false;
-
+    // In accordance with Decision #1: GuideR must not book trips or create dummy User/Booking/Invoice records.
+    // GuideR directs travelers to the official tour page (/tours/:slug) to customize dates and reserve.
     const isArabic = (dto.locale || '').startsWith('ar');
-
-    if (!isInChatBookingEnabled) {
-      throw new BadRequestException(
-        isArabic
-          ? 'عذراً، ميزة الحجز المباشر عبر الشات بوت معطلة حالياً. يمكنك تصفح تفاصيل الرحلة وإتمام الحجز عبر الموقع أو التواصل مع مستشار السفر.'
-          : 'In-chat booking is currently disabled. Please explore the tour details on our website or contact our travel concierge.'
-      );
-    }
-
-    if (!dto.sessionId || !dto.tourId || !dto.email || !dto.fullName || !dto.arrivalDate) {
-      throw new BadRequestException(
-        isArabic
-          ? 'يرجى إكمال جميع بيانات الحجز المطلوبة (رقم الجلسة، الرحلة، الاسم، البريد، وتاريخ الوصول).'
-          : 'Missing required booking details: sessionId, tourId, email, fullName, arrivalDate'
-      );
-    }
-
-    const arrivalDateObj = new Date(dto.arrivalDate);
-    if (isNaN(arrivalDateObj.getTime())) {
-      throw new BadRequestException(
-        isArabic ? 'تاريخ الوصول غير صالح.' : 'Invalid arrival date format.'
-      );
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (arrivalDateObj < today) {
-      throw new BadRequestException(
-        isArabic ? 'تاريخ الوصول يجب أن يكون في المستقبل.' : 'Arrival date must be in the future.'
-      );
-    }
 
     const tour = await (this.prisma as any).tour.findFirst({
       where: {
@@ -370,247 +438,54 @@ export class ChatOrchestratorService {
       },
     });
 
-    if (!tour) {
-      throw new NotFoundException(
-        isArabic ? 'الرحلة المحددة غير موجودة أو غير متاحة حالياً.' : 'Selected tour could not be found'
-      );
-    }
+    const slug = tour?.slug || dto.tourId || '';
+    const tourPageUrl = slug ? `/tours/${slug}` : '/tours';
+    const tMap = (tour?.titleJsonb && typeof tour?.titleJsonb === 'object') ? tour.titleJsonb : {};
+    const tourTitle = isArabic ? (tMap.ar || tMap.en || tour?.title || 'الرحلة') : (tMap.en || tMap.ar || tour?.title || 'Tour');
 
-    const adults = Math.max(1, Number(dto.adults) || 1);
-    const children = Math.max(0, Number(dto.children) || 0);
-    const infants = Math.max(0, Number(dto.infants) || 0);
-
-    const basePrice = Number(tour.basePriceUsd) || 1490;
-    const adultTotal = basePrice * adults;
-    const childTotal = (basePrice * 0.5) * children;
-    const totalAmount = adultTotal + childTotal;
-    const currency = tour.currency || 'USD';
-
-    const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? tour.titleJsonb : {};
-    const tourTitle = isArabic ? (tMap.ar || tMap.en || tour.slug) : (tMap.en || tMap.ar || tour.slug);
-
-    let user = await (this.prisma as any).user.findUnique({
-      where: { email: dto.email.trim().toLowerCase() },
-    });
-
-    if (!user) {
-      const dummyPassword = crypto.randomBytes(32).toString('hex');
-      const passwordHash = bcrypt.hashSync(dummyPassword, 10);
-      user = await (this.prisma as any).user.create({
-        data: {
-          email: dto.email.trim().toLowerCase(),
-          name: dto.fullName.trim() || 'Guest',
-          phone: dto.phone?.trim() || null,
-          role: 'USER',
-          passwordHash,
-          status: 'ACTIVE',
-          isVerified: false,
-        },
+    if (dto.sessionId) {
+      const conversation = await (this.prisma as any).chatConversation.findUnique({
+        where: { publicSessionId: dto.sessionId },
       });
-    }
-
-    const referenceCode = generateReferenceCode('BKG');
-    const invoiceNumber = generateReferenceCode('INV');
-    const totalPax = adults + children;
-
-    let availability: any = null;
-    if ((this.prisma as any)?.tourAvailability) {
-      availability = await (this.prisma as any).tourAvailability.findFirst({
-        where: {
-          tourId: tour.id,
-          date: arrivalDateObj,
-          status: { in: ['AVAILABLE', 'LIMITED'] },
-        },
-      });
-
-      if (!availability) {
-        availability = await (this.prisma as any).tourAvailability.create({
+      if (conversation) {
+        await (this.prisma as any).chatConversation.update({
+          where: { id: conversation.id },
           data: {
-            tourId: tour.id,
-            date: arrivalDateObj,
-            totalCapacity: Math.max(10, totalPax),
-            remainingSeats: Math.max(10, totalPax),
-            status: 'AVAILABLE',
+            visitorName: dto.fullName?.trim() || conversation.visitorName,
+            visitorEmail: dto.email?.trim().toLowerCase() || conversation.visitorEmail,
+            visitorPhone: dto.phone?.trim() || conversation.visitorPhone,
+            leadStatus: 'QUALIFIED',
+            updatedAt: new Date(),
+          },
+        });
+
+        const replyText = isArabic
+          ? `يسعدني اهتمامك برحلة "${tourTitle}"! لاستكمال حجزك وتحديد المواعيد والخيارات المخصصة، يرجى الانتقال إلى صفحة الرحلة الرسمية:\n\n[عرض تفاصيل الرحلة وحجزها](${tourPageUrl})`
+          : `Thank you for your interest in "${tourTitle}"! To customize your dates, preferences, and reserve your journey, please visit the official tour page:\n\n[View Tour Details & Book](${tourPageUrl})`;
+
+        await (this.prisma as any).chatMessage.create({
+          data: {
+            conversationId: conversation.id,
+            role: 'assistant',
+            textContent: replyText,
+            locale: dto.locale || 'en',
           },
         });
       }
     }
 
-    const booking = await (this.prisma as any).$transaction(async (tx: any) => {
-      if (this.availabilityService && availability?.id) {
-        await this.availabilityService.reserveCapacity(
-          tx,
-          availability.id,
-          totalPax,
-        );
-      }
-
-      const createdBooking = await tx.booking.create({
-        data: {
-          referenceCode,
-          userId: user.id,
-          tourId: tour.id,
-          availabilityId: availability.id,
-          arrivalDate: arrivalDateObj,
-          adults,
-          children,
-          infants,
-          totalAmountUsd: totalAmount,
-          status: 'PENDING',
-          notes: dto.notes?.trim() || null,
-          language: dto.locale || 'en',
-          transportChoice: dto.transportChoice || 'Standard Luxury Transfer',
-          idempotencyKey: `chat-booking-${Date.now()}-${referenceCode}`,
-        },
-      });
-
-      await tx.billingInfo.create({
-        data: {
-          bookingId: createdBooking.id,
-          fullName: dto.fullName.trim() || 'Guest',
-          email: dto.email.trim().toLowerCase(),
-          phone: dto.phone?.trim() || 'N/A',
-          country: dto.nationality || 'Egypt',
-          invoiceType: 'PERSONAL',
-        },
-      });
-
-      const snapshotJsonb = {
-        version: 1,
-        invoiceNumber,
-        bookingReference: referenceCode,
-        issuedAt: new Date().toISOString(),
-        tourTitle,
-        tourSlug: tour.slug || 'chat-tour',
-        arrivalDate: arrivalDateObj.toISOString().split('T')[0],
-        departureDate: null,
-        adults,
-        children,
-        infants,
-        customer: {
-          name: dto.fullName.trim() || 'Guest',
-          email: dto.email.trim().toLowerCase(),
-          phone: dto.phone?.trim() || null,
-        },
-        billingRecipient: {
-          fullName: dto.fullName.trim() || 'Guest',
-          email: dto.email.trim().toLowerCase(),
-          phone: dto.phone?.trim() || '',
-          invoiceType: 'PERSONAL',
-          companyName: null,
-          taxId: null,
-          address: null,
-          city: null,
-          country: dto.nationality || null,
-        },
-        items: [
-          {
-            description: tourTitle,
-            quantity: 1,
-            unitPrice: Number(totalAmount),
-            totalPrice: Number(totalAmount),
-          },
-        ],
-        subtotal: Number(totalAmount),
-        tax: 0,
-        total: Number(totalAmount),
-        currency,
-      };
-
-      await tx.invoice.create({
-        data: {
-          bookingId: createdBooking.id,
-          invoiceNumber,
-          status: 'SENT',
-          subtotal: totalAmount,
-          total: totalAmount,
-          currency,
-          snapshotJsonb,
-        },
-      });
-
-      return createdBooking;
-    });
-
-    if (this.eventEmitter) {
-      this.eventEmitter.emit(BOOKING_EVENTS.CREATED, {
-        referenceCode: booking.referenceCode,
-        invoiceNumber,
-        tourTitle,
-        totalAmountUsd: String(totalAmount),
-        arrivalDate: arrivalDateObj,
-        customerEmail: dto.email.trim().toLowerCase(),
-        customerName: dto.fullName.trim() || 'Guest',
-        adults,
-        children,
-        infants,
-        userId: user.id,
-        booking,
-      });
-    }
-
-    const conversation = await (this.prisma as any).chatConversation.findUnique({
-      where: { publicSessionId: dto.sessionId },
-    });
-
-    const heroImage = tour.images?.[0]?.imageUrl || '/imgs/Brazil/Treasures of Egypt with Alexandria.jpg';
-
-    const confirmationCard = {
-      type: 'booking_confirmation',
-      booking: {
-        id: booking.id,
-        referenceCode: booking.referenceCode,
-        invoiceNumber,
-        tourId: tour.id,
-        tourTitle,
-        tourSlug: tour.slug,
-        image: heroImage,
-        destination: [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt',
-        arrivalDate: dto.arrivalDate,
-        adults,
-        children,
-        infants,
-        totalAmount,
-        currency,
-        status: 'PENDING',
-        leadName: dto.fullName.trim(),
-        email: dto.email.trim(),
-        phone: dto.phone?.trim(),
-        checkoutUrl: `/booking-success?ref=${booking.referenceCode}`,
-      },
-    };
-
-    if (conversation) {
-      await (this.prisma as any).chatConversation.update({
-        where: { id: conversation.id },
-        data: {
-          visitorName: dto.fullName.trim(),
-          visitorEmail: dto.email.trim().toLowerCase(),
-          visitorPhone: dto.phone?.trim(),
-          leadStatus: 'CONVERTED',
-          updatedAt: new Date(),
-        },
-      });
-
-      const replyText = isArabic
-        ? `🎉 تم تأكيد طلب حجزك بنجاح لرحلة "${tourTitle}"!\n\nرقم الحجز المرجعي الخاص بك هو: **${referenceCode}**\nالمبلغ الإجمالي: $${totalAmount} ${currency}\nتاريخ الوصول: ${dto.arrivalDate} (${adults} بالغين${children > 0 ? ` + ${children} أطفال` : ''}).\n\nلقد تم إرسال تفاصيل الحجز إلى بريدك الإلكتروني (${dto.email}). وسيقوم مستشار السفر الخاص بك بالتواصل معك عبر الواتساب لتأكيد موعد الاستقبال في المطار.`
-        : `🎉 Your luxury booking reservation for "${tourTitle}" has been confirmed!\n\nYour Booking Reference: **${referenceCode}**\nTotal Price: $${totalAmount} ${currency}\nArrival Date: ${dto.arrivalDate} (${adults} Adults${children > 0 ? `, ${children} Children` : ''}).\n\nBooking confirmation has been dispatched to ${dto.email}. Your dedicated travel concierge will reach out via WhatsApp for VIP airport arrival coordination.`;
-
-      await (this.prisma as any).chatMessage.create({
-        data: {
-          conversationId: conversation.id,
-          role: 'assistant',
-          textContent: replyText,
-          structuredContent: confirmationCard,
-          locale: dto.locale || 'en',
-        },
-      });
-    }
-
     return {
       success: true,
-      message: isArabic ? 'تم تأكيد الحجز بنجاح' : 'Booking created successfully',
-      ...confirmationCard.booking,
+      deprecated: true,
+      requiresTourNavigation: true,
+      tourUrl: tourPageUrl,
+      leadLogged: true,
+      message: isArabic
+        ? 'تم استلام اهتمامك بالرحلة. يرجى الانتقال إلى صفحة الرحلة لإتمام الحجز.'
+        : 'Inquiry noted. Please visit the official tour page to complete your reservation.',
+      tourSlug: slug,
+      redirectUrl: tourPageUrl,
+      checkoutUrl: tourPageUrl,
     };
   }
 
@@ -876,11 +751,20 @@ export class ChatOrchestratorService {
     const locale = (dto.locale || 'en').toLowerCase();
     const isArabic = locale.startsWith('ar') || /[\u0600-\u06FF]/.test(sanitizedMsg);
 
-    const config = await this.getOrCreateConfig();
-
-    if (!config.isEnabled || !config.isPublicEnabled) {
-      throw new ServiceUnavailableException('The GuideR AI Concierge service is currently undergoing maintenance.');
+    const availability = await this.getPublicAvailabilityStatus();
+    if (!availability.enabled) {
+      throw new ServiceUnavailableException({
+        statusCode: 503,
+        error: 'Service Unavailable',
+        code: 'GUIDER_DISABLED',
+        status: availability.status,
+        message: availability.message || (availability.status === 'MAINTENANCE'
+          ? 'The GuideR AI Concierge service is currently undergoing scheduled maintenance.'
+          : 'The GuideR AI Concierge service is currently offline.'),
+      });
     }
+
+    const config = await this.getOrCreateConfig();
 
     // 1. Get or create conversation session
     let conversation = await (this.prisma as any).chatConversation.findUnique({
@@ -1100,7 +984,7 @@ export class ChatOrchestratorService {
       : '';
 
     const tourContext = recommendedTours.length > 0
-      ? `REAL GROUNDED CATALOG TOURS:\n${recommendedTours.map((t) => `- ${t.title} (${t.destination}) - Starting Price: $${t.price} ${t.currency} - URL: ${t.publicUrl} - Reasons: ${t.matchReasons?.join(', ')}`).join('\n')}`
+      ? `REAL GROUNDED CATALOG TOURS:\n${recommendedTours.map((t) => `- ${t.title} (${t.destination}) - Pricing: ${t.price > 0 ? `$${t.price} ${t.currency}` : 'On Request / Private Quote (الأسعار عند الطلب)'} - URL: ${t.publicUrl} - Reasons: ${t.matchReasons?.join(', ')}`).join('\n')}`
       : 'No specific catalog tour matches requested for this interaction.';
 
     const historyContext = conversation.messages
@@ -1127,10 +1011,10 @@ ${tourContext}
 CONVERSATION & STYLING RULES:
 - Address the user's greeting or inquiry directly and naturally.
 - When greeting or answering your identity (e.g. asking your name), introduce yourself as GuideR (جايدر), the luxury travel concierge for Dunas Travel (دوناس ترافيل), and politely offer how you can help without dumping unsolicited tour listings.
-- STRICT PRICING RULES (قواعد الأسعار الإلزامية في جايدر):
-  * The price for EVERY tour, package, proposal, and itinerary in GuideR is strictly 0 ($0 USD / 0 دولار).
-  * If asked about the price or cost of any tour or package, state clearly that the price is $0 (أو 0 دولار / استشارة وتخطيط مجاني).
-  * NEVER mention any other prices (such as $1490, $1890, $2190, $2500, etc.). Any price mentioned in text MUST be $0.
+- STRICT PRICING & BOOKING INTEGRITY (قواعد الأسعار والحجز الإلزامية في جايدر):
+  * GuideR is a luxury travel consultant and concierge. Pricing for curated luxury tours and bespoke packages is customized based on travel dates, group size, and private arrangements ("Pricing: On Request / Private Quote" / "الأسعار: عند الطلب / عرض سعر مخصص").
+  * NEVER claim that luxury tours cost 0 or $0 or are free.
+  * DECISION: GuideR MUST NOT BOOK TRIPS DIRECTLY. GuideR recommends tours and directs travelers to click the [View Trip] / [عرض تفاصيل الرحلة] button on the tour card to inspect the itinerary, customize dates, and book securely on the official website.
 - DESTINATION & ALL TOURS DISCOVERY (استعراض الواجهات والرحلات):
   * When a user asks about any destination (e.g. Egypt, Turkey, Dubai, Jordan, Morocco, Tunisia, Greece, Holy Land) or asks to view all tours for a destination:
   * Provide a captivating, elegant summary of the destination's top attractions and luxury experiences, and explicitly state the exact number of curated tours (${destinationSummaryInfo?.totalToursCount || recommendedTours.length || 'several'} tours in our catalog).
@@ -1140,12 +1024,12 @@ CONVERSATION & STYLING RULES:
     - Spanish: "Para conocer todos los tours de este destino, por favor haga clic en el siguiente enlace: [Ver todos los tours de ${destinationSummaryInfo?.destination || 'Destino'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
     - Portuguese: "Para conhecer todos os passeios deste destino, por favor clique no link a seguir: [Ver todos os passeios de ${destinationSummaryInfo?.destination || 'Destino'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
     - Italian: "Per visualizzare tutti i tour di questa destinazione, clicca sul seguente link: [Visualizza tutti i tour di ${destinationSummaryInfo?.destination || 'Destinazione'}](/destinations/${destinationSummaryInfo?.slug || 'egypt'})"
-  * Direct them to the interactive tour cards below to explore the daily itineraries or book directly.
+  * Direct them to the interactive tour cards below to explore the daily itineraries with the [View Trip] button.
 - CUSTOM TRIP BUILDER (تخصيص رحلة سياحية مخصصة عبر المحادثة):
   * When a user asks to design, tailor, or customize a trip (رحلة مخصصة / صمم لي برنامج):
   * Step 1 (Destination): Ask which country or destinations they want to visit if not specified.
   * Step 2 (Trip Details): Ask about their travel dates, duration in days, number of travelers (Adults & Children), and preferred style (Nile cruise, historical, beaches, luxury 5-star).
-  * Step 3 (Confirmation): Present the day-by-day customized program and inform the client they can click the glowing "اطلب الرحلة الآن" button to submit their inquiry directly to our dashboard and receive an immediate confirmation in their account.
+  * Step 3 (Confirmation): Present the day-by-day customized program and inform the client they can click the glowing "اطلب الرحلة الآن" button to submit their inquiry directly to our concierge team and receive a private quote.
 - Write in clean, elegant, fluid Arabic/English/Spanish/Italian/Portuguese based on the user's language. Do NOT overuse asterisks (**) in the middle of standard sentences.
 - When listing itinerary days or features, use clean bullet points or numbered lists.
 - Respond in the language of the user message (Locale detected: ${locale}).
@@ -1214,20 +1098,22 @@ CONVERSATION & STYLING RULES:
         }
       } else if (recommendedTours.length > 0) {
         const topTour = recommendedTours[0];
+        const priceTagAr = topTour.price > 0 ? `بسعر يبدأ من $${topTour.price} ${topTour.currency}` : 'والسعر عند الطلب بعرض سعر مخصص';
+        const priceTagEn = topTour.price > 0 ? `starting from $${topTour.price} ${topTour.currency}` : 'with private pricing on request';
         if (isArabic) {
           if (dto.personaCode === 'egyptologist') {
-            assistantReply = `أهلاً بك يا باحث التاريخ والحضارة العريقة! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} لاكتشاف عظمة الفراعنة والمعابد الخالدة بسعر يبدأ من $0 ${topTour.currency}. يمكنك استعراض البرنامج بالأسفل وحجزه مباشرة.`;
+            assistantReply = `أهلاً بك يا باحث التاريخ والحضارة العريقة! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} لاكتشاف عظمة الفراعنة والمعابد الخالدة، ${priceTagAr}. يمكنك استعراض تفاصيل البرنامج الكامل بالأسفل عبر زر [عرض تفاصيل الرحلة].`;
           } else if (dto.personaCode === 'practical_budget') {
-            assistantReply = `أهلاً بك! بأعلى قيمة استثمارية وأفضل سعر، نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}. استعرض التفاصيل والشمولية بالأسفل.`;
+            assistantReply = `أهلاً بك! بأعلى قيمة استثمارية وأرقى مستوى من الخدمة، نقترح عليك رحلة "${topTour.title}" في ${topTour.destination}، ${priceTagAr}. استعرض البرنامج بالأسفل عبر [عرض تفاصيل الرحلة].`;
           } else if (dto.personaCode === 'family_adventure') {
-            assistantReply = `أهلاً وسهلاً بك وبعائلتك الكريمة! لتجربة عائلية مريحة وممتعة للجميع، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}.`;
+            assistantReply = `أهلاً وسهلاً بك وبعائلتك الكريمة! لتجربة عائلية مريحة وممتعة للجميع، نقترح رحلة "${topTour.title}" في ${topTour.destination}، ${priceTagAr}. استعرض التفاصيل الكاملة بالأسفل عبر [عرض تفاصيل الرحلة].`;
           } else if (dto.personaCode === 'romantic_honeymoon') {
-            assistantReply = `أهلاً بكما! لقضاء عطلة رومانسية ساحرة وسط أروع الأجواء، نقترح رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}.`;
+            assistantReply = `أهلاً بكما! لقضاء عطلة رومانسية ساحرة وسط أروع الأجواء، نقترح رحلة "${topTour.title}" في ${topTour.destination}، ${priceTagAr}. استعرض تفاصيل الرحلة بالأسفل عبر [عرض تفاصيل الرحلة].`;
           } else {
-            assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination} بسعر يبدأ من $0 ${topTour.currency}. يمكنك الضغط على تفاصيل الرحلة بالأسفل لاستعراض البرنامج الكامل.`;
+            assistantReply = `أهلاً بك! نقترح عليك رحلة "${topTour.title}" في ${topTour.destination}، ${priceTagAr}. يمكنك الضغط على زر [عرض تفاصيل الرحلة] بالأسفل لاستعراض البرنامج الكامل ومواعيد الانطلاق.`;
           }
         } else {
-          assistantReply = `Hello! Based on your request, I highly recommend our signature tour "${topTour.title}" in ${topTour.destination}, starting from $0 ${topTour.currency}. Click the tour card below for full details or to book directly!`;
+          assistantReply = `Hello! Based on your inquiry, I highly recommend our signature tour "${topTour.title}" in ${topTour.destination} (${priceTagEn}). Click [View Trip] on the tour card below to review the full itinerary and reserve your dates!`;
         }
       } else if (sources.length > 0) {
         assistantReply = isArabic
@@ -1383,6 +1269,19 @@ CONVERSATION & STYLING RULES:
     };
 
     try {
+      const availability = await this.getPublicAvailabilityStatus();
+      if (!availability.enabled) {
+        sendEvent('error', {
+          code: 'GUIDER_DISABLED',
+          status: availability.status,
+          message: availability.message || (availability.status === 'MAINTENANCE'
+            ? 'The GuideR AI Concierge service is currently undergoing scheduled maintenance.'
+            : 'The GuideR AI Concierge service is currently offline.'),
+        });
+        res.end();
+        return;
+      }
+
       sendEvent('status', { phase: 'validating' });
       await this.validateAndLogSecurity(dto.message, dto.sessionId);
 

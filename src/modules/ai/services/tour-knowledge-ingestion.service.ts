@@ -1,8 +1,41 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { createHash } from 'crypto';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
+
+export interface KnowledgeSnapshotMetadata {
+  snapshotVersion: string;
+  status: 'HEALTHY' | 'STALE' | 'SYNCING' | 'FAILED' | 'DEGRADED';
+  lastSuccessfulSync: string;
+  lastSyncDurationMs: number;
+  recordCount: number;
+  toursCount: number;
+  destinationsCount: number;
+  servicesCount: number;
+  checksum: string;
+  nextScheduledSync: string;
+  syncIntervalDays: number;
+  trigger: 'CRON' | 'MANUAL';
+}
+
+export interface KnowledgeSyncStatusResult {
+  snapshotVersion: string;
+  status: 'HEALTHY' | 'STALE' | 'SYNCING' | 'FAILED' | 'DEGRADED';
+  lastSuccessfulSync: string | null;
+  lastSyncDurationMs: number | null;
+  recordCount: number;
+  toursCount: number;
+  destinationsCount: number;
+  servicesCount: number;
+  checksum: string | null;
+  nextScheduledSync: string | null;
+  syncIntervalDays: number;
+  isStale: boolean;
+  daysSinceLastSync: number | null;
+  recentJobs: any[];
+}
 
 @Injectable()
 export class TourKnowledgeIngestionService {
@@ -18,115 +51,334 @@ export class TourKnowledgeIngestionService {
   }
 
   /**
-   * Sync active database Tours, Destinations, Transportation, and Policies into KnowledgeBaseItem records
-   * across all 5 supported languages (EN, AR, ES, PT, IT) for comprehensive RAG retrieval grounding.
+   * Weekly Cron (Sunday at 03:00 UTC):
+   * Automatically refreshes and validates GuideR Knowledge Base from the live database.
+   */
+  @Cron('0 3 * * 0')
+  async handleScheduledCatalogSync() {
+    this.logger.log('Executing automated weekly GuideR Knowledge Base synchronization cron...');
+    try {
+      await this.safeSyncCatalog('CRON');
+    } catch (err: any) {
+      this.logger.error(`Scheduled GuideR sync failed: ${err.message}`, err.stack);
+    }
+  }
+
+  /**
+   * Backward-compatible alias for existing controllers and tests
    */
   async syncCatalogToKnowledgeBase(): Promise<{
     syncedTours: number;
     syncedDestinations: number;
     syncedServices: number;
   }> {
-    this.logger.log('Starting 5-Language full Catalog to Knowledge Base ingestion sync...');
+    const res = await this.safeSyncCatalog('MANUAL');
+    return {
+      syncedTours: res.syncedTours,
+      syncedDestinations: res.syncedDestinations,
+      syncedServices: res.syncedServices,
+    };
+  }
+
+  /**
+   * Multi-Step Safe Synchronization Engine:
+   * FETCH -> VALIDATE -> NORMALIZE -> BUILD SNAPSHOT -> ACTIVATE -> LOG
+   * 
+   * If source data is missing or corrupted, retains previous valid snapshot without loss.
+   */
+  async safeSyncCatalog(trigger: 'CRON' | 'MANUAL' = 'MANUAL'): Promise<{
+    success: boolean;
+    snapshotVersion: string;
+    syncedTours: number;
+    syncedDestinations: number;
+    syncedServices: number;
+    totalRecords: number;
+    checksum: string;
+    durationMs: number;
+  }> {
+    const startTime = Date.now();
+    this.logger.log(`Starting safe GuideR Knowledge sync (trigger=${trigger})...`);
+
+    // 1. Create running sync job
+    let syncJob: any = null;
+    try {
+      syncJob = await (this.prisma as any).aiKnowledgeSyncJob.create({
+        data: {
+          status: 'RUNNING',
+          entityType: 'CATALOG_SNAPSHOT',
+          totalCount: 0,
+          processedCount: 0,
+          failedCount: 0,
+          startedAt: new Date(),
+        },
+      });
+    } catch (e: any) {
+      this.logger.warn(`Could not create aiKnowledgeSyncJob row: ${e.message}`);
+    }
 
     let syncedTours = 0;
     let syncedDestinations = 0;
     let syncedServices = 0;
+    const accumulatedHashes: string[] = [];
 
-    // 1. Fetch active published tours
-    const tours = await this.prisma.tour.findMany({
-      where: {
-        isActive: true,
-        deletedAt: null,
-      },
-      take: 100,
-    });
+    try {
+      // 2. FETCH: Query active tours and landing pages
+      const [tours, landingPages] = await Promise.all([
+        this.prisma.tour.findMany({
+          where: {
+            isActive: true,
+            deletedAt: null,
+          },
+          take: 150,
+        }),
+        (this.prisma as any).tourLandingPage.findMany({
+          where: {
+            isActive: true,
+            deletedAt: null,
+          },
+          take: 50,
+        }).catch(() => []),
+      ]);
 
-    for (const tour of tours) {
-      const tourAny = tour as any;
-      const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? (tour.titleJsonb as Record<string, string>) : {};
-      const oMap = (tour.overviewJsonb && typeof tour.overviewJsonb === 'object') ? (tour.overviewJsonb as Record<string, string>) : {};
+      // 3. VALIDATE: Fail-safe check. Never overwrite knowledge with empty catalog!
+      if (!tours || tours.length === 0) {
+        const errorMsg = 'Validation failed: 0 active tours returned from database. Preserving previous knowledge snapshot.';
+        this.logger.error(errorMsg);
 
-      const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt & Middle East';
-      const durationVal = tourAny.durationDays || tourAny.duration || 5;
-      const durationStr = `${durationVal} Days`;
-      const priceStr = '$0 USD';
-
-      for (const loc of SUPPORTED_LOCALES) {
-        let title = tMap[loc] || tMap.en || tour.slug;
-        let overview = oMap[loc] || oMap.en || '';
-        let prefix = 'Tour Package';
-        let catLabel = tour.category || 'Luxury Tours';
-
-        if (loc === 'ar') {
-          prefix = 'رحلة سياحية';
-          title = tMap.ar || title;
-        } else if (loc === 'es') {
-          prefix = 'Paquete Turístico';
-        } else if (loc === 'pt') {
-          prefix = 'Pacote Turístico';
-        } else if (loc === 'it') {
-          prefix = 'Pacchetto Turistico';
+        if (syncJob) {
+          await (this.prisma as any).aiKnowledgeSyncJob.update({
+            where: { id: syncJob.id },
+            data: {
+              status: 'FAILED',
+              errorLog: errorMsg,
+              completedAt: new Date(),
+            },
+          }).catch(() => {});
         }
 
-        const content = `${prefix}: ${title}\nDestination: ${dest}\nDuration: ${durationStr}\nStarting Price: ${priceStr}\nCategory: ${catLabel}\nPublic URL: /tours/${tour.slug}${overview ? `\nOverview: ${overview.slice(0, 250)}` : ''}`;
+        throw new BadRequestException(errorMsg);
+      }
 
-        await this.upsertKnowledgeItem({
-          sourceKey: `CATALOG_TOUR:${tour.id}:${loc}`,
-          sourceEntityType: 'TOUR',
-          sourceEntityId: tour.id,
-          title: `[${prefix}] ${title}`,
-          content,
-          locale: loc,
-          category: 'CUSTOM_TOURS',
-          tags: [tour.slug, dest.toLowerCase(), 'tour', 'package', 'luxury', loc],
-          priority: 15,
+      // 4. NORMALIZE & UPSERT TOURS
+      for (const tour of tours) {
+        const tourAny = tour as any;
+        const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? (tour.titleJsonb as Record<string, string>) : {};
+        const oMap = (tour.overviewJsonb && typeof tour.overviewJsonb === 'object') ? (tour.overviewJsonb as Record<string, string>) : {};
+
+        const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt & Middle East';
+        const durationVal = tourAny.durationDays || tourAny.duration || 5;
+        const durationStr = `${durationVal} Days`;
+
+        for (const loc of SUPPORTED_LOCALES) {
+          let title = tMap[loc] || tMap.en || tour.slug;
+          let overview = oMap[loc] || oMap.en || '';
+          let prefix = 'Tour Package';
+          let catLabel = tour.category || 'Luxury Tours';
+          let pricingNotice = 'Pricing: On Request / Private Custom Quote';
+
+          if (loc === 'ar') {
+            prefix = 'رحلة سياحية فاخرة';
+            title = tMap.ar || title;
+            pricingNotice = 'الأسعار: عند الطلب / عرض سعر مخصص حسب التواريخ ودرجة الإقامة';
+          } else if (loc === 'es') {
+            prefix = 'Paquete Turístico de Lujo';
+            pricingNotice = 'Precios: A consultar / Cotización personalizada';
+          } else if (loc === 'pt') {
+            prefix = 'Pacote Turístico de Luxo';
+            pricingNotice = 'Preços: Sob consulta / Orçamento personalizado';
+          } else if (loc === 'it') {
+            prefix = 'Pacchetto Turistico Esclusivo';
+            pricingNotice = 'Prezzi: Su richiesta / Preventivo personalizzato';
+          }
+
+          const content = `${prefix}: ${title}\nDestination: ${dest}\nDuration: ${durationStr}\n${pricingNotice}\nCategory: ${catLabel}\nPublic URL: /tours/${tour.slug}${overview ? `\nOverview: ${overview.slice(0, 280)}` : ''}`;
+
+          const hash = await this.upsertKnowledgeItem({
+            sourceKey: `CATALOG_TOUR:${tour.id}:${loc}`,
+            sourceEntityType: 'TOUR',
+            sourceEntityId: tour.id,
+            title: `[${prefix}] ${title}`,
+            content,
+            locale: loc,
+            category: 'CUSTOM_TOURS',
+            tags: [tour.slug, dest.toLowerCase(), 'tour', 'package', 'luxury', loc],
+            priority: 15,
+          });
+          if (hash) accumulatedHashes.push(hash);
+        }
+
+        syncedTours++;
+      }
+
+      // 5. NORMALIZE & UPSERT DESTINATIONS
+      for (const lp of landingPages) {
+        const tMap = (lp.titleJsonb && typeof lp.titleJsonb === 'object') ? (lp.titleJsonb as Record<string, string>) : {};
+        const titleEn = tMap.en || lp.slug.toUpperCase();
+
+        for (const loc of SUPPORTED_LOCALES) {
+          let title = tMap[loc] || titleEn;
+          let guideLabel = 'Destination Guide';
+          if (loc === 'ar') guideLabel = 'دليل الوجهة';
+          else if (loc === 'es') guideLabel = 'Guía de Destino';
+          else if (loc === 'pt') guideLabel = 'Guia de Destino';
+          else if (loc === 'it') guideLabel = 'Guida alla Destinazione';
+
+          const content = `${guideLabel}: ${title}\nSlug: ${lp.slug}\nExplore URL: /destinations/${lp.slug}`;
+
+          const hash = await this.upsertKnowledgeItem({
+            sourceKey: `CATALOG_DESTINATION:${lp.id}:${loc}`,
+            sourceEntityType: 'TOUR_LANDING_PAGE',
+            sourceEntityId: lp.id,
+            title: `[${guideLabel}] ${title}`,
+            content,
+            locale: loc,
+            category: 'DESTINATION_INFO',
+            tags: [lp.slug, 'destination', 'guide', 'travel', loc],
+            priority: 12,
+          });
+          if (hash) accumulatedHashes.push(hash);
+        }
+
+        syncedDestinations++;
+      }
+
+      // 6. NORMALIZE & UPSERT CORE SERVICE GUIDES & OFFICIAL POLICIES
+      const coreGuides = this.getCoreServiceGuides();
+      for (const guide of coreGuides) {
+        for (const loc of SUPPORTED_LOCALES) {
+          const trans = (guide.translations as any)[loc] || guide.translations.en;
+          const hash = await this.upsertKnowledgeItem({
+            sourceKey: `${guide.id}:${loc}`,
+            sourceEntityType: 'SYSTEM_GUIDE',
+            sourceEntityId: `${guide.id}:${loc}`,
+            title: trans.title,
+            content: trans.content,
+            locale: loc,
+            category: guide.category as any,
+            tags: [...guide.tags, loc],
+            priority: guide.priority,
+          });
+          if (hash) accumulatedHashes.push(hash);
+          syncedServices++;
+        }
+      }
+
+      // 7. BUILD SNAPSHOT & ACTIVATE
+      const durationMs = Date.now() - startTime;
+      const totalRecords = accumulatedHashes.length;
+      const overallChecksum = createHash('sha256').update(accumulatedHashes.sort().join('')).digest('hex');
+      const snapshotVersion = `v${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Date.now() / 1000).toString(36)}`;
+      const nextSyncIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const snapshotMetadata: KnowledgeSnapshotMetadata = {
+        snapshotVersion,
+        status: 'HEALTHY',
+        lastSuccessfulSync: new Date().toISOString(),
+        lastSyncDurationMs: durationMs,
+        recordCount: totalRecords,
+        toursCount: syncedTours,
+        destinationsCount: syncedDestinations,
+        servicesCount: syncedServices,
+        checksum: overallChecksum,
+        nextScheduledSync: nextSyncIso,
+        syncIntervalDays: 7,
+        trigger,
+      };
+
+      // Update active AiConfig knowledgeSettings
+      const config = await this.prisma.aiConfig.findFirst({ orderBy: { createdAt: 'desc' } });
+      if (config) {
+        await this.prisma.aiConfig.update({
+          where: { id: config.id },
+          data: {
+            knowledgeSettings: snapshotMetadata as any,
+          },
         });
       }
 
-      syncedTours++;
-    }
-
-    // 2. Fetch active tour landing pages (destinations)
-    const landingPages = await (this.prisma as any).tourLandingPage.findMany({
-      where: {
-        isActive: true,
-        deletedAt: null,
-      },
-      take: 50,
-    }).catch(() => []);
-
-    for (const lp of landingPages) {
-      const tMap = (lp.titleJsonb && typeof lp.titleJsonb === 'object') ? (lp.titleJsonb as Record<string, string>) : {};
-      const titleEn = tMap.en || lp.slug.toUpperCase();
-
-      for (const loc of SUPPORTED_LOCALES) {
-        let title = tMap[loc] || titleEn;
-        let guideLabel = 'Destination Guide';
-        if (loc === 'ar') guideLabel = 'دليل الوجهة';
-        else if (loc === 'es') guideLabel = 'Guía de Destino';
-        else if (loc === 'pt') guideLabel = 'Guia de Destino';
-        else if (loc === 'it') guideLabel = 'Guida alla Destinazione';
-
-        const content = `${guideLabel}: ${title}\nSlug: ${lp.slug}\nExplore URL: /destinations/${lp.slug}`;
-
-        await this.upsertKnowledgeItem({
-          sourceKey: `CATALOG_DESTINATION:${lp.id}:${loc}`,
-          sourceEntityType: 'TOUR_LANDING_PAGE',
-          sourceEntityId: lp.id,
-          title: `[${guideLabel}] ${title}`,
-          content,
-          locale: loc,
-          category: 'DESTINATION_INFO',
-          tags: [lp.slug, 'destination', 'guide', 'travel', loc],
-          priority: 12,
-        });
+      // Complete sync job log
+      if (syncJob) {
+        await (this.prisma as any).aiKnowledgeSyncJob.update({
+          where: { id: syncJob.id },
+          data: {
+            status: 'COMPLETED',
+            totalCount: totalRecords,
+            processedCount: totalRecords,
+            failedCount: 0,
+            completedAt: new Date(),
+          },
+        }).catch(() => {});
       }
 
-      syncedDestinations++;
-    }
+      this.logger.log(`GuideR Knowledge Base sync COMPLETED in ${durationMs}ms: version=${snapshotVersion}, records=${totalRecords}`);
 
-    // 3. Ingest Authoritative 5-Language VIP, Custom Tour Tailoring & Official Policies
-    const coreGuides = [
+      return {
+        success: true,
+        snapshotVersion,
+        syncedTours,
+        syncedDestinations,
+        syncedServices,
+        totalRecords,
+        checksum: overallChecksum,
+        durationMs,
+      };
+    } catch (err: any) {
+      const durationMs = Date.now() - startTime;
+      this.logger.error(`Knowledge Base sync failed: ${err.message}`, err.stack);
+
+      if (syncJob) {
+        await (this.prisma as any).aiKnowledgeSyncJob.update({
+          where: { id: syncJob.id },
+          data: {
+            status: 'FAILED',
+            errorLog: err.message,
+            completedAt: new Date(),
+          },
+        }).catch(() => {});
+      }
+
+      throw err;
+    }
+  }
+
+  /**
+   * Retrieves live status of GuideR Knowledge Freshness, snapshot version, and sync health
+   */
+  async getKnowledgeSyncStatus(): Promise<KnowledgeSyncStatusResult> {
+    const config = await this.prisma.aiConfig.findFirst({ orderBy: { createdAt: 'desc' } });
+    const settings: any = (config?.knowledgeSettings as any) || {};
+    const lastSync = settings.lastSuccessfulSync ? new Date(settings.lastSuccessfulSync) : null;
+    const daysSinceLastSync = lastSync ? (Date.now() - lastSync.getTime()) / (1000 * 60 * 60 * 24) : null;
+    const isStale = daysSinceLastSync === null || daysSinceLastSync > (settings.syncIntervalDays || 7);
+
+    const [recentJobs, totalKnowledgeItems] = await Promise.all([
+      (this.prisma as any).aiKnowledgeSyncJob.findMany({
+        orderBy: { startedAt: 'desc' },
+        take: 10,
+      }).catch(() => []),
+      this.prisma.knowledgeBaseItem.count({ where: { status: 'PUBLISHED' } }),
+    ]);
+
+    return {
+      snapshotVersion: settings.snapshotVersion || 'v1.0.0-initial',
+      status: isStale ? 'STALE' : (settings.status || 'HEALTHY'),
+      lastSuccessfulSync: settings.lastSuccessfulSync || null,
+      lastSyncDurationMs: settings.lastSyncDurationMs || null,
+      recordCount: totalKnowledgeItems,
+      toursCount: settings.toursCount || 0,
+      destinationsCount: settings.destinationsCount || 0,
+      servicesCount: settings.servicesCount || 0,
+      checksum: settings.checksum || null,
+      nextScheduledSync: settings.nextScheduledSync || null,
+      syncIntervalDays: settings.syncIntervalDays || 7,
+      isStale,
+      daysSinceLastSync: daysSinceLastSync !== null ? Number(daysSinceLastSync.toFixed(1)) : null,
+      recentJobs,
+    };
+  }
+
+  private getCoreServiceGuides() {
+    return [
       {
         id: 'VIP_TAILOR_MADE',
         category: 'CUSTOM_TOURS',
@@ -212,27 +464,6 @@ export class TourKnowledgeIngestionService {
         },
       },
     ];
-
-    for (const guide of coreGuides) {
-      for (const loc of SUPPORTED_LOCALES) {
-        const trans = (guide.translations as any)[loc] || guide.translations.en;
-        await this.upsertKnowledgeItem({
-          sourceKey: `${guide.id}:${loc}`,
-          sourceEntityType: 'SYSTEM_GUIDE',
-          sourceEntityId: `${guide.id}:${loc}`,
-          title: trans.title,
-          content: trans.content,
-          locale: loc,
-          category: guide.category as any,
-          tags: [...guide.tags, loc],
-          priority: guide.priority,
-        });
-        syncedServices++;
-      }
-    }
-
-    this.logger.log(`5-Language Knowledge Base ingestion complete! Synced ${syncedTours * 5} tours, ${syncedDestinations * 5} destinations, and ${syncedServices} service guides.`);
-    return { syncedTours, syncedDestinations, syncedServices };
   }
 
   private async upsertKnowledgeItem(params: {
@@ -337,6 +568,8 @@ export class TourKnowledgeIngestionService {
     } catch {
       // Non-blocking fallback
     }
+
+    return contentHash;
   }
 }
 

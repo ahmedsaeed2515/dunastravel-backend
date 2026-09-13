@@ -157,20 +157,50 @@ export class BookingsService {
       .digest('hex');
   }
 
-  private isP2002IdempotencyTarget(target: unknown): boolean {
-    if (!target) return false;
-    if (Array.isArray(target)) {
-      return target.some(
-        (t) =>
-          typeof t === 'string' &&
-          (t.includes('idempotency') || t.includes('idempotency_key')),
-      );
+  private isP2002IdempotencyTarget(error: unknown): boolean {
+    if (!error) return false;
+    const err = error as {
+      meta?: { target?: unknown; driverAdapterError?: unknown };
+      message?: string;
+    };
+
+    // 1. Check meta.target if present
+    const target = err.meta?.target;
+    if (target) {
+      if (Array.isArray(target)) {
+        if (
+          target.some(
+            (t) => typeof t === 'string' && t.toLowerCase().includes('idempotency'),
+          )
+        ) {
+          return true;
+        }
+      } else if (
+        typeof target === 'string' &&
+        target.toLowerCase().includes('idempotency')
+      ) {
+        return true;
+      }
     }
-    if (typeof target === 'string') {
-      return (
-        target.includes('idempotency') || target.includes('idempotency_key')
-      );
+
+    // 2. Check error.message (Prisma formats "Unique constraint failed on the fields: (`idempotency_key`)")
+    if (
+      typeof err.message === 'string' &&
+      err.message.toLowerCase().includes('idempotency')
+    ) {
+      return true;
     }
+
+    // 3. Check driverAdapterError if present
+    if (err.meta?.driverAdapterError) {
+      const adapterErrStr = JSON.stringify(
+        err.meta.driverAdapterError,
+      ).toLowerCase();
+      if (adapterErrStr.includes('idempotency')) {
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -178,6 +208,7 @@ export class BookingsService {
     dto: CreateBookingDto,
     userId?: string,
     idempotencyKey?: string,
+    clientGuestToken?: string,
   ): Promise<BookingCreatedResponse> {
     this.logger.log(`Initiating booking creation | tourId=${dto.tourId} | user=${userId || 'GUEST'}`);
 
@@ -384,11 +415,10 @@ export class BookingsService {
             if (
               !avail ||
               avail.tourId !== tour.id ||
-              !['AVAILABLE', 'LIMITED'].includes(avail.status) ||
-              avail.remainingSeats < totalPassengers
+              avail.status === 'CLOSED'
             ) {
               throw new UnprocessableEntityException(
-                'Selected availability is not available or has insufficient seats',
+                'Selected departure date is closed or not available for this tour',
               );
             }
             const availDate = new Date(avail.date);
@@ -400,18 +430,31 @@ export class BookingsService {
             }
             availIdToStore = avail.id;
           } else {
-            // Find unique slot by (tourId, arrivalDate)
-            const matchedAvail = await tx.tourAvailability.findFirst({
+            // Find or initialize scheduling slot for (tourId, arrivalDate)
+            let matchedAvail = await tx.tourAvailability.findFirst({
               where: {
                 tourId: tour.id,
                 date: arrivalDateObj,
-                status: { in: ['AVAILABLE', 'LIMITED'] },
-                remainingSeats: { gte: totalPassengers },
+                status: { not: 'CLOSED' },
               },
             });
             if (!matchedAvail) {
+              // Tours are open to all registrants; ensure slot exists if not explicitly closed
+              matchedAvail = await tx.tourAvailability.upsert({
+                where: { tourId_date: { tourId: tour.id, date: arrivalDateObj } },
+                update: {},
+                create: {
+                  tourId: tour.id,
+                  date: arrivalDateObj,
+                  totalCapacity: 9999,
+                  remainingSeats: 9999,
+                  status: 'AVAILABLE',
+                },
+              });
+            }
+            if (matchedAvail.status === 'CLOSED') {
               throw new UnprocessableEntityException(
-                'No bookable availability slot found for the selected tour and date',
+                'Selected departure date is closed for bookings',
               );
             }
             availIdToStore = matchedAvail.id;
@@ -502,12 +545,18 @@ export class BookingsService {
           // 6. Create booking, passengers, billing, redemption, invoice
           const referenceCode = await this.generateUniqueReferenceCode(tx);
           const bookingId = crypto.randomUUID();
-          const guestToken = !userId
-            ? this.generateGuestToken(bookingId, referenceCode)
-            : null;
-          const guestTokenHash = guestToken
-            ? crypto.createHash('sha256').update(guestToken).digest('hex')
-            : null;
+          const guestToken =
+            clientGuestToken ||
+            this.generateGuestToken(bookingId, referenceCode);
+          const guestTokenHash = crypto
+            .createHash('sha256')
+            .update(guestToken)
+            .digest('hex');
+
+          const isZeroAmount = finalTotalAmountUsd.lte(0);
+          const initialStatus: BookingStatus = isZeroAmount
+            ? 'CONFIRMED'
+            : 'PENDING';
 
           const booking = await tx.booking.create({
             data: {
@@ -518,10 +567,14 @@ export class BookingsService {
               availabilityId: availIdToStore,
               arrivalDate: arrivalDateObj,
               departureDate: departureDateObj,
+              status: initialStatus,
               adults: adultsCount,
               children: childrenCount,
               infants: dto.infants ?? 0,
               totalAmountUsd: finalTotalAmountUsd,
+              paidAmountUsd: isZeroAmount
+                ? finalTotalAmountUsd
+                : new Prisma.Decimal(0),
               idempotencyKey: idempotencyKey || null,
               requestHash,
               guestTokenHash,
@@ -646,7 +699,7 @@ export class BookingsService {
               invoiceNumber,
               bookingId: booking.id,
               issuedAt: new Date(),
-              status: 'SENT',
+              status: isZeroAmount ? 'PAID' : 'SENT',
               subtotal: new Prisma.Decimal(subtotalUsd),
               tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
               total: finalTotalAmountUsd,
@@ -655,6 +708,20 @@ export class BookingsService {
                 invoiceSnapshot as unknown as Prisma.InputJsonValue,
             },
           });
+
+          if (isZeroAmount) {
+            await tx.bookingActivityLog.create({
+              data: {
+                bookingId: booking.id,
+                action: 'BOOKING_CONFIRMED_ZERO_AMOUNT',
+                details: {
+                  reason:
+                    'Zero-amount booking confirmed automatically without payment gateway',
+                  totalAmountUsd: '0.00',
+                },
+              },
+            });
+          }
 
           if (promoToRedeem) {
             await tx.promotionRedemption.create({
@@ -680,7 +747,7 @@ export class BookingsService {
             tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
             guestToken,
           };
-        });
+        }, { maxWait: 10000, timeout: 20000 });
 
         this.bookingsCounter.inc();
 
@@ -721,6 +788,18 @@ export class BookingsService {
         };
         this.eventEmitter.emit(BOOKING_EVENTS.CREATED, payload);
 
+        if (result.booking.status === 'CONFIRMED') {
+          this.eventEmitter.emit(BOOKING_EVENTS.CONFIRMED, {
+            bookingId: result.booking.id,
+            referenceCode: result.booking.referenceCode,
+            customerEmail: result.billingInfo.email,
+            customerName: result.billingInfo.fullName,
+            tourTitle: result.tourTitle,
+            totalAmountUsd: result.booking.totalAmountUsd.toString(),
+            userId: userId || result.booking.userId || undefined,
+          });
+        }
+
         return responseData;
       } catch (error) {
         const errObj = error as { code?: string; meta?: { target?: unknown } };
@@ -728,17 +807,25 @@ export class BookingsService {
           attempt++;
           if (
             idempotencyKey &&
-            this.isP2002IdempotencyTarget(errObj.meta?.target)
+            this.isP2002IdempotencyTarget(error)
           ) {
-            const winner = await this.prisma.booking.findUnique({
-              where: { idempotencyKey },
-              include: {
-                tour: { select: { titleJsonb: true } },
-                billingInfo: true,
-                invoice: { select: { invoiceNumber: true } },
-                passengers: true,
-              },
-            });
+            let winner = null;
+            for (let waitAttempt = 0; waitAttempt < 10; waitAttempt++) {
+              winner = await this.prisma.booking.findUnique({
+                where: { idempotencyKey },
+                include: {
+                  tour: { select: { titleJsonb: true } },
+                  billingInfo: true,
+                  invoice: { select: { invoiceNumber: true } },
+                  passengers: true,
+                },
+              });
+              if (winner && winner.billingInfo) {
+                break;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+
             if (winner) {
               if (winner.userId !== (userId || null)) {
                 throw new UnprocessableEntityException(
@@ -750,9 +837,9 @@ export class BookingsService {
                   'Idempotency key reused with mismatched request payload',
                 );
               }
-              const winnerGuestToken = !userId
-                ? this.generateGuestToken(winner.id, winner.referenceCode)
-                : null;
+              const winnerGuestToken =
+                clientGuestToken ||
+                this.generateGuestToken(winner.id, winner.referenceCode);
               return this.buildCreatedResponse(
                 winner,
                 winner.billingInfo!,

@@ -21,26 +21,28 @@ export class AvailabilityService {
     availabilityId: string,
     seatsRequired: number,
   ): Promise<void> {
-    if (seatsRequired <= 0) return;
+    if (seatsRequired <= 0 || !availabilityId) return;
 
+    // In Dunas Travel, tours have no fixed capacity cap by default.
+    // Departure slots track passenger volume for informational/scheduling purposes.
+    // Only administrative closures (status = 'CLOSED') block new reservations.
+    // GREATEST(0, ...) guarantees PostgreSQL chk_remaining_seats_nonnegative is never violated.
     const count = await tx.$executeRaw`
       UPDATE tour_availabilities
-      SET remaining_seats = remaining_seats - ${seatsRequired},
+      SET remaining_seats = GREATEST(0, remaining_seats - ${seatsRequired}),
           status = CASE
-            WHEN (remaining_seats - ${seatsRequired}) = 0 THEN 'SOLD_OUT'
-            WHEN (remaining_seats - ${seatsRequired}) < ${LIMITED_CAPACITY_THRESHOLD} THEN 'LIMITED'
+            WHEN status = 'CLOSED' THEN 'CLOSED'
             ELSE 'AVAILABLE'
           END,
           updated_at = NOW()
       WHERE id = ${availabilityId}
-        AND remaining_seats >= ${seatsRequired}
-        AND status IN ('AVAILABLE', 'LIMITED')
+        AND status != 'CLOSED'
     `;
 
     const rowsAffected = typeof count === 'number' ? count : Number(count);
     if (rowsAffected === 0) {
       throw new UnprocessableEntityException(
-        'Availability slot is fully booked or no longer available',
+        'Selected departure date is closed for bookings',
       );
     }
   }
@@ -57,9 +59,7 @@ export class AvailabilityService {
       SET remaining_seats = LEAST(total_capacity, remaining_seats + ${seatsToRelease}),
           status = CASE
             WHEN status = 'CLOSED' THEN 'CLOSED'
-            WHEN LEAST(total_capacity, remaining_seats + ${seatsToRelease}) >= ${LIMITED_CAPACITY_THRESHOLD} THEN 'AVAILABLE'
-            WHEN LEAST(total_capacity, remaining_seats + ${seatsToRelease}) > 0 THEN 'LIMITED'
-            ELSE 'SOLD_OUT'
+            ELSE 'AVAILABLE'
           END,
           updated_at = NOW()
       WHERE id = ${availabilityId}
@@ -347,30 +347,31 @@ export class AvailabilityService {
   async releaseExpiredHolds(holdDurationMinutes: number = 15): Promise<number> {
     const cutoffDate = new Date(Date.now() - holdDurationMinutes * 60 * 1000);
     const now = new Date();
-    return this.prisma.$transaction(async (tx) => {
-      const expiredBookings = await tx.booking.findMany({
-        where: {
-          status: 'PENDING',
-          createdAt: { lt: cutoffDate },
-          availabilityId: { not: null },
-          // Never release a booking while its hosted checkout is still valid.
-          // PayLink's authoritative expires_at wins over the generic hold TTL.
-          payments: {
-            none: {
-              status: 'PENDING',
-              isRefund: false,
-              OR: [
-                { expiresAt: { gt: now } },
-                { expiresAt: null, createdAt: { gte: cutoffDate } },
-              ],
-            },
+    const expiredBookings = await this.prisma.booking.findMany({
+      where: {
+        status: 'PENDING',
+        createdAt: { lt: cutoffDate },
+        availabilityId: { not: null },
+        // Never release a booking while its hosted checkout is still valid.
+        // PayLink's authoritative expires_at wins over the generic hold TTL.
+        payments: {
+          none: {
+            status: 'PENDING',
+            isRefund: false,
+            OR: [
+              { expiresAt: { gt: now } },
+              { expiresAt: null, createdAt: { gte: cutoffDate } },
+            ],
           },
         },
-      });
+      },
+    });
 
-      let releasedCount = 0;
-      for (const booking of expiredBookings) {
-        if (booking.availabilityId) {
+    let releasedCount = 0;
+    for (const booking of expiredBookings) {
+      if (!booking.availabilityId) continue;
+      try {
+        await this.prisma.$transaction(async (tx) => {
           const totalPax = (booking.adults || 1) + (booking.children || 0);
           const updateResult = await tx.booking.updateMany({
             where: { id: booking.id, status: 'PENDING' },
@@ -378,7 +379,7 @@ export class AvailabilityService {
           });
 
           if (updateResult.count > 0) {
-            await this.releaseCapacity(tx, booking.availabilityId, totalPax);
+            await this.releaseCapacity(tx, booking.availabilityId!, totalPax);
 
             // Void open invoices
             if (tx.invoice) {
@@ -417,10 +418,12 @@ export class AvailabilityService {
 
             releasedCount++;
           }
-        }
+        }, { maxWait: 5000, timeout: 10000 });
+      } catch (err) {
+        // Continue releasing remaining bookings if one encounters concurrency conflict
       }
-      return releasedCount;
-    });
+    }
+    return releasedCount;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

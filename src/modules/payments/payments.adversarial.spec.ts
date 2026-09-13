@@ -157,7 +157,7 @@ describe('Adversarial Security & Systems Verification', () => {
       });
 
       mockPrisma.processedWebhookEvent.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.payment.findFirst.mockResolvedValueOnce(mockPayment);
+      mockPrisma.payment.findFirst.mockResolvedValue(mockPayment);
 
       const refundWebhookResult = await service.handleWebhook(
         'GETPAYIN',

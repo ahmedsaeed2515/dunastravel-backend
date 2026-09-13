@@ -37,6 +37,15 @@ import {
   MediaUploadedEvent,
 } from './interfaces/media-events.interface';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
+import {
+  AssignToShowcaseDto,
+  UpdateShowcaseItemDto,
+  ReorderShowcaseDto,
+  OptimizeAssetDto,
+  HomepageMediaShowcaseResponseDto,
+  ShowcasePhotoItemDto,
+  ShowcaseVideoItemDto,
+} from './dto/showcase-media.dto';
 
 export interface MediaCategoryItem {
   id: string;
@@ -867,8 +876,10 @@ export class MediaService {
       typeCounts[g.entityType] = g._count.id;
     }
 
+    const tourImagesTotal = await this.prisma.tourImage.count();
+
     if (allCategoriesMap.has('tours')) {
-      allCategoriesMap.get('tours')!.count = typeCounts.TOUR;
+      allCategoriesMap.get('tours')!.count = Math.max(typeCounts.TOUR, tourImagesTotal);
     }
     if (allCategoriesMap.has('hotels')) {
       allCategoriesMap.get('hotels')!.count = typeCounts.HOTEL;
@@ -1310,11 +1321,12 @@ export class MediaService {
       HOTEL: 0,
       GENERAL: 0,
     };
-    for (const item of grouped) {
-      byEntityType[item.entityType] = item._count.id;
-    }
+    const tourImagesCount = await this.prisma.tourImage.count();
+    byEntityType.TOUR = Math.max(byEntityType.TOUR, tourImagesCount);
+    const calculatedTotal = Math.max(aggregate._count.id, byEntityType.TOUR + byEntityType.HOTEL + byEntityType.GENERAL);
+
     return {
-      total: aggregate._count.id,
+      total: calculatedTotal,
       bytes: aggregate._sum.bytes ?? 0,
       byEntityType,
     };
@@ -1429,5 +1441,500 @@ export class MediaService {
     } catch {
       this.logger.error('Scheduled orphaned media cleanup failed');
     }
+  }
+
+  async getPublicShowcase(): Promise<HomepageMediaShowcaseResponseDto> {
+    const [photoAssets, videoAssets] = await Promise.all([
+      this.prisma.mediaAsset.findMany({
+        where: {
+          isShowcase: true,
+          showcaseSection: 'PHOTO',
+          isActive: true,
+          isPublished: true,
+          deletedAt: null,
+        },
+        orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
+        take: 50,
+      }),
+      this.prisma.mediaAsset.findMany({
+        where: {
+          isShowcase: true,
+          showcaseSection: 'VIDEO',
+          isActive: true,
+          isPublished: true,
+          deletedAt: null,
+        },
+        orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
+        take: 50,
+      }),
+    ]);
+
+    // Graceful fallback for photos if no showcase items assigned yet
+    let finalPhotos = photoAssets;
+    if (finalPhotos.length === 0) {
+      finalPhotos = await this.prisma.mediaAsset.findMany({
+        where: {
+          entityType: MediaEntityType.GENERAL,
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 12,
+      });
+    }
+
+    const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+
+    const photos: ShowcasePhotoItemDto[] = finalPhotos.map((p, idx) => ({
+      id: p.id,
+      title: p.title || p.altText || 'Dunas Luxury Journey',
+      alt: p.altText || p.title || 'Dunas Luxury Journey',
+      url: p.secureUrl || p.url,
+      optimizedUrl: p.optimizedUrl || p.secureUrl || p.url,
+      thumbnailUrl: p.thumbnailUrl || p.secureUrl || p.url,
+      position: p.showcasePosition ?? idx + 1,
+      isActive: p.isActive,
+      width: p.width,
+      height: p.height,
+      category: p.entityId || 'general',
+    }));
+
+    const videos: ShowcaseVideoItemDto[] = videoAssets.map((v, idx) => {
+      const poster = v.thumbnailUrl || (v.providerName === 'cloudinary'
+        ? `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${v.publicId}.jpg`
+        : v.secureUrl);
+      return {
+        id: v.id,
+        title: v.title || v.altText || 'Dunas Travel Story',
+        alt: v.altText || v.title || 'Dunas Travel Story',
+        url: v.secureUrl || v.url,
+        videoUrl: v.secureUrl || v.url,
+        thumbnailUrl: poster,
+        posterUrl: poster,
+        duration: v.duration ?? 45,
+        position: v.showcasePosition ?? idx + 1,
+        isActive: v.isActive,
+        width: v.width,
+        height: v.height,
+      };
+    });
+
+    return { photos, videos };
+  }
+
+  async getAdminShowcase(): Promise<{ photos: IMediaAsset[]; videos: IMediaAsset[] }> {
+    const [photos, videos] = await Promise.all([
+      this.prisma.mediaAsset.findMany({
+        where: {
+          isShowcase: true,
+          showcaseSection: 'PHOTO',
+          deletedAt: null,
+        },
+        orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
+      }),
+      this.prisma.mediaAsset.findMany({
+        where: {
+          isShowcase: true,
+          showcaseSection: 'VIDEO',
+          deletedAt: null,
+        },
+        orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
+    return { photos: photos as IMediaAsset[], videos: videos as IMediaAsset[] };
+  }
+
+  async addToShowcase(dto: AssignToShowcaseDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id: dto.assetId, deletedAt: null },
+    });
+    if (!asset) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    let position = dto.position;
+    if (typeof position !== 'number') {
+      const maxPos = await this.prisma.mediaAsset.aggregate({
+        where: { isShowcase: true, showcaseSection: dto.section, deletedAt: null },
+        _max: { showcasePosition: true },
+      });
+      position = (maxPos._max.showcasePosition ?? 0) + 1;
+    }
+
+    const updated = await this.prisma.mediaAsset.update({
+      where: { id: dto.assetId },
+      data: {
+        isShowcase: true,
+        showcaseSection: dto.section,
+        showcasePosition: position,
+        title: dto.title !== undefined ? dto.title : asset.title,
+        altText: dto.altText !== undefined ? dto.altText : asset.altText,
+        isActive: true,
+        isPublished: true,
+      },
+    });
+
+    if (actor) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'MEDIA_ADDED_TO_SHOWCASE',
+          entityType: 'MEDIA_ASSET',
+          entityId: asset.id,
+          metadata: {
+            section: dto.section,
+            position,
+          },
+        },
+      });
+    }
+
+    return updated as IMediaAsset;
+  }
+
+  async updateShowcaseItem(id: string, dto: UpdateShowcaseItemDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!asset) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    const updated = await this.prisma.mediaAsset.update({
+      where: { id },
+      data: {
+        title: dto.title !== undefined ? dto.title : asset.title,
+        altText: dto.altText !== undefined ? dto.altText : asset.altText,
+        showcasePosition: dto.position !== undefined ? dto.position : asset.showcasePosition,
+        isActive: dto.isActive !== undefined ? dto.isActive : asset.isActive,
+        isPublished: dto.isPublished !== undefined ? dto.isPublished : asset.isPublished,
+      },
+    });
+
+    if (actor) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'MEDIA_SHOWCASE_UPDATED',
+          entityType: 'MEDIA_ASSET',
+          entityId: asset.id,
+          metadata: { ...dto },
+        },
+      });
+    }
+
+    return updated as IMediaAsset;
+  }
+
+  async reorderShowcase(dto: ReorderShowcaseDto, actor?: AuthenticatedUser): Promise<{ success: boolean; count: number }> {
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException('Items array cannot be empty');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of dto.items) {
+        await tx.mediaAsset.update({
+          where: { id: item.id },
+          data: { showcasePosition: item.position },
+        });
+      }
+
+      if (actor) {
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'MEDIA_SHOWCASE_REORDERED',
+            entityType: 'MEDIA_ASSET',
+            entityId: dto.items[0].id,
+            metadata: {
+              section: dto.section,
+              itemCount: dto.items.length,
+            },
+          },
+        });
+      }
+    });
+
+    return { success: true, count: dto.items.length };
+  }
+
+  async removeFromShowcase(id: string, actor?: AuthenticatedUser): Promise<{ success: boolean; message: string }> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!asset) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    await this.prisma.mediaAsset.update({
+      where: { id },
+      data: {
+        isShowcase: false,
+        showcasePosition: null,
+      },
+    });
+
+    if (actor) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'MEDIA_REMOVED_FROM_SHOWCASE',
+          entityType: 'MEDIA_ASSET',
+          entityId: asset.id,
+          metadata: {
+            previousSection: asset.showcaseSection,
+          },
+        },
+      });
+    }
+
+    return { success: true, message: 'Asset removed from homepage showcase' };
+  }
+
+  async uploadVideoAsset(
+    file: UploadableFile,
+    dto: { title?: string; altText?: string; categorySlug?: string; addToShowcase?: boolean },
+    userId: string,
+  ): Promise<IMediaAsset> {
+    const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+    const maxSizeBytes = 100 * 1024 * 1024; // 100MB
+
+    if (!file || !file.mimetype || !allowedVideoMimes.includes(file.mimetype.toLowerCase())) {
+      throw new BadRequestException('Invalid video format. Allowed: MP4, WebM, QuickTime, MKV');
+    }
+
+    if (file.size > maxSizeBytes) {
+      throw new BadRequestException('Video exceeds maximum size of 100MB');
+    }
+
+    const folder = `${this.configService.get<string>('storage.uploadFolder') || 'dunas-travel'}/videos/${dto.categorySlug || 'showcase'}`;
+    const options: UploadOptions = {
+      folder,
+      entityType: MediaEntityType.GENERAL,
+      entityId: dto.categorySlug || 'videos',
+      altText: dto.altText || dto.title || null,
+      eager: [],
+      resourceType: 'video',
+    };
+
+    const result = await this.storageProvider.upload(file, options);
+    if (!result.success) {
+      throw new HttpException(
+        `Video upload failed: ${result.error || 'Provider error'}`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+    const posterUrl = `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${result.publicId}.jpg`;
+    const optimizedUrl = `https://res.cloudinary.com/${cloudName}/video/upload/q_auto/${result.publicId}.mp4`;
+
+    const asset = await this.prisma.mediaAsset.create({
+      data: {
+        publicId: result.publicId,
+        url: result.url,
+        secureUrl: result.secureUrl,
+        providerName: 'cloudinary',
+        format: result.format || 'mp4',
+        mimeType: file.mimetype,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
+        duration: result.duration,
+        entityType: MediaEntityType.GENERAL,
+        entityId: dto.categorySlug || 'videos',
+        mediaType: 'VIDEO',
+        cloudinaryResourceType: 'video',
+        title: dto.title || dto.altText || file.originalname,
+        altText: dto.altText || dto.title || null,
+        thumbnailUrl: posterUrl,
+        optimizedUrl,
+        provenance: MediaProvenance.UPLOADED,
+        uploadedBy: userId,
+        isShowcase: dto.addToShowcase ?? true,
+        showcaseSection: 'VIDEO',
+      },
+    });
+
+    return asset as IMediaAsset;
+  }
+
+  async optimizeAsset(id: string, dto: OptimizeAssetDto, actor?: AuthenticatedUser): Promise<{
+    id: string;
+    originalUrl: string;
+    optimizedUrl: string;
+    format: string;
+    verified: boolean;
+  }> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!asset) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    let optimizedUrl = asset.secureUrl;
+    if (asset.providerName === 'cloudinary' && asset.publicId) {
+      const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+      const targetFormat = dto.format || 'webp';
+      const quality = dto.quality || 'auto:good';
+      const maxWidth = dto.maxWidth || 1920;
+
+      optimizedUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${asset.publicId}.${targetFormat}`;
+    }
+
+    let verified = false;
+    try {
+      const checkRes = await fetch(optimizedUrl, { method: 'HEAD' });
+      verified = checkRes.status === 200;
+    } catch {
+      verified = false;
+    }
+
+    if (verified) {
+      await this.prisma.mediaAsset.update({
+        where: { id },
+        data: { optimizedUrl },
+      });
+    }
+
+    if (actor) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'MEDIA_OPTIMIZED',
+          entityType: 'MEDIA_ASSET',
+          entityId: asset.id,
+          metadata: {
+            optimizedUrl,
+            verified,
+          },
+        },
+      });
+    }
+
+    return {
+      id: asset.id,
+      originalUrl: asset.secureUrl,
+      optimizedUrl,
+      format: dto.format || 'webp',
+      verified,
+    };
+  }
+
+  async checkMediaUsage(id: string): Promise<{
+    isInUse: boolean;
+    locations: string[];
+    details: {
+      tours: number;
+      hotels: number;
+      showcase: boolean;
+      documents: number;
+      attachments: number;
+    };
+  }> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!asset) {
+      throw new NotFoundException('Media asset not found');
+    }
+
+    const [tourImagesCount, hotelHeroCount, docCount, attachCount] = await Promise.all([
+      this.prisma.tourImage.count({
+        where: {
+          OR: [
+            { imageUrl: asset.secureUrl },
+            { imageUrl: asset.url },
+            ...(asset.entityType === MediaEntityType.TOUR && asset.entityId ? [{ tourId: asset.entityId }] : []),
+          ],
+        },
+      }),
+      this.prisma.hotel.count({ where: { heroMediaId: id } }),
+      this.prisma.customerDocument.count({ where: { mediaAssetId: id } }),
+      this.prisma.bookingAttachment.count({ where: { mediaAssetId: id } }),
+    ]);
+
+    const locations: string[] = [];
+    if (asset.isShowcase) locations.push(`Homepage Showcase (${asset.showcaseSection})`);
+    if (tourImagesCount > 0) locations.push(`Tours (${tourImagesCount} references)`);
+    if (hotelHeroCount > 0) locations.push(`Hotels (${hotelHeroCount} references)`);
+    if (docCount > 0) locations.push(`Customer Documents (${docCount} references)`);
+    if (attachCount > 0) locations.push(`Booking Attachments (${attachCount} references)`);
+
+    return {
+      isInUse: locations.length > 0,
+      locations,
+      details: {
+        tours: tourImagesCount,
+        hotels: hotelHeroCount,
+        showcase: asset.isShowcase,
+        documents: docCount,
+        attachments: attachCount,
+      },
+    };
+  }
+
+  async syncEntityMedia(actor?: AuthenticatedUser): Promise<{ syncedTours: number; syncedHotels: number }> {
+    const tourImages = await this.prisma.tourImage.findMany({
+      select: { id: true, tourId: true, imageUrl: true, altText: true, isHero: true, isVideo: true },
+    });
+
+    let syncedTours = 0;
+    for (const ti of tourImages) {
+      const existing = await this.prisma.mediaAsset.findFirst({
+        where: {
+          OR: [
+            { url: ti.imageUrl },
+            { secureUrl: ti.imageUrl },
+            { publicId: `tour-img-${ti.id}` },
+          ],
+          deletedAt: null,
+        },
+      });
+
+      if (!existing) {
+        const isCloudinary = ti.imageUrl.includes('cloudinary.com');
+        const isWebp = ti.imageUrl.endsWith('.webp');
+        await this.prisma.mediaAsset.create({
+          data: {
+            publicId: `tour-img-${ti.id}`,
+            url: ti.imageUrl,
+            secureUrl: ti.imageUrl,
+            providerName: isCloudinary ? 'cloudinary' : 'external',
+            format: isWebp ? 'webp' : 'jpg',
+            mimeType: ti.isVideo ? 'video/mp4' : 'image/jpeg',
+            bytes: 65000,
+            entityType: MediaEntityType.TOUR,
+            entityId: ti.tourId,
+            mediaType: ti.isVideo ? 'VIDEO' : 'IMAGE',
+            altText: ti.altText || 'Tour Image',
+            provenance: MediaProvenance.SEEDED,
+            isActive: true,
+            isPublished: true,
+          },
+        });
+        syncedTours++;
+      }
+    }
+
+    if (actor) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'ENTITY_MEDIA_SYNCED',
+          entityType: 'MEDIA_ASSET',
+          entityId: 'sync-all',
+          metadata: { syncedTours },
+        },
+      });
+    }
+
+    return { syncedTours, syncedHotels: 0 };
   }
 }

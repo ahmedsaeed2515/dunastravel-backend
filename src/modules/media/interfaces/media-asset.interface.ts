@@ -19,4 +19,17 @@ export interface IMediaAsset {
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  title?: string | null;
+  description?: string | null;
+  mediaType?: string;
+  cloudinaryResourceType?: string;
+  thumbnailUrl?: string | null;
+  optimizedUrl?: string | null;
+  duration?: number | null;
+  isShowcase?: boolean;
+  showcaseSection?: string | null;
+  showcasePosition?: number | null;
+  isActive?: boolean;
+  isPublished?: boolean;
+  metadata?: any;
 }

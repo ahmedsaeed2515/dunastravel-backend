@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber,
-  Min, Max, IsArray, IsObject, IsIn, ValidateIf,
+  Min, Max, MaxLength, IsArray, IsObject, IsIn, ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -17,7 +17,7 @@ export class UpdateAiConfigDto {
   @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
   provider?: string;
 
-  @ApiPropertyOptional({ example: 'gemini-3.6-flash' })
+  @ApiPropertyOptional({ example: 'gemini-2.5-flash' })
   @IsString()
   @IsOptional()
   model?: string;
@@ -215,7 +215,7 @@ export class TestProviderConnectionDto {
   provider?: string;
 
   @ApiPropertyOptional({
-    example: 'gemini-3.6-flash',
+    example: 'gemini-2.5-flash',
     description: 'Model to test with. Must belong to the specified provider.',
   })
   @IsString()
@@ -306,5 +306,40 @@ export class RefreshProviderModelsDto {
   @IsBoolean()
   @IsOptional()
   forceRefresh?: boolean;
+}
+
+// ============================================================
+// UPDATE GUIDER OPERATIONAL STATUS DTO
+// ============================================================
+
+export class UpdateGuiderStatusDto {
+  @ApiProperty({
+    description: 'GuideR system operational status',
+    enum: ['ACTIVE', 'DISABLED', 'MAINTENANCE'],
+    example: 'ACTIVE',
+  })
+  @IsString()
+  @IsIn(['ACTIVE', 'DISABLED', 'MAINTENANCE'], {
+    message: 'status must be one of: ACTIVE, DISABLED, MAINTENANCE',
+  })
+  status!: 'ACTIVE' | 'DISABLED' | 'MAINTENANCE';
+
+  @ApiPropertyOptional({
+    description: 'Optional custom message shown to visitors when GuideR is disabled or under maintenance',
+    example: 'GuideR is currently undergoing scheduled maintenance. Please contact our team at info@dunastravel.com.',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  disabledMessage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Internal reason for status change for audit log',
+    example: 'Scheduled system upgrade',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  reason?: string;
 }
 

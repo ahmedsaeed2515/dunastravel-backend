@@ -897,18 +897,24 @@ export class AdminKnowledgeController {
   }
 
   /**
-   * 14. SYNC CATALOG
+   * 14. KNOWLEDGE FRESHNESS TELEMETRY & SAFE SYNC ENGINE
    */
+  @Get('status')
+  @ApiOperation({ summary: 'Get GuideR Knowledge Freshness, snapshot version, and sync telemetry' })
+  async getKnowledgeStatus() {
+    return this.ingestionService.getKnowledgeSyncStatus();
+  }
+
+  @Post('sync')
+  @ApiOperation({ summary: 'Trigger manual safe synchronization of GuideR Knowledge from live catalog' })
+  async triggerSafeSync() {
+    return this.ingestionService.safeSyncCatalog('MANUAL');
+  }
+
   @Post('sync-catalog')
-  @ApiOperation({ summary: 'Sync active database Tours & Destinations into Knowledge Base' })
+  @ApiOperation({ summary: 'Sync active database Tours & Destinations into Knowledge Base (backward compatible)' })
   async syncCatalogToKnowledgeBase() {
-    const result = await this.ingestionService.syncCatalogToKnowledgeBase();
-    return {
-      success: true,
-      syncedTours: result.syncedTours,
-      syncedDestinations: result.syncedDestinations,
-      timestamp: new Date().toISOString(),
-    };
+    return this.ingestionService.safeSyncCatalog('MANUAL');
   }
 
   /**

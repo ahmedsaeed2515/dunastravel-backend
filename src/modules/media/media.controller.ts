@@ -54,6 +54,15 @@ import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
 import { PublicMediaAssetResponseDto } from './dto/public-media-asset-response.dto';
 import { Throttle } from '@nestjs/throttler';
+import {
+  AssignToShowcaseDto,
+  UpdateShowcaseItemDto,
+  ReorderShowcaseDto,
+  OptimizeAssetDto,
+  HomepageMediaShowcaseResponseDto,
+  ShowcasePhotoItemDto,
+  ShowcaseVideoItemDto,
+} from './dto/showcase-media.dto';
 
 @ApiTags('Admin — Media')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -269,6 +278,120 @@ export class MediaAdminController {
   async getSummary() {
     return this.mediaService.getSummary();
   }
+
+  @Get('showcase')
+  @ApiOperation({ summary: 'Get all showcase photos and videos for admin management' })
+  async getAdminShowcase() {
+    const showcase = await this.mediaService.getAdminShowcase();
+    return {
+      photos: showcase.photos.map((p) => MediaAssetResponseDto.fromPrisma(p)),
+      videos: showcase.videos.map((v) => MediaAssetResponseDto.fromPrisma(v)),
+    };
+  }
+
+  @Post('showcase')
+  @ApiOperation({ summary: 'Assign a media asset to photo or video showcase' })
+  async addToShowcase(
+    @Body() dto: AssignToShowcaseDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const asset = await this.mediaService.addToShowcase(dto, user);
+    return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Patch('showcase/reorder')
+  @ApiOperation({ summary: 'Reorder showcase items transactionally' })
+  async reorderShowcase(
+    @Body() dto: ReorderShowcaseDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.reorderShowcase(dto, user);
+  }
+
+  @Patch('showcase/:id')
+  @ApiOperation({ summary: 'Update showcase item position, status, or details' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async updateShowcaseItem(
+    @Param('id') id: string,
+    @Body() dto: UpdateShowcaseItemDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const asset = await this.mediaService.updateShowcaseItem(id, dto, user);
+    return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Delete('showcase/:id')
+  @ApiOperation({ summary: 'Remove a media asset from homepage showcase' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async removeFromShowcase(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.removeFromShowcase(id, user);
+  }
+
+  @Post('upload-video')
+  @Throttle({ default: { limit: 30, ttl: 3_600_000 } })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 100 * 1024 * 1024,
+      },
+      fileFilter: (req, file, cb) => {
+        const allowed = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+        if (!allowed.includes(file.mimetype.toLowerCase())) {
+          return cb(new BadRequestException('Invalid video file format'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Upload a video asset (up to 100MB)' })
+  @ApiConsumes('multipart/form-data')
+  async uploadVideo(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { title?: string; altText?: string; categorySlug?: string; addToShowcase?: string | boolean },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!file) throw new BadRequestException('No video file provided');
+    const addToShowcase = body.addToShowcase === true || body.addToShowcase === 'true';
+    const asset = await this.mediaService.uploadVideoAsset(
+      file,
+      {
+        title: body.title,
+        altText: body.altText,
+        categorySlug: body.categorySlug,
+        addToShowcase,
+      },
+      user.id,
+    );
+    return MediaAssetResponseDto.fromPrisma(asset);
+  }
+
+  @Post('optimize/:id')
+  @ApiOperation({ summary: 'Generate and verify server-side WebP optimization for an existing asset' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async optimizeAsset(
+    @Param('id') id: string,
+    @Body() dto: OptimizeAssetDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.optimizeAsset(id, dto, user);
+  }
+
+  @Get(':id/usage')
+  @ApiOperation({ summary: 'Check where a media asset is referenced before deletion' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async checkUsage(@Param('id') id: string) {
+    return this.mediaService.checkMediaUsage(id);
+  }
+
+  @Post('sync-entities')
+  @ApiOperation({ summary: 'Synchronize tour and hotel entity media into media_assets library' })
+  async syncEntities(@CurrentUser() user: AuthenticatedUser) {
+    return this.mediaService.syncEntityMedia(user);
+  }
 }
 
 @ApiTags('Media')
@@ -276,6 +399,32 @@ export class MediaAdminController {
 @Public()
 export class MediaPublicController {
   constructor(private readonly mediaService: MediaService) {}
+
+  @Get('showcase')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Get active public homepage media showcase (photos and videos)' })
+  @ApiOkResponse({ type: HomepageMediaShowcaseResponseDto })
+  async getPublicShowcase(): Promise<HomepageMediaShowcaseResponseDto> {
+    return this.mediaService.getPublicShowcase();
+  }
+
+  @Get('showcase/photos')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Get active public homepage photo showcase slides' })
+  @ApiOkResponse({ type: [ShowcasePhotoItemDto] })
+  async getShowcasePhotos(): Promise<ShowcasePhotoItemDto[]> {
+    const showcase = await this.mediaService.getPublicShowcase();
+    return showcase.photos;
+  }
+
+  @Get('showcase/videos')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Get active public homepage video showcase slides' })
+  @ApiOkResponse({ type: [ShowcaseVideoItemDto] })
+  async getShowcaseVideos(): Promise<ShowcaseVideoItemDto[]> {
+    const showcase = await this.mediaService.getPublicShowcase();
+    return showcase.videos;
+  }
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })

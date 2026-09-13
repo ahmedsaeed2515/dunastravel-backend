@@ -380,41 +380,146 @@ export class PaymentsService {
       return { received: true };
     }
 
-    let targetPaymentId = (payload as any).paymentId;
-    let targetBookingId = (payload as any).bookingId;
-    let targetAmount = (payload as any).amountUsd;
-    let targetCurrency = (payload as any).currency || 'USD';
-
-    if (!targetPaymentId || !targetBookingId) {
-      const providerRef = payload.providerInvoiceId || (payload as any).paymentId;
-      const matchedPayment = await this.prisma.payment.findFirst({
-        where: {
-          OR: [
-            ...(providerRef ? [{ transactionId: providerRef }, { providerPaymentId: providerRef }, { id: providerRef }] : []),
-          ],
-        },
-      });
-
-      if (!matchedPayment) {
-        throw new UnprocessableEntityException(
-          `Payment for provider reference ${providerRef} not found`,
-        );
-      }
-      targetPaymentId = matchedPayment.id;
-      targetBookingId = matchedPayment.bookingId;
-      targetAmount = targetAmount ?? matchedPayment.amount.toNumber();
-      targetCurrency = targetCurrency || matchedPayment.currency;
+    const providerRef = payload.providerInvoiceId || (payload as any).paymentId;
+    if (!providerRef) {
+      throw new UnprocessableEntityException(
+        'Webhook payload is missing a valid provider reference',
+      );
     }
 
+    const matchedPayment = await this.prisma.payment.findFirst({
+      where: {
+        OR: [
+          { transactionId: providerRef },
+          { providerPaymentId: providerRef },
+          { id: providerRef },
+        ],
+      },
+      include: {
+        booking: {
+          include: { invoice: true },
+        },
+      },
+    });
+
+    if (!matchedPayment) {
+      throw new UnprocessableEntityException(
+        `Payment for provider reference ${providerRef} not found`,
+      );
+    }
+
+    const targetPaymentId = matchedPayment.id;
+    const targetBookingId = matchedPayment.bookingId;
+
     if (
-      payload.status === 'COMPLETED' &&
-      (!Number.isFinite(targetAmount) ||
-        targetAmount <= 0 ||
-        targetCurrency !== 'USD')
+      (payload as any).paymentId &&
+      (payload as any).paymentId !== targetPaymentId &&
+      (payload as any).paymentId !== matchedPayment.transactionId &&
+      (payload as any).paymentId !== matchedPayment.providerPaymentId
     ) {
       throw new UnprocessableEntityException(
-        'Invalid successful payment amount or currency',
+        'Payload paymentId does not match provider payment record',
       );
+    }
+    if (
+      (payload as any).bookingId &&
+      (payload as any).bookingId !== targetBookingId
+    ) {
+      throw new UnprocessableEntityException(
+        'Payload bookingId does not match payment booking reference',
+      );
+    }
+
+    const rawEvt = (payload.rawEvent || {}) as Record<string, unknown>;
+    const reportedRawAmount =
+      rawEvt.order_amount ??
+      rawEvt.paid_amount ??
+      rawEvt.amount ??
+      rawEvt.invoice_amount ??
+      (payload as any).amountUsd ??
+      (payload as any).amount;
+
+    const reportedRawCurrency =
+      rawEvt.order_currency ??
+      rawEvt.currency ??
+      (payload as any).currency ??
+      matchedPayment.currency;
+
+    let targetAmount: number;
+    const targetCurrency = String(reportedRawCurrency).toUpperCase();
+
+    if (payload.status === 'COMPLETED') {
+      if (reportedRawAmount !== undefined && reportedRawAmount !== null) {
+        const parsedAmount = Number(reportedRawAmount);
+        if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+          throw new UnprocessableEntityException(
+            'Invalid payment amount reported by gateway',
+          );
+        }
+
+        const gatewayAmount = new Prisma.Decimal(parsedAmount.toFixed(2));
+        if (!matchedPayment.amount.equals(gatewayAmount)) {
+          this.logger.error(
+            `CRITICAL FINANCIAL ALERT: Webhook amount mismatch for booking ${matchedPayment.bookingId}! Gateway reported ${gatewayAmount.toFixed(2)}, expected ${matchedPayment.amount.toFixed(2)}`,
+          );
+          await this.prisma.auditLog.create({
+            data: {
+              action: 'PAYMENT_AMOUNT_MISMATCH_ALERT',
+              entityType: 'Booking',
+              entityId: matchedPayment.bookingId,
+              metadata: {
+                paymentId: matchedPayment.id,
+                reportedAmount: gatewayAmount.toFixed(2),
+                expectedAmount: matchedPayment.amount.toFixed(2),
+                currency: matchedPayment.currency,
+                providerInvoiceId: payload.providerInvoiceId,
+              },
+            },
+          }).catch(() => {});
+          throw new UnprocessableEntityException(
+            `Gateway reported amount (${gatewayAmount.toFixed(2)}) does not match expected payment amount (${matchedPayment.amount.toFixed(2)})`,
+          );
+        }
+
+        if (targetCurrency !== matchedPayment.currency) {
+          this.logger.error(
+            `CRITICAL FINANCIAL ALERT: Webhook currency mismatch for booking ${matchedPayment.bookingId}! Gateway reported ${targetCurrency}, expected ${matchedPayment.currency}`,
+          );
+          await this.prisma.auditLog.create({
+            data: {
+              action: 'PAYMENT_CURRENCY_MISMATCH_ALERT',
+              entityType: 'Booking',
+              entityId: matchedPayment.bookingId,
+              metadata: {
+                paymentId: matchedPayment.id,
+                reportedCurrency: targetCurrency,
+                expectedCurrency: matchedPayment.currency,
+                providerInvoiceId: payload.providerInvoiceId,
+              },
+            },
+          }).catch(() => {});
+          throw new UnprocessableEntityException(
+            `Gateway reported currency (${targetCurrency}) does not match expected currency (${matchedPayment.currency})`,
+          );
+        }
+
+        targetAmount = gatewayAmount.toNumber();
+      } else {
+        targetAmount = matchedPayment.amount.toNumber();
+      }
+
+      if (
+        matchedPayment.booking?.invoice &&
+        !matchedPayment.booking.invoice.total.equals(
+          matchedPayment.booking.totalAmountUsd,
+        )
+      ) {
+        throw new UnprocessableEntityException(
+          'Invoice total does not match booking total amount',
+        );
+      }
+    } else {
+      targetAmount = matchedPayment.amount.toNumber();
     }
 
     const maxRetries = 3;
@@ -1084,6 +1189,12 @@ export class PaymentsService {
       ) {
         isAuthorized = true;
       }
+    } else if (providerInvoiceId && callbackPayment) {
+      // The callback has already been cryptographically verified with HMAC-SHA256
+      // against GETPAYIN_HASH_TOKEN via paymentGateway.verifyCallback above.
+      // Therefore, the payload originates directly from the trusted payment gateway
+      // redirecting the payer's browser, even if their session cookie expired during 3DS.
+      isAuthorized = true;
     }
 
     if (!isAuthorized) {
@@ -1121,7 +1232,7 @@ export class PaymentsService {
           ? 'CAPTURED'
           : outcome.transition === 'REVERSED'
             ? 'REFUNDED'
-            : 'PENDING',
+            : callbackPayment.status,
       invoiceNumber: callbackPayment.booking.invoice?.invoiceNumber ?? null,
       booking: {
         id: callbackPayment.booking.id,

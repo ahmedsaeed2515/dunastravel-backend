@@ -45,22 +45,34 @@ export class CloudinaryStorageProvider implements StorageProvider {
       `Upload SDK call started { folder: ${folderPath}, eager count: ${options.eager.length} }`,
     );
 
+    const isVideo = options.resourceType === 'video';
+    const resourceType = isVideo ? ('video' as const) : ('image' as const);
+
     return new Promise((resolve) => {
       const uploadOptions: Record<string, any> = {
-        resource_type: 'image' as const,
+        resource_type: resourceType,
         folder: folderPath,
         use_filename: false,
         unique_filename: true,
         overwrite: false,
-        format: 'webp',
-        transformation: [
-          { quality: 'auto:good' },
-          { fetch_format: 'webp' },
-        ],
-        eager: options.eager,
-        eager_async: false,
         tags: tags,
       };
+
+      if (!isVideo) {
+        uploadOptions.format = 'webp';
+        uploadOptions.transformation = [
+          { quality: 'auto:good' },
+          { fetch_format: 'webp' },
+        ];
+        uploadOptions.eager = options.eager;
+        uploadOptions.eager_async = false;
+      } else {
+        uploadOptions.eager = [
+          { format: 'jpg', transformation: [{ width: 800, height: 480, crop: 'fill' }] },
+          { format: 'mp4', quality: 'auto' },
+        ];
+        uploadOptions.eager_async = false;
+      }
 
       const callback = (error: any, result: any) => {
         const duration_ms = Date.now() - start;
@@ -77,6 +89,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
             bytes: 0,
             width: null,
             height: null,
+            duration: null,
             error: error.message,
           });
         }
@@ -94,6 +107,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
             bytes: 0,
             width: null,
             height: null,
+            duration: null,
             error: 'Unknown error occurred during upload',
           });
         }
@@ -105,8 +119,11 @@ export class CloudinaryStorageProvider implements StorageProvider {
         let finalUrl = result.url;
         let finalSecureUrl = result.secure_url;
         if (result.eager && result.eager.length > 0) {
-          finalUrl = result.eager[0].url;
-          finalSecureUrl = result.eager[0].secure_url;
+          // If video, finalSecureUrl remains the video secure_url
+          if (!isVideo) {
+            finalUrl = result.eager[0].url;
+            finalSecureUrl = result.eager[0].secure_url;
+          }
         }
 
         resolve({
@@ -118,6 +135,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
           bytes: result.bytes,
           width: result.width || null,
           height: result.height || null,
+          duration: typeof result.duration === 'number' ? result.duration : null,
           error: null,
         });
       };
@@ -244,11 +262,11 @@ export class CloudinaryStorageProvider implements StorageProvider {
     });
   }
 
-  async delete(publicId: string): Promise<void> {
+  async delete(publicId: string, resourceType: 'image' | 'video' = 'image'): Promise<void> {
     const start = Date.now();
     try {
       const result = await cloudinary.uploader.destroy(publicId, {
-        resource_type: 'image',
+        resource_type: resourceType,
       });
       const duration_ms = Date.now() - start;
 
@@ -282,6 +300,16 @@ export class CloudinaryStorageProvider implements StorageProvider {
       quality: 'auto:good',
       fetch_format: 'webp',
       ...transformOptions,
+    });
+  }
+
+  getVideoPosterUrl(publicId: string): string {
+    return cloudinary.url(publicId, {
+      resource_type: 'video',
+      format: 'jpg',
+      transformation: [
+        { width: 800, height: 480, crop: 'fill', quality: 'auto' },
+      ],
     });
   }
 }

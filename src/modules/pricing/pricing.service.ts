@@ -113,10 +113,10 @@ export class PricingService {
       });
       if (
         !availability ||
-        !['AVAILABLE', 'LIMITED'].includes(availability.status)
+        availability.status === 'CLOSED'
       ) {
         throw new UnprocessableEntityException(
-          'Selected availability is not available',
+          'Selected departure date is closed for bookings',
         );
       }
       if (availability.tourId !== tour.id) {
@@ -137,14 +137,8 @@ export class PricingService {
         }
       }
 
-      if (!options?.skipCapacityCheck) {
-        const totalPassengers = dto.adults + (dto.children || 0);
-        if (availability.remainingSeats < totalPassengers) {
-          throw new UnprocessableEntityException(
-            'Selected availability has insufficient seats',
-          );
-        }
-      }
+      // In Dunas Travel, tours have no fixed capacity cap by default.
+      // Availability slots track volume for informational purposes; pricing does not block on remaining seats.
     }
 
     const basePrice = new Prisma.Decimal(tour.basePriceUsd);

@@ -252,7 +252,7 @@ describe('AI HTTP Contract Spec', () => {
       .expect(400);
   });
 
-  it('POST /api/ai/chat/book processes valid in-chat tour booking', async () => {
+  it('POST /api/ai/chat/book safely redirects to official tour page and captures lead without creating fake booking', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 14);
 
@@ -271,8 +271,9 @@ describe('AI HTTP Contract Spec', () => {
       })
       .expect(201);
 
-    expect(res.body.data.referenceCode).toBeDefined();
-    expect(res.body.data.totalAmount).toBeGreaterThan(0);
+    expect(res.body.data.requiresTourNavigation).toBe(true);
+    expect(res.body.data.tourUrl).toBeDefined();
+    expect(res.body.data.leadLogged).toBe(true);
   });
 
   it('POST /api/ai/chat/stream returns text/event-stream headers', async () => {
@@ -387,9 +388,10 @@ describe('AI HTTP Contract Spec', () => {
       json: async () => ({
         data: [
           { id: 'models/gemini-3.6-flash' },
-          { id: 'models/gemini-3.5-flash-lite' },
+          { id: 'models/gemini-2.5-flash' },
+          { id: 'models/gemini-2.5-flash-lite' },
           { id: 'models/gemini-2.0-flash' },
-          { id: 'models/gemini-2.0-flash-lite' }, // deprecated
+          { id: 'models/gemini-1.5-flash' }, // deprecated
         ],
       }),
     });
@@ -407,11 +409,37 @@ describe('AI HTTP Contract Spec', () => {
     expect(res.body.data.providerId).toBe('google');
     expect(Array.isArray(res.body.data.models)).toBe(true);
     expect(res.body.data.models.length).toBeGreaterThanOrEqual(2);
-    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.0-flash')).toBeUndefined();
+    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.5-flash')).toBeDefined();
     // Deprecated model must NOT be in models
-    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
+    expect(res.body.data.models.find((m: any) => m.id === 'gemini-1.5-flash')).toBeUndefined();
     // Raw secret key MUST NEVER appear in the response payload
     const bodyStr = JSON.stringify(res.body);
     expect(bodyStr).not.toContain('AIzaSySecretGoogleKeyForDiscoveryTest');
+  });
+
+  it('GET /ai/chat/status returns public guider availability', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/ai/chat/status')
+      .expect(200);
+
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.status).toBeDefined();
+    expect(typeof res.body.data.enabled).toBe('boolean');
+  });
+
+  it('POST /admin/ai/status updates guider availability and master status', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/admin/ai/status')
+      .send({
+        status: 'MAINTENANCE',
+        disabledMessage: 'Scheduled maintenance in progress',
+        reason: 'Upgrading database',
+      })
+      .expect(201);
+
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.status).toBe('MAINTENANCE');
+    expect(res.body.data.enabled).toBe(false);
+    expect(res.body.data.message).toBe('Scheduled maintenance in progress');
   });
 });

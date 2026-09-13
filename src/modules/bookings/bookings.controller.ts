@@ -54,6 +54,7 @@ export class BookingsController {
     @Body() dto: CreateBookingDto,
     @CurrentUser() user: AuthenticatedUser,
     @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-guest-token') guestToken?: string,
   ) {
     if (!user?.id) {
       throw new UnauthorizedException('Authentication required: You must be logged in to book a tour');
@@ -61,7 +62,12 @@ export class BookingsController {
     if (!idempotencyKey || !idempotencyKey.trim()) {
       throw new BadRequestException('Idempotency-Key header is required for creating a booking');
     }
-    return this.bookingsService.createBooking(dto, user.id, idempotencyKey.trim());
+    return this.bookingsService.createBooking(
+      dto,
+      user.id,
+      idempotencyKey.trim(),
+      guestToken,
+    );
   }
 
   @Post('calculate')

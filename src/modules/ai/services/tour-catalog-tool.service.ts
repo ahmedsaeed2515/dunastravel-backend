@@ -581,8 +581,8 @@ export class TourCatalogToolService {
         },
         {
           aspect: isArabic ? 'سعر الباقة يبدأ من' : 'Starting Price per Person',
-          tourAValue: `$${compA.price} ${compA.currency}`,
-          tourBValue: `$${compB.price} ${compB.currency}`,
+          tourAValue: compA.price > 0 ? `$${compA.price} ${compA.currency}` : (isArabic ? 'عند الطلب (عرض مخصص)' : 'On Request (Private Quote)'),
+          tourBValue: compB.price > 0 ? `$${compB.price} ${compB.currency}` : (isArabic ? 'عند الطلب (عرض مخصص)' : 'On Request (Private Quote)'),
         },
         {
           aspect: isArabic ? 'الإبحار في النايل كروز' : 'Nile Cruise Included',

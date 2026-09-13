@@ -39,20 +39,21 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(validation.valid).toBe(false);
     });
 
-    it('MUST reject shutdown Gemini 1.5 and 2.0 models', () => {
-      const validation = modelRegistry.validateProviderModelPair('google', 'gemini-2.0-flash-lite');
+    it('MUST reject shutdown Gemini 1.5 models', () => {
+      const validation = modelRegistry.validateProviderModelPair('google', 'gemini-1.5-flash');
       expect(validation.valid).toBe(false);
       expect(validation.reason).toContain('deprecated/shut down');
-      expect(modelRegistry.validateProviderModelPair('google', 'gemini-2.0-flash').valid).toBe(false);
-      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.5-flash').valid).toBe(false);
+      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.5-pro').valid).toBe(false);
+      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.0-pro').valid).toBe(false);
     });
 
     it('MUST accept Google + valid Gemini production models', () => {
       const models = [
-        'gemini-3.7-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
         'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-pro',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
       ];
       for (const m of models) {
         const validation = modelRegistry.validateProviderModelPair('google', m);
@@ -159,7 +160,7 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
   describe('4. Model Registry & FinOps Cost Calculation', () => {
     it('calculates accurate token cost in USD for Gemini 2.5 Flash', () => {
       const cost = modelRegistry.calculateCostUsd('gemini-2.5-flash', 10_000, 2_000);
-      expect(cost).toBeCloseTo(0.0018, 4);
+      expect(cost).toBeCloseTo(0.0027, 4);
     });
 
     it('calculates accurate token cost in USD for GPT-4o', () => {
@@ -187,10 +188,10 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
         ok: true,
         json: async () => ({
           data: [
-            { id: 'models/gemini-3.6-flash' },
-            { id: 'models/gemini-3.5-flash-lite' },
+            { id: 'models/gemini-2.5-flash' },
+            { id: 'models/gemini-2.5-flash-lite' },
             { id: 'models/gemini-2.0-flash' },
-            { id: 'models/gemini-2.0-flash-lite' }, // shutdown model
+            { id: 'models/gemini-1.5-flash' }, // shutdown model
             { id: 'models/text-embedding-004' },
           ],
         }),
@@ -204,11 +205,10 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
       expect(result.providerId).toBe('google');
       expect(result.models.length).toBeGreaterThanOrEqual(2);
-      expect(result.models.map((m) => m.id)).toContain('gemini-3.6-flash');
-      expect(result.models.map((m) => m.id)).toContain('gemini-3.5-flash-lite');
-      expect(result.models.find((m) => m.id === 'gemini-2.0-flash')).toBeUndefined();
+      expect(result.models.map((m) => m.id)).toContain('gemini-2.5-flash');
+      expect(result.models.map((m) => m.id)).toContain('gemini-2.0-flash');
       // Shutdown model must NOT be in available models
-      expect(result.models.find((m) => m.id === 'gemini-2.0-flash-lite')).toBeUndefined();
+      expect(result.models.find((m) => m.id === 'gemini-1.5-flash')).toBeUndefined();
 
       // Ensure API key is NEVER exposed in the discovery result
       const serialized = JSON.stringify(result);

@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UniversalAiProvider, ProviderError } from '../providers/universal-ai.provider';
 import { IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
-import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl, validateApiKeyFormat, sanitizeApiKey } from './model-registry.service';
+import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl, validateApiKeyFormat, sanitizeApiKey, normalizeModelId } from './model-registry.service';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
@@ -121,15 +121,15 @@ export class AiKeyPoolService implements OnModuleInit {
 
   private async sanitizeLegacyModelIds() {
     const legacyModelMap: Record<string, string> = {
-      'gemini-1.5-flash': 'gemini-3.5-flash-lite',
-      'gemini-1.5-pro': 'gemini-3.6-flash',
-      'gemini-1.5-flash-8b': 'gemini-3.5-flash-lite',
-      'gemini-2.0-flash': 'gemini-3.6-flash',
-      'gemini-2.0-flash-001': 'gemini-3.6-flash',
-      'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
-      'gemini-2.0-flash-lite-001': 'gemini-3.5-flash-lite',
+      'gemini-3.7-flash': 'gemini-2.5-flash',
+      'gemini-3.6-flash': 'gemini-2.5-flash',
+      'gemini-3.5-flash': 'gemini-2.5-flash',
+      'gemini-3.5-flash-lite': 'gemini-2.5-flash-lite',
+      'gemini-3.1-flash-lite': 'gemini-2.5-flash-lite',
+      'gemini-1.5-flash': 'gemini-2.5-flash',
+      'gemini-1.5-pro': 'gemini-2.5-pro',
+      'gemini-1.5-flash-8b': 'gemini-2.5-flash-lite',
       'gpt-5.6-luna': 'gpt-4o',
-      'google/gemini-2.0-flash-001': 'gemini-3.6-flash',
     };
 
     for (const [legacy, current] of Object.entries(legacyModelMap)) {
@@ -140,8 +140,21 @@ export class AiKeyPoolService implements OnModuleInit {
     }
 
     await (this.prisma as any).aiConfig.updateMany({
-      where: { model: { in: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'] } },
-      data: { model: 'gemini-3.6-flash' },
+      where: {
+        model: {
+          in: [
+            'gemini-3.7-flash',
+            'gemini-3.6-flash',
+            'gemini-3.5-flash',
+            'gemini-3.5-flash-lite',
+            'gemini-3.1-flash-lite',
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+            'gemini-1.5-flash-8b',
+          ],
+        },
+      },
+      data: { model: 'gemini-2.5-flash' },
     }).catch(() => {});
   }
 
@@ -235,8 +248,8 @@ export class AiKeyPoolService implements OnModuleInit {
     if (!config) {
       config = await (this.prisma as any).aiConfig.create({
         data: {
-          provider: 'google',                      // Changed from 'anthropic'
-          model: 'gemini-3.6-flash',
+          provider: 'google',
+          model: 'gemini-2.5-flash',
           isEnabled: true,
           isPublicEnabled: true,
           systemInstructions: 'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
@@ -321,6 +334,17 @@ export class AiKeyPoolService implements OnModuleInit {
       },
     });
 
+    if (dto.isActive !== false && dto.model?.trim()) {
+      const activeModel = normalizeModelId(dto.model.trim());
+      await (this.prisma as any).aiConfig.updateMany({
+        data: {
+          provider: providerId,
+          model: activeModel,
+          isEnabled: true,
+        },
+      }).catch(() => {});
+    }
+
     this.modelRegistry.invalidateDiscoveryCache(providerId);
     return this.toMasked(row);
   }
@@ -389,6 +413,17 @@ export class AiKeyPoolService implements OnModuleInit {
       data: updateData,
     });
 
+    if (dto.isActive === true && (updateData.model || existing.model)) {
+      const activeModel = normalizeModelId(updateData.model || existing.model);
+      await (this.prisma as any).aiConfig.updateMany({
+        data: {
+          provider: providerId,
+          model: activeModel,
+          isEnabled: true,
+        },
+      }).catch(() => {});
+    }
+
     this.modelRegistry.invalidateDiscoveryCache(providerId);
     return this.toMasked(row);
   }
@@ -412,6 +447,70 @@ export class AiKeyPoolService implements OnModuleInit {
       ),
     );
     return this.getKeyPool();
+  }
+
+  async setActiveModel(params: {
+    provider: string;
+    model: string;
+    credentialId?: string;
+    testBeforeActivate?: boolean;
+  }): Promise<{ success: boolean; provider: string; model: string; message: string }> {
+    const providerId = params.provider.toLowerCase();
+    const modelId = normalizeModelId(params.model);
+
+    const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
+    if (!validation.valid) {
+      throw new BadRequestException(`Cannot activate invalid model: ${validation.reason}`);
+    }
+
+    if (params.testBeforeActivate && params.credentialId) {
+      const testResult = await this.testKey(params.credentialId);
+      if (!testResult.success) {
+        throw new BadRequestException(`Cannot activate model. Test connection failed: ${testResult.error || testResult.diagnosis}`);
+      }
+    }
+
+    if (params.credentialId) {
+      await (this.prisma as any).aiProviderCredential.update({
+        where: { id: params.credentialId },
+        data: {
+          isActive: true,
+          priority: 1,
+          model: modelId,
+          provider: providerId,
+        },
+      }).catch(() => {});
+    } else {
+      const matchingCred = await (this.prisma as any).aiProviderCredential.findFirst({
+        where: { provider: providerId, isActive: true },
+      });
+      if (matchingCred) {
+        await (this.prisma as any).aiProviderCredential.update({
+          where: { id: matchingCred.id },
+          data: { model: modelId },
+        }).catch(() => {});
+      }
+    }
+
+    const config = await this.getAiConfig();
+    await (this.prisma as any).aiConfig.update({
+      where: { id: config.id },
+      data: {
+        provider: providerId,
+        model: modelId,
+        isEnabled: true,
+      },
+    });
+
+    this.modelRegistry.invalidateDiscoveryCache(providerId);
+    this.logger.log(`Active GuideR model successfully set to '${modelId}' (${providerId})`);
+
+    return {
+      success: true,
+      provider: providerId,
+      model: modelId,
+      message: `Active GuideR model successfully set to ${modelId} (${providerId})`,
+    };
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -458,7 +557,7 @@ export class AiKeyPoolService implements OnModuleInit {
     const effectiveModel =
       modelId?.trim() ||
       (providerId === 'google'
-        ? 'gemini-3.6-flash'
+        ? 'gemini-2.5-flash'
         : providerId === 'openai'
         ? 'gpt-4o-mini'
         : providerId === 'xai'

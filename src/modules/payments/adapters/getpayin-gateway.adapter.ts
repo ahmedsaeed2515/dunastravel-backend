@@ -159,6 +159,7 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       verified = this.client().webhooks.verify(rawBody.toString('utf8'));
     } catch (error) {
       if (error instanceof PaylinkSignatureError) {
+        this.logger.error('CRITICAL SECURITY ALERT: PayLink webhook signature verification failed');
         throw new BadRequestException('Invalid PayLink webhook signature');
       }
       throw error;
@@ -234,7 +235,23 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
     const providerInvoiceId = String(payload.invoice_id);
     this.invoiceId(providerInvoiceId);
     const providerStatus = String(payload.invoice_status).toUpperCase();
-    const supplied = Buffer.from(String(payload.signature), 'base64');
+
+    const rawSig = String(payload.signature || '').trim();
+    if (!rawSig || rawSig.length !== 44 || !/^[A-Za-z0-9+/]{43}=$/.test(rawSig)) {
+      this.logger.error(
+        `CRITICAL SECURITY ALERT: Malformed PayLink browser callback signature encoding for invoice_id=${providerInvoiceId}`,
+      );
+      throw new BadRequestException('Invalid PayLink callback signature');
+    }
+
+    const supplied = Buffer.from(rawSig, 'base64');
+    if (supplied.toString('base64') !== rawSig) {
+      this.logger.error(
+        `CRITICAL SECURITY ALERT: Non-canonical or re-padded PayLink callback signature for invoice_id=${providerInvoiceId}`,
+      );
+      throw new BadRequestException('Invalid PayLink callback signature');
+    }
+
     const expected = crypto
       .createHmac('sha256', this.hashToken())
       .update(
@@ -245,6 +262,9 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       supplied.length !== expected.length ||
       !crypto.timingSafeEqual(supplied, expected)
     ) {
+      this.logger.error(
+        `CRITICAL SECURITY ALERT: Invalid PayLink browser callback signature detected for invoice_id=${providerInvoiceId}`,
+      );
       throw new BadRequestException('Invalid PayLink callback signature');
     }
     return providerInvoiceId;
@@ -336,6 +356,7 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       return await operation();
     } catch (error) {
       if (error instanceof PaylinkConnectionError) {
+        this.logger.error(`GATEWAY OUTAGE ALERT: PayLink connection failure or timeout: ${error.message}`);
         throw new ServiceUnavailableException('PayLink is temporarily unavailable');
       }
       if (error instanceof PaylinkApiError) {

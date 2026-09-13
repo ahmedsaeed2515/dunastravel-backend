@@ -37,11 +37,15 @@ export interface DiscoveredModelMetadata {
   outputPricePer1M?: number;
   status: 'AVAILABLE' | 'UNAVAILABLE' | 'DEPRECATED';
   source: 'LIVE_PROVIDER';
+  isCuratedRecommended?: boolean;
+  curationBadge?: 'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced';
 }
 
 export interface LiveModelDiscoveryResult {
   providerId: string;
   models: DiscoveredModelMetadata[];
+  curatedModels: DiscoveredModelMetadata[];
+  rawModels: DiscoveredModelMetadata[];
   cached: boolean;
   timestamp: string;
 }
@@ -95,12 +99,11 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isLegacy: false,
     allowCustomBaseUrl: false,
     primaryModels: [
-      'gemini-3.5-flash',
-      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
     ],
   },
 
@@ -322,158 +325,80 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 
   // ── GOOGLE GEMINI ────────────────────────────────────────────────
 
-  'gemini-3.7-flash': {
-    id: 'gemini-3.7-flash',
+  'gemini-2.5-flash': {
+    id: 'gemini-2.5-flash',
     providerId: 'google',
-    displayName: 'Gemini 3.7 Flash',
-    displayNameAr: 'جيمناي 3.7 فلاش',
-    description: 'Google\'s most capable production Flash model for complex agentic and multimodal workflows.',
-    recommendation: 'premium',
-    badge: 'Premium',
-    status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    supportsStructuredOutput: true,
-    supportsVision: true,
-    multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.75,
-    outputPricePerMillion: 3.75,
-    cachedInputPricePerMillion: 0.075,
-    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-08-31',
-    contextWindow: 1_048_576,
-    maxOutputTokens: 65_536,
-    isPopular: true,
-    isDefault: false,
-  },
-
-  'gemini-3.6-flash': {
-    id: 'gemini-3.6-flash',
-    providerId: 'google',
-    displayName: 'Gemini 3.6 Flash',
-    displayNameAr: 'جيمناي 3.6 فلاش',
-    description: 'Fast production-grade Gemini model for general chat, tool use, and grounded travel workflows.',
+    displayName: 'Gemini 2.5 Flash',
+    displayNameAr: 'جيميناي 2.5 فلاش (الموصى به - الأفضل أداءً وتوازناً)',
+    description: 'Official production flagship model: sub-second latency, multimodal, native tool calling, 1M context.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
+    lastVerifiedAt: '2026-09-13',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.75,
-    outputPricePerMillion: 3.75,
-    cachedInputPricePerMillion: 0.075,
+    inputPricePerMillion: 0.15,
+    outputPricePerMillion: 0.60,
+    cachedInputPricePerMillion: 0.0375,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-08-31',
-    contextWindow: 1_048_576,
-    maxOutputTokens: 65_536,
-    isPopular: true,
-    isDefault: false,
-  },
-
-  'gemini-3.5-flash': {
-    id: 'gemini-3.5-flash',
-    providerId: 'google',
-    displayName: 'Gemini 3.5 Flash',
-    displayNameAr: 'جيمناي 3.5 فلاش',
-    description: 'High-speed, production-grade model with ~900ms response time and full multimodal & tool support.',
-    recommendation: 'balanced',
-    badge: 'Balanced',
-    status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    supportsStructuredOutput: true,
-    supportsVision: true,
-    multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.50,
-    outputPricePerMillion: 3.00,
-    cachedInputPricePerMillion: 0.05,
-    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-08-31',
+    priceVerifiedAt: '2026-09-13',
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     isPopular: true,
     isDefault: true,
   },
 
-  'gemini-3.5-flash-lite': {
-    id: 'gemini-3.5-flash-lite',
+  'gemini-2.5-flash-lite': {
+    id: 'gemini-2.5-flash-lite',
     providerId: 'google',
-    displayName: 'Gemini 3.5 Flash-Lite',
-    displayNameAr: 'جيمناي 3.5 فلاش لايت',
-    description: 'Low-latency, cost-efficient production model for high-volume travel conversations and simple tasks.',
+    displayName: 'Gemini 2.5 Flash-Lite',
+    displayNameAr: 'جيميناي 2.5 فلاش لايت (الأوفر تكلفة وسريع)',
+    description: 'Ultra-low latency, cost-efficient model ideal for high-throughput luxury travel chats.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
+    lastVerifiedAt: '2026-09-13',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 0.30,
-    outputPricePerMillion: 2.50,
-    cachedInputPricePerMillion: 0.03,
+    inputPricePerMillion: 0.075,
+    outputPricePerMillion: 0.30,
+    cachedInputPricePerMillion: 0.02,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-08-31',
+    priceVerifiedAt: '2026-09-13',
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     isPopular: true,
     isDefault: false,
   },
 
-  'gemini-3.1-flash-lite': {
-    id: 'gemini-3.1-flash-lite',
+  'gemini-2.5-pro': {
+    id: 'gemini-2.5-pro',
     providerId: 'google',
-    displayName: 'Gemini 3.1 Flash-Lite',
-    displayNameAr: 'جيمناي 3.1 فلاش لايت',
-    description: 'Cost-efficient stable Gemini model for high-volume, lightweight multilingual tasks.',
-    recommendation: 'economy',
-    badge: 'Economy',
+    displayName: 'Gemini 2.5 Pro',
+    displayNameAr: 'جيميناي 2.5 برو (أعلى جودة وتحليل عميق)',
+    description: 'Advanced reasoning model with 2M token context, superior for bespoke luxury itineraries and complex planning.',
+    recommendation: 'premium',
+    badge: 'Premium',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    supportsStructuredOutput: true,
-    supportsVision: true,
-    multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 0.25,
-    outputPricePerMillion: 1.50,
-    cachedInputPricePerMillion: 0.025,
-    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-08-31',
-    contextWindow: 1_048_576,
-    maxOutputTokens: 65_536,
-    isPopular: false,
-    isDefault: false,
-  },
-
-  'gemini-2.5-flash': {
-    id: 'gemini-2.5-flash',
-    providerId: 'google',
-    displayName: 'Gemini 2.5 Flash',
-    displayNameAr: 'جيميناي 2.5 فلاش (الموصى به حالياً والأحدث)',
-    description: 'Next-generation Gemini flagship flash model with enhanced multimodal and reasoning capabilities.',
-    recommendation: 'balanced',
-    badge: 'Balanced',
-    status: 'AVAILABLE',
-    lastVerifiedAt: '2026-08-31',
+    lastVerifiedAt: '2026-09-13',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.40,
-    cachedInputPricePerMillion: 0.025,
-    priceSource: 'https://ai.google.dev/gemini-api/docs/models',
-    priceVerifiedAt: '2026-08-31',
-    contextWindow: 1_048_576,
-    maxOutputTokens: 8_192,
+    inputPricePerMillion: 1.25,
+    outputPricePerMillion: 5.00,
+    cachedInputPricePerMillion: 0.30,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-09-13',
+    contextWindow: 2_097_152,
+    maxOutputTokens: 65_536,
     isPopular: true,
     isDefault: false,
   },
@@ -486,8 +411,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     description: 'Fastest next-gen multimodal model with 1M context. Standard for luxury travel conversations.',
     recommendation: 'balanced',
     badge: 'Balanced',
-    status: 'DEPRECATED',
-    lastVerifiedAt: '2026-08-31',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-09-13',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
@@ -497,7 +422,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     outputPricePerMillion: 0.40,
     cachedInputPricePerMillion: 0.025,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
-    priceVerifiedAt: '2026-08-31',
+    priceVerifiedAt: '2026-09-13',
     contextWindow: 1_048_576,
     maxOutputTokens: 8_192,
     isPopular: true,
@@ -507,24 +432,50 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
   'gemini-2.0-flash-lite': {
     id: 'gemini-2.0-flash-lite',
     providerId: 'google',
-    displayName: 'Gemini 2.0 Flash Lite [Deprecated]',
-    displayNameAr: 'جيميناي 2.0 فلاش لايت (متوقف)',
-    description: 'Deprecated/shut down model. No longer available for production routing.',
-    recommendation: 'experimental',
+    displayName: 'Gemini 2.0 Flash Lite',
+    displayNameAr: 'جيميناي 2.0 فلاش لايت (احتياطي سريع)',
+    description: 'Low-latency lightweight model for secondary fallback routing.',
+    recommendation: 'economy',
     badge: 'Economy',
-    status: 'DEPRECATED',
-    lastVerifiedAt: '2026-08-31',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-09-13',
     supportsStreaming: true,
-    supportsToolCalling: false,
-    supportsStructuredOutput: false,
-    supportsVision: false,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
     multilingualRating: 'GOOD',
     inputPricePerMillion: 0.075,
     outputPricePerMillion: 0.30,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
-    priceVerifiedAt: '2026-08-31',
+    priceVerifiedAt: '2026-09-13',
     contextWindow: 1_048_576,
     maxOutputTokens: 8_192,
+    isPopular: false,
+    isDefault: false,
+  },
+
+  'gemini-3.7-flash': {
+    id: 'gemini-3.7-flash',
+    providerId: 'google',
+    displayName: 'Gemini 3.7 Flash',
+    displayNameAr: 'جيمناي 3.7 فلاش',
+    description: 'Experimental Gemini Flash model for complex agentic workflows.',
+    recommendation: 'premium',
+    badge: 'Premium',
+    status: 'AVAILABLE',
+    lastVerifiedAt: '2026-09-13',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'EXCELLENT',
+    inputPricePerMillion: 0.75,
+    outputPricePerMillion: 3.75,
+    cachedInputPricePerMillion: 0.075,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-09-13',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
     isPopular: false,
     isDefault: false,
   },
@@ -999,10 +950,16 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
+  'gemini-3.6-flash': 'gemini-2.5-flash',
+  'gemini-3.5-flash': 'gemini-2.5-flash',
+  'gemini-3.5-flash-lite': 'gemini-2.5-flash-lite',
+  'gemini-3.1-flash-lite': 'gemini-2.5-flash-lite',
 };
 
 export function normalizeModelId(model: string): string {
-  return MODEL_ALIASES[model] || model;
+  if (!model || typeof model !== 'string') return '';
+  const stripped = model.replace(/^models\//, '').trim();
+  return MODEL_ALIASES[stripped] || stripped;
 }
 
 export function validateBaseUrl(url: string): { valid: boolean; reason?: string } {
@@ -1053,6 +1010,13 @@ export function validateApiKeyFormat(provider: string, apiKey: string): { valid:
   }
 
   if (p === 'google') {
+    // Detect mismatch if user accidentally pasted a Google Cloud OAuth / service account token
+    if (key.startsWith('AQ.') || key.startsWith('ya29.')) {
+      return {
+        valid: false,
+        reason: `The key entered appears to be a Google Cloud OAuth token or service account access token (starts with '${key.substring(0, 4)}'), not a Google AI Studio API key. Google Gemini requires an API key starting with 'AIzaSy...' from https://aistudio.google.com/apikey`,
+      };
+    }
     // Detect mismatch if user accidentally pasted an OpenAI / Anthropic key
     if (key.startsWith('sk-or-')) {
       return {
@@ -1180,19 +1144,18 @@ export function isValidProviderModelPair(providerId: string, modelId: string): b
 }
 
 const RETIRED_GOOGLE_MODELS = new Set([
+  'gemini-1.0-pro',
+  'gemini-1.0-pro-vision',
+  'gemini-pro',
+  'gemini-pro-vision',
   'gemini-1.5-flash',
   'gemini-1.5-pro',
   'gemini-1.5-flash-8b',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-001',
-  'gemini-2.0-flash-lite',
-  'gemini-2.0-flash-lite-001',
-  'gemini-2.5-flash-lite',
-  'google/gemini-2.0-flash-001',
 ]);
 
 export function isRetiredGoogleModel(modelId: string): boolean {
-  return RETIRED_GOOGLE_MODELS.has(modelId.replace(/^models\//, ''));
+  if (!modelId) return false;
+  return RETIRED_GOOGLE_MODELS.has(modelId.replace(/^models\//, '').trim());
 }
 
 /**
@@ -1280,9 +1243,12 @@ export class ModelRegistryService {
     const cacheKey = `${pId}:${options.baseUrl || 'default'}:${options.integrationMode || 'default'}:${apiKey.slice(0, 8)}`;
     const cached = this.discoveryCache.get(cacheKey);
     if (cached && !options.forceRefresh && Date.now() - cached.timestamp < 3600_000) {
+      const curated = cached.models.filter((m: any) => m.isCuratedRecommended).slice(0, 5);
       return {
         providerId: pId,
         models: cached.models,
+        curatedModels: curated.length > 0 ? curated : cached.models.slice(0, 5),
+        rawModels: cached.models,
         cached: true,
         timestamp: new Date(cached.timestamp).toISOString(),
       };
@@ -1562,11 +1528,62 @@ export class ModelRegistryService {
       throw new BadRequestException(`No active chat-compatible models were found for provider '${providerId}' with the provided API key.`);
     }
 
+    const providerDef = PROVIDER_REGISTRY[pId];
+    const primaryIds = providerDef?.primaryModels || [];
+
+    const curationBadges: Record<string, 'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced'> = {
+      // Google
+      'gemini-2.5-flash': 'Best Overall',
+      'gemini-2.5-flash-lite': 'Best Value',
+      'gemini-2.5-pro': 'Highest Quality',
+      'gemini-2.0-flash': 'Fastest',
+      'gemini-2.0-flash-lite': 'Advanced',
+      // OpenAI
+      'gpt-4o': 'Best Overall',
+      'gpt-4o-mini': 'Best Value',
+      'o3-mini': 'Highest Quality',
+      'gpt-4.5-preview': 'Advanced',
+      'o1': 'Advanced',
+      // OpenRouter
+      'google/gemini-2.5-flash': 'Best Value',
+      'anthropic/claude-3.5-sonnet': 'Best Overall',
+      'meta-llama/llama-3.3-70b-instruct': 'Fastest',
+      'google/gemini-2.5-pro': 'Highest Quality',
+      'deepseek/deepseek-chat': 'Advanced',
+      // xAI
+      'grok-2-1212': 'Best Overall',
+      'grok-beta': 'Fastest',
+      'grok-2-vision-1212': 'Highest Quality',
+      // DeepSeek
+      'deepseek-chat': 'Best Value',
+      'deepseek-reasoner': 'Highest Quality',
+    };
+
+    const curatedModels: DiscoveredModelMetadata[] = [];
+    for (const pid of primaryIds) {
+      const match = discovered.find((m) => m.id === pid || m.id.endsWith(`/${pid}`) || m.id.replace(/^models\//, '') === pid);
+      if (match && curatedModels.length < 5) {
+        match.isCuratedRecommended = true;
+        match.curationBadge = curationBadges[pid] || 'Best Overall';
+        curatedModels.push(match);
+      }
+    }
+
+    if (curatedModels.length === 0 && discovered.length > 0) {
+      for (const m of discovered.slice(0, 5)) {
+        m.isCuratedRecommended = true;
+        m.curationBadge = curationBadges[m.id] || 'Best Overall';
+        curatedModels.push(m);
+      }
+    }
+
     this.discoveryCache.set(cacheKey, { models: discovered, timestamp: Date.now() });
 
     return {
       providerId: pId,
       models: discovered,
+      curatedModels,
+      rawModels: discovered,
       cached: false,
       timestamp: new Date().toISOString(),
     };

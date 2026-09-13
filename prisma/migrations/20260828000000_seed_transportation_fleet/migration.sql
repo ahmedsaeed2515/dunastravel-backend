@@ -1,4 +1,4 @@
-﻿INSERT INTO "transportation_services" (
+INSERT INTO "transportation_services" (
   "id", "name", "service_type", "vehicle_category", "vehicle_type", "capacity", "doors", "transmission", "base_price_usd", "hero_image_url", "is_private", "is_active", "features_jsonb", "description", "created_at", "updated_at"
 ) VALUES
   ('tr-bus-1', 'حافلة سياحية كبرى فاخرة (VIP Golden Bus)', 'AIRPORT', 'bus', 'VIP Tour Bus 50-Seater', 50, 2, 'AUTO', 450.00, '/imgs/transportation/bus1.jpeg', false, true, '["تكييف هوائي مركزي", "واي فاي فائق السرعة", "سائق محترف متعدد اللغات", "دورة مياه داخلية", "مقاعد جلدية مريحة قابلة للإمالة", "مساحة أمتعة واسعة", "منافذ شحن USB"]'::jsonb, 'حافلة سياحية فاخرة 50 مقعداً مجهزة بأحدث وسائل الراحة والترفيه وشاشات العرض للرحلات الطويلة بين القاهرة والأقصر وأسوان والغردقة.', NOW(), NOW()),

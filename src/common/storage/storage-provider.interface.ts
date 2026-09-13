@@ -32,6 +32,7 @@ export interface UploadOptions {
   entityId: string | null;
   altText: string | null;
   eager: EagerTransform[];
+  resourceType?: 'image' | 'video' | 'raw' | 'auto';
 }
 
 export interface UploadResult {
@@ -43,13 +44,14 @@ export interface UploadResult {
   bytes: number;
   width: number | null;
   height: number | null;
+  duration?: number | null;
   error: string | null;
 }
 
 export interface StorageProvider {
   upload(file: UploadableFile, options: UploadOptions): Promise<UploadResult>;
   uploadUrl(url: string, options: UploadOptions): Promise<UploadResult>;
-  delete(publicId: string): Promise<void>;
+  delete(publicId: string, resourceType?: 'image' | 'video'): Promise<void>;
   getDeliveryUrl(
     publicId: string,
     transformOptions?: TransformOptions,

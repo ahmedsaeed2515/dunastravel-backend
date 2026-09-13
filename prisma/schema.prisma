@@ -578,6 +578,19 @@ model MediaAsset {
   uploadedBy        String?            @map("uploaded_by")
   deletedAt         DateTime?          @map("deleted_at")
   createdAt         DateTime           @default(now()) @map("created_at")
+  title             String?            @db.VarChar(255)
+  description       String?            @db.Text
+  mediaType         String             @default("IMAGE") @map("media_type") @db.VarChar(20)
+  cloudinaryResourceType String        @default("image") @map("cloudinary_resource_type") @db.VarChar(50)
+  thumbnailUrl      String?            @map("thumbnail_url")
+  optimizedUrl      String?            @map("optimized_url")
+  duration          Float?
+  isShowcase        Boolean            @default(false) @map("is_showcase")
+  showcaseSection   String?            @map("showcase_section") @db.VarChar(50)
+  showcasePosition  Int?               @map("showcase_position")
+  isActive          Boolean            @default(true) @map("is_active")
+  isPublished       Boolean            @default(true) @map("is_published")
+  metadata          Json?
   updatedAt         DateTime           @updatedAt @map("updated_at")
   customerDocument  CustomerDocument?  @relation("CustomerDocumentMedia")
   bookingAttachment BookingAttachment? @relation("BookingAttachmentMedia")
@@ -585,6 +598,8 @@ model MediaAsset {
   @@index([entityType, entityId])
   @@index([deletedAt])
   @@index([providerName])
+  @@index([isShowcase, showcaseSection, showcasePosition])
+  @@index([mediaType])
   @@map("media_assets")
 }
 

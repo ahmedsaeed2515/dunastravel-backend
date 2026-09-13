@@ -55,6 +55,12 @@ export class RecordFeedbackRequestDto {
 export class PublicChatController {
   constructor(private readonly chatOrchestrator: ChatOrchestratorService) {}
 
+  @Get('status')
+  @ApiOperation({ summary: 'Get GuideR global availability status (ACTIVE / DISABLED / MAINTENANCE)' })
+  async getStatus() {
+    return this.chatOrchestrator.getPublicAvailabilityStatus();
+  }
+
   @Get('personas')
   @ApiOperation({ summary: 'Get available AI Concierge personas & conversational styles' })
   async getPersonas(@Query('locale') locale?: string) {
@@ -64,18 +70,20 @@ export class PublicChatController {
   @Get('config')
   @ApiOperation({ summary: 'Get public AI chatbot welcome configuration & suggestions' })
   async getChatConfig(@Query('locale') locale?: string) {
-    const config = await this.chatOrchestrator.getOrCreateConfig();
+    const [config, availability] = await Promise.all([
+      this.chatOrchestrator.getOrCreateConfig(),
+      this.chatOrchestrator.getPublicAvailabilityStatus(),
+    ]);
     const lang = (locale || 'en').toLowerCase().split('-')[0];
     const welcome = (config.welcomeMessages as any)?.[lang] || (config.welcomeMessages as any)?.en || config.fallbackMessage;
     const suggestions = (config.suggestedQuestions as any)?.[lang] || (config.suggestedQuestions as any)?.en || [];
 
-    const tourSettings = (config.tourSettings as any) || {};
-
     return {
       welcomeMessage: welcome,
       suggestedQuestions: suggestions,
-      isPublicEnabled: config.isPublicEnabled,
-      isInChatBookingEnabled: tourSettings.isInChatBookingEnabled !== false,
+      isPublicEnabled: availability.enabled,
+      availability,
+      isInChatBookingEnabled: false, // GuideR does NOT book trips directly; navigates to tour pages
       salesPersonality: config.salesPersonality,
       personas: this.chatOrchestrator.getActivePersonas(locale),
     };
@@ -95,8 +103,8 @@ export class PublicChatController {
   }
 
   @Post('book')
-  @ApiOperation({ summary: 'Create an instant luxury tour booking directly from the chatbot' })
-  @ApiOkResponse({ description: 'Confirmed booking reservation reference with invoice' })
+  @ApiOperation({ summary: 'Deprecated: GuideR no longer initiates direct bookings. Redirects traveler to official tour page.' })
+  @ApiOkResponse({ description: 'Redirection advisory to the official website tour booking flow' })
   async bookTour(@Body() dto: BookTourChatDto) {
     return this.chatOrchestrator.bookTourFromChat(dto);
   }

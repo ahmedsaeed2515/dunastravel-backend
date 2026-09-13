@@ -21,6 +21,7 @@ import {
   UpdateProviderCredentialDto,
   GenerateAiItineraryDto,
   RefreshProviderModelsDto,
+  UpdateGuiderStatusDto,
 } from './dto/admin-ai.dto';
 import { SendChatMessageDto } from './dto/public-chat.dto';
 import {
@@ -60,6 +61,7 @@ export class AdminAiController {
       hotelsCount,
       keyPool,
       config,
+      availability,
     ] = await Promise.all([
       this.prisma.chatConversation.count(),
       this.prisma.chatConversation.count({ where: { status: 'ACTIVE' } }),
@@ -74,6 +76,7 @@ export class AdminAiController {
       this.prisma.hotel.count().catch(() => 0),
       this.keyPoolService.getKeyPool(),
       this.chatOrchestrator.getOrCreateConfig(),
+      this.chatOrchestrator.getPublicAvailabilityStatus(),
     ]);
 
     const totalLogs = totalUsageLogs._count.id || 1;
@@ -82,7 +85,11 @@ export class AdminAiController {
     const totalOutputTokens = totalUsageLogs._sum.outputTokens || 0;
     const estimatedCostUsd = Number(totalUsageLogs._sum.estimatedCostUsd || ((totalInputTokens * 0.3 + totalOutputTokens * 2.5) / 1_000_000).toFixed(4));
     const activeProvider = (config.provider && config.provider !== 'anthropic') ? config.provider : 'google';
-    const activeModel = config.model || 'gemini-3.5-flash';
+    const activeModel = config.model || 'gemini-2.5-flash';
+
+    const verifiedHealthyCount = keyPool.filter((k) => k.lastStatus === 'HEALTHY').length;
+    // If any keys failed or were tested, healthy count should strictly reflect HEALTHY keys
+    const healthyCount = verifiedHealthyCount;
 
     return {
       metrics: {
@@ -95,7 +102,8 @@ export class AdminAiController {
         totalTours: toursCount,
         totalHotels: hotelsCount,
         configuredApiKeysCount: keyPool.length,
-        healthyApiKeysCount: keyPool.filter((k) => k.lastStatus === 'HEALTHY' || k.lastStatus === 'UNTESTED').length,
+        healthyApiKeysCount: healthyCount,
+        verifiedHealthyApiKeysCount: verifiedHealthyCount,
         avgLatencyMs,
         totalInputTokens,
         totalOutputTokens,
@@ -103,6 +111,8 @@ export class AdminAiController {
         estimatedCostUsd,
         activeProvider,
         activeModel,
+        guiderStatus: availability.status,
+        guiderAvailability: availability,
       },
     };
   }
@@ -167,6 +177,16 @@ export class AdminAiController {
       isInChatBookingEnabled: (updated.tourSettings as any)?.isInChatBookingEnabled !== false,
       encryptedApiKey: updated.encryptedApiKey ? '••••••••••••••••' : null,
     };
+  }
+
+  @Post('status')
+  @ApiOperation({ summary: 'Update GuideR global operational status (ACTIVE / DISABLED / MAINTENANCE)' })
+  async updateStatus(
+    @Body() dto: UpdateGuiderStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const adminUser = user?.email || user?.id || 'admin';
+    return this.chatOrchestrator.updateGuiderStatus(dto, adminUser);
   }
 
   // --- Prompt Version Management ---
@@ -327,6 +347,23 @@ export class AdminAiController {
     return this.keyPoolService.testKey(id);
   }
 
+  @Post('models/activate')
+  @ApiOperation({ summary: 'Transactionally activate GuideR model and provider with optional connectivity verification' })
+  async activateModel(
+    @Body()
+    body: {
+      provider: string;
+      model: string;
+      credentialId?: string;
+      testBeforeActivate?: boolean;
+    },
+  ) {
+    if (!body.provider || !body.model) {
+      throw new BadRequestException('Provider and model are required for activation.');
+    }
+    return this.keyPoolService.setActiveModel(body);
+  }
+
   @Post('config/test')
   @ApiOperation({ summary: 'Test a provider connection with a specific key. Validates provider/model pair first.' })
   async testConnection(@Body() dto: TestProviderConnectionDto) {
@@ -334,12 +371,12 @@ export class AdminAiController {
     const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
     const defaultModelForProvider =
       providerName === 'google'
-        ? 'gemini-3.6-flash'
+        ? 'gemini-2.5-flash'
         : providerName === 'openai'
         ? 'gpt-4o-mini'
         : providerName === 'xai'
-        ? 'grok-3-mini'
-        : 'deepseek/deepseek-chat-v3-0324';
+        ? 'grok-2-1212'
+        : 'deepseek-chat';
     const model = (dto.model && dto.model.trim()) ? dto.model.trim() : defaultModelForProvider;
 
     // Validate provider/model pair BEFORE calling the provider
