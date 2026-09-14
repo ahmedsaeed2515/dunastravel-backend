@@ -42,13 +42,19 @@ export class CreateTourLandingPageDto {
 
   @IsString()
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @Matches(/^(https:\/\/|\/)[^\s]+$/i, {
+    message:
+      'heroImageUrl must be an HTTPS URL or an absolute path starting with /',
+  })
   @MaxLength(2048)
   heroImageUrl?: string;
 
   @IsString()
   @IsOptional()
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @Matches(/^(https:\/\/|\/)[^\s]+$/i, {
+    message:
+      'heroVideoUrl must be an HTTPS URL or an absolute path starting with /',
+  })
   @MaxLength(2048)
   heroVideoUrl?: string;
 
