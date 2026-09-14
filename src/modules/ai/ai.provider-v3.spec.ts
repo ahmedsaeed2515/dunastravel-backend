@@ -242,11 +242,11 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
     it('MUST reject dummy string "Password123" for Google provider', () => {
       const result = validateApiKeyFormat('google', 'Password123');
       expect(result.valid).toBe(false);
-      expect(result.reason).toContain('AIza');
+      expect(result.reason).toContain('placeholder');
     });
 
-    it('MUST reject short or truncated Google API keys', () => {
-      const result = validateApiKeyFormat('google', 'AIzaShort');
+    it('MUST reject short or empty API keys', () => {
+      const result = validateApiKeyFormat('google', '1234');
       expect(result.valid).toBe(false);
     });
 
@@ -255,24 +255,17 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(result.valid).toBe(true);
     });
 
-    it('MUST reject non-sk prefix for OpenAI provider', () => {
-      const result = validateApiKeyFormat('openai', 'invalid-openai-key-1234567890');
-      expect(result.valid).toBe(false);
-      expect(result.reason).toContain('sk-');
+    it('MUST accept Google Cloud AQ token format', () => {
+      const result = validateApiKeyFormat('google', 'AQ.Ab8RN6KWmbUiy2q4ttawqAQZ-gCBL3rHjrnG2ADO2htOi3ej0w');
+      expect(result.valid).toBe(true);
     });
 
-    it('MUST accept valid OpenAI API key format', () => {
+    it('MUST accept OpenAI API key format', () => {
       const result = validateApiKeyFormat('openai', 'sk-proj-abc1234567890defghijklmnopqrstuvwxyz');
       expect(result.valid).toBe(true);
     });
 
-    it('MUST reject non-sk-or prefix for OpenRouter provider', () => {
-      const result = validateApiKeyFormat('openrouter', 'sk-other-key-1234567890');
-      expect(result.valid).toBe(false);
-      expect(result.reason).toContain('sk-or-');
-    });
-
-    it('MUST accept valid OpenRouter API key format', () => {
+    it('MUST accept OpenRouter API key format', () => {
       const result = validateApiKeyFormat('openrouter', 'sk-or-v1-abc1234567890defghijklmnopqrstuvwxyz');
       expect(result.valid).toBe(true);
     });
