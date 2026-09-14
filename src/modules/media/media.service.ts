@@ -1546,8 +1546,13 @@ export class MediaService {
   }
 
   async addToShowcase(dto: AssignToShowcaseDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+    const targetId = dto.assetId || dto.mediaId;
+    if (!targetId) {
+      throw new BadRequestException('Either assetId or mediaId must be provided');
+    }
+
     const asset = await this.prisma.mediaAsset.findFirst({
-      where: { id: dto.assetId, deletedAt: null },
+      where: { id: targetId, deletedAt: null },
     });
     if (!asset) {
       throw new NotFoundException('Media asset not found');
@@ -1563,13 +1568,14 @@ export class MediaService {
     }
 
     const updated = await this.prisma.mediaAsset.update({
-      where: { id: dto.assetId },
+      where: { id: targetId },
       data: {
         isShowcase: true,
         showcaseSection: dto.section,
         showcasePosition: position,
         title: dto.title !== undefined ? dto.title : asset.title,
         altText: dto.altText !== undefined ? dto.altText : asset.altText,
+        description: dto.description !== undefined ? dto.description : asset.description,
         isActive: true,
         isPublished: true,
       },
@@ -1607,6 +1613,7 @@ export class MediaService {
       data: {
         title: dto.title !== undefined ? dto.title : asset.title,
         altText: dto.altText !== undefined ? dto.altText : asset.altText,
+        description: dto.description !== undefined ? dto.description : asset.description,
         showcasePosition: dto.position !== undefined ? dto.position : asset.showcasePosition,
         isActive: dto.isActive !== undefined ? dto.isActive : asset.isActive,
         isPublished: dto.isPublished !== undefined ? dto.isPublished : asset.isPublished,

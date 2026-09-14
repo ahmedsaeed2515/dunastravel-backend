@@ -84,9 +84,15 @@ export class HomepageMediaShowcaseResponseDto {
 }
 
 export class AssignToShowcaseDto {
-  @ApiProperty({ description: 'UUID of the media asset to assign' })
+  @ApiPropertyOptional({ description: 'UUID of the media asset to assign' })
+  @IsOptional()
   @IsUUID()
-  assetId!: string;
+  assetId?: string;
+
+  @ApiPropertyOptional({ description: 'Alias for assetId' })
+  @IsOptional()
+  @IsUUID()
+  mediaId?: string;
 
   @ApiProperty({ enum: ['PHOTO', 'VIDEO'], default: 'PHOTO' })
   @IsIn(['PHOTO', 'VIDEO'])
@@ -106,6 +112,11 @@ export class AssignToShowcaseDto {
   @IsOptional()
   @IsString()
   altText?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 export class UpdateShowcaseItemDto {
@@ -118,6 +129,11 @@ export class UpdateShowcaseItemDto {
   @IsOptional()
   @IsString()
   altText?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
