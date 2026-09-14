@@ -71,7 +71,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
           { format: 'jpg', transformation: [{ width: 800, height: 480, crop: 'fill' }] },
           { format: 'mp4', quality: 'auto' },
         ];
-        uploadOptions.eager_async = false;
+        uploadOptions.eager_async = true;
       }
 
       const callback = (error: any, result: any) => {

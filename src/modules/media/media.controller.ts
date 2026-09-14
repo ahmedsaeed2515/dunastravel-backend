@@ -362,10 +362,7 @@ export class MediaAdminController {
     const videoFile = files?.file?.[0];
     const posterFile = files?.poster?.[0];
 
-    const addToShowcase =
-      dto.addToShowcase === true ||
-      dto.addToShowcase === 'true' ||
-      dto.addToShowcase === undefined;
+    const addToShowcase = dto.addToShowcase !== false;
 
     const asset = await this.mediaService.uploadVideoAsset(
       videoFile,

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, ValidateNested, IsIn, IsUUID } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class ShowcasePhotoItemDto {
   @ApiProperty()
@@ -212,7 +212,9 @@ export class UploadVideoDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  addToShowcase?: string | boolean;
+  @Transform(({ value }) => value === true || value === 'true' || value === 1 || value === '1')
+  @IsBoolean()
+  addToShowcase?: boolean;
 
   @ApiPropertyOptional({ description: 'Optional video URL if registering by link' })
   @IsOptional()
