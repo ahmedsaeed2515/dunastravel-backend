@@ -535,15 +535,15 @@ export class MediaService {
 
     for (let i = 0; i < dto.items.length; i++) {
       const item = dto.items[i];
-      const trimmedUrl = item.url?.trim();
+      const trimmedUrl = typeof item.url === 'string' ? item.url.trim() : '';
       if (!trimmedUrl || !/^https?:\/\//i.test(trimmedUrl)) {
         errors.push(`Item #${i + 1}: Invalid HTTP/HTTPS image URL format`);
         continue;
       }
 
       const itemAltText =
-        item.altText?.trim() ||
-        dto.defaultAltText?.trim() ||
+        (typeof item.altText === 'string' && item.altText.trim()) ||
+        (typeof dto.defaultAltText === 'string' && dto.defaultAltText.trim()) ||
         null;
 
       const options: UploadOptions = {
@@ -913,17 +913,23 @@ export class MediaService {
     dto: CreateMediaCategoryDto,
     actor?: AuthenticatedUser,
   ): Promise<MediaCategoryItem> {
-    const slug = dto.slug.trim().toLowerCase().replace(/\s+/g, '-');
+    const rawSlug = typeof dto.slug === 'string' && dto.slug.trim()
+      ? dto.slug.trim()
+      : (typeof dto.nameEn === 'string' && dto.nameEn.trim() ? dto.nameEn.trim() : 'category');
+    const slug = rawSlug.toLowerCase().replace(/\s+/g, '-');
     const existing = await this.getCategoriesWithCounts();
     if (existing.some((c) => c.slug === slug)) {
       throw new BadRequestException(`Category with slug '${slug}' already exists`);
     }
 
+    const cleanNameEn = typeof dto.nameEn === 'string' && dto.nameEn.trim() ? dto.nameEn.trim() : slug;
+    const cleanNameAr = typeof dto.nameAr === 'string' && dto.nameAr.trim() ? dto.nameAr.trim() : cleanNameEn;
+
     const newCategory: MediaCategoryItem = {
       id: slug,
       slug,
-      nameEn: dto.nameEn.trim(),
-      nameAr: dto.nameAr.trim(),
+      nameEn: cleanNameEn,
+      nameAr: cleanNameAr,
       color: dto.color || 'amber',
       icon: dto.icon || 'Folder',
       description: dto.description || '',
@@ -1205,10 +1211,13 @@ export class MediaService {
     }
 
     if (format && format !== 'all') {
-      andConditions.push({ format: format.toLowerCase().trim() });
+      const cleanFormat = typeof format === 'string' ? format.toLowerCase().trim() : '';
+      if (cleanFormat) {
+        andConditions.push({ format: cleanFormat });
+      }
     }
 
-    if (search?.trim()) {
+    if (typeof search === 'string' && search.trim()) {
       const needle = search.trim();
       andConditions.push({
         OR: [
@@ -1567,15 +1576,34 @@ export class MediaService {
       position = (maxPos._max.showcasePosition ?? 0) + 1;
     }
 
+    const cleanTitle =
+      dto.title !== undefined
+        ? typeof dto.title === 'string' && dto.title.trim()
+          ? dto.title.trim()
+          : null
+        : asset.title;
+    const cleanAltText =
+      dto.altText !== undefined
+        ? typeof dto.altText === 'string' && dto.altText.trim()
+          ? dto.altText.trim()
+          : null
+        : asset.altText;
+    const cleanDescription =
+      dto.description !== undefined
+        ? typeof dto.description === 'string' && dto.description.trim()
+          ? dto.description.trim()
+          : null
+        : asset.description;
+
     const updated = await this.prisma.mediaAsset.update({
       where: { id: targetId },
       data: {
         isShowcase: true,
         showcaseSection: dto.section,
         showcasePosition: position,
-        title: dto.title !== undefined ? dto.title : asset.title,
-        altText: dto.altText !== undefined ? dto.altText : asset.altText,
-        description: dto.description !== undefined ? dto.description : asset.description,
+        title: cleanTitle,
+        altText: cleanAltText,
+        description: cleanDescription,
         isActive: true,
         isPublished: true,
       },
@@ -1608,12 +1636,31 @@ export class MediaService {
       throw new NotFoundException('Media asset not found');
     }
 
+    const cleanTitle =
+      dto.title !== undefined
+        ? typeof dto.title === 'string' && dto.title.trim()
+          ? dto.title.trim()
+          : null
+        : asset.title;
+    const cleanAltText =
+      dto.altText !== undefined
+        ? typeof dto.altText === 'string' && dto.altText.trim()
+          ? dto.altText.trim()
+          : null
+        : asset.altText;
+    const cleanDescription =
+      dto.description !== undefined
+        ? typeof dto.description === 'string' && dto.description.trim()
+          ? dto.description.trim()
+          : null
+        : asset.description;
+
     const updated = await this.prisma.mediaAsset.update({
       where: { id },
       data: {
-        title: dto.title !== undefined ? dto.title : asset.title,
-        altText: dto.altText !== undefined ? dto.altText : asset.altText,
-        description: dto.description !== undefined ? dto.description : asset.description,
+        title: cleanTitle,
+        altText: cleanAltText,
+        description: cleanDescription,
         showcasePosition: dto.position !== undefined ? dto.position : asset.showcasePosition,
         isActive: dto.isActive !== undefined ? dto.isActive : asset.isActive,
         isPublished: dto.isPublished !== undefined ? dto.isPublished : asset.isPublished,
@@ -1717,11 +1764,15 @@ export class MediaService {
     userId: string,
     posterFile?: UploadableFile,
   ): Promise<IMediaAsset> {
-    if (!file && (!dto.videoUrl || !dto.videoUrl.trim())) {
+    const rawVideoUrl = typeof dto.videoUrl === 'string' ? dto.videoUrl.trim() : '';
+    if (!file && !rawVideoUrl) {
       throw new BadRequestException('Either a video file or a video URL must be provided');
     }
 
-    let resolvedPosterUrl = dto.posterUrl ? dto.posterUrl.trim() : null;
+    let resolvedPosterUrl =
+      typeof dto.posterUrl === 'string' && dto.posterUrl.trim()
+        ? dto.posterUrl.trim()
+        : null;
 
     // 1. Process custom poster image file if provided
     if (posterFile) {
@@ -1811,9 +1862,18 @@ export class MediaService {
           entityId: dto.categorySlug || 'videos',
           mediaType: 'VIDEO',
           cloudinaryResourceType: 'video',
-          title: dto.title || dto.altText || file.originalname,
-          description: dto.description || null,
-          altText: dto.altText || dto.title || null,
+          title:
+            (typeof dto.title === 'string' && dto.title.trim()) ||
+            (typeof dto.altText === 'string' && dto.altText.trim()) ||
+            file.originalname,
+          description:
+            typeof dto.description === 'string' && dto.description.trim()
+              ? dto.description.trim()
+              : null,
+          altText:
+            (typeof dto.altText === 'string' && dto.altText.trim()) ||
+            (typeof dto.title === 'string' && dto.title.trim()) ||
+            null,
           thumbnailUrl: resolvedPosterUrl || autoPosterUrl,
           optimizedUrl,
           provenance: MediaProvenance.UPLOADED,
@@ -1825,7 +1885,7 @@ export class MediaService {
       });
     } else {
       // 3B. Video via URL / Link Flow
-      const videoUrl = dto.videoUrl!.trim();
+      const videoUrl = rawVideoUrl;
       if (!/^https?:\/\//i.test(videoUrl)) {
         throw new BadRequestException('Video URL must be a valid HTTP or HTTPS address');
       }
@@ -1845,6 +1905,19 @@ export class MediaService {
 
       const publicId = `video_url_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+      const cleanTitle =
+        (typeof dto.title === 'string' && dto.title.trim()) ||
+        (typeof dto.altText === 'string' && dto.altText.trim()) ||
+        'Showcase Video';
+      const cleanAltText =
+        (typeof dto.altText === 'string' && dto.altText.trim()) ||
+        (typeof dto.title === 'string' && dto.title.trim()) ||
+        null;
+      const cleanDescription =
+        typeof dto.description === 'string' && dto.description.trim()
+          ? dto.description.trim()
+          : null;
+
       asset = await this.prisma.mediaAsset.create({
         data: {
           publicId,
@@ -1861,9 +1934,9 @@ export class MediaService {
           entityId: dto.categorySlug || 'videos',
           mediaType: 'VIDEO',
           cloudinaryResourceType: 'video',
-          title: dto.title || dto.altText || 'Showcase Video',
-          description: dto.description || null,
-          altText: dto.altText || dto.title || null,
+          title: cleanTitle,
+          description: cleanDescription,
+          altText: cleanAltText,
           thumbnailUrl: resolvedPosterUrl || null,
           optimizedUrl: videoUrl,
           provenance: MediaProvenance.UPLOADED,
