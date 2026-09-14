@@ -16,6 +16,7 @@ import {
 } from './tour-catalog-tool.service';
 import { sanitizePlainText } from '../../../common/utils/content-sanitizer.util';
 import { generateReferenceCode } from '../../../common/utils/identifiers.util';
+import { ResponseInvariantNormalizer } from './guider-invariants';
 import { Response } from 'express';
 import { BookTourChatDto } from '../dto/public-chat.dto';
 
@@ -45,6 +46,16 @@ export interface ProcessChatMessageDto {
 
 export type GuiderAvailabilityStatus = 'ACTIVE' | 'DISABLED' | 'MAINTENANCE';
 
+export type GuiderResponseType =
+  | 'text'
+  | 'recommendation'
+  | 'itinerary'
+  | 'comparison'
+  | 'booking_intent'
+  | 'lead_capture'
+  | 'clarification'
+  | 'error';
+
 export interface GuiderAvailabilityResult {
   enabled: boolean;
   status: GuiderAvailabilityStatus;
@@ -71,24 +82,25 @@ export const AI_PERSONAS: AiPersona[] = [
     icon: '👑',
     name: {
       en: 'Royal Luxury Concierge',
-      ar: 'الكونسيرج الملكي الفاخر',
+      ar: 'الكونسيرج السياحي الفاخر',
       es: 'Conserje Real de Lujo',
       pt: 'Concierge Real de Luxo',
       it: 'Concierge Reale di Lusso',
     },
     tagline: {
       en: 'Executive white-glove service & signature VIP experiences',
-      ar: 'خدمة فندقية راقية وتجارب VIP حصرية لا مثيل لها',
+      ar: 'خدمة راقية وتجارب VIP خاصة ومصممة بعناية',
       es: 'Servicio ejecutivo de guante blanco y experiencias VIP',
       pt: 'Serviço executivo refinado e experiências VIP exclusivas',
       it: 'Servizio impeccabile e itinerari VIP esclusivi',
     },
-    tone: 'Sophisticated, Ultra-Polite, Executive & Refined',
-    personalityGuidelines: 'Speak with effortless elegance, like a chief concierge at Four Seasons or St. Regis. Highlight private Dahabiyas, presidential suites, private jets, and VIP fast-track transfers.',
-    systemPromptAddendum: `PERSONA MODE: ROYAL LUXURY CONCIERGE (👑)
-- Demeanor: Exquisitely refined, deeply respectful, executive hospitality.
-- Vocabulary: Bespoke, signature, premier, uncompromised luxury, private chauffeur, five-star deluxe.
-- Focus: Highlight high-end comfort, luxury amenities, private Nile cruises, and seamless VIP logistics.`,
+    tone: 'Warm, Executive, Knowledgeable & Refined',
+    personalityGuidelines: 'Communicate with natural elegance, genuine warmth, and travel expertise. NEVER use archaic gendered honorifics like "سيدي", "سيدتي", or "سيدي/سيدتي الكريمة". Address travelers with professional, contemporary Arabic ("أهلاً بك", "يسعدني إرشادك"). Highlight private Dahabiyas, bespoke pacing, and VIP logistics only when relevant.',
+    systemPromptAddendum: `PERSONA MODE: LUXURY TRAVEL CONCIERGE (👑)
+- Demeanor: Warm, executive hospitality, conversational, modern luxury.
+- Tone: Natural, helpful, respectful without robotic or bureaucratic pleasantries.
+- Zero Honorifics: NEVER address the traveler with "سيدي" or "سيدتي" or "سيدي/سيدتي الكريمة".
+- Focus: Provide thoughtful travel guidance, seamless comfort, and tailored recommendations.`,
   },
   {
     code: 'egyptologist',
@@ -102,48 +114,49 @@ export const AI_PERSONAS: AiPersona[] = [
     },
     tagline: {
       en: 'Deep historical storytelling, hieroglyphics & hidden tombs',
-      ar: 'أسرار الفراعنة، فك شفرات الهيروغليفية، والمقابر الخفية',
+      ar: 'أسرار الحضارة المصرية، فك شفرات الهيروغليفية، وتاريخ المعابد',
       es: 'Misterios de los faraones, jeroglíficos y tumbas secretas',
       pt: 'Segredos dos faraós, hieróglifos e tumbas históricas',
       it: 'Segreti dei faraoni, geroglifici e tombe storiche',
     },
     tone: 'Passionate, Scholarly, Engaging Storyteller',
-    personalityGuidelines: 'Bring 5,000 years of ancient Egyptian civilization alive. Share fascinating historical anecdotes about Ramesses II, Hatshepsut, Tutankhamun, Karnak Temple, and the Grand Egyptian Museum (GEM).',
+    personalityGuidelines: 'Bring ancient Egyptian history to life through clear, fascinating historical narratives about Pyramids, Karnak, and the Grand Egyptian Museum. Never use archaic customer-service honorifics.',
     systemPromptAddendum: `PERSONA MODE: HISTORIAN & EGYPTOLOGIST (📜)
-- Demeanor: Intellectual passion, engaging narrative flow, historical depth.
-- Vocabulary: Dynasties, pharaonic legacy, sacred cartouches, timeless monuments, archaeological discovery.
-- Focus: Provide fascinating historical context to temples and monuments while connecting them to Dunas Travel's guided heritage tours.`,
+- Demeanor: Intellectual passion, engaging storytelling, scholarly clarity.
+- Tone: Inspiring, friendly, educational.
+- Zero Honorifics: NEVER address the traveler with "سيدي" or "سيدتي" or "يا فندم".
+- Focus: Share historical context that connects monuments with real travel experiences.`,
   },
   {
     code: 'practical_budget',
     icon: '💰',
     name: {
       en: 'Smart Value & Best Price',
-      ar: 'المستشار الاقتصادي الذكي',
+      ar: 'المستشار الذكي لأفضل قيمة',
       es: 'Planificador de Mejor Valor',
       pt: 'Planejador de Melhor Custo-Benefício',
       it: 'Consulente Miglior Valore',
     },
     tagline: {
       en: 'Maximum luxury value, smart pacing & transparent pricing',
-      ar: 'أفضل قيمة مقابل السعر، خطط توفير ذكية، وأسعار شفافة',
+      ar: 'أفضل قيمة مقابل السعر، برامج توفير ذكية، وأسعار شفافة',
       es: 'Máximo valor de lujo, ahorro inteligente y precios claros',
       pt: 'Máximo custo-benefício em luxo e tarifas transparentes',
       it: 'Miglior rapporto qualità-prezzo e massima trasparenza',
     },
     tone: 'Pragmatic, Transparent, Helpful & Cost-Conscious',
-    personalityGuidelines: 'Help travelers get the absolute best value for their investment. Compare package durations, explain seasonal pricing advantages, suggest high-value inclusions, and prevent hidden fees.',
+    personalityGuidelines: 'Help travelers maximize value, explain seasonal pricing advantages, and avoid hidden costs. Always speak clearly and directly without bureaucratic formalities.',
     systemPromptAddendum: `PERSONA MODE: SMART VALUE & BEST PRICE (💰)
-- Demeanor: Practical, clear, transparent, value-maximizing.
-- Vocabulary: Best value, cost optimization, seasonal offers, inclusive package, high ROI vacation.
-- Focus: Emphasize what is included for the price, transparent USD breakdowns, and smart itinerary combinations to avoid unnecessary expenses.`,
+- Demeanor: Direct, practical, transparent, value-maximizing.
+- Zero Honorifics: NEVER address the traveler with "سيدي" or "سيدتي" or "يا فندم".
+- Focus: Highlight clear inclusions, smart duration pacing, and transparent pricing.`,
   },
   {
     code: 'family_adventure',
     icon: '👨‍👩‍👧‍👦',
     name: {
       en: 'Family & Kids Adventurer',
-      ar: 'مرشد العائلات والمغامرات',
+      ar: 'مرشد العائلات والرحلات الممتعة',
       es: 'Guía de Familias y Aventura',
       pt: 'Guia Familiar e Aventura',
       it: 'Guida per Famiglie e Avventure',
@@ -156,35 +169,35 @@ export const AI_PERSONAS: AiPersona[] = [
       it: 'Ritmo rilassato per bambini e avventure familiari sicure',
     },
     tone: 'Warm, Cheerful, Reassuring & Engaging',
-    personalityGuidelines: 'Prioritize family comfort, safety, relaxed schedules with minimal fatigue, child-friendly excursions (camel rides at the Pyramids, sailing feluccas, snorkeling in Red Sea lagoons), and spacious family suites.',
+    personalityGuidelines: 'Prioritize family safety, comfortable schedules with minimal fatigue, and child-friendly adventures. Speak with cheerful warmth without stiff clichés.',
     systemPromptAddendum: `PERSONA MODE: FAMILY & KIDS ADVENTURER (👨‍👩‍👧‍👦)
 - Demeanor: Friendly, encouraging, safety-conscious, family-oriented.
-- Vocabulary: Family-friendly, relaxed pacing, interactive fun, safe memories, spacious comfort.
-- Focus: Highlight tours with balanced schedules, child entertainment, family discounts, and private comfortable vans.`,
+- Zero Honorifics: NEVER address the traveler with "سيدي" or "سيدتي" or "يا فندم".
+- Focus: Emphasize balanced pacing, child-friendly excursions, and spacious family comfort.`,
   },
   {
     code: 'romantic_honeymoon',
     icon: '💖',
     name: {
       en: 'Romantic & Honeymoon Specialist',
-      ar: 'مستشار شهر العسل والرومانسية',
+      ar: 'مستشار العطلات الرومانسية وشهر العسل',
       es: 'Especialista en Lunas de Miel',
       pt: 'Especialista em Lua de Mel',
       it: 'Specialista in Viaggi di Nozze',
     },
     tagline: {
       en: 'Candlelit Nile dinners, sunset feluccas & luxury escapes',
-      ar: 'عشاء رومانسي على ضوء الشموع، إبحار عند الغروب، وفيلات شاطئية',
+      ar: 'عشاء رومانسي على النيل، إبحار عند الغروب، وفيلات شاطئية هادئة',
       es: 'Cenas a la luz de las velas en el Nilo, atardeceres y villas románticas',
       pt: 'Jantares românticos no Nilo, pôr do sol e vilas exclusivas',
       it: 'Cene a lume di candela sul Nilo, tramonti magici e resort esclusivi',
     },
     tone: 'Poetic, Dreamy, Attentive & Romantic',
-    personalityGuidelines: 'Curate idyllic memories for couples: private sunset sails on the Nile, couple spa treatments at Old Cataract, intimate dinner overlooking Luxor temple by night, and secluded Red Sea overwater villas.',
+    personalityGuidelines: 'Curate tranquil, unforgettable memories for couples: private sunset sails on the Nile, couple spa treatments, and secluded resorts. Speak with refined charm without archaic honorifics.',
     systemPromptAddendum: `PERSONA MODE: ROMANTIC & HONEYMOON SPECIALIST (💖)
-- Demeanor: Passionate, enchanting, meticulous about intimacy and romance.
-- Vocabulary: Unforgettable memories, sunset serenity, private candlelit moments, breathtaking horizons, romantic bliss.
-- Focus: Suggest private couple experiences, honeymoon perks, romantic cruises, and tranquil luxury resorts.`,
+- Demeanor: Passionate, attentive, serene.
+- Zero Honorifics: NEVER address the traveler with "سيدي" or "سيدتي" or "يا فندم".
+- Focus: Suggest tranquil couple experiences, private sunset moments, and bespoke honeymoon perks.`,
   },
 ];
 
@@ -209,6 +222,44 @@ export interface StructuredTripProposal {
   inclusions: string[];
   isCustomTailored: boolean;
   requiresHumanConfirmation: boolean;
+}
+
+export interface GuiderOrchestratorResponse {
+  conversationId: string;
+  responseType: GuiderResponseType;
+  intent: string;
+  message: {
+    id: string;
+    role: string;
+    content: string;
+    structuredContent?: any;
+    createdAt: string;
+  };
+  recommendations: {
+    tours: GroundedTourRecommendation[];
+    destinations: GroundedDestinationRecommendation[];
+    proposal?: StructuredTripProposal | null;
+    comparison?: StructuredTourComparison | null;
+  };
+  suggestedReplies: string[];
+  actions: any[];
+  handoff: {
+    available: boolean;
+    requested: boolean;
+    status?: string;
+    assignedStaffId?: string | null;
+  };
+  leadCapture?: {
+    required: boolean;
+    fields: string[];
+  };
+  sources?: any[];
+  telemetry?: {
+    retrievalLatencyMs?: number;
+    providerLatencyMs?: number;
+    totalLatencyMs?: number;
+    costUsd?: number;
+  };
 }
 
 export interface RecordFeedbackDto {
@@ -744,7 +795,7 @@ export class ChatOrchestratorService {
     return updated;
   }
 
-  async processVisitorMessage(dto: ProcessChatMessageDto) {
+  async processVisitorMessage(dto: ProcessChatMessageDto): Promise<GuiderOrchestratorResponse> {
     const startTime = Date.now();
     await this.validateAndLogSecurity(dto.message, dto.sessionId);
     const sanitizedMsg = sanitizePlainText(dto.message);
@@ -818,6 +869,54 @@ export class ChatOrchestratorService {
       });
     }
 
+    // 1.1 Idempotency cache check: avoid duplicate execution and DB writes on client retry/timeout
+    if (dto.idempotencyKey) {
+      const existingAssistantMsg = (conversation.messages || []).find(
+        (m: any) =>
+          m.role === 'assistant' &&
+          m.structuredContent &&
+          typeof m.structuredContent === 'object' &&
+          m.structuredContent.idempotencyKey === dto.idempotencyKey,
+      );
+      if (existingAssistantMsg) {
+        this.logger.log(`Idempotent cache hit for key: ${dto.idempotencyKey}`);
+        const cleanTours = (existingAssistantMsg.structuredContent?.tours || []).map((t: any) => ({
+          ...t,
+          price: Number(t.price ?? t.basePriceUsd) || 0,
+        }));
+        return ResponseInvariantNormalizer.normalizeAndValidate(
+          {
+            conversationId: conversation.id,
+            responseType: existingAssistantMsg.structuredContent?.responseType || 'text',
+            intent: existingAssistantMsg.structuredContent?.intent || 'general_chat',
+            message: {
+              id: existingAssistantMsg.id,
+              role: 'assistant',
+              content: existingAssistantMsg.textContent,
+              structuredContent: existingAssistantMsg.structuredContent,
+              createdAt: existingAssistantMsg.createdAt.toISOString(),
+            },
+            recommendations: {
+              tours: cleanTours,
+              destinations: existingAssistantMsg.structuredContent?.destinations || [],
+              proposal: existingAssistantMsg.structuredContent?.proposal || null,
+              comparison: existingAssistantMsg.structuredContent?.comparison || null,
+            },
+            suggestedReplies: [],
+            actions: [],
+            handoff: {
+              available: true,
+              requested: conversation.status === 'HANDED_OFF',
+              status: conversation.status,
+            },
+            leadCapture: { required: false, fields: [] },
+            sources: existingAssistantMsg.knowledgeSources || [],
+          },
+          locale,
+        );
+      }
+    }
+
     // 2. If human staff is actively taking over this conversation, do not send autonomous LLM reply
     if (conversation.status === 'HANDED_OFF' || conversation.status === 'HUMAN_ACTIVE' || conversation.status === 'CLOSED' || conversation.status === 'ARCHIVED') {
       const userMsg = await (this.prisma as any).chatMessage.create({
@@ -831,13 +930,15 @@ export class ChatOrchestratorService {
 
       return {
         conversationId: conversation.id,
+        responseType: 'text',
+        intent: 'handoff_request',
         message: {
           id: userMsg.id,
           role: 'user',
           content: sanitizedMsg,
           createdAt: userMsg.createdAt.toISOString(),
         },
-        recommendations: { tours: [], destinations: [] },
+        recommendations: { tours: [], destinations: [], proposal: null, comparison: null },
         suggestedReplies: [],
         actions: [],
         handoff: {
@@ -870,7 +971,7 @@ export class ChatOrchestratorService {
       });
     }
 
-    // 4. Extract constraints & merge into multi-turn bounded state
+    // 4. Extract constraints & merge into multi-turn bounded state (with explicit false negation override)
     const currentConstraints = this.tourCatalogTool.extractTravelConstraints(sanitizedMsg);
     const existingPrefs = (conversation.travelPreferences as any) || {};
 
@@ -879,32 +980,88 @@ export class ChatOrchestratorService {
       ...currentConstraints,
       targetDuration: currentConstraints.targetDuration || existingPrefs.targetDuration,
       maxBudget: currentConstraints.maxBudget || existingPrefs.maxBudget,
-      nileCruiseRequired: currentConstraints.nileCruiseRequired ?? existingPrefs.nileCruiseRequired,
-      beachRequired: currentConstraints.beachRequired ?? existingPrefs.beachRequired,
-      country: currentConstraints.country || existingPrefs.country || 'Egypt',
+      currency: currentConstraints.currency || existingPrefs.currency,
+      nileCruiseRequired:
+        currentConstraints.nileCruiseRequired !== undefined
+          ? currentConstraints.nileCruiseRequired
+          : existingPrefs.nileCruiseRequired,
+      beachRequired:
+        currentConstraints.beachRequired !== undefined
+          ? currentConstraints.beachRequired
+          : existingPrefs.beachRequired,
+      country: currentConstraints.country || existingPrefs.country || undefined,
     };
 
-    // 5. Detect Conversational Intent
-    const isGreetingOrIdentity = /(^|\b)(hello|hi|hey|who\s+are\s+you|what\s+is\s+your\s+name|your\s+name|مرحبا|مرحباً|اهلا|أهلا|أهلاً|السلام\s+عليكم|صباح\s+الخير|مساء\s+الخير|اسمك\s+ايه|اسمك\s+اي|مين\s+انت|من\s+انت|من\s+انتم|انت\s+مين|عرف\s+بنفسك)(\b|$)/i.test(sanitizedMsg.trim());
-    const isCasualOrGratitude = /(^|\b)(thanks|thank\s+you|thx|ok|okay|cool|great|bye|goodbye|شكرا|شكراً|تسلم|الف\s+شكر|تمام|اوك|أوك|ماشي|مع\s+السلامة|باي)(\b|$)/i.test(sanitizedMsg.trim());
+    // 5. Authoritative Intent Classification with Negation Guards
+    const isGreetingOrIdentity = /(^|[\s،,.!?])(hello|hi|hey|greetings|who\s+are\s+you|what\s+is\s+your\s+name|your\s+name|مرحبا|مرحباً|اهلا|أهلا|أهلاً|السلام\s+عليكم|صباح\s+الخير|مساء\s+الخير|اسمك\s+ايه|اسمك\s+اي|مين\s+انت|من\s+انت|من\s+انتم|انت\s+مين|عرف\s+بنفسك)($|[\s،,.!?])/i.test(sanitizedMsg.trim());
+    const isCasualOrGratitude = /(^|[\s،,.!?])(thanks|thank\s+you|thx|ok|okay|cool|great|bye|goodbye|شكرا|شكراً|تسلم|الف\s+شكر|تمام|اوك|أوك|ماشي|مع\s+السلامة|باي)($|[\s،,.!?])/i.test(sanitizedMsg.trim());
+    const isHandoffRequest = /(human|agent|representative|advisor|specialist|consultant|support|speak\s+to|talk\s+to|بشري|إنسان|موظف|خدمة\s+العملاء|مستشار|تحدث\s+مع|تواصل\s+مع|شخص\s+حقيقي)/i.test(sanitizedMsg);
 
-    // 6. Detect Tour Comparison queries
-    const isComparison = /(compare|difference|versus|vs|مقارنة|قارن|الفرق بين)/i.test(sanitizedMsg);
-    let tourComparison: StructuredTourComparison | null = null;
+    // General travel question e.g. weather, best time to visit, visa, currency, safety
+    const isGeneralTravelQuestion = /(افضل\s+وقت|أفضل\s+وقت|الطقس|الجو|فيزا|تأشيرة|عملة|امان|أمان|نصائح|تاريخ|اهرامات|معلومات|best\s+time|weather|visa|currency|safety|tips|history|dress\s+code|what\s+to\s+pack)/i.test(sanitizedMsg);
 
-    // 7. Detect Destination Inquiries (e.g., "واجهة مصر", "ما هي رحلات مصر", "destinos egipto", "tours in turkey")
-    const isDestinationInquiry = /(واجهة|واجهه|وجهة|وجهه|بلد|دولة|رحلات|برامج|destin|destination|destino|destinazione|tours|viaggi|pacotes|country|país|paese)/i.test(sanitizedMsg) && Boolean(mergedConstraints.country);
-    const isAllToursRequest = /(كل|جميع|كافة|all|todos|tutti|todas)\s+(الرحلات|رحلات|tours|passeios|viaggi|viajes)/i.test(sanitizedMsg) ||
-                              /(الرحلات|رحلات|tours).*(كل|جميع|كافة|all|todos|tutti|todas)/i.test(sanitizedMsg);
+    // Negation check for booking (e.g. "مش عايز أحجز", "أنا بس بسأل عن السعر مش عايز حجز", "don't want to book")
+    const isBookingNegated = /(مش\s+عايز\s+احجز|مش\s+عايز\s+أحجز|لا\s+اريد\s+حجز|لا\s+أريد\s+حجز|مش\s+للحجز|مش\s+حجز|بسأل\s+بس|بسأل\s+عن\s+السعر|don't\s+want\s+to\s+book|dont\s+want\s+to\s+book|not\s+looking\s+to\s+book|not\s+booking|just\s+asking)/i.test(sanitizedMsg);
+    const isBookingIntent = !isBookingNegated && /(how\s+to\s+book|book\s+now|book\s+this|reserve\s+this|reserve\s+now|i\s+want\s+to\s+book|حجز\s+الان|احجز\s+لي|اريد\s+حجز|أريد\s+حجز|كيف\s+احجز|كيف\s+أحجز|طريقة\s+الحجز)/i.test(sanitizedMsg);
+    const isComparison = /(compare|difference|versus|vs|مقارنة|قارن|الفرق\s+بين)/i.test(sanitizedMsg);
 
-    // 8. Detect Itinerary Refinement or Creation
-    const isRefinement = existingPrefs.currentProposal && /(add|remove|make|change|تعديل|زيادة|حذف|تغيير|بدل)/i.test(sanitizedMsg);
-    const isCustomPlanning = /(tailor|custom|itinerary|plan|design|build|days|مخصوص|تفصيل|تخصيص|برنامج|جدول|ايام|أيام|خطة|صمم|اطلب)/i.test(sanitizedMsg);
+    // Negation check for tours / trips (e.g. "مش عايز رحلة", "don't want a tour")
+    const isTourNegated = /(مش\s+عايز\s+رحل|لا\s+اريد\s+رحل|لا\s+أريد\s+رحل|بدون\s+رحلات|don't\s+want\s+a?\s*tour|not\s+interested\s+in\s+tours)/i.test(sanitizedMsg);
+
+    const isItineraryRequest = !isGeneralTravelQuestion && !isTourNegated && (
+      /(tailor|custom|plan\s+my|design|day\s+by\s+day|itinerary|مخصوص|تفصيل|تخصيص|صمم|جدول\s+سياحي|خطة\s+رحلة|برنامج\s+مخصص)/i.test(sanitizedMsg) ||
+      (/(design|plan|create)\s/i.test(sanitizedMsg) && /(tour|trip|itinerary)/i.test(sanitizedMsg))
+    );
+    const isRefinement = Boolean(existingPrefs.currentProposal) && /(add|remove|make|change|تعديل|زيادة|حذف|تغيير|بدل)/i.test(sanitizedMsg);
+
+    // Destination inquiry with country filter e.g. "رحلات مصر", "واجهة مصر", "ما هي رحلات مصر", "destinos egipto"
+    const isExplicitDestinationInquiry = !isTourNegated && /(واجهة|واجهه|وجهة|وجهه|رحلات|برامج|destin|destination|destino|tours\s+in|packages\s+in)\s+(مصر|تركيا|دبي|الامارات|الأردن|المغرب|تونس|اليونان|egypt|turkey|dubai|jordan|morocco)/i.test(sanitizedMsg) && Boolean(mergedConstraints.country);
+
+    // Pure price question e.g. "عايز أعرف السعر", "بكام الرحلة", "how much is the tour"
+    const isPriceInquiry = /(كم\s+سعر|كم\s+تكلفة|ما\s+هو\s+سعر|ما\s+سعر|بكام|سعر\s+الرحلة|تكلفة\s+الرحلة|how\s+much|what\s+is\s+the\s+price)/i.test(sanitizedMsg);
+
+    // Explicit tour recommendation request
+    const isRecommendationRequest = !isTourNegated && (isExplicitDestinationInquiry || /(اقترح|رشح|اريد\s+رحل|أريد\s+رحل|نايل\s+كروز|ما\s+هي\s+الرحلات|ما\s+افضل\s+الرحلات|ما\s+أفضل\s+الرحلات|عروض\s+الرحلات|باقات\s+سياحية|recommend|suggest\s+a\s+trip|tour\s+package)/i.test(sanitizedMsg));
+
+    const isLeadCaptureInquiry = /(private\s+quote|request\s+a\s+quote|contact\s+me|reach\s+out|طلب\s+عرض\s+سعر|عرض\s+سعر\s+خاص|تواصل\s+معي|استشارة\s+خاصة)/i.test(sanitizedMsg);
+
+    // Canonical GuiderResponseType & intent mapping
+    let responseType: GuiderResponseType = 'text';
+    let intent = 'general_chat';
+
+    if (isBookingIntent) {
+      responseType = 'booking_intent';
+      intent = 'booking_request';
+    } else if (isLeadCaptureInquiry) {
+      responseType = 'lead_capture';
+      intent = 'lead_inquiry';
+    } else if (isComparison) {
+      responseType = 'comparison';
+      intent = 'tour_comparison';
+    } else if (isItineraryRequest || isRefinement) {
+      responseType = 'itinerary';
+      intent = isRefinement ? 'itinerary_refinement' : 'custom_itinerary';
+    } else if (isRecommendationRequest && !isGeneralTravelQuestion && !isPriceInquiry) {
+      responseType = 'recommendation';
+      intent = 'tour_recommendation';
+    } else if (isGreetingOrIdentity) {
+      responseType = 'text';
+      intent = 'greeting';
+    } else if (isCasualOrGratitude) {
+      responseType = 'text';
+      intent = 'casual';
+    } else if (isHandoffRequest) {
+      responseType = 'text';
+      intent = 'handoff_request';
+    } else {
+      responseType = 'text';
+      intent = 'informational';
+    }
 
     let structuredProposal: StructuredTripProposal | null = null;
     if (isRefinement && existingPrefs.currentProposal) {
       structuredProposal = this.refineTripProposal(existingPrefs.currentProposal, sanitizedMsg, locale);
-    } else if (isCustomPlanning && (mergedConstraints.minDuration || mergedConstraints.maxDuration || mergedConstraints.nileCruiseRequired || isCustomPlanning)) {
+    } else if (isItineraryRequest && (mergedConstraints.minDuration || mergedConstraints.maxDuration || mergedConstraints.nileCruiseRequired || isItineraryRequest)) {
       structuredProposal = this.generateTripProposal(mergedConstraints, locale);
     }
 
@@ -923,11 +1080,6 @@ export class ChatOrchestratorService {
       }),
     ).catch(() => {});
 
-    // Check if the user is explicitly inquiring about tours or destinations
-    const isTourInquiry = isComparison || isRefinement || isCustomPlanning || isDestinationInquiry ||
-      Boolean(mergedConstraints.targetDuration || mergedConstraints.maxBudget || mergedConstraints.nileCruiseRequired || mergedConstraints.beachRequired || mergedConstraints.country) ||
-      /(tour|tours|trip|trips|package|packages|cruise|cruises|itinerary|vacation|hotel|price|cost|booking|reserve|visit|explore|رحلة|رحلات|برنامج|برامج|بكج|باكيدج|كروز|نايل\s+كروز|دهبية|دهبيه|فندق|حجز|اسعار|أسعار|تكلفة|عرض\s+سعر|سياحة|سفر|الأقصر|اسوان|الغردقة|شرم|القاهرة|الاهرامات|معالم|مصر|تركيا|دبي|الاردن|المغرب)/i.test(sanitizedMsg);
-
     const retrievalStart = Date.now();
     const keywords = sanitizedMsg
       .toLowerCase()
@@ -939,10 +1091,17 @@ export class ChatOrchestratorService {
     let recommendedTours: GroundedTourRecommendation[] = [];
     let recommendedDestinations: GroundedDestinationRecommendation[] = [];
     let destinationSummaryInfo: { destination: string; totalToursCount: number; slug: string } | null = null;
+    let tourComparison: StructuredTourComparison | null = null;
 
-    // Only search catalog & attach tour cards if the user is NOT just greeting/chatting casually and IS asking about tours
-    if (!isGreetingOrIdentity && !isCasualOrGratitude) {
-      if (isDestinationInquiry && mergedConstraints.country) {
+    // RAG sources retrieved for informational / concierge grounding
+    const shouldRetrieveKnowledge = !isGreetingOrIdentity && !isCasualOrGratitude;
+    if (shouldRetrieveKnowledge) {
+      sources = await this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 4);
+    }
+
+    // Grounded Catalog Tour Retrieval: strictly scoped to recommendation & comparison intents
+    if (responseType === 'recommendation') {
+      if (isExplicitDestinationInquiry && mergedConstraints.country) {
         const destRes = await this.tourCatalogTool.getDestinationSummaryAndTours(mergedConstraints.country, locale, 4);
         destinationSummaryInfo = {
           destination: destRes.destination,
@@ -953,21 +1112,17 @@ export class ChatOrchestratorService {
         if (destRes.landingPage) {
           recommendedDestinations = [destRes.landingPage];
         }
-        sources = await this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 3);
       } else {
-        const [rSources, rTours, rDests] = await Promise.all([
-          this.ragRetrieval.retrieveRelevantKnowledge(sanitizedMsg, locale, 4),
-          isTourInquiry ? this.tourCatalogTool.searchGroundedTours(keywords, 3, locale, mergedConstraints) : Promise.resolve([]),
-          isTourInquiry ? this.tourCatalogTool.searchGroundedDestinations(keywords, 2, locale) : Promise.resolve([]),
+        const [rTours, rDests] = await Promise.all([
+          this.tourCatalogTool.searchGroundedTours(keywords, 3, locale, mergedConstraints),
+          this.tourCatalogTool.searchGroundedDestinations(keywords, 2, locale),
         ]);
-        sources = rSources;
         recommendedTours = rTours;
         recommendedDestinations = rDests;
       }
-    }
-
-    // Resolve tour comparison dynamically from grounded catalog tours or fallback to top published tours
-    if (isComparison) {
+    } else if (responseType === 'comparison') {
+      const rTours = await this.tourCatalogTool.searchGroundedTours(keywords, 2, locale, mergedConstraints);
+      recommendedTours = rTours;
       const tourA = recommendedTours[0]?.id || recommendedTours[0]?.slug;
       const tourB = recommendedTours[1]?.id || recommendedTours[1]?.slug;
       tourComparison = await this.tourCatalogTool.compareTwoTours(tourA, tourB, locale);
@@ -1009,6 +1164,13 @@ ${ragContext}
 ${tourContext}
 
 CONVERSATION & STYLING RULES:
+- ZERO ARCHAIC HONORIFICS POLICY:
+  * NEVER use archaic or gender-presumptuous phrases such as: "سيدي", "سيدتي", "سيدي/سيدتي", "سيدي الكريم", "سيدتي الكريمة", "حضرتكم", "يا فندم", "يسعدني خدمتكم".
+  * Greet and converse warmly, elegantly, and naturally like an elite private luxury concierge: "أهلاً بك", "مرحباً بك", "يسعدني مساعدتك", "سعيد بتواصلي معك", using gender-neutral modern luxury hospitality phrasing.
+- ZERO CATALOG DUMPING ON INFORMATIONAL QUERIES:
+  * When the traveler asks general travel advice (weather, best time to visit, culture, currency, safety, packing, historical facts), focus entirely on providing an authoritative, captivating concierge answer.
+  * DO NOT dump or list tour packages or prices when answering general informational questions.
+  * Only recommend specific tours when the traveler explicitly asks for tour packages, recommendations, or planning.
 - Address the user's greeting or inquiry directly and naturally.
 - When greeting or answering your identity (e.g. asking your name), introduce yourself as GuideR (جايدر), the luxury travel concierge for Dunas Travel (دوناس ترافيل), and politely offer how you can help without dumping unsolicited tour listings.
 - STRICT PRICING & BOOKING INTEGRITY (قواعد الأسعار والحجز الإلزامية في جايدر):
@@ -1128,6 +1290,8 @@ CONVERSATION & STYLING RULES:
 
     // 9. Structured Payload Serialization
     const structuredContentPayload: any = {
+      responseType,
+      intent,
       tours: recommendedTours,
       destinations: recommendedDestinations,
     };
@@ -1140,6 +1304,8 @@ CONVERSATION & STYLING RULES:
     } else if (structuredProposal) {
       structuredContentPayload.type = 'itinerary_proposal';
       structuredContentPayload.proposal = structuredProposal;
+    } else {
+      structuredContentPayload.type = responseType;
     }
 
     // 10. Race condition guard: if conversation transitioned to HANDED_OFF while waiting for provider
@@ -1150,8 +1316,10 @@ CONVERSATION & STYLING RULES:
       this.logger.warn(`AI completion discarded for conversation ${conversation.id} because staff took over during generation.`);
       return {
         conversationId: conversation.id,
+        responseType,
+        intent,
         message: { id: 'discarded', role: 'assistant', content: '', createdAt: new Date().toISOString() },
-        recommendations: { tours: [], destinations: [] },
+        recommendations: { tours: [], destinations: [], proposal: null, comparison: null },
         suggestedReplies: [],
         actions: [],
         handoff: { available: true, requested: true, status: freshConversation.status },
@@ -1160,73 +1328,117 @@ CONVERSATION & STYLING RULES:
       };
     }
 
-    // 11. Save assistant message to DB
-    const assistantMsg = await (this.prisma as any).chatMessage.create({
-      data: {
-        conversationId: conversation.id,
-        role: 'assistant',
-        textContent: assistantReply,
-        structuredContent: structuredContentPayload,
-        locale,
-        provider: usedProvider,
-        model: usedModel,
-        inputTokens,
-        outputTokens,
-        latencyMs,
-        isError,
-        knowledgeSources: sources as any,
-        recommendedTourIds: recommendedTours.map((t) => t.id),
-        recommendedDestinations: recommendedDestinations.map((d) => d.id),
-      },
-    });
+    const hasContactDetails = Boolean(conversation.visitorEmail || conversation.visitorPhone);
+    const requiresLeadForm = !hasContactDetails && (
+      responseType === 'lead_capture' ||
+      (responseType === 'booking_intent' && !hasContactDetails) ||
+      (responseType === 'itinerary' && Boolean(structuredProposal) && /(اريد\s+حجز|طلب\s+عرض|احجز|تواصل\s+معي|book\s+this|request\s+quote)/i.test(sanitizedMsg))
+    );
 
-    // 12. FinOps Telemetry logging
+    let suggestedReplies: string[] = [];
+    if (isArabic) {
+      switch (responseType) {
+        case 'recommendation':
+          suggestedReplies = [
+            "عرض تفاصيل البرنامج اليومي",
+            "هل يمكن تعديل مدة الرحلة؟",
+            "مقارنة هذه الرحلة مع باقة أخرى",
+            "طلب استشارة خاصة مع مستشار VIP",
+          ];
+          break;
+        case 'itinerary':
+          suggestedReplies = [
+            "أضف يوم استرخاء إضافي",
+            "هل يمكن تضمين نايل كروز؟",
+            "طلب عرض سعر رسمي لهذا البرنامج",
+            "تحدث مع خبير التخطيط السياحي",
+          ];
+          break;
+        case 'comparison':
+          suggestedReplies = [
+            "ما هي أفضل أوقات السفر لهذه الرحلات؟",
+            "هل تشمل الجولات مرشداً خاصاً؟",
+            "طلب تفاصيل الأسعار والحجز",
+          ];
+          break;
+        case 'booking_intent':
+          suggestedReplies = [
+            "عرض شروط الدفع والإلغاء",
+            "التحدث مع مستشار الحجوزات VIP",
+            "استعراض تفاصيل البرنامج الكامل",
+          ];
+          break;
+        default:
+          if (intent === 'greeting') {
+            suggestedReplies = [
+              "استكشف برامج مصر الفاخرة",
+              "ما أفضل وقت لزيارة الأقصر وأسوان؟",
+              "تصميم برنامج سياحي مخصص",
+              "تحدث مع مستشار سياحي VIP",
+            ];
+          } else {
+            suggestedReplies = [
+              "اقترح علي رحلة مميزة تناسب هذا الموسم",
+              "كم تستغرق الرحلة المثالية لمصر؟",
+              "تصميم برنامج سفر خاص بي",
+            ];
+          }
+      }
+    } else {
+      switch (responseType) {
+        case 'recommendation':
+          suggestedReplies = [
+            "View daily itinerary breakdown",
+            "Can this trip duration be customized?",
+            "Compare this with another package",
+            "Speak with a VIP travel specialist",
+          ];
+          break;
+        case 'itinerary':
+          suggestedReplies = [
+            "Add an extra day of relaxation",
+            "Include a 5-star Nile cruise",
+            "Request official quote for this plan",
+            "Connect with our trip curator",
+          ];
+          break;
+        case 'comparison':
+          suggestedReplies = [
+            "Best travel season for these tours",
+            "Are private guides included?",
+            "Request private pricing & booking details",
+          ];
+          break;
+        case 'booking_intent':
+          suggestedReplies = [
+            "Review payment and cancellation terms",
+            "Speak with a VIP booking advisor",
+            "Explore full tour details",
+          ];
+          break;
+        default:
+          suggestedReplies = [
+            "Discover signature Egypt itineraries",
+            "What is the best season to visit?",
+            "Design a bespoke private trip",
+            "Speak with a VIP luxury advisor",
+          ];
+      }
+    }
+
     const totalDuration = Date.now() - startTime;
     const costUsd = this.calculateCostUsd(usedModel, inputTokens, outputTokens);
 
-    await (this.prisma as any).aiUsageLog.create({
-      data: {
-        provider: usedProvider,
-        model: usedModel,
-        inputTokens,
-        outputTokens,
-        estimatedCostUsd: costUsd,
-        latencyMs: totalDuration,
-        isSuccess: !isError,
-        conversationId: conversation.id,
-        sessionId: dto.sessionId,
-        endpoint: '/api/ai/chat/message',
-      },
-    }).catch((e: any) => this.logger.warn(`Could not save usage log: ${e.message}`));
-
-    const hasContactDetails = Boolean(conversation.visitorEmail || conversation.visitorPhone);
-    const requiresLeadForm = !hasContactDetails && (
-      keywords.some((k) => ['book', 'price', 'reserve', 'inquire', 'quote', 'custom', 'vip', 'حجز', 'سعر', 'تواصل', 'اميل', 'تخصيص', 'اشتراك'].includes(k)) ||
-      Boolean(structuredProposal)
-    );
-
-    const suggestedReplies = isArabic
-      ? [
-          "اقترح علي باقة نايل كروز فاخرة 5 نجوم",
-          "أفضل برنامج سياحي 7 أيام في القاهرة والأقصر",
-          "تصميم رحلة عائلية مخصصة",
-          "تحدث مباشرة مع مستشار سياحي VIP",
-        ]
-      : [
-          "Recommend top 5-star Nile Cruise packages",
-          "Best 7-day luxury Cairo & Luxor itinerary",
-          "Design a bespoke private family trip",
-          "Speak with a senior VIP travel specialist",
-        ];
-
-    return {
+    const candidateResponse: GuiderOrchestratorResponse = {
       conversationId: conversation.id,
+      responseType,
+      intent,
       message: {
-        id: assistantMsg.id,
+        id: 'pending',
         role: 'assistant',
         content: assistantReply,
         structuredContent: structuredContentPayload,
-        createdAt: assistantMsg.createdAt.toISOString(),
+        createdAt: new Date().toISOString(),
       },
       recommendations: {
         tours: recommendedTours,
@@ -1253,18 +1465,78 @@ CONVERSATION & STYLING RULES:
         costUsd,
       },
     };
+
+    // 11. Enforce Response Invariant Rules (Authoritative Contract Normalization)
+    const normalizedResponse = ResponseInvariantNormalizer.normalizeAndValidate(candidateResponse, locale);
+
+    // 12. Save invariant-hardened assistant message to DB
+    const finalStructuredPayload = {
+      ...normalizedResponse.message.structuredContent,
+      responseType: normalizedResponse.responseType,
+      intent: normalizedResponse.intent,
+      tours: normalizedResponse.recommendations.tours,
+      destinations: normalizedResponse.recommendations.destinations,
+      proposal: normalizedResponse.recommendations.proposal,
+      comparison: normalizedResponse.recommendations.comparison,
+      idempotencyKey: dto.idempotencyKey || null,
+    };
+
+    const assistantMsg = await (this.prisma as any).chatMessage.create({
+      data: {
+        conversationId: conversation.id,
+        role: 'assistant',
+        textContent: normalizedResponse.message.content,
+        structuredContent: finalStructuredPayload,
+        locale,
+        provider: usedProvider,
+        model: usedModel,
+        inputTokens,
+        outputTokens,
+        latencyMs,
+        isError,
+        knowledgeSources: sources as any,
+        recommendedTourIds: (normalizedResponse.recommendations.tours || []).map((t) => t.id),
+        recommendedDestinations: (normalizedResponse.recommendations.destinations || []).map((d) => d.id),
+      },
+    });
+
+    // 13. FinOps Telemetry logging
+    await (this.prisma as any).aiUsageLog.create({
+      data: {
+        provider: usedProvider,
+        model: usedModel,
+        inputTokens,
+        outputTokens,
+        estimatedCostUsd: costUsd,
+        latencyMs: totalDuration,
+        isSuccess: !isError,
+        conversationId: conversation.id,
+        sessionId: dto.sessionId,
+        endpoint: '/api/ai/chat/message',
+      },
+    }).catch((e: any) => this.logger.warn(`Could not save usage log: ${e.message}`));
+
+    normalizedResponse.message.id = assistantMsg.id;
+    normalizedResponse.message.createdAt = assistantMsg.createdAt.toISOString();
+    return normalizedResponse;
   }
 
   /**
    * Server-Sent Events (SSE) Streaming Engine
    */
   async streamVisitorMessage(dto: ProcessChatMessageDto, res: Response) {
+    let clientDisconnected = false;
+    res.on('close', () => {
+      clientDisconnected = true;
+    });
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders?.();
 
     const sendEvent = (event: string, data: any) => {
+      if (clientDisconnected || res.writableEnded) return;
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
@@ -1285,30 +1557,42 @@ CONVERSATION & STYLING RULES:
       sendEvent('status', { phase: 'validating' });
       await this.validateAndLogSecurity(dto.message, dto.sessionId);
 
+      if (clientDisconnected) return;
+
       sendEvent('status', { phase: 'retrieving' });
       const result = await this.processVisitorMessage(dto);
+
+      if (clientDisconnected) return;
 
       if (result.message?.id !== 'discarded') {
         const content = result.message.content || '';
         const chunkSize = 20;
         for (let i = 0; i < content.length; i += chunkSize) {
+          if (clientDisconnected) break;
           sendEvent('token', { delta: content.slice(i, i + chunkSize) });
         }
 
-        if (result.recommendations?.proposal || result.recommendations?.comparison) {
+        const recs = result.recommendations;
+        if (!clientDisconnected && recs && (recs.proposal || recs.comparison || (recs.tours && recs.tours.length > 0))) {
           sendEvent('structured', {
-            proposal: result.recommendations.proposal,
-            comparison: result.recommendations.comparison,
-            tours: result.recommendations.tours,
+            proposal: recs.proposal || null,
+            comparison: recs.comparison || null,
+            tours: recs.tours || [],
           });
         }
       }
 
-      sendEvent('complete', result);
+      if (!clientDisconnected) {
+        sendEvent('complete', result);
+      }
     } catch (err: any) {
-      sendEvent('error', { message: err.message || 'Stream processing failed' });
+      if (!clientDisconnected) {
+        sendEvent('error', { message: err.message || 'Stream processing failed' });
+      }
     } finally {
-      res.end();
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
   }
 

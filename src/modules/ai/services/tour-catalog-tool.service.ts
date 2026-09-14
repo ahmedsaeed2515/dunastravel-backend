@@ -28,12 +28,15 @@ export interface GroundedDestinationRecommendation {
 
 export interface TravelConstraints {
   destination?: string;
+  destinations?: string[];
   country?: string;
   targetDuration?: number;
+  durationDays?: number;
   minDuration?: number;
   maxDuration?: number;
   maxBudget?: number;
   currency?: string;
+  preferredCurrency?: string;
   nileCruiseRequired?: boolean;
   beachRequired?: boolean;
   luxuryTier?: string;
@@ -88,52 +91,160 @@ export class TourCatalogToolService {
 
   /**
    * Deterministic travel constraint extraction from traveler user message
+   * with full negation resistance (e.g. "مش 7 أيام، 10 أيام", "بدون كروز", "مش دبي، عايز تركيا")
    */
   extractTravelConstraints(message: string): TravelConstraints {
     const text = this.normalizeText(message);
+    const raw = message || '';
     const constraints: TravelConstraints = {};
 
-    // Nile cruise detection
-    if (/(nile|cruise|cruzeiro|crucero|crociera|دهبية|دهبيه|نايل كروز|كروز|نيل)/i.test(text) || /(نايل|كروز|نيل|دهبية)/.test(message)) {
+    // 1. Nile Cruise Negation vs Positive Detection
+    const hasNileNegation =
+      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(نايل\s*كروز|كروز|نيل|دهبية|دهبيه|nile|cruise|dahabiya)/i.test(raw) ||
+      /(نايل\s*كروز|كروز|نيل|دهبية|دهبيه)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(raw);
+
+    if (hasNileNegation) {
+      constraints.nileCruiseRequired = false;
+    } else if (
+      /(nile|cruise|cruzeiro|crucero|crociera|دهبية|دهبيه|نايل\s*كروز|كروز|نيل)/i.test(text) ||
+      /(نايل|كروز|نيل|دهبية)/.test(raw)
+    ) {
       constraints.nileCruiseRequired = true;
     }
 
-    // Beach / Red Sea detection
-    if (/(sharm|hurghada|red sea|mar vermelho|mar rojo|بحر احمر|شرم|الغردقة)/i.test(text) || /(الغردقة|شرم)/.test(message)) {
+    // 2. Beach / Red Sea Negation vs Positive Detection
+    const hasBeachNegation =
+      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(شاطئ|شواطئ|بحر|الغردقة|شرم|beach|beaches|red\s*sea|hurghada|sharm)/i.test(raw) ||
+      /(شاطئ|شواطئ|الغردقة|شرم)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(raw);
+
+    if (hasBeachNegation) {
+      constraints.beachRequired = false;
+    } else if (
+      /(sharm|hurghada|red\s*sea|mar\s*vermelho|mar\s*rojo|بحر\s*احمر|شاطئ|شواطئ|شرم|الغردقة)/i.test(text) ||
+      /(الغردقة|شرم)/.test(raw)
+    ) {
       constraints.beachRequired = true;
     }
 
-    // Duration extraction: e.g. "8 days", "10 dias", "8 أيام", "8 ايام"
-    const durationMatch = text.match(/(\d{1,2})\s*(day|days|dia|dias|giorni|dias|ايام|أيام|يوم)/i) ||
-                          message.match(/(\d{1,2})\s*(day|days|dia|dias|giorni|dias|ايام|أيام|يوم)/i);
-    if (durationMatch) {
-      const days = parseInt(durationMatch[1], 10);
+    // 3. Duration Extraction with Negation Resistance (e.g. "مش 7 أيام، 10 أيام", "8-day")
+    const durationRegex = /(?:(\bnot|\bno|مش|بدون|لا|بدل)[\s-]+)?(\d{1,2})[\s-]*(day|days|dia|dias|giorni|ايام|أيام|يوم)/gi;
+    let match: RegExpExecArray | null;
+    let chosenDays: number | null = null;
+
+    while ((match = durationRegex.exec(raw)) !== null) {
+      const isNegated = Boolean(match[1]);
+      const days = parseInt(match[2], 10);
       if (!isNaN(days) && days > 0 && days <= 30) {
-        constraints.targetDuration = days;
-        constraints.minDuration = Math.max(1, days - 1);
-        constraints.maxDuration = days + 1;
+        if (!isNegated) {
+          chosenDays = days;
+        }
       }
     }
 
-    // Budget extraction: e.g. "$2500", "3000 USD", "2500 دولار"
-    const budgetMatch = text.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i) ||
-                        message.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i);
-    if (budgetMatch) {
-      const val = parseInt(budgetMatch[1], 10);
-      if (val >= 500 && val <= 50000 && val !== constraints.targetDuration) {
-        constraints.maxBudget = val;
+    if (chosenDays !== null) {
+      constraints.targetDuration = chosenDays;
+      constraints.durationDays = chosenDays;
+      constraints.minDuration = Math.max(1, chosenDays - 1);
+      constraints.maxDuration = chosenDays + 1;
+    }
+
+    // 4. Budget Extraction with Currency Awareness (EGP vs USD)
+    const egpMatch = raw.match(/(\d{1,3}(?:[,\s]\d{3})*|\d+)\s*(?:(الف|ألف)\s*)?(?:egp|جنيه|جنية|eg)/i);
+    if (egpMatch) {
+      let rawVal = parseInt(egpMatch[1].replace(/[,\s]/g, ''), 10);
+      if (egpMatch[2]) rawVal *= 1000;
+      if (!isNaN(rawVal) && rawVal >= 1000) {
+        constraints.currency = 'EGP';
+        constraints.preferredCurrency = 'EGP';
+        constraints.maxBudget = rawVal;
+      }
+    } else {
+      const budgetMatch =
+        text.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i) ||
+        raw.match(/\$?\s*(\d{3,5})\s*(usd|dollar|dolares|dollars|دولار)?/i);
+      if (budgetMatch) {
+        const val = parseInt(budgetMatch[1], 10);
+        if (val >= 500 && val <= 50000 && val !== constraints.targetDuration) {
+          constraints.currency = 'USD';
+          constraints.preferredCurrency = 'USD';
+          constraints.maxBudget = val;
+        }
       }
     }
 
-    // Country / Destination detection
-    if (/(egypt|egito|egipto|egitto|مصر|القاهرة|الاقصر|الأقصر|اسوان|أسوان|الغردقة|شرم)/i.test(text) || /(مصر|القاهرة|الأقصر|اسوان|الغردقة|شرم)/.test(message)) constraints.country = 'Egypt';
-    else if (/(turkey|turquia|turchia|turquie|تركيا|اسطنبول|إسطنبول|كبادوكيا)/i.test(text) || /(تركيا|اسطنبول|كبادوكيا)/.test(message)) constraints.country = 'Turkey';
-    else if (/(jordan|jordania|giordania|الاردن|الأردن|البتراء|عمان)/i.test(text) || /(الاردن|الأردن|البتراء)/.test(message)) constraints.country = 'Jordan';
-    else if (/(dubai|uae|emiratos|دبي|الامارات|الإمارات|ابوظبي|أبوظبي)/i.test(text) || /(دبي|الامارات|الإمارات)/.test(message)) constraints.country = 'Dubai';
-    else if (/(morocco|marruecos|marrocos|marocco|المغرب|مراكش|كازابلانكا|فاس)/i.test(text) || /(المغرب|مراكش)/.test(message)) constraints.country = 'Morocco';
-    else if (/(tunisia|tunez|tunisie|تونس|قرطاج)/i.test(text) || /تونس/.test(message)) constraints.country = 'Tunisia';
-    else if (/(greece|grecia|اليونان|اثينا|أثينا|سانتوريني)/i.test(text) || /(اليونان|أثينا|سانتوريني)/.test(message)) constraints.country = 'Greece';
-    else if (/(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة|القدس)/i.test(text) || /(الاراضي المقدسة|الأراضي المقدسة|القدس)/.test(message)) constraints.country = 'Holy Land';
+    // 5. Destination Detection with Negation Filtering
+    const destinationRules: Array<{ name: string; positiveRegex: RegExp; negativeRegex: RegExp }> = [
+      { name: 'Cairo', positiveRegex: /(cairo|القاهرة|قاهرة)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:cairo|القاهرة|قاهرة)/i },
+      { name: 'Luxor', positiveRegex: /(luxor|الأقصر|الاقصر|أقصر|اقصر)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:luxor|الأقصر|الاقصر)/i },
+      { name: 'Aswan', positiveRegex: /(aswan|أسوان|اسوان)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:aswan|أسوان|اسوان)/i },
+      { name: 'Hurghada', positiveRegex: /(hurghada|الغردقة|غردقة)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:hurghada|الغردقة)/i },
+      { name: 'Sharm El Sheikh', positiveRegex: /(sharm|شرم)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:sharm|شرم)/i },
+      { name: 'Alexandria', positiveRegex: /(alexandria|الإسكندرية|الاسكندرية)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:alexandria|الإسكندرية|الاسكندرية)/i },
+      { name: 'Dubai', positiveRegex: /(dubai|دبي)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:dubai|دبي)/i },
+      { name: 'Istanbul', positiveRegex: /(istanbul|اسطنبول|إسطنبول)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:istanbul|اسطنبول)/i },
+    ];
+
+    const detectedDests: string[] = [];
+    for (const d of destinationRules) {
+      if (d.positiveRegex.test(raw) && !d.negativeRegex.test(raw)) {
+        detectedDests.push(d.name);
+      }
+    }
+    if (detectedDests.length > 0) {
+      constraints.destinations = detectedDests;
+      constraints.destination = detectedDests[0];
+    }
+
+    // 6. Country Detection with Negation Filtering
+    const countryRules: Array<{ country: string; positiveRegex: RegExp; negativeRegex: RegExp }> = [
+      {
+        country: 'Egypt',
+        positiveRegex: /(egypt|egito|egipto|egitto|مصر|القاهرة|الاقصر|الأقصر|اسوان|أسوان)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:egypt|مصر|القاهرة)/i,
+      },
+      {
+        country: 'Turkey',
+        positiveRegex: /(turkey|turquia|turchia|turquie|تركيا|اسطنبول|إسطنبول|كبادوكيا)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:turkey|تركيا|اسطنبول)/i,
+      },
+      {
+        country: 'Jordan',
+        positiveRegex: /(jordan|jordania|giordania|الاردن|الأردن|البتراء|عمان)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:jordan|الاردن|الأردن)/i,
+      },
+      {
+        country: 'Dubai',
+        positiveRegex: /(dubai|uae|emiratos|دبي|الامارات|الإمارات|ابوظبي|أبوظبي)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:dubai|uae|دبي|الامارات)/i,
+      },
+      {
+        country: 'Morocco',
+        positiveRegex: /(morocco|marruecos|marrocos|marocco|المغرب|مراكش|كازابلانكا|فاس)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:morocco|المغرب|مراكش)/i,
+      },
+      {
+        country: 'Tunisia',
+        positiveRegex: /(tunisia|tunez|tunisie|تونس|قرطاج)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:tunisia|تونس)/i,
+      },
+      {
+        country: 'Greece',
+        positiveRegex: /(greece|grecia|اليونان|اثينا|أثينا|سانتوريني)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:greece|اليونان|اثينا)/i,
+      },
+      {
+        country: 'Holy Land',
+        positiveRegex: /(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة|القدس)/i,
+        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:holy\s*land|الاراضي\s*المقدسة|القدس)/i,
+      },
+    ];
+
+    for (const rule of countryRules) {
+      if (rule.positiveRegex.test(raw) && !rule.negativeRegex.test(raw)) {
+        constraints.country = rule.country;
+        break;
+      }
+    }
 
     return constraints;
   }
@@ -309,13 +420,35 @@ export class TourCatalogToolService {
 
       if (!tours || tours.length === 0) return [];
 
+      const COMMON_STOPWORDS = new Set([
+        'افضل', 'أفضل', 'احسن', 'أحسن', 'وقت', 'ميعاد', 'موعد', 'متى', 'ازاي', 'كيف',
+        'هل', 'ما', 'ماذا', 'عايز', 'اريد', 'أريد', 'ممكن', 'في', 'من', 'الى', 'إلى',
+        'على', 'عن', 'هو', 'هي', 'مع', 'ده', 'دي', 'مصر', 'egypt', 'best', 'good',
+        'time', 'when', 'how', 'what', 'where', 'can', 'should', 'would', 'is', 'the',
+        'in', 'to', 'for', 'about', 'visit', 'visiting', 'زيارة', 'سفر', 'سياحة',
+      ]);
+
       const normalizedKeywords = (keywords || [])
         .map((k) => this.normalizeText(k))
-        .filter((k) => k.length > 0);
+        .filter((k) => k.length > 1 && !COMMON_STOPWORDS.has(k));
+
+      // If no specific keywords or constraints were provided, do not force-match catalog tours
+      const hasSpecificConstraints = Boolean(
+        constraints?.targetDuration ||
+        constraints?.nileCruiseRequired ||
+        constraints?.beachRequired ||
+        constraints?.maxBudget ||
+        (normalizedKeywords.length > 0)
+      );
+
+      if (!hasSpecificConstraints) {
+        return [];
+      }
 
       // Score each tour against keywords & constraints
       const scored = tours.map((tour) => {
-        let score = tour.isFeatured ? 5 : 0;
+        let score = 0;
+        let hasDirectConstraintMatch = false;
         const matchReasons: string[] = [];
 
         // Multilingual titles
@@ -337,21 +470,24 @@ export class TourCatalogToolService {
         const tourDuration = this.getTourDurationDays(tour);
         if (constraints?.targetDuration && tourDuration) {
           if (tourDuration === constraints.targetDuration) {
-            score += 30;
+            score += 35;
+            hasDirectConstraintMatch = true;
             matchReasons.push(
               locale.startsWith('ar')
                 ? `مطابق للمدة المطلوبة (${tourDuration} أيام)`
                 : `Matches requested duration (${tourDuration} Days)`,
             );
           } else if (Math.abs(tourDuration - constraints.targetDuration) <= 1) {
-            score += 10;
+            score += 15;
+            hasDirectConstraintMatch = true;
           }
         }
 
-        // Constraint checking
+        // Constraint checking: Nile Cruise
         if (constraints?.nileCruiseRequired) {
           if (/(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)) {
             score += 35;
+            hasDirectConstraintMatch = true;
             matchReasons.push(
               locale.startsWith('ar')
                 ? 'يشمل برنامج إبحار نيلي فاخر (نايل كروز)'
@@ -360,9 +496,11 @@ export class TourCatalogToolService {
           }
         }
 
+        // Constraint checking: Beach / Red Sea
         if (constraints?.beachRequired) {
           if (/(sharm|hurghada|red sea|mar vermelho|الغردقة|شرم)/i.test(fullTourStr)) {
-            score += 25;
+            score += 30;
+            hasDirectConstraintMatch = true;
             matchReasons.push(
               locale.startsWith('ar')
                 ? 'يجمع بين الآثار وشواطئ البحر الأحمر'
@@ -371,17 +509,58 @@ export class TourCatalogToolService {
           }
         }
 
-        if (constraints?.country) {
+        // Keywords scoring
+        let keywordScore = 0;
+        normalizedKeywords.forEach((kw) => {
+          if (titles.some((t) => t.includes(kw))) {
+            keywordScore += 20;
+            hasDirectConstraintMatch = true;
+          } else if (dest.includes(kw)) {
+            keywordScore += 12;
+            hasDirectConstraintMatch = true;
+          } else if (category.includes(kw)) {
+            keywordScore += 10;
+          } else if (tags.some((tag) => tag.includes(kw))) {
+            keywordScore += 8;
+          }
+        });
+        score += keywordScore;
+
+        // Country matching bonus ONLY IF there is already a direct constraint/keyword match
+        if (constraints?.country && hasDirectConstraintMatch) {
           const cNorm = this.normalizeText(constraints.country);
           if (dest.includes(cNorm)) {
-            score += 20;
+            score += 10;
           }
         }
 
         const price = Number(tour.basePriceUsd);
+
+        // HARD CONSTRAINT: Budget violation (exceeding budget by > 20% strictly disqualifies tour)
+        if (constraints?.maxBudget && (!constraints.currency || constraints.currency === 'USD') && constraints.maxBudget > 0) {
+          if (price > constraints.maxBudget * 1.2) {
+            return null; // Hard disqualified
+          }
+        }
+
+        // HARD CONSTRAINT: Nile Cruise Negation (user explicitly said "no cruise" / "بدون كروز")
+        if (constraints?.nileCruiseRequired === false) {
+          if (/(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)) {
+            return null; // Hard disqualified
+          }
+        }
+
+        // HARD CONSTRAINT: Beach Negation (user explicitly said "no beach" / "بدون شواطئ")
+        if (constraints?.beachRequired === false) {
+          if (/(sharm|hurghada|الغردقة|شرم)/i.test(fullTourStr) && !/(cairo|luxor|aswan|القاهرة|الأقصر|اسوان)/i.test(fullTourStr)) {
+            return null; // Hard disqualified pure beach resort package
+          }
+        }
+
         if (constraints?.maxBudget && price > 0) {
           if (price <= constraints.maxBudget) {
-            score += 15;
+            score += 25;
+            hasDirectConstraintMatch = true;
             matchReasons.push(
               locale.startsWith('ar')
                 ? `ضمن الميزانية المقترحة ($${price} USD)`
@@ -392,15 +571,12 @@ export class TourCatalogToolService {
           }
         }
 
-        // Keywords scoring
-        normalizedKeywords.forEach((kw) => {
-          if (titles.some((t) => t.includes(kw))) score += 15;
-          if (dest.includes(kw)) score += 10;
-          if (category.includes(kw)) score += 8;
-          if (tags.some((tag) => tag.includes(kw))) score += 6;
-        });
+        // Add featured bonus only if tour already proved relevant
+        if (tour.isFeatured && hasDirectConstraintMatch) {
+          score += 5;
+        }
 
-        if (matchReasons.length === 0) {
+        if (matchReasons.length === 0 && hasDirectConstraintMatch) {
           matchReasons.push(
             locale.startsWith('ar')
               ? 'برنامج سياحي فاخر معتمد من كتالوج دوناس ترافيل'
@@ -408,19 +584,30 @@ export class TourCatalogToolService {
           );
         }
 
-        return { tour, score, matchReasons };
+        return { tour, score, matchReasons, hasDirectConstraintMatch };
       });
 
-      // Only consider tours that actually matched constraints or keywords with a significant score
+      // Only consider tours that actually matched with high confidence (>= 20 points)
       const matched = scored
-        .filter((x) => x.score >= 15)
+        .filter((x): x is NonNullable<typeof x> => x !== null && x.hasDirectConstraintMatch && x.score >= 20)
         .sort((a, b) => b.score - a.score);
 
       if (matched.length === 0) {
         return [];
       }
 
-      const finalEntries = matched.slice(0, limit);
+      // Deduplicate by tour ID or slug before slicing
+      const seenIds = new Set<string>();
+      const deduplicated: typeof matched = [];
+      for (const m of matched) {
+        const key = m.tour.id || m.tour.slug;
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          deduplicated.push(m);
+        }
+      }
+
+      const finalEntries = deduplicated.slice(0, limit);
 
       return finalEntries.map((entry) =>
         this.mapTourToRecommendation(entry.tour, locale, entry.matchReasons),

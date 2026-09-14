@@ -25,6 +25,8 @@ export class ProviderError extends Error {
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
   'google/gemini-2.0-flash-001': 'gemini-2.0-flash',
+  'gemini-2.5-flash-lite': 'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite': 'gemini-3.5-flash-lite',
 };
 
 
