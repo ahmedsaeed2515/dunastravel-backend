@@ -22,8 +22,9 @@ import { AuthenticatedUser } from '../../common/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
 import { KnowledgeTranslationService } from './services/knowledge-translation.service';
+import { createHash } from 'crypto';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto } from './dto/knowledge.dto';
+import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto, CreateMultilingualKnowledgeDto } from './dto/knowledge.dto';
 
 const SUPPORTED_LOCALES = ['ar', 'en', 'es', 'pt', 'it'];
 
@@ -368,6 +369,8 @@ export class AdminKnowledgeController {
     @Body() dto: CreateKnowledgeItemDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
+    const contentHash = createHash('sha256').update(dto.content).digest('hex');
+
     const item = await this.prisma.knowledgeBaseItem.create({
       data: {
         title: dto.title,
@@ -380,6 +383,7 @@ export class AdminKnowledgeController {
         sourceType: (dto.sourceEntityType && dto.sourceEntityType !== 'MANUAL') ? 'SOURCE_MANAGED' : 'MANUALLY_MANAGED',
         sourceEntityType: dto.sourceEntityType || 'MANUAL',
         sourceEntityId: dto.sourceEntityId || undefined,
+        contentHash,
         priority: dto.priority ?? 0,
         lastIndexedAt: new Date(),
       },
@@ -396,9 +400,187 @@ export class AdminKnowledgeController {
         changeSummary: 'Initial document creation',
         changedBy: user?.email || user?.id || 'admin',
       },
-    });
+    }).catch(() => {});
+
+    // Immediately index into ai_knowledge_chunks so GuideR and Testing Lab can retrieve it
+    try {
+      const canonicalId = item.sourceEntityId
+        ? `${item.sourceEntityType || 'MANUAL'}:${item.sourceEntityId}`
+        : `MANUAL:${item.id}`;
+
+      await (this.prisma as any).aiKnowledgeChunk.upsert({
+        where: { id: `chunk:MANUAL:${item.id}:0` },
+        create: {
+          id: `chunk:MANUAL:${item.id}:0`,
+          canonicalEntityId: canonicalId,
+          entityType: item.sourceEntityType || 'MANUAL',
+          entityId: item.id,
+          locale: item.locale,
+          chunkIndex: 0,
+          title: item.title,
+          content: item.content,
+          contentHash,
+          metadataJsonb: {
+            category: item.category,
+            priority: item.priority,
+            tags: item.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+        update: {
+          title: item.title,
+          content: item.content,
+          contentHash,
+          metadataJsonb: {
+            category: item.category,
+            priority: item.priority,
+            tags: item.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
 
     return item;
+  }
+
+  /**
+   * 4.1 CREATE MULTILINGUAL KNOWLEDGE (1-Click 5-Language Ingestion & Chunking)
+   */
+  @Post('multilingual')
+  @ApiOperation({ summary: 'Create manual knowledge with automatic 5-language localization and instant chunking' })
+  async createMultilingualKnowledge(
+    @Body() dto: CreateMultilingualKnowledgeDto,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    if (!dto.title || !dto.content) {
+      throw new BadRequestException('Title and content are required for knowledge creation.');
+    }
+
+    const sourceLocale = dto.sourceLocale || 'ar';
+    const sharedEntityId = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const category = (dto.category as any) || 'GENERAL';
+    const priority = dto.priority ?? 15;
+    const baseTags = dto.tags || ['custom', 'admin', String(category).toLowerCase()];
+
+    let translations: Record<string, { title: string; content: string }>;
+
+    if (dto.autoTranslate !== false) {
+      try {
+        const genRes = await this.translationService.generateFiveLanguageArticle({
+          title: dto.title,
+          content: dto.content,
+          sourceLocale,
+          category,
+        });
+        translations = genRes as unknown as Record<string, { title: string; content: string }>;
+      } catch (err: any) {
+        this.logger.warn(`Auto-translation fallback: ${err.message}`);
+        translations = {
+          ar: { title: dto.title, content: dto.content },
+          en: { title: dto.title, content: dto.content },
+          es: { title: dto.title, content: dto.content },
+          pt: { title: dto.title, content: dto.content },
+          it: { title: dto.title, content: dto.content },
+        };
+      }
+    } else {
+      translations = {
+        [sourceLocale]: { title: dto.title, content: dto.content },
+      };
+    }
+
+    const createdItems = [];
+    const localesToSave = Object.keys(translations);
+
+    for (const loc of localesToSave) {
+      const trans = translations[loc];
+      if (!trans?.title || !trans?.content) continue;
+
+      const contentHash = createHash('sha256').update(trans.content).digest('hex');
+      const itemTags = [...baseTags, loc];
+
+      const item = await this.prisma.knowledgeBaseItem.create({
+        data: {
+          title: trans.title,
+          content: trans.content,
+          locale: loc,
+          category,
+          tags: itemTags,
+          status: 'PUBLISHED',
+          source: `MANUAL:${sharedEntityId}:${loc}`,
+          sourceType: 'MANUALLY_MANAGED',
+          sourceEntityType: 'MANUAL',
+          sourceEntityId: sharedEntityId,
+          contentHash,
+          isAutoGenerated: loc !== sourceLocale,
+          isManuallyOverridden: true,
+          priority,
+          lastIndexedAt: new Date(),
+        },
+      });
+
+      // Version log
+      await this.prisma.aiKnowledgeVersion.create({
+        data: {
+          knowledgeItemId: item.id,
+          versionNumber: 1,
+          title: trans.title,
+          content: trans.content,
+          locale: loc,
+          changeSummary: loc === sourceLocale ? 'Initial document creation' : 'Automated 5-language AI translation',
+          changedBy: user?.email || user?.id || 'admin',
+        },
+      }).catch(() => {});
+
+      // Upsert chunk into ai_knowledge_chunks immediately
+      try {
+        await (this.prisma as any).aiKnowledgeChunk.upsert({
+          where: { id: `chunk:MANUAL:${sharedEntityId}:${loc}:0` },
+          create: {
+            id: `chunk:MANUAL:${sharedEntityId}:${loc}:0`,
+            canonicalEntityId: `MANUAL:${sharedEntityId}`,
+            entityType: 'MANUAL',
+            entityId: item.id,
+            locale: loc,
+            chunkIndex: 0,
+            title: trans.title,
+            content: trans.content,
+            contentHash,
+            metadataJsonb: {
+              category,
+              priority,
+              tags: itemTags,
+            },
+            lastIndexedAt: new Date(),
+          },
+          update: {
+            title: trans.title,
+            content: trans.content,
+            contentHash,
+            metadataJsonb: {
+              category,
+              priority,
+              tags: itemTags,
+            },
+            lastIndexedAt: new Date(),
+          },
+        });
+      } catch {
+        // Non-blocking
+      }
+
+      createdItems.push(item);
+    }
+
+    return {
+      success: true,
+      canonicalEntityId: `MANUAL:${sharedEntityId}`,
+      createdCount: createdItems.length,
+      items: createdItems,
+    };
   }
 
   /**
@@ -417,12 +599,15 @@ export class AdminKnowledgeController {
     }
 
     const nextVersion = (existing.version || 1) + 1;
+    const newContent = dto.content ?? existing.content;
+    const newTitle = dto.title ?? existing.title;
+    const contentHash = createHash('sha256').update(newContent).digest('hex');
 
     const updated = await this.prisma.knowledgeBaseItem.update({
       where: { id },
       data: {
-        title: dto.title ?? existing.title,
-        content: dto.content ?? existing.content,
+        title: newTitle,
+        content: newContent,
         locale: dto.locale ?? existing.locale,
         category: (dto.category as any) ?? existing.category,
         tags: dto.tags ?? existing.tags,
@@ -430,6 +615,7 @@ export class AdminKnowledgeController {
         source: dto.source ?? existing.source,
         sourceEntityType: dto.sourceEntityType !== undefined ? dto.sourceEntityType : existing.sourceEntityType,
         sourceEntityId: dto.sourceEntityId !== undefined ? dto.sourceEntityId : existing.sourceEntityId,
+        contentHash,
         priority: dto.priority ?? existing.priority,
         isManuallyOverridden: true,
         version: nextVersion,
@@ -448,7 +634,48 @@ export class AdminKnowledgeController {
         changeSummary: 'Content edited in Knowledge Center',
         changedBy: user?.email || user?.id || 'admin',
       },
-    });
+    }).catch(() => {});
+
+    // Update chunk in ai_knowledge_chunks
+    try {
+      const canonicalId = updated.sourceEntityId
+        ? `${updated.sourceEntityType || 'MANUAL'}:${updated.sourceEntityId}`
+        : `MANUAL:${updated.id}`;
+
+      await (this.prisma as any).aiKnowledgeChunk.upsert({
+        where: { id: `chunk:MANUAL:${updated.id}:0` },
+        create: {
+          id: `chunk:MANUAL:${updated.id}:0`,
+          canonicalEntityId: canonicalId,
+          entityType: updated.sourceEntityType || 'MANUAL',
+          entityId: updated.id,
+          locale: updated.locale,
+          chunkIndex: 0,
+          title: updated.title,
+          content: updated.content,
+          contentHash,
+          metadataJsonb: {
+            category: updated.category,
+            priority: updated.priority,
+            tags: updated.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+        update: {
+          title: updated.title,
+          content: updated.content,
+          contentHash,
+          metadataJsonb: {
+            category: updated.category,
+            priority: updated.priority,
+            tags: updated.tags,
+          },
+          lastIndexedAt: new Date(),
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
 
     return updated;
   }
@@ -881,6 +1108,23 @@ export class AdminKnowledgeController {
     }
 
     await this.prisma.knowledgeBaseItem.delete({ where: { id } });
+
+    // Also remove any corresponding chunks
+    try {
+      await (this.prisma as any).aiKnowledgeChunk.deleteMany({
+        where: {
+          OR: [
+            { id: `chunk:MANUAL:${id}:0` },
+            { id: `chunk:MANUAL:${existing.sourceEntityId || id}:0` },
+            { entityId: id },
+            { canonicalEntityId: `MANUAL:${existing.sourceEntityId || id}` },
+          ],
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
+
     return { success: true, id };
   }
 

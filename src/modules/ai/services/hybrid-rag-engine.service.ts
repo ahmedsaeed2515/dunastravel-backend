@@ -321,7 +321,7 @@ export class HybridRagEngineService {
     if (topChunks.length > 0) {
       summaryLines.push(`\n[GROUNDED_KNOWLEDGE_ARTICLES]`);
       topChunks.forEach((c) => {
-        summaryLines.push(`- [${c.sourceCategory}] ${c.title}:\n  ${c.content.slice(0, 350)}`);
+        summaryLines.push(`- [${c.sourceCategory}] ${c.title}:\n  ${c.content.slice(0, 2000)}`);
       });
     }
 

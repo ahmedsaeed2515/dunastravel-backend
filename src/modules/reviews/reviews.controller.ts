@@ -11,13 +11,14 @@ import {
   ApiTags,
   ApiOperation,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { Public } from '../../common/decorators/public.decorator';
-import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { Throttle } from '@nestjs/throttler';
 
@@ -44,18 +45,18 @@ export class ReviewsController {
   }
 
   @Post(':tourId/reviews')
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
-    summary: 'Submit a customer or guest review for a tour (pending moderation)',
+    summary: 'Submit an authenticated customer review for a tour (pending moderation)',
   })
   async createReview(
     @Param('tourId') tourId: string,
     @Body() dto: CreateReviewDto,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.reviewsService.createCustomerReview(tourId, user || null, dto);
+    return this.reviewsService.createCustomerReview(tourId, user, dto);
   }
 }
 

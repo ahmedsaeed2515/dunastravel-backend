@@ -3,8 +3,12 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  UnauthorizedException,
   UnprocessableEntityException,
+  Logger,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { REVIEW_EVENTS } from '../../common/events';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -27,7 +31,12 @@ const UUID_REGEX =
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ReviewsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * Helper: Resolves a tour ID from either a UUID or a slug.
@@ -54,6 +63,36 @@ export class ReviewsService {
         select: { id: true },
       });
       if (tourBySlug) return tourBySlug.id;
+    }
+
+    throw new NotFoundException(`Tour "${tourIdOrSlug}" not found`);
+  }
+
+  /**
+   * Helper: Resolves tour entity (id, slug, titleJsonb) from UUID or slug.
+   */
+  private async resolveTour(tourIdOrSlug: string) {
+    if (!tourIdOrSlug) {
+      throw new BadRequestException('Tour identifier is required');
+    }
+
+    if (UUID_REGEX.test(tourIdOrSlug)) {
+      if (this.prisma?.tour?.findUnique) {
+        const tour = await this.prisma.tour.findUnique({
+          where: { id: tourIdOrSlug },
+          select: { id: true, slug: true, titleJsonb: true },
+        });
+        if (tour) return tour;
+      }
+      return { id: tourIdOrSlug, slug: tourIdOrSlug, titleJsonb: null };
+    }
+
+    if (this.prisma?.tour?.findFirst) {
+      const tourBySlug = await this.prisma.tour.findFirst({
+        where: { slug: tourIdOrSlug, deletedAt: null },
+        select: { id: true, slug: true, titleJsonb: true },
+      });
+      if (tourBySlug) return tourBySlug;
     }
 
     throw new NotFoundException(`Tour "${tourIdOrSlug}" not found`);
@@ -158,7 +197,28 @@ export class ReviewsService {
     user: AuthenticatedUser | null,
     dto: CreateReviewDto,
   ) {
-    const tourId = await this.resolveTourId(tourIdOrSlug);
+    if (!user?.id) {
+      throw new UnauthorizedException('Please sign in to submit a review');
+    }
+
+    const tour = await this.resolveTour(tourIdOrSlug);
+    const tourId = tour.id;
+
+    // Business rule: One active review per user per tour
+    const existingUserReview = await this.prisma.tourReview.findFirst({
+      where: {
+        tourId,
+        userId: user.id,
+        deletedAt: null,
+      },
+    });
+
+    if (existingUserReview) {
+      this.logger.warn(
+        `User ${user.id} attempted duplicate review on tour ${tourId}`,
+      );
+      throw new ConflictException('You have already reviewed this trip');
+    }
 
     // If verified booking ID provided, validate eligibility
     if (dto.bookingId) {
@@ -178,7 +238,7 @@ export class ReviewsService {
         throw new NotFoundException('Booking not found');
       }
 
-      if (user && booking.userId !== user.id) {
+      if (booking.userId !== user.id) {
         throw new NotFoundException('Booking not found');
       }
 
@@ -208,13 +268,13 @@ export class ReviewsService {
     const rawName =
       (dto.reviewerName && dto.reviewerName.trim()) ||
       user?.name ||
-      (user ? 'Verified Traveler' : 'Guest Traveler');
+      'Verified Traveler';
     const reviewerName = sanitizePlainText(rawName).slice(0, 100);
 
     const created = await this.prisma.tourReview.create({
       data: {
         tourId,
-        userId: user?.id || null,
+        userId: user.id,
         bookingId: dto.bookingId || null,
         rating: Math.min(5, Math.max(1, Number(dto.rating) || 5)),
         reviewerName,
@@ -224,10 +284,51 @@ export class ReviewsService {
       },
     });
 
+    // Extract tour title for notification
+    let tourTitle = 'Luxury Tour';
+    if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
+      const tJson = tour.titleJsonb as Record<string, string>;
+      tourTitle =
+        tJson.en || tJson.ar || tJson.es || Object.values(tJson)[0] || 'Luxury Tour';
+    }
+
+    // Emit decoupled event for notification consumers
+    this.eventEmitter.emit(REVIEW_EVENTS.CREATED, {
+      reviewId: created.id,
+      tourId: tour.id,
+      tourSlug: tour.slug,
+      tourTitle,
+      rating: created.rating,
+      reviewerName: created.reviewerName,
+      comment: created.comment,
+      userId: created.userId,
+      createdAt: created.createdAt,
+    });
+
+    this.logger.log(
+      `Created review ${created.id} for tour ${tour.slug} by user ${user.id}; emitted review.created event`,
+    );
+
+    await this.recalculateTourRating(tourId);
+
     return created;
   }
 
-  // --- ADMIN API ---
+  async findOneAdmin(id: string) {
+    const review = await this.prisma.tourReview.findUnique({
+      where: { id },
+      include: {
+        tour: { select: { id: true, slug: true, titleJsonb: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!review || review.deletedAt) {
+      throw new NotFoundException(`Review '${id}' not found`);
+    }
+
+    return review;
+  }
 
   async findAllAdmin(
     pageVal: number = 1,
@@ -237,12 +338,17 @@ export class ReviewsService {
     isPublished?: boolean,
     search?: string,
     rating?: number,
+    reviewId?: string,
   ) {
     const { page, limit, skip } = getPaginationParams(pageVal, limitVal);
 
     const where: Prisma.TourReviewWhereInput = {
       deletedAt: null,
     };
+
+    if (reviewId) {
+      where.id = reviewId;
+    }
 
     if (tourIdOrSlug) {
       try {

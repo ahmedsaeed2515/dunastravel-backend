@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe, ExecutionContext } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import request from 'supertest';
 
 import { ReviewsModule } from './reviews.module';
@@ -12,6 +13,7 @@ import { ResponseTransformInterceptor } from '../../common/interceptors/response
 
 describe('Reviews HTTP Contract Spec', () => {
   let app: INestApplication;
+  let mockPrisma: any;
 
   const mockTourId = '11111111-1111-4111-8111-111111111111';
   const mockReviewId = '22222222-2222-4222-8222-222222222222';
@@ -39,10 +41,12 @@ describe('Reviews HTTP Contract Spec', () => {
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
     deletedAt: null,
+    tour: { id: mockTourId, slug: 'nile-cruise', titleJsonb: { en: 'Nile Cruise Adventure' } },
+    user: { id: mockUserId, name: 'Customer John', email: 'john@example.com' },
   };
 
   beforeAll(async () => {
-    const mockPrisma = {
+    mockPrisma = {
       tourReview: {
         findMany: jest.fn().mockResolvedValue([mockReview]),
         findFirst: jest.fn().mockResolvedValue(null),
@@ -58,10 +62,20 @@ describe('Reviews HTTP Contract Spec', () => {
           status: 'APPROVED',
           isPublished: true,
         }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       tour: {
-        findUnique: jest.fn().mockResolvedValue({ id: mockTourId }),
-        findFirst: jest.fn().mockResolvedValue({ id: mockTourId }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: mockTourId,
+          slug: 'nile-cruise',
+          titleJsonb: { en: 'Nile Cruise Adventure' },
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: mockTourId,
+          slug: 'nile-cruise',
+          titleJsonb: { en: 'Nile Cruise Adventure' },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       booking: {
         findUnique: jest.fn().mockResolvedValue(mockBooking),
@@ -72,7 +86,7 @@ describe('Reviews HTTP Contract Spec', () => {
     };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ReviewsModule],
+      imports: [EventEmitterModule.forRoot(), ReviewsModule],
       providers: [PrismaService],
     })
       .overrideProvider(PrismaService)
@@ -86,7 +100,7 @@ describe('Reviews HTTP Contract Spec', () => {
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
           const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();
-          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com' };
+          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com', name: 'Customer John' };
           return true;
         },
       })
@@ -117,32 +131,32 @@ describe('Reviews HTTP Contract Spec', () => {
     expect(body.ratingSummary.averageRating).toBe(5);
   });
 
-  it('POST /api/tours/:tourId/reviews allows verified customer with completed booking to submit review', async () => {
+  it('POST /api/tours/:tourId/reviews allows authenticated customer to submit review', async () => {
     const res = await request(app.getHttpServer())
       .post(`/tours/${mockTourId}/reviews`)
       .send({
-        bookingId: mockBookingId,
         rating: 5,
-        comment: 'Great tour experience!',
+        comment: 'Great luxury tour experience!',
       })
       .expect(201);
 
     const review = res.body.data || res.body;
     expect(review.id).toBe(mockReviewId);
+    expect(review.userId).toBe(mockUserId);
   });
 
-  it('POST /api/tours/:tourId/reviews allows guest traveler to submit review with name', async () => {
+  it('POST /api/tours/:tourId/reviews rejects duplicate review submission with 409 Conflict', async () => {
+    mockPrisma.tourReview.findFirst.mockResolvedValueOnce(mockReview);
+
     const res = await request(app.getHttpServer())
       .post(`/tours/${mockTourId}/reviews`)
       .send({
-        reviewerName: 'Ahmed Tourist',
         rating: 5,
-        comment: 'Unbelievable luxury trip!',
+        comment: 'Attempting a second review for the same trip.',
       })
-      .expect(201);
+      .expect(409);
 
-    const review = res.body.data || res.body;
-    expect(review.id).toBe(mockReviewId);
+    expect(res.body.message).toContain('already reviewed');
   });
 
   it('GET /api/admin/reviews returns admin moderation list', async () => {
@@ -155,9 +169,19 @@ describe('Reviews HTTP Contract Spec', () => {
     expect(items[0].id).toBe(mockReviewId);
   });
 
-  it('GET /api/admin/reviews with isPublished filter returns filtered list', async () => {
+  it('GET /api/admin/reviews/:id returns single review by ID for deep linking', async () => {
     const res = await request(app.getHttpServer())
-      .get('/admin/reviews?isPublished=true&limit=100')
+      .get(`/admin/reviews/${mockReviewId}`)
+      .expect(200);
+
+    const review = res.body.data || res.body;
+    expect(review.id).toBe(mockReviewId);
+    expect(review.tour).toBeDefined();
+  });
+
+  it('GET /api/admin/reviews with reviewId filter returns targeted review', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/admin/reviews?reviewId=${mockReviewId}`)
       .expect(200);
 
     const items = res.body.data?.items || res.body.data;

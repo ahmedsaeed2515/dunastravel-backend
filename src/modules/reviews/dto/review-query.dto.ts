@@ -10,6 +10,10 @@ export class AdminReviewQueryDto extends PaginationQueryDto {
   tourId?: string;
 
   @IsOptional()
+  @IsString()
+  reviewId?: string;
+
+  @IsOptional()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
   status?: string;
 

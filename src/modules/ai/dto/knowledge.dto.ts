@@ -129,3 +129,41 @@ export class UpdateKnowledgeItemDto {
   @IsOptional()
   sourceEntityId?: string;
 }
+
+export class CreateMultilingualKnowledgeDto {
+  @ApiProperty({ example: 'معلومات عامة عن شركة دوناس ترافيل' })
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @ApiProperty({ example: 'تأسست شركة دوناس ترافيل كواحدة من رواد السياحة الفاخرة في مصر والشرق الأوسط...' })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
+
+  @ApiPropertyOptional({ example: 'ar' })
+  @IsString()
+  @IsOptional()
+  sourceLocale?: string;
+
+  @ApiPropertyOptional({ enum: KnowledgeCategoryEnum, example: KnowledgeCategoryEnum.COMPANY })
+  @IsEnum(KnowledgeCategoryEnum)
+  @IsOptional()
+  category?: KnowledgeCategoryEnum;
+
+  @ApiPropertyOptional({ example: ['company', 'about', 'dunas'] })
+  @IsArray()
+  @IsOptional()
+  tags?: string[];
+
+  @ApiPropertyOptional({ example: 15 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  priority?: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  autoTranslate?: boolean;
+}
+

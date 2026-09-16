@@ -4822,6 +4822,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-guest-token",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -8974,6 +8982,334 @@
         ]
       }
     },
+    "/api/admin/media/showcase": {
+      "get": {
+        "operationId": "MediaAdminController_getAdminShowcase",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all showcase photos and videos for admin management",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "post": {
+        "operationId": "MediaAdminController_addToShowcase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignToShowcaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Assign a media asset to photo or video showcase",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/showcase/reorder": {
+      "post": {
+        "operationId": "MediaAdminController_reorderShowcase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderShowcaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Reorder showcase items transactionally",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/showcase/{id}": {
+      "patch": {
+        "operationId": "MediaAdminController_updateShowcaseItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShowcaseItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update showcase item position, status, or details",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "delete": {
+        "operationId": "MediaAdminController_removeFromShowcase",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Remove a media asset from homepage showcase",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/upload-video": {
+      "post": {
+        "operationId": "MediaAdminController_uploadVideo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadVideoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Upload a video asset (up to 100MB) with optional poster image",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/add-video-url": {
+      "post": {
+        "operationId": "MediaAdminController_addVideoUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddVideoUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaAssetResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register an external video URL with optional poster and details",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/optimize/{id}": {
+      "post": {
+        "operationId": "MediaAdminController_optimizeAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizeAssetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaAssetResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Generate and verify server-side WebP optimization for an existing asset",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/{id}/usage": {
+      "get": {
+        "operationId": "MediaAdminController_checkUsage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Check where a media asset is referenced before deletion",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/admin/media/sync-entities": {
+      "post": {
+        "operationId": "MediaAdminController_syncEntities",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Synchronize tour and hotel entity media into media_assets library",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/api/media/showcase": {
+      "get": {
+        "operationId": "MediaPublicController_getPublicShowcase",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomepageMediaShowcaseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get active public homepage media showcase (photos and videos)",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/api/media/showcase/photos": {
+      "get": {
+        "operationId": "MediaPublicController_getShowcasePhotos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShowcasePhotoItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get active public homepage photo showcase slides",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/api/media/showcase/videos": {
+      "get": {
+        "operationId": "MediaPublicController_getShowcaseVideos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShowcaseVideoItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get active public homepage video showcase slides",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
     "/api/media": {
       "get": {
         "operationId": "MediaPublicController_getPublicGallery",
@@ -9590,6 +9926,21 @@
         ]
       }
     },
+    "/api/ai/chat/status": {
+      "get": {
+        "operationId": "PublicChatController_getStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get GuideR global availability status (ACTIVE / DISABLED / MAINTENANCE)",
+        "tags": [
+          "Public AI Chatbot"
+        ]
+      }
+    },
     "/api/ai/chat/personas": {
       "get": {
         "operationId": "PublicChatController_getPersonas",
@@ -9703,10 +10054,10 @@
         },
         "responses": {
           "200": {
-            "description": "Confirmed booking reservation reference with invoice"
+            "description": "Redirection advisory to the official website tour booking flow"
           }
         },
-        "summary": "Create an instant luxury tour booking directly from the chatbot",
+        "summary": "Deprecated: GuideR no longer initiates direct bookings. Redirects traveler to official tour page.",
         "tags": [
           "Public AI Chatbot"
         ]
@@ -9895,6 +10246,36 @@
           }
         ],
         "summary": "Update AI chatbot configuration",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/status": {
+      "post": {
+        "operationId": "AdminAiController_updateStatus",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGuiderStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update GuideR global operational status (ACTIVE / DISABLED / MAINTENANCE)",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -10387,6 +10768,26 @@
           }
         ],
         "summary": "Test a credential — returns structured error code, not just success/failed",
+        "tags": [
+          "Admin - AI Command Center"
+        ]
+      }
+    },
+    "/api/admin/ai/models/activate": {
+      "post": {
+        "operationId": "AdminAiController_activateModel",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transactionally activate GuideR model and provider with optional connectivity verification",
         "tags": [
           "Admin - AI Command Center"
         ]
@@ -11105,21 +11506,22 @@
         ]
       }
     },
-    "/api/admin/ai/knowledge/{id}": {
-      "get": {
-        "operationId": "AdminKnowledgeController_getKnowledgeItemDetail",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+    "/api/admin/ai/knowledge/multilingual": {
+      "post": {
+        "operationId": "AdminKnowledgeController_createMultilingualKnowledge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMultilingualKnowledgeDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         },
@@ -11128,11 +11530,13 @@
             "bearer": []
           }
         ],
-        "summary": "Get Knowledge Base document by ID",
+        "summary": "Create manual knowledge with automatic 5-language localization and instant chunking",
         "tags": [
           "Admin - Guider Knowledge Center V5"
         ]
-      },
+      }
+    },
+    "/api/admin/ai/knowledge/{id}": {
       "put": {
         "operationId": "AdminKnowledgeController_updateKnowledgeItem",
         "parameters": [
@@ -11193,6 +11597,33 @@
           }
         ],
         "summary": "Delete Knowledge Base document",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      },
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeItemDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Knowledge Base document by ID",
         "tags": [
           "Admin - Guider Knowledge Center V5"
         ]
@@ -11418,6 +11849,46 @@
         ]
       }
     },
+    "/api/admin/ai/knowledge/status": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getKnowledgeStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get GuideR Knowledge Freshness, snapshot version, and sync telemetry",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/sync": {
+      "post": {
+        "operationId": "AdminKnowledgeController_triggerSafeSync",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger manual safe synchronization of GuideR Knowledge from live catalog",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
     "/api/admin/ai/knowledge/sync-catalog": {
       "post": {
         "operationId": "AdminKnowledgeController_syncCatalogToKnowledgeBase",
@@ -11432,7 +11903,7 @@
             "bearer": []
           }
         ],
-        "summary": "Sync active database Tours & Destinations into Knowledge Base",
+        "summary": "Sync active database Tours & Destinations into Knowledge Base (backward compatible)",
         "tags": [
           "Admin - Guider Knowledge Center V5"
         ]
@@ -14180,6 +14651,482 @@
         ]
       }
     },
+    "/api/admin/destinations": {
+      "get": {
+        "operationId": "DestinationsAdminController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all destinations with pagination, tour counts and status filters",
+        "tags": [
+          "Admin Destinations"
+        ]
+      },
+      "post": {
+        "operationId": "DestinationsAdminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}": {
+      "get": {
+        "operationId": "DestinationsAdminController_findOne",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get full details of a single destination with attached tours",
+        "tags": [
+          "Admin Destinations"
+        ]
+      },
+      "patch": {
+        "operationId": "DestinationsAdminController_update",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourLandingPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update destination details, media, translations or SEO",
+        "tags": [
+          "Admin Destinations"
+        ]
+      },
+      "delete": {
+        "operationId": "DestinationsAdminController_softDelete",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Safely soft delete a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/reorder": {
+      "patch": {
+        "operationId": "DestinationsAdminController_reorder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderLandingPagesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder destinations",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/publish": {
+      "patch": {
+        "operationId": "DestinationsAdminController_publish",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/unpublish": {
+      "patch": {
+        "operationId": "DestinationsAdminController_unpublish",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unpublish a destination (set to DRAFT)",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/activate": {
+      "patch": {
+        "operationId": "DestinationsAdminController_activate",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activate a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/deactivate": {
+      "patch": {
+        "operationId": "DestinationsAdminController_deactivate",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/archive": {
+      "patch": {
+        "operationId": "DestinationsAdminController_archive",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours": {
+      "post": {
+        "operationId": "DestinationsAdminController_attachTours",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach tours to a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours/reorder": {
+      "patch": {
+        "operationId": "DestinationsAdminController_reorderTours",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderToursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder tours inside a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
+    "/api/admin/destinations/{idOrSlug}/tours/{tourId}": {
+      "patch": {
+        "operationId": "DestinationsAdminController_updateTourRelation",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTourRelationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update tour relation properties in destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      },
+      "delete": {
+        "operationId": "DestinationsAdminController_detachTour",
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tourId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a tour from a destination",
+        "tags": [
+          "Admin Destinations"
+        ]
+      }
+    },
     "/api/blogs": {
       "get": {
         "operationId": "BlogsController_findAll",
@@ -15040,7 +15987,12 @@
             "description": ""
           }
         },
-        "summary": "Submit a customer or guest review for a tour (pending moderation)",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit an authenticated customer review for a tour (pending moderation)",
         "tags": [
           "reviews"
         ]
@@ -15152,6 +16104,33 @@
       }
     },
     "/api/admin/reviews/{id}": {
+      "get": {
+        "operationId": "AdminReviewsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single customer review by ID",
+        "tags": [
+          "admin-reviews"
+        ]
+      },
       "put": {
         "operationId": "AdminReviewsController_update",
         "parameters": [
@@ -18724,6 +19703,50 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "title": {
+            "type": "object"
+          },
+          "description": {
+            "type": "object"
+          },
+          "mediaType": {
+            "type": "string",
+            "default": "IMAGE"
+          },
+          "cloudinaryResourceType": {
+            "type": "string",
+            "default": "image"
+          },
+          "thumbnailUrl": {
+            "type": "object"
+          },
+          "optimizedUrl": {
+            "type": "object"
+          },
+          "duration": {
+            "type": "object"
+          },
+          "isShowcase": {
+            "type": "boolean",
+            "default": false
+          },
+          "showcaseSection": {
+            "type": "object"
+          },
+          "showcasePosition": {
+            "type": "object"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "isPublished": {
+            "type": "boolean",
+            "default": true
+          },
+          "metadata": {
+            "type": "object"
           }
         },
         "required": [
@@ -18738,12 +19761,21 @@
           "entityType",
           "provenance",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "mediaType",
+          "cloudinaryResourceType",
+          "isShowcase",
+          "isActive",
+          "isPublished"
         ]
       },
       "UploadBulkMediaDto": {
         "type": "object",
         "properties": {
+          "files": {
+            "type": "object",
+            "description": "Binary files sent via multipart/form-data"
+          },
           "entityType": {
             "type": "string",
             "enum": [
@@ -18968,6 +20000,311 @@
           "id",
           "deletedAt",
           "providerDeleteFailed"
+        ]
+      },
+      "AssignToShowcaseDto": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "description": "UUID of the media asset to assign"
+          },
+          "mediaId": {
+            "type": "string",
+            "description": "Alias for assetId"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "PHOTO",
+              "VIDEO"
+            ],
+            "default": "PHOTO"
+          },
+          "position": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "section"
+        ]
+      },
+      "ReorderItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "position"
+        ]
+      },
+      "ReorderShowcaseDto": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "PHOTO",
+              "VIDEO"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReorderItemDto"
+            }
+          }
+        },
+        "required": [
+          "section",
+          "items"
+        ]
+      },
+      "UpdateShowcaseItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isPublished": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UploadVideoDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "object",
+            "description": "Binary video file sent via multipart/form-data"
+          },
+          "poster": {
+            "type": "object",
+            "description": "Binary poster image file sent via multipart/form-data"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string"
+          },
+          "categorySlug": {
+            "type": "string"
+          },
+          "addToShowcase": {
+            "type": "boolean"
+          },
+          "videoUrl": {
+            "type": "string",
+            "description": "Optional video URL if registering by link"
+          },
+          "posterUrl": {
+            "type": "string",
+            "description": "Optional poster image URL"
+          }
+        }
+      },
+      "AddVideoUrlDto": {
+        "type": "object",
+        "properties": {
+          "videoUrl": {
+            "type": "string",
+            "description": "Direct or embed video URL (MP4, YouTube, Vimeo, etc.)"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string"
+          },
+          "categorySlug": {
+            "type": "string"
+          },
+          "posterUrl": {
+            "type": "string",
+            "description": "Optional poster / thumbnail image URL"
+          },
+          "addToShowcase": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "videoUrl"
+        ]
+      },
+      "OptimizeAssetDto": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "default": "webp"
+          },
+          "quality": {
+            "type": "string",
+            "default": "auto:good"
+          },
+          "maxWidth": {
+            "type": "number",
+            "default": 1920
+          },
+          "width": {
+            "type": "number",
+            "default": 1920
+          },
+          "maxHeight": {
+            "type": "number",
+            "default": 1080
+          },
+          "height": {
+            "type": "number",
+            "default": 1080
+          }
+        }
+      },
+      "ShowcasePhotoItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "object"
+          },
+          "alt": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          },
+          "optimizedUrl": {
+            "type": "object"
+          },
+          "thumbnailUrl": {
+            "type": "object"
+          },
+          "position": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "width": {
+            "type": "object"
+          },
+          "height": {
+            "type": "object"
+          },
+          "category": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "position",
+          "isActive"
+        ]
+      },
+      "ShowcaseVideoItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "object"
+          },
+          "alt": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          },
+          "videoUrl": {
+            "type": "object"
+          },
+          "thumbnailUrl": {
+            "type": "object"
+          },
+          "posterUrl": {
+            "type": "object"
+          },
+          "duration": {
+            "type": "object"
+          },
+          "position": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "width": {
+            "type": "object"
+          },
+          "height": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "position",
+          "isActive"
+        ]
+      },
+      "HomepageMediaShowcaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShowcasePhotoItemDto"
+            }
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShowcaseVideoItemDto"
+            }
+          }
+        },
+        "required": [
+          "photos",
+          "videos"
         ]
       },
       "PublicMediaAssetResponseDto": {
@@ -19518,6 +20855,34 @@
           }
         }
       },
+      "UpdateGuiderStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "GuideR system operational status",
+            "enum": [
+              "ACTIVE",
+              "DISABLED",
+              "MAINTENANCE"
+            ],
+            "example": "ACTIVE"
+          },
+          "disabledMessage": {
+            "type": "string",
+            "description": "Optional custom message shown to visitors when GuideR is disabled or under maintenance",
+            "example": "GuideR is currently undergoing scheduled maintenance. Please contact our team at info@dunastravel.com."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Internal reason for status change for audit log",
+            "example": "Scheduled system upgrade"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "RefreshProviderModelsDto": {
         "type": "object",
         "properties": {
@@ -19731,6 +21096,66 @@
           "sourceEntityId": {
             "type": "string",
             "example": "visa_guidelines_2026"
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ]
+      },
+      "CreateMultilingualKnowledgeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "معلومات عامة عن شركة دوناس ترافيل"
+          },
+          "content": {
+            "type": "string",
+            "example": "تأسست شركة دوناس ترافيل كواحدة من رواد السياحة الفاخرة في مصر والشرق الأوسط..."
+          },
+          "sourceLocale": {
+            "type": "string",
+            "example": "ar"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "COMPANY",
+              "FAQ",
+              "BOOKING_POLICY",
+              "CANCELLATION_POLICY",
+              "PAYMENT_INFO",
+              "VISA_GUIDANCE",
+              "DESTINATION_INFO",
+              "SAFETY_ADVICE",
+              "TRANSPORTATION",
+              "HOTELS",
+              "CUSTOM_TOURS",
+              "INCLUSIONS_EXCLUSIONS",
+              "CONTACT_SUPPORT",
+              "GENERAL"
+            ],
+            "example": "COMPANY"
+          },
+          "tags": {
+            "example": [
+              "company",
+              "about",
+              "dunas"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "priority": {
+            "type": "number",
+            "example": 15
+          },
+          "autoTranslate": {
+            "type": "boolean",
+            "default": true
           }
         },
         "required": [

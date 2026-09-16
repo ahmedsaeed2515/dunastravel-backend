@@ -63,7 +63,14 @@ export class AdminReviewsController {
       query.isPublished,
       query.search,
       query.rating,
+      query.reviewId,
     );
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a single customer review by ID' })
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.reviewsService.findOneAdmin(id);
   }
 
   @Post()

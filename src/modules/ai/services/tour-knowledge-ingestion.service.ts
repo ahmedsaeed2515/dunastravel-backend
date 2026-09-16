@@ -122,12 +122,17 @@ export class TourKnowledgeIngestionService {
     const accumulatedHashes: string[] = [];
 
     try {
-      // 2. FETCH: Query active tours and landing pages
+      // 2. FETCH: Query active tours (with full itineraries) and landing pages
       const [tours, landingPages] = await Promise.all([
         this.prisma.tour.findMany({
           where: {
             isActive: true,
             deletedAt: null,
+          },
+          include: {
+            itineraries: {
+              orderBy: { sortOrder: 'asc' },
+            },
           },
           take: 150,
         }),
@@ -159,50 +164,24 @@ export class TourKnowledgeIngestionService {
         throw new BadRequestException(errorMsg);
       }
 
-      // 4. NORMALIZE & UPSERT TOURS
+      // 4. NORMALIZE & UPSERT TOURS WITH COMPREHENSIVE ITINERARIES, INCLUSIONS & POLICIES
       for (const tour of tours) {
-        const tourAny = tour as any;
-        const tMap = (tour.titleJsonb && typeof tour.titleJsonb === 'object') ? (tour.titleJsonb as Record<string, string>) : {};
-        const oMap = (tour.overviewJsonb && typeof tour.overviewJsonb === 'object') ? (tour.overviewJsonb as Record<string, string>) : {};
-
         const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt & Middle East';
-        const durationVal = tourAny.durationDays || tourAny.duration || 5;
-        const durationStr = `${durationVal} Days`;
 
         for (const loc of SUPPORTED_LOCALES) {
-          let title = tMap[loc] || tMap.en || tour.slug;
-          let overview = oMap[loc] || oMap.en || '';
-          let prefix = 'Tour Package';
-          let catLabel = tour.category || 'Luxury Tours';
-          let pricingNotice = 'Pricing: On Request / Private Custom Quote';
-
-          if (loc === 'ar') {
-            prefix = 'رحلة سياحية فاخرة';
-            title = tMap.ar || title;
-            pricingNotice = 'الأسعار: عند الطلب / عرض سعر مخصص حسب التواريخ ودرجة الإقامة';
-          } else if (loc === 'es') {
-            prefix = 'Paquete Turístico de Lujo';
-            pricingNotice = 'Precios: A consultar / Cotización personalizada';
-          } else if (loc === 'pt') {
-            prefix = 'Pacote Turístico de Luxo';
-            pricingNotice = 'Preços: Sob consulta / Orçamento personalizado';
-          } else if (loc === 'it') {
-            prefix = 'Pacchetto Turistico Esclusivo';
-            pricingNotice = 'Prezzi: Su richiesta / Preventivo personalizzato';
-          }
-
-          const content = `${prefix}: ${title}\nDestination: ${dest}\nDuration: ${durationStr}\n${pricingNotice}\nCategory: ${catLabel}\nPublic URL: /tours/${tour.slug}${overview ? `\nOverview: ${overview.slice(0, 280)}` : ''}`;
+          const { title, fullContent, chunks } = this.buildTourKnowledge(tour, loc);
 
           const hash = await this.upsertKnowledgeItem({
             sourceKey: `CATALOG_TOUR:${tour.id}:${loc}`,
             sourceEntityType: 'TOUR',
             sourceEntityId: tour.id,
-            title: `[${prefix}] ${title}`,
-            content,
+            title,
+            content: fullContent,
             locale: loc,
             category: 'CUSTOM_TOURS',
             tags: [tour.slug, dest.toLowerCase(), 'tour', 'package', 'luxury', loc],
             priority: 15,
+            chunks,
           });
           if (hash) accumulatedHashes.push(hash);
         }
@@ -468,6 +447,343 @@ export class TourKnowledgeIngestionService {
     ];
   }
 
+  private readonly TOUR_LABELS: Record<string, {
+    tourPrefix: string;
+    destination: string;
+    duration: string;
+    category: string;
+    pricingNotice: string;
+    transportation: string;
+    minPax: string;
+    meetingPoint: string;
+    departureInfo: string;
+    exploreUrl: string;
+    overviewHeading: string;
+    highlightsHeading: string;
+    itineraryHeading: string;
+    inclusionsHeading: string;
+    exclusionsHeading: string;
+    hotelsHeading: string;
+    policiesHeading: string;
+    dayPrefix: string;
+    mealsPrefix: string;
+    activitiesPrefix: string;
+    hotelsPrefix: string;
+  }> = {
+    ar: {
+      tourPrefix: 'رحلة سياحية فاخرة',
+      destination: 'الوجهة والمدن',
+      duration: 'المدة الزمنية',
+      category: 'التصنيف',
+      pricingNotice: 'الأسعار: عند الطلب / عرض سعر مخصص حسب التواريخ ومستوى الإقامة (تواصل مع مستشارينا عبر /tailor-a-tour)',
+      transportation: 'وسائل النقل المعتمدة',
+      minPax: 'الحد الأدنى للمسافرين',
+      meetingPoint: 'نقطة التجمع والاستقبال',
+      departureInfo: 'مواعيد المغادرة',
+      exploreUrl: 'رابط استعراض وحجز البرنامج',
+      overviewHeading: 'نبذة عن البرنامج السياحي',
+      highlightsHeading: 'أبرز معالم وتجارب الرحلة',
+      itineraryHeading: 'خط السير والبرنامج اليومي التفصيلي',
+      inclusionsHeading: 'الخدمات المشمولة في الباقة',
+      exclusionsHeading: 'الخدمات والمصاريف غير المشمولة',
+      hotelsHeading: 'تفاصيل الفنادق والإقامة ونظام الوجبات',
+      policiesHeading: 'سياسات الحجز وشروط الإلغاء',
+      dayPrefix: 'اليوم',
+      mealsPrefix: 'الوجبات المشمولة',
+      activitiesPrefix: 'الأنشطة والزيارات',
+      hotelsPrefix: 'الإقامة/الفندق',
+    },
+    en: {
+      tourPrefix: 'Luxury Tour Package',
+      destination: 'Destinations & Cities',
+      duration: 'Duration',
+      category: 'Category',
+      pricingNotice: 'Pricing: On Request / Private Tailored Quote based on dates and luxury tier (inquire at /tailor-a-tour)',
+      transportation: 'Transportation Fleet',
+      minPax: 'Minimum Travelers',
+      meetingPoint: 'Meeting & Welcome Point',
+      departureInfo: 'Departure Schedule',
+      exploreUrl: 'Explore & Book URL',
+      overviewHeading: 'Tour Overview',
+      highlightsHeading: 'Trip Highlights & Key Experiences',
+      itineraryHeading: 'Comprehensive Day-by-Day Itinerary',
+      inclusionsHeading: 'Included Services & Amenities',
+      exclusionsHeading: 'Excluded Services & Personal Expenses',
+      hotelsHeading: 'Accommodation & Hotel Details',
+      policiesHeading: 'Booking Terms & Cancellation Policies',
+      dayPrefix: 'Day',
+      mealsPrefix: 'Included Meals',
+      activitiesPrefix: 'Activities & Sightseeing',
+      hotelsPrefix: 'Hotel/Lodging',
+    },
+    es: {
+      tourPrefix: 'Paquete Turístico de Lujo',
+      destination: 'Destinos y Ciudades',
+      duration: 'Duración',
+      category: 'Categoría',
+      pricingNotice: 'Precios: A consultar / Cotización personalizada según fechas y categoría (solicitar en /tailor-a-tour)',
+      transportation: 'Transporte',
+      minPax: 'Mínimo de pasajeros',
+      meetingPoint: 'Punto de encuentro y bienvenida',
+      departureInfo: 'Salidas programadas',
+      exploreUrl: 'Enlace de reserva',
+      overviewHeading: 'Descripción general',
+      highlightsHeading: 'Puntos destacados del viaje',
+      itineraryHeading: 'Itinerario detallado día a día',
+      inclusionsHeading: 'Servicios incluidos',
+      exclusionsHeading: 'Servicios no incluidos',
+      hotelsHeading: 'Hoteles y régimen de alojamiento',
+      policiesHeading: 'Condiciones de reserva y cancelación',
+      dayPrefix: 'Día',
+      mealsPrefix: 'Comidas incluidas',
+      activitiesPrefix: 'Actividades y visitas',
+      hotelsPrefix: 'Hotel',
+    },
+    pt: {
+      tourPrefix: 'Pacote Turístico de Luxo',
+      destination: 'Destinos e Cidades',
+      duration: 'Duração',
+      category: 'Categoria',
+      pricingNotice: 'Preços: Sob consulta / Orçamento personalizado de acordo com datas e padrão (/tailor-a-tour)',
+      transportation: 'Transporte',
+      minPax: 'Mínimo de passageiros',
+      meetingPoint: 'Ponto de encontro e recepção',
+      departureInfo: 'Saídas programadas',
+      exploreUrl: 'Link de reserva',
+      overviewHeading: 'Visão Geral do Pacote',
+      highlightsHeading: 'Destaques e Experiências',
+      itineraryHeading: 'Roteiro detalhado dia a dia',
+      inclusionsHeading: 'Serviços inclusos',
+      exclusionsHeading: 'Serviços não inclusos',
+      hotelsHeading: 'Hospedagem e regimes',
+      policiesHeading: 'Políticas de reserva e cancelamento',
+      dayPrefix: 'Dia',
+      mealsPrefix: 'Refeições inclusas',
+      activitiesPrefix: 'Atividades e passeios',
+      hotelsPrefix: 'Hotel',
+    },
+    it: {
+      tourPrefix: 'Pacchetto Turistico Esclusivo',
+      destination: 'Destinazioni e Città',
+      duration: 'Durata',
+      category: 'Categoria',
+      pricingNotice: 'Prezzi: Su richiesta / Preventivo personalizzato in base a date e categoria (/tailor-a-tour)',
+      transportation: 'Trasporto',
+      minPax: 'Partecipanti minimi',
+      meetingPoint: 'Punto di incontro e accoglienza',
+      departureInfo: 'Partenze',
+      exploreUrl: 'Link di prenotazione',
+      overviewHeading: 'Panoramica del Tour',
+      highlightsHeading: 'Punti salienti ed esperienze',
+      itineraryHeading: 'Itinerario giornaliero completo',
+      inclusionsHeading: 'Servizi inclusi',
+      exclusionsHeading: 'Servizi non inclusi',
+      hotelsHeading: 'Sistemazione alberghiera e pasti',
+      policiesHeading: 'Termini di prenotazione e cancellazione',
+      dayPrefix: 'Giorno',
+      mealsPrefix: 'Pasti inclusi',
+      activitiesPrefix: 'Attività ed escursioni',
+      hotelsPrefix: 'Hotel',
+    },
+  };
+
+  private getLocalizedText(field: any, locale: string, fallback: string = ''): string {
+    if (!field) return fallback;
+    if (typeof field === 'string') return field.trim();
+    if (typeof field === 'object') {
+      const loc = locale.toLowerCase().split('-')[0];
+      const val = field[loc] ?? field.en ?? field.ar ?? '';
+      return typeof val === 'string' ? val.trim() : (val ? JSON.stringify(val) : fallback);
+    }
+    return fallback;
+  }
+
+  private getLocalizedList(field: any, locale: string): string[] {
+    if (!field) return [];
+    const loc = locale.toLowerCase().split('-')[0];
+    if (Array.isArray(field)) {
+      return field.map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (typeof item === 'object' && item !== null) {
+          const val = item[loc] ?? item.en ?? item.ar ?? '';
+          return typeof val === 'string' ? val.trim() : String(val);
+        }
+        return String(item).trim();
+      }).filter(Boolean);
+    }
+    if (typeof field === 'object') {
+      const locArr = field[loc] ?? field.en ?? field.ar;
+      if (Array.isArray(locArr)) {
+        return locArr.map((item) => (typeof item === 'string' ? item.trim() : JSON.stringify(item))).filter(Boolean);
+      }
+    }
+    return [];
+  }
+
+  private formatHotelInfo(hotelInfo: any, locale: string): string {
+    if (!hotelInfo) return '';
+    if (typeof hotelInfo === 'string') return hotelInfo.trim();
+    if (typeof hotelInfo === 'object') {
+      const lines: string[] = [];
+      if (hotelInfo.hotelCategory) {
+        lines.push(`- Category: ${hotelInfo.hotelCategory}`);
+      }
+      if (hotelInfo.notes) {
+        lines.push(`- Notes: ${hotelInfo.notes}`);
+      }
+      if (Array.isArray(hotelInfo.accommodation)) {
+        hotelInfo.accommodation.forEach((acc: any) => {
+          const dest = acc.destination || acc.city || '';
+          const nights = acc.nights ? `${acc.nights} nights` : '';
+          const regime = acc.regime || acc.mealPlan || '';
+          const detail = [dest, nights, regime].filter(Boolean).join(' - ');
+          if (detail) lines.push(`- ${detail}`);
+        });
+      }
+      return lines.join('\n');
+    }
+    return '';
+  }
+
+  private buildTourKnowledge(tour: any, loc: string): {
+    title: string;
+    fullContent: string;
+    chunks: Array<{ chunkIndex: number; title: string; content: string }>;
+  } {
+    const labels = this.TOUR_LABELS[loc] || this.TOUR_LABELS['en'];
+    const title = this.getLocalizedText(tour.titleJsonb, loc, tour.slug);
+    const subtitle = this.getLocalizedText(tour.subtitleJsonb, loc);
+    const overview = this.getLocalizedText(tour.overviewJsonb, loc);
+    const highlights = this.getLocalizedList(tour.highlightsJsonb, loc);
+    const includedServices = this.getLocalizedList(tour.includedServicesJsonb, loc);
+    const excludedServices = this.getLocalizedList(tour.excludedServicesJsonb, loc);
+    const transportation = this.getLocalizedText(tour.transportationJsonb, loc);
+    const minPax = this.getLocalizedText(tour.minPaxJsonb, loc);
+    const departureInfo = this.getLocalizedText(tour.departureInfoJsonb, loc);
+    const cancellationPolicy = this.getLocalizedText(tour.cancellationPolicyJsonb, loc);
+    const terms = this.getLocalizedText(tour.termsJsonb, loc);
+    const hotelDetails = this.formatHotelInfo(tour.hotelInfoJsonb, loc);
+
+    const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt & Middle East';
+
+    // Format duration
+    let durationStr = `${tour.durationDays || 5} Days`;
+    if (tour.durationJsonb) {
+      if (typeof tour.durationJsonb === 'string') {
+        durationStr = tour.durationJsonb;
+      } else if (typeof tour.durationJsonb === 'object') {
+        const dJson = tour.durationJsonb as any;
+        if (dJson[loc]) {
+          durationStr = dJson[loc];
+        } else if (dJson.days) {
+          durationStr = loc === 'ar'
+            ? `${dJson.days} أيام ${dJson.nights ? `/ ${dJson.nights} ليالٍ` : ''}`
+            : `${dJson.days} Days ${dJson.nights ? `/ ${dJson.nights} Nights` : ''}`;
+        }
+      }
+    }
+
+    const catLabel = tour.category || 'Luxury Tours';
+    const cleanTitle = `[${labels.tourPrefix}] ${title}`;
+
+    // ── Chunk 0: Overview, Highlights & Logistics ───────────────────────────
+    const chunk0Lines: string[] = [
+      `# ${cleanTitle}`,
+      `${labels.destination}: ${dest}`,
+      `${labels.duration}: ${durationStr}`,
+      `${labels.category}: ${catLabel}`,
+      `${labels.pricingNotice}`,
+    ];
+    if (transportation) chunk0Lines.push(`${labels.transportation}: ${transportation}`);
+    if (minPax) chunk0Lines.push(`${labels.minPax}: ${minPax}`);
+    if (departureInfo) chunk0Lines.push(`${labels.departureInfo}: ${departureInfo}`);
+    if (tour.meetingPoint) chunk0Lines.push(`${labels.meetingPoint}: ${tour.meetingPoint}`);
+    chunk0Lines.push(`${labels.exploreUrl}: /tours/${tour.slug}`);
+
+    if (subtitle) {
+      chunk0Lines.push(`\n**${subtitle}**`);
+    }
+    if (overview) {
+      chunk0Lines.push(`\n## ${labels.overviewHeading}\n${overview}`);
+    }
+    if (highlights.length > 0) {
+      chunk0Lines.push(`\n## ${labels.highlightsHeading}\n${highlights.map((h) => `- ${h}`).join('\n')}`);
+    }
+    const chunk0Content = chunk0Lines.join('\n');
+
+    // ── Chunk 1: Complete Day-by-Day Itinerary ──────────────────────────────
+    const itineraries: any[] = Array.isArray(tour.itineraries) ? tour.itineraries : [];
+    const chunk1Lines: string[] = [
+      `# [${labels.itineraryHeading}] ${title}`,
+      `Tour: ${title} | ${labels.destination}: ${dest} | ${labels.duration}: ${durationStr} | URL: /tours/${tour.slug}`,
+    ];
+
+    if (itineraries.length > 0) {
+      itineraries.forEach((day: any, idx: number) => {
+        const dLabel = day.dayLabel || `${labels.dayPrefix} ${idx + 1}`;
+        const dTitle = this.getLocalizedText(day.titleJsonb, loc);
+        const desc = this.getLocalizedText(day.descriptionJsonb, loc);
+        const meals = this.getLocalizedText(day.mealsJsonb, loc);
+        const dayHotels = this.getLocalizedText(day.hotelsJsonb, loc);
+        const activities = this.getLocalizedList(day.activitiesJsonb, loc);
+
+        chunk1Lines.push(`\n### ${dLabel}${dTitle ? `: ${dTitle}` : ''}`);
+        if (desc) chunk1Lines.push(`- ${labels.activitiesPrefix}: ${desc}`);
+        if (activities.length > 0) chunk1Lines.push(`- ${activities.map((a) => `• ${a}`).join(' ')}`);
+        if (meals) chunk1Lines.push(`- ${labels.mealsPrefix}: ${meals}`);
+        if (dayHotels) chunk1Lines.push(`- ${labels.hotelsPrefix}: ${dayHotels}`);
+      });
+    } else {
+      chunk1Lines.push(`\n${overview || 'Full customized luxury day-by-day itinerary arranged upon inquiry.'}`);
+    }
+    const chunk1Content = chunk1Lines.join('\n');
+
+    // ── Chunk 2: Inclusions, Exclusions, Hotel Details & Policies ────────────
+    const chunk2Lines: string[] = [
+      `# [${labels.inclusionsHeading} & ${labels.exclusionsHeading}] ${title}`,
+      `Tour: ${title} | Slug: ${tour.slug} | URL: /tours/${tour.slug}`,
+      `\n## ${labels.inclusionsHeading}`,
+    ];
+
+    if (includedServices.length > 0) {
+      chunk2Lines.push(includedServices.map((s) => `- ${s}`).join('\n'));
+    } else {
+      chunk2Lines.push('- Luxury accommodation, certified private guidance, all regional transfers and scheduled entries.');
+    }
+
+    chunk2Lines.push(`\n## ${labels.exclusionsHeading}`);
+    if (excludedServices.length > 0) {
+      chunk2Lines.push(excludedServices.map((s) => `- ${s}`).join('\n'));
+    } else {
+      chunk2Lines.push('- International flights, personal discretionary expenses, gratuities and optional experiences.');
+    }
+
+    if (hotelDetails) {
+      chunk2Lines.push(`\n## ${labels.hotelsHeading}\n${hotelDetails}`);
+    }
+
+    if (cancellationPolicy || terms) {
+      chunk2Lines.push(`\n## ${labels.policiesHeading}`);
+      if (cancellationPolicy) chunk2Lines.push(`- Cancellation: ${cancellationPolicy}`);
+      if (terms) chunk2Lines.push(`- Terms: ${terms}`);
+    }
+
+    const chunk2Content = chunk2Lines.join('\n');
+
+    // Full unified document for KnowledgeBaseItem
+    const fullContent = [chunk0Content, chunk1Content, chunk2Content].join('\n\n---\n\n');
+
+    return {
+      title: cleanTitle,
+      fullContent,
+      chunks: [
+        { chunkIndex: 0, title: cleanTitle, content: chunk0Content },
+        { chunkIndex: 1, title: `[${labels.itineraryHeading}] ${title}`, content: chunk1Content },
+        { chunkIndex: 2, title: `[${labels.inclusionsHeading} & ${labels.exclusionsHeading}] ${title}`, content: chunk2Content },
+      ],
+    };
+  }
+
   private async upsertKnowledgeItem(params: {
     sourceKey: string;
     sourceEntityType: string;
@@ -478,6 +794,11 @@ export class TourKnowledgeIngestionService {
     category: any;
     tags: string[];
     priority: number;
+    chunks?: Array<{
+      chunkIndex: number;
+      title: string;
+      content: string;
+    }>;
   }) {
     const contentHash = this.generateContentHash(params.content);
 
@@ -532,12 +853,54 @@ export class TourKnowledgeIngestionService {
       });
     }
 
-    // Also upsert into AiKnowledgeChunk table for fast multi-lingual hybrid indexing
+    // Upsert chunks into AiKnowledgeChunk table for fast multi-lingual hybrid indexing
     try {
+      const chunkList = (params.chunks && params.chunks.length > 0)
+        ? params.chunks
+        : [{ chunkIndex: 0, title: params.title, content: params.content }];
+
+      for (const ch of chunkList) {
+        const chunkHash = this.generateContentHash(ch.content);
+        const chunkId = `chunk:${params.sourceKey}:${ch.chunkIndex}`;
+        await (this.prisma as any).aiKnowledgeChunk.upsert({
+          where: {
+            id: chunkId,
+          },
+          create: {
+            id: chunkId,
+            canonicalEntityId: `${params.sourceEntityType}:${params.sourceEntityId}`,
+            entityType: params.sourceEntityType,
+            entityId: params.sourceEntityId,
+            locale: params.locale,
+            chunkIndex: ch.chunkIndex,
+            title: ch.title,
+            content: ch.content,
+            contentHash: chunkHash,
+            metadataJsonb: {
+              category: params.category,
+              priority: params.priority,
+              tags: params.tags,
+            },
+            lastIndexedAt: new Date(),
+          },
+          update: {
+            title: ch.title,
+            content: ch.content,
+            contentHash: chunkHash,
+            metadataJsonb: {
+              category: params.category,
+              priority: params.priority,
+              tags: params.tags,
+            },
+            lastIndexedAt: new Date(),
+          },
+        });
+      }
+
+      // Also maintain legacy base chunk ID if chunkIndex 0 exists
+      const baseChunk = chunkList.find((c) => c.chunkIndex === 0) || chunkList[0];
       await (this.prisma as any).aiKnowledgeChunk.upsert({
-        where: {
-          id: `chunk:${params.sourceKey}`,
-        },
+        where: { id: `chunk:${params.sourceKey}` },
         create: {
           id: `chunk:${params.sourceKey}`,
           canonicalEntityId: `${params.sourceEntityType}:${params.sourceEntityId}`,
@@ -545,9 +908,9 @@ export class TourKnowledgeIngestionService {
           entityId: params.sourceEntityId,
           locale: params.locale,
           chunkIndex: 0,
-          title: params.title,
-          content: params.content,
-          contentHash,
+          title: baseChunk.title,
+          content: baseChunk.content,
+          contentHash: this.generateContentHash(baseChunk.content),
           metadataJsonb: {
             category: params.category,
             priority: params.priority,
@@ -556,9 +919,9 @@ export class TourKnowledgeIngestionService {
           lastIndexedAt: new Date(),
         },
         update: {
-          title: params.title,
-          content: params.content,
-          contentHash,
+          title: baseChunk.title,
+          content: baseChunk.content,
+          contentHash: this.generateContentHash(baseChunk.content),
           metadataJsonb: {
             category: params.category,
             priority: params.priority,

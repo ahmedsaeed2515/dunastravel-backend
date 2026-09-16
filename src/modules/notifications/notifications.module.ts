@@ -11,6 +11,7 @@ import { InquiryCreatedListener } from './listeners/inquiry-created.listener';
 import { ContactCreatedListener } from './listeners/contact-created.listener';
 import { BookingCreatedListener } from './listeners/booking-created.listener';
 import { PaymentEventsListener } from './listeners/payment.listener';
+import { ReviewCreatedListener } from './listeners/review-created.listener';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { CommissionsModule } from '../commissions/commissions.module';
@@ -54,6 +55,7 @@ import configuration from '../../config/configuration';
     ContactCreatedListener,
     BookingCreatedListener,
     PaymentEventsListener,
+    ReviewCreatedListener,
   ],
   exports: [NotificationsService, EmailDeliveryService],
 })
