@@ -507,9 +507,7 @@ export class ReviewsService {
           entityType: 'TOUR_REVIEW',
           entityId: id,
           metadata: {
-            changes: JSON.parse(
-              JSON.stringify(dto),
-            ) as Prisma.InputJsonValue,
+            changes: JSON.parse(JSON.stringify(dto)) as Prisma.InputJsonValue,
           },
         },
       });
