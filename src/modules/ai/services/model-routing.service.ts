@@ -56,24 +56,24 @@ export const DEFAULT_ROUTING_TABLE: Record<RoutingTier, { provider: string; mode
 export const AGENT_ROUTING_POLICIES: AgentModelPolicy[] = [
   {
     agentSlug: 'guider',
-    economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
+    economy: { provider: 'google', model: 'gemini-3.5-flash-lite' },
     normal: { provider: 'google', model: 'gemini-3.5-flash' },
     complex: { provider: 'google', model: 'gemini-3.5-flash' },
-    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-3.6-flash' },
   },
   {
     agentSlug: 'booking-specialist',
-    economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
+    economy: { provider: 'google', model: 'gemini-3.5-flash-lite' },
     normal: { provider: 'google', model: 'gemini-3.5-flash' },
     complex: { provider: 'google', model: 'gemini-3.5-flash' },
-    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-3.6-flash' },
   },
   {
     agentSlug: 'support',
-    economy: { provider: 'google', model: 'gemini-3.1-flash-lite' },
+    economy: { provider: 'google', model: 'gemini-3.5-flash-lite' },
     normal: { provider: 'google', model: 'gemini-3.5-flash' },
     complex: { provider: 'google', model: 'gemini-3.5-flash' },
-    fallback: { provider: 'google', model: 'gemini-2.5-flash' },
+    fallback: { provider: 'google', model: 'gemini-3.6-flash' },
   },
 ];
 

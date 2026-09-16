@@ -49,6 +49,7 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
     it('MUST accept Google + valid Gemini production models', () => {
       const models = [
+        'gemini-3.6-flash',
         'gemini-2.5-flash',
         'gemini-2.5-flash-lite',
         'gemini-2.5-pro',
@@ -188,6 +189,7 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
         ok: true,
         json: async () => ({
           data: [
+            { id: 'models/gemini-3.6-flash' },
             { id: 'models/gemini-2.5-flash' },
             { id: 'models/gemini-2.5-flash-lite' },
             { id: 'models/gemini-2.0-flash' },
@@ -205,7 +207,7 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
       expect(result.providerId).toBe('google');
       expect(result.models.length).toBeGreaterThanOrEqual(2);
-      expect(result.models.map((m) => m.id)).toContain('gemini-2.5-flash');
+      expect(result.models.map((m) => m.id)).toContain('gemini-3.6-flash');
       expect(result.models.map((m) => m.id)).toContain('gemini-2.0-flash');
       // Shutdown model must NOT be in available models
       expect(result.models.find((m) => m.id === 'gemini-1.5-flash')).toBeUndefined();

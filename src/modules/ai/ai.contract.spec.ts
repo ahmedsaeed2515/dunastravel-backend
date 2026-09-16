@@ -409,7 +409,7 @@ describe('AI HTTP Contract Spec', () => {
     expect(res.body.data.providerId).toBe('google');
     expect(Array.isArray(res.body.data.models)).toBe(true);
     expect(res.body.data.models.length).toBeGreaterThanOrEqual(2);
-    expect(res.body.data.models.find((m: any) => m.id === 'gemini-2.5-flash')).toBeDefined();
+    expect(res.body.data.models.find((m: any) => m.id === 'gemini-3.6-flash')).toBeDefined();
     // Deprecated model must NOT be in models
     expect(res.body.data.models.find((m: any) => m.id === 'gemini-1.5-flash')).toBeUndefined();
     // Raw secret key MUST NEVER appear in the response payload

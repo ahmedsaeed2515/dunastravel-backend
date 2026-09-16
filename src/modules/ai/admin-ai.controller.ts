@@ -85,7 +85,7 @@ export class AdminAiController {
     const totalOutputTokens = totalUsageLogs._sum.outputTokens || 0;
     const estimatedCostUsd = Number(totalUsageLogs._sum.estimatedCostUsd || ((totalInputTokens * 0.3 + totalOutputTokens * 2.5) / 1_000_000).toFixed(4));
     const activeProvider = (config.provider && config.provider !== 'anthropic') ? config.provider : 'google';
-    const activeModel = config.model || 'gemini-2.5-flash';
+    const activeModel = config.model || 'gemini-3.6-flash';
 
     const verifiedHealthyCount = keyPool.filter((k) => k.lastStatus === 'HEALTHY').length;
     // If any keys failed or were tested, healthy count should strictly reflect HEALTHY keys
@@ -371,7 +371,7 @@ export class AdminAiController {
     const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
     const defaultModelForProvider =
       providerName === 'google'
-        ? 'gemini-2.5-flash'
+        ? 'gemini-3.6-flash'
         : providerName === 'openai'
         ? 'gpt-4o-mini'
         : providerName === 'xai'

@@ -2038,10 +2038,31 @@ export class MediaService {
       verified = true;
     }
 
+    const finalFormat = targetFormat === 'auto' ? 'webp' : targetFormat;
     const updatedAsset = await this.prisma.mediaAsset.update({
       where: { id },
-      data: { optimizedUrl },
+      data: {
+        optimizedUrl,
+        secureUrl: optimizedUrl,
+        url: optimizedUrl,
+        format: finalFormat,
+        mimeType: `image/${finalFormat}`,
+      },
     });
+
+    // Propagate optimized WebP URL to any tour images referencing this asset
+    try {
+      await this.prisma.tourImage.updateMany({
+        where: {
+          imageUrl: { in: [asset.secureUrl, asset.url] },
+        },
+        data: {
+          imageUrl: optimizedUrl,
+        },
+      });
+    } catch (tourImgErr) {
+      this.logger.warn(`Failed to propagate optimized WebP to tourImage: ${tourImgErr}`);
+    }
 
     if (actor) {
       try {

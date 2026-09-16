@@ -17,7 +17,7 @@ export class UpdateAiConfigDto {
   @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
   provider?: string;
 
-  @ApiPropertyOptional({ example: 'gemini-2.5-flash' })
+  @ApiPropertyOptional({ example: 'gemini-3.6-flash' })
   @IsString()
   @IsOptional()
   model?: string;
@@ -215,7 +215,7 @@ export class TestProviderConnectionDto {
   provider?: string;
 
   @ApiPropertyOptional({
-    example: 'gemini-2.5-flash',
+    example: 'gemini-3.6-flash',
     description: 'Model to test with. Must belong to the specified provider.',
   })
   @IsString()

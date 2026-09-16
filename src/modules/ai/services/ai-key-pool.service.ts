@@ -121,9 +121,11 @@ export class AiKeyPoolService implements OnModuleInit {
 
   private async sanitizeLegacyModelIds() {
     const legacyModelMap: Record<string, string> = {
+      'gemini-2.5-flash': 'gemini-3.6-flash',
+      'google/gemini-2.5-flash': 'gemini-3.6-flash',
       'gemini-2.5-flash-lite': 'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite': 'gemini-3.5-flash-lite',
-      'gemini-1.5-flash': 'gemini-2.5-flash',
+      'gemini-1.5-flash': 'gemini-3.6-flash',
       'gemini-1.5-pro': 'gemini-2.5-pro',
       'gemini-1.5-flash-8b': 'gemini-3.5-flash-lite',
       'gpt-5.6-luna': 'gpt-4o',
@@ -140,6 +142,8 @@ export class AiKeyPoolService implements OnModuleInit {
       where: {
         model: {
           in: [
+            'gemini-2.5-flash',
+            'google/gemini-2.5-flash',
             'gemini-2.5-flash-lite',
             'gemini-3.1-flash-lite',
             'gemini-1.5-flash',
@@ -148,7 +152,7 @@ export class AiKeyPoolService implements OnModuleInit {
           ],
         },
       },
-      data: { model: 'gemini-2.5-flash' },
+      data: { model: 'gemini-3.6-flash' },
     }).catch(() => {});
   }
 
@@ -243,7 +247,7 @@ export class AiKeyPoolService implements OnModuleInit {
       config = await (this.prisma as any).aiConfig.create({
         data: {
           provider: 'google',
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.6-flash',
           isEnabled: true,
           isPublicEnabled: true,
           systemInstructions: 'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
@@ -551,7 +555,7 @@ export class AiKeyPoolService implements OnModuleInit {
     const effectiveModel =
       modelId?.trim() ||
       (providerId === 'google'
-        ? 'gemini-2.5-flash'
+        ? 'gemini-3.6-flash'
         : providerId === 'openai'
         ? 'gpt-4o-mini'
         : providerId === 'xai'
@@ -677,7 +681,7 @@ export class AiKeyPoolService implements OnModuleInit {
       .map((r: any) => ({
         id: r.id,
         provider: r.provider,
-        model: r.model || config.model || (r.provider === 'google' ? 'gemini-2.5-flash' : 'gpt-4o-mini'),
+        model: r.model || config.model || (r.provider === 'google' ? 'gemini-3.6-flash' : 'gpt-4o-mini'),
         apiKey: decryptSensitiveField(r.encryptedApiKey) || '',
         source: 'database' as const,
       }))
@@ -694,7 +698,7 @@ export class AiKeyPoolService implements OnModuleInit {
       if (!candidates.some((c) => c.apiKey === envGemini)) {
         candidates.push({
           provider: 'google',
-          model: config.model || 'gemini-2.5-flash',
+          model: config.model || 'gemini-3.6-flash',
           apiKey: envGemini,
           source: 'environment',
         });

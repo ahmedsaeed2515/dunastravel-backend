@@ -301,7 +301,9 @@ export class MediaAdminController {
     return MediaAssetResponseDto.fromPrisma(asset);
   }
 
+  @Post('showcase/reorder')
   @Patch('showcase/reorder')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reorder showcase items transactionally' })
   async reorderShowcase(
     @Body() dto: ReorderShowcaseDto,

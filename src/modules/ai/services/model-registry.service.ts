@@ -99,7 +99,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isLegacy: false,
     allowCustomBaseUrl: false,
     primaryModels: [
-      'gemini-2.5-flash',
+      'gemini-3.6-flash',
       'gemini-3.5-flash-lite',
       'gemini-3.5-flash',
       'gemini-2.5-pro',
@@ -325,16 +325,16 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 
   // ── GOOGLE GEMINI ────────────────────────────────────────────────
 
-  'gemini-2.5-flash': {
-    id: 'gemini-2.5-flash',
+  'gemini-3.6-flash': {
+    id: 'gemini-3.6-flash',
     providerId: 'google',
-    displayName: 'Gemini 2.5 Flash',
-    displayNameAr: 'جيميناي 2.5 فلاش (الموصى به - الأفضل أداءً وتوازناً)',
-    description: 'Official production flagship model: sub-second latency, multimodal, native tool calling, 1M context.',
+    displayName: 'Gemini 3.6 Flash',
+    displayNameAr: 'جيميناي 3.6 فلاش (الموصى به - الأحدث والأفضل أداءً)',
+    description: 'Official Google production flagship model: sub-second latency, multimodal, native tool calling, 1M context.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
-    lastVerifiedAt: '2026-09-13',
+    lastVerifiedAt: '2026-09-16',
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsStructuredOutput: true,
@@ -344,11 +344,37 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     outputPricePerMillion: 0.60,
     cachedInputPricePerMillion: 0.0375,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
-    priceVerifiedAt: '2026-09-13',
+    priceVerifiedAt: '2026-09-16',
     contextWindow: 1_048_576,
     maxOutputTokens: 65_536,
     isPopular: true,
     isDefault: true,
+  },
+
+  'gemini-2.5-flash': {
+    id: 'gemini-2.5-flash',
+    providerId: 'google',
+    displayName: 'Gemini 2.5 Flash (Deprecated)',
+    displayNameAr: 'جيميناي 2.5 فلاش (موقوف - تم التحديث إلى 3.6)',
+    description: 'Deprecated by Google for new users. Automatically redirected to gemini-3.6-flash.',
+    recommendation: 'balanced',
+    badge: 'Fallback',
+    status: 'DEPRECATED',
+    lastVerifiedAt: '2026-09-16',
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    supportsStructuredOutput: true,
+    supportsVision: true,
+    multilingualRating: 'EXCELLENT',
+    inputPricePerMillion: 0.15,
+    outputPricePerMillion: 0.60,
+    cachedInputPricePerMillion: 0.0375,
+    priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
+    priceVerifiedAt: '2026-09-16',
+    contextWindow: 1_048_576,
+    maxOutputTokens: 65_536,
+    isPopular: false,
+    isDefault: false,
   },
 
   'gemini-3.5-flash-lite': {
@@ -1003,6 +1029,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
 export const MODEL_ALIASES: Record<string, string> = {
   'gpt-5.6-luna': 'gpt-4o',
   'google/gemini-2.0-flash-001': 'gemini-2.0-flash',
+  'gemini-2.5-flash': 'gemini-3.6-flash',
+  'google/gemini-2.5-flash': 'gemini-3.6-flash',
   'gemini-2.5-flash-lite': 'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite': 'gemini-3.5-flash-lite',
   'gemini-flash-lite-latest': 'gemini-3.5-flash-lite',
@@ -1482,6 +1510,7 @@ export class ModelRegistryService {
 
     const curationBadges: Record<string, 'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced'> = {
       // Google
+      'gemini-3.6-flash': 'Best Overall',
       'gemini-2.5-flash': 'Best Overall',
       'gemini-3.5-flash-lite': 'Best Value',
       'gemini-3.5-flash': 'Fastest',
