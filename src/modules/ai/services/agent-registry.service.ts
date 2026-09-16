@@ -355,13 +355,21 @@ export class AgentRegistryService implements OnModuleInit {
 
   async getAllAgents(locale = 'en') {
     const [rows, currentConfig] = await Promise.all([
-      (this.prisma as any).aiAgent.findMany({
-        orderBy: { createdAt: 'asc' },
-      }),
-      (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
+      (this.prisma as any).aiAgent?.findMany
+        ? (this.prisma as any).aiAgent.findMany({
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve([]),
+      (this.prisma as any).aiConfig?.findFirst
+        ? (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
-    return rows.map((agent: any) => {
+    const agentsList = (Array.isArray(rows) && rows.length > 0)
+      ? rows
+      : DEFAULT_PRESET_AGENTS.map((p, idx) => ({ id: `agent-${idx + 1}`, ...p, createdAt: new Date(), updatedAt: new Date() }));
+
+    return agentsList.map((agent: any) => {
       const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
       const fallbackPrompt = (agent.isActive && currentConfig?.systemInstructions)
         ? currentConfig.systemInstructions
@@ -397,24 +405,31 @@ export class AgentRegistryService implements OnModuleInit {
         isPublic: agent.isPublic,
         totalConversations: agent.totalConversations || 0,
         averageRating: agent.averageRating || 5.0,
-        createdAt: agent.createdAt?.toISOString(),
-        updatedAt: agent.updatedAt?.toISOString(),
+        createdAt: agent.createdAt?.toISOString ? agent.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: agent.updatedAt?.toISOString ? agent.updatedAt.toISOString() : new Date().toISOString(),
       };
     });
   }
 
   async getAgentBySlug(slug: string, locale?: string) {
-    const [agent, currentConfig] = await Promise.all([
-      (this.prisma as any).aiAgent.findUnique({
-        where: { slug },
-      }),
-      (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null),
+    const [agentFromDb, currentConfig] = await Promise.all([
+      (this.prisma as any).aiAgent?.findUnique
+        ? (this.prisma as any).aiAgent.findUnique({
+            where: { slug },
+          })
+        : Promise.resolve(null),
+      (this.prisma as any).aiConfig?.findFirst
+        ? (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null)
+        : Promise.resolve(null),
     ]);
+
+    const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === slug);
+    const agent = agentFromDb || (preset ? { id: `preset-${slug}`, ...preset } : null);
+
     if (!agent) {
       throw new NotFoundException(`AI Agent with slug '${slug}' not found.`);
     }
 
-    const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
     const resolvedPrompt = (agent.systemPrompt && agent.systemPrompt.trim())
       || (agent.isActive && currentConfig?.systemInstructions)
       || preset?.systemPrompt

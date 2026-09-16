@@ -352,10 +352,12 @@ export class TourKnowledgeIngestionService {
     const isStale = daysSinceLastSync === null || daysSinceLastSync > (settings.syncIntervalDays || 7);
 
     const [recentJobs, totalKnowledgeItems] = await Promise.all([
-      (this.prisma as any).aiKnowledgeSyncJob.findMany({
-        orderBy: { startedAt: 'desc' },
-        take: 10,
-      }).catch(() => []),
+      (this.prisma as any).aiKnowledgeSyncJob?.findMany
+        ? (this.prisma as any).aiKnowledgeSyncJob.findMany({
+            orderBy: { startedAt: 'desc' },
+            take: 10,
+          }).catch(() => [])
+        : Promise.resolve([]),
       this.prisma.knowledgeBaseItem.count({ where: { status: 'PUBLISHED' } }),
     ]);
 

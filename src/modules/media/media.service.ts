@@ -1891,13 +1891,33 @@ export class MediaService {
       }
 
       let providerName = 'url';
-      const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      const vimeoMatch = videoUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      let ytId: string | null = null;
+      const cleanVideoUrl = videoUrl.trim();
+      try {
+        if (cleanVideoUrl.includes('youtube.com') || cleanVideoUrl.includes('youtu.be')) {
+          const parsed = new URL(cleanVideoUrl.startsWith('http') ? cleanVideoUrl : `https://${cleanVideoUrl}`);
+          const v = parsed.searchParams.get('v');
+          if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+            ytId = v;
+          }
+        }
+      } catch {
+        // Fall through
+      }
+      if (!ytId) {
+        const ytMatch = cleanVideoUrl.match(
+          /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|shorts\/|live\/|v\/|watch\?(?:.*&)?v=))([a-zA-Z0-9_-]{11})/i,
+        );
+        if (ytMatch) ytId = ytMatch[1];
+      }
+      const vimeoMatch = cleanVideoUrl.match(
+        /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^/]*\/videos\/|album\/(?:\d+\/)?video\/|video\/|)(\d+)/i,
+      );
 
-      if (ytMatch) {
+      if (ytId) {
         providerName = 'youtube';
         if (!resolvedPosterUrl) {
-          resolvedPosterUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+          resolvedPosterUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
         }
       } else if (vimeoMatch) {
         providerName = 'vimeo';

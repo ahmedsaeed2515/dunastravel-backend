@@ -2024,20 +2024,26 @@ Reassure the guest that our senior operations team in Cairo will craft a persona
         _avg: { latencyMs: true },
         _count: { id: true },
       }),
-      (this.prisma as any).chatFeedback.findMany({
-        take: 100,
-        select: { rating: true, category: true },
-      }),
-      (this.prisma as any).aiUsageLog.groupBy({
-        by: ['provider', 'model'],
-        _sum: { inputTokens: true, outputTokens: true, estimatedCostUsd: true },
-        _count: { id: true },
-      }),
-      (this.prisma as any).chatConversation.findMany({
-        take: 30,
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true, leadStatus: true, locale: true },
-      }),
+      ((this.prisma as any).chatFeedback?.findMany
+        ? (this.prisma as any).chatFeedback.findMany({
+            take: 100,
+            select: { rating: true, category: true },
+          })
+        : Promise.resolve([])),
+      ((this.prisma as any).aiUsageLog?.groupBy
+        ? (this.prisma as any).aiUsageLog.groupBy({
+            by: ['provider', 'model'],
+            _sum: { inputTokens: true, outputTokens: true, estimatedCostUsd: true },
+            _count: { id: true },
+          })
+        : Promise.resolve([])),
+      ((this.prisma as any).chatConversation?.findMany
+        ? (this.prisma as any).chatConversation.findMany({
+            take: 30,
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true, leadStatus: true, locale: true },
+          })
+        : Promise.resolve([])),
     ]);
 
     const totalLogs = totalUsage._count.id || 1;

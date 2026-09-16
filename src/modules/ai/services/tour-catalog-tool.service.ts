@@ -345,15 +345,17 @@ export class TourCatalogToolService {
             images: { take: 1, select: { imageUrl: true, isHero: true } },
           },
         }),
-        this.prisma.tourLandingPage.findMany({
-          where: {
-            isActive: true,
-            status: 'PUBLISHED',
-            deletedAt: null,
-            slug: { contains: matchedSlug, mode: 'insensitive' },
-          },
-          take: 1,
-        }),
+        (this.prisma as any).tourLandingPage?.findMany
+          ? (this.prisma as any).tourLandingPage.findMany({
+              where: {
+                isActive: true,
+                status: 'PUBLISHED',
+                deletedAt: null,
+                slug: { contains: matchedSlug, mode: 'insensitive' },
+              },
+              take: 1,
+            })
+          : Promise.resolve([]),
       ]);
 
       const fallbackCount = staticCounts[matchedCountry] || 5;
@@ -624,25 +626,27 @@ export class TourCatalogToolService {
     locale: string = 'en',
   ): Promise<GroundedDestinationRecommendation[]> {
     try {
-      const landingPages = await this.prisma.tourLandingPage.findMany({
-        where: {
-          isActive: true,
-          status: 'PUBLISHED',
-          deletedAt: null,
-        },
-        take: 30,
-        orderBy: { sortOrder: 'asc' },
-      });
+      const landingPages = (this.prisma as any).tourLandingPage?.findMany
+        ? await (this.prisma as any).tourLandingPage.findMany({
+            where: {
+              isActive: true,
+              status: 'PUBLISHED',
+              deletedAt: null,
+            },
+            take: 30,
+            orderBy: { sortOrder: 'asc' },
+          })
+        : [];
 
       if (!keywords || keywords.length === 0) {
-        return landingPages.slice(0, limit).map((lp) => this.mapDestinationToRecommendation(lp, locale));
+        return landingPages.slice(0, limit).map((lp: any) => this.mapDestinationToRecommendation(lp, locale));
       }
 
       const normalizedKeywords = keywords
         .map((k) => this.normalizeText(k))
         .filter((k) => k.length > 1);
 
-      const scored = landingPages.map((lp) => {
+      const scored = landingPages.map((lp: any) => {
         let score = 0;
         const titles: string[] = [];
         if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
@@ -660,11 +664,12 @@ export class TourCatalogToolService {
       });
 
       const matched = scored
-        .filter((x) => x.score > 0)
-        .sort((a, b) => b.score - a.score);
+        .filter((x: any) => x.score > 0)
+        .sort((a: any, b: any) => b.score - a.score)
+        .map((x: any) => x.lp);
 
       const finalPages = matched.length > 0 ? matched.slice(0, limit) : landingPages.slice(0, limit);
-      return finalPages.map((lp) => this.mapDestinationToRecommendation(lp, locale));
+      return finalPages.map((lp: any) => this.mapDestinationToRecommendation(lp, locale));
     } catch (err: any) {
       this.logger.error(`Failed to search destinations: ${err.message}`);
       return [];
@@ -679,8 +684,8 @@ export class TourCatalogToolService {
       const idsOrSlugs = [tourAIdOrSlug, tourBIdOrSlug].filter((id): id is string => Boolean(id && typeof id === 'string' && id.trim()));
       let tours: any[] = [];
 
-      if (idsOrSlugs.length > 0) {
-        tours = await this.prisma.tour.findMany({
+      if (idsOrSlugs.length > 0 && (this.prisma as any).tour?.findMany) {
+        tours = await (this.prisma as any).tour.findMany({
           where: {
             OR: [
               { id: { in: idsOrSlugs } },
@@ -697,10 +702,10 @@ export class TourCatalogToolService {
       }
 
       // If fewer than 2 tours matched, supplement with top published active tours
-      if (tours.length < 2) {
+      if (tours.length < 2 && (this.prisma as any).tour?.findMany) {
         const existingIds = tours.map((t) => t.id);
         const needed = 2 - tours.length;
-        const additionalTours = await this.prisma.tour.findMany({
+        const additionalTours = await (this.prisma as any).tour.findMany({
           where: {
             id: { notIn: existingIds },
             isActive: true,

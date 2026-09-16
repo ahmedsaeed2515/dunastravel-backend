@@ -394,10 +394,30 @@ export class AdminAiController {
       }
     }
 
-    const key =
+    let key =
       dto.apiKey && !dto.apiKey.includes('••')
         ? dto.apiKey
-        : decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
+        : (providerName === currentConfig.provider ? decryptSensitiveField(currentConfig.encryptedApiKey) : undefined) || undefined;
+
+    if (!key) {
+      const row = await (this.prisma as any).aiProviderCredential?.findFirst?.({
+        where: { isActive: true, provider: providerName },
+        orderBy: { priority: 'asc' },
+      });
+      if (row?.encryptedApiKey) {
+        key = decryptSensitiveField(row.encryptedApiKey) || undefined;
+      }
+    }
+
+    if (!key) {
+      if (providerName === 'google') {
+        key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      } else if (providerName === 'openai') {
+        key = process.env.OPENAI_API_KEY;
+      } else if (providerName === 'openrouter') {
+        key = process.env.OPENROUTER_API_KEY;
+      }
+    }
 
     if (!key) {
       return {
@@ -628,8 +648,27 @@ export class AdminAiController {
     const agentSlug = body.agentSlug || 'guider';
     const agent = await this.agentRegistry.getAgentBySlug(agentSlug, locale);
 
-    const modelId = body.model || agent.primaryModel || 'gemini-3.5-flash';
-    const providerName = body.provider || agent.provider || 'google';
+    let modelId = body.model || agent.primaryModel || 'gemini-3.6-flash';
+    let providerName = body.provider || (agent as any).provider;
+
+    if (!providerName) {
+      const modelDef = this.modelRegistry.getModelInfo(modelId);
+      if (modelDef?.provider) {
+        providerName = modelDef.provider;
+      } else if (modelId.startsWith('gemini')) {
+        providerName = 'google';
+      } else if (modelId.startsWith('claude')) {
+        providerName = 'anthropic';
+      } else if (modelId.startsWith('gpt') || modelId.startsWith('o1') || modelId.startsWith('o3')) {
+        providerName = 'openai';
+      } else if (modelId.startsWith('grok')) {
+        providerName = 'xai';
+      } else if (modelId.startsWith('deepseek')) {
+        providerName = 'deepseek';
+      } else {
+        providerName = 'google';
+      }
+    }
 
     // 1. RAG & Live Structured Retrieval
     let retrievalContext = null;
@@ -655,14 +694,48 @@ export class AdminAiController {
     });
 
     // 3. Execution via Decrypted API Key & Universal Provider
-    const credentialRow = await (this.prisma as any).aiProviderCredential.findFirst({
+    const credentialRow = await (this.prisma as any).aiProviderCredential?.findFirst?.({
       where: {
         isActive: true,
         provider: providerName,
       },
       orderBy: { priority: 'asc' },
     });
-    const decryptedKey = credentialRow ? decryptSensitiveField(credentialRow.encryptedApiKey) : undefined;
+    let decryptedKey = credentialRow ? decryptSensitiveField(credentialRow.encryptedApiKey) : undefined;
+    if (!decryptedKey) {
+      const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
+      if (providerName === currentConfig.provider && currentConfig.encryptedApiKey) {
+        decryptedKey = decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
+      }
+    }
+    if (!decryptedKey) {
+      if (providerName === 'google') {
+        decryptedKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      } else if (providerName === 'openai') {
+        decryptedKey = process.env.OPENAI_API_KEY;
+      } else if (providerName === 'openrouter') {
+        decryptedKey = process.env.OPENROUTER_API_KEY;
+      } else if (providerName === 'anthropic') {
+        decryptedKey = process.env.ANTHROPIC_API_KEY;
+      }
+    }
+
+    // Graceful automatic failover: If the requested provider has no active key,
+    // seamlessly fall back to an active provider from the database key pool (such as Google Gemini)
+    if (!decryptedKey) {
+      const fallbackCred = await (this.prisma as any).aiProviderCredential?.findFirst?.({
+        where: { isActive: true },
+        orderBy: { priority: 'asc' },
+      });
+      if (fallbackCred) {
+        const candidateKey = decryptSensitiveField(fallbackCred.encryptedApiKey);
+        if (candidateKey && candidateKey.length > 10) {
+          providerName = fallbackCred.provider;
+          modelId = fallbackCred.model || 'gemini-3.6-flash';
+          decryptedKey = candidateKey;
+        }
+      }
+    }
 
     let llmResponse = null;
     let providerError = null;
