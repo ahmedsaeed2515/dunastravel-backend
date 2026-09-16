@@ -361,8 +361,13 @@ export class MediaAdminController {
     @Body() dto: UploadVideoDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const videoFile = files?.file?.[0];
-    const posterFile = files?.poster?.[0];
+    const videoFile =
+      files?.file?.[0] ||
+      (Array.isArray(files) ? files[0] : undefined) ||
+      (dto.file && typeof dto.file === 'object' && (dto.file as any).buffer ? (dto.file as any) : undefined);
+    const posterFile =
+      files?.poster?.[0] ||
+      (dto.poster && typeof dto.poster === 'object' && (dto.poster as any).buffer ? (dto.poster as any) : undefined);
 
     const addToShowcase = dto.addToShowcase !== false;
 

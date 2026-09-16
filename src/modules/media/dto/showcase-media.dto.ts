@@ -206,6 +206,14 @@ export class OptimizeAssetDto {
 }
 
 export class UploadVideoDto {
+  @ApiPropertyOptional({ description: 'Binary video file sent via multipart/form-data' })
+  @IsOptional()
+  file?: any;
+
+  @ApiPropertyOptional({ description: 'Binary poster image file sent via multipart/form-data' })
+  @IsOptional()
+  poster?: any;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

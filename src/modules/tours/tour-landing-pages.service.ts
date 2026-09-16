@@ -125,6 +125,14 @@ export class TourLandingPagesService {
                   titleJsonb: true,
                   isActive: true,
                   status: true,
+                  images: {
+                    select: {
+                      imageUrl: true,
+                      isHero: true,
+                    },
+                    orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
+                    take: 3,
+                  },
                 },
               },
             },
@@ -164,8 +172,12 @@ export class TourLandingPagesService {
             tour: {
               include: {
                 images: {
-                  where: { isHero: true },
-                  take: 1,
+                  select: {
+                    imageUrl: true,
+                    isHero: true,
+                  },
+                  orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
+                  take: 5,
                 },
               },
             },

@@ -10,6 +10,10 @@ import {
 import { MediaEntityType } from '@prisma/client';
 
 export class UploadMediaDto {
+  @ApiPropertyOptional({ description: 'Binary file sent via multipart/form-data' })
+  @IsOptional()
+  file?: any;
+
   @ApiProperty({
     enum: MediaEntityType,
     description: 'Type of entity this media belongs to',
