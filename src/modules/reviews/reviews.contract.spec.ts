@@ -6,6 +6,7 @@ import request from 'supertest';
 import { ReviewsModule } from './reviews.module';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
 import { Reflector } from '@nestjs/core';
@@ -97,6 +98,14 @@ describe('Reviews HTTP Contract Spec', () => {
         ),
       })
       .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();
+          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com', name: 'Customer John' };
+          return true;
+        },
+      })
+      .overrideGuard(OptionalJwtAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
           const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();

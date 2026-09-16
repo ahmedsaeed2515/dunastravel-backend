@@ -122,10 +122,15 @@ export class AuthController {
     const { accessToken, refreshToken } =
       await this.authService.refresh(oldRefreshToken);
     const nodeEnv = this.configService.get<string>('nodeEnv') || 'development';
+    const csrfToken = crypto.randomBytes(32).toString('hex');
     res.cookie('access_token', accessToken, getCookieOptions(nodeEnv));
     res.cookie('refresh_token', refreshToken, getRefreshCookieOptions(nodeEnv));
+    res.cookie('csrf_token', csrfToken, {
+      ...getCookieOptions(nodeEnv),
+      httpOnly: false,
+    });
 
-    return { message: 'Token refreshed successfully' };
+    return { message: 'Token refreshed successfully', csrfToken };
   }
 
   @Public()

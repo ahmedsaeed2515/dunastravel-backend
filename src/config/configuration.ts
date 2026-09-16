@@ -12,7 +12,7 @@ export default () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
     issuer: process.env.JWT_ISSUER ?? 'dunas-travel-api',
     audience: process.env.JWT_AUDIENCE ?? 'dunas-travel-clients',
   },

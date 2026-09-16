@@ -3,7 +3,6 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
-  UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -198,27 +197,37 @@ export class ReviewsService {
     user: AuthenticatedUser | null,
     dto: CreateReviewDto,
   ) {
-    if (!user?.id) {
-      throw new UnauthorizedException('Please sign in to submit a review');
-    }
-
     const tour = await this.resolveTour(tourIdOrSlug);
     const tourId = tour.id;
 
-    // Business rule: One active review per user per tour
-    const existingUserReview = await this.prisma.tourReview.findFirst({
-      where: {
-        tourId,
-        userId: user.id,
-        deletedAt: null,
-      },
-    });
+    // Business rule: One active review per user per tour (or guest duplicate check)
+    if (user?.id) {
+      const existingUserReview = await this.prisma.tourReview.findFirst({
+        where: {
+          tourId,
+          userId: user.id,
+          deletedAt: null,
+        },
+      });
 
-    if (existingUserReview) {
-      this.logger.warn(
-        `User ${user.id} attempted duplicate review on tour ${tourId}`,
-      );
-      throw new ConflictException('You have already reviewed this trip');
+      if (existingUserReview) {
+        this.logger.warn(
+          `User ${user.id} attempted duplicate review on tour ${tourId}`,
+        );
+        throw new ConflictException('You have already reviewed this trip');
+      }
+    } else if (dto.comment && dto.reviewerName) {
+      const existingGuestReview = await this.prisma.tourReview.findFirst({
+        where: {
+          tourId,
+          reviewerName: dto.reviewerName.trim(),
+          comment: dto.comment.trim(),
+          deletedAt: null,
+        },
+      });
+      if (existingGuestReview) {
+        throw new ConflictException('You have already reviewed this trip');
+      }
     }
 
     // If verified booking ID provided, validate eligibility
@@ -239,7 +248,7 @@ export class ReviewsService {
         throw new NotFoundException('Booking not found');
       }
 
-      if (booking.userId !== user.id) {
+      if (user && booking.userId !== user.id) {
         throw new NotFoundException('Booking not found');
       }
 
@@ -269,13 +278,14 @@ export class ReviewsService {
     const rawName =
       (dto.reviewerName && dto.reviewerName.trim()) ||
       user?.name ||
-      'Verified Traveler';
+      user?.email ||
+      (user ? 'Verified Traveler' : 'Guest Traveler');
     const reviewerName = sanitizePlainText(rawName).slice(0, 100);
 
     const created = await this.prisma.tourReview.create({
       data: {
         tourId,
-        userId: user.id,
+        userId: user?.id || null,
         bookingId: dto.bookingId || null,
         rating: Math.min(5, Math.max(1, Number(dto.rating) || 5)),
         reviewerName,
@@ -311,7 +321,7 @@ export class ReviewsService {
     });
 
     this.logger.log(
-      `Created review ${created.id} for tour ${tour.slug} by user ${user.id}; emitted review.created event`,
+      `Created review ${created.id} for tour ${tour.slug} by user ${user?.id || 'anonymous'}; emitted review.created event`,
     );
 
     await this.recalculateTourRating(tourId);

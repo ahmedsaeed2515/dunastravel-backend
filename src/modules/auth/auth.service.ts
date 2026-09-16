@@ -42,7 +42,7 @@ export const getCookieOptions = (nodeEnv: string): CookieOptions => ({
   secure: isSecureEnvironment(nodeEnv),
   sameSite: isSecureEnvironment(nodeEnv) ? 'none' : 'lax',
   path: '/',
-  maxAge: 15 * 60 * 1000, // 15 minutes for access token
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for access token
 });
 
 export const getRefreshCookieOptions = (nodeEnv: string): CookieOptions => ({
@@ -50,7 +50,7 @@ export const getRefreshCookieOptions = (nodeEnv: string): CookieOptions => ({
   secure: isSecureEnvironment(nodeEnv),
   sameSite: isSecureEnvironment(nodeEnv) ? 'none' : 'lax',
   path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 });
 
 @Injectable()
@@ -60,6 +60,15 @@ export class AuthService {
     crypto.randomBytes(32).toString('hex'),
     12,
   );
+  private readonly rotatedTokensGraceCache = new Map<
+    string,
+    {
+      user: SafeUser;
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+    }
+  >();
 
   constructor(
     @Inject(UserService) private readonly userService: UserService,
@@ -404,7 +413,11 @@ export class AuthService {
       sv: user.sessionVersion,
       jti: crypto.randomUUID(),
     };
-    return this.jwtService.sign(payload, { expiresIn: '15m' });
+    const configuredExpiresIn =
+      this.configService.get<string | number>('jwt.expiresIn') || '7d';
+    return this.jwtService.sign(payload, {
+      expiresIn: configuredExpiresIn as unknown as number,
+    });
   }
 
   async generateRefreshToken(userId: string): Promise<string> {
@@ -441,7 +454,7 @@ export class AuthService {
       },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: '7d',
+        expiresIn: '30d',
         algorithm: 'HS256',
         issuer: this.configService.get<string>('jwt.issuer'),
         audience: this.configService.get<string>('jwt.audience'),
@@ -457,6 +470,32 @@ export class AuthService {
     token: string,
   ): Promise<{ user: SafeUser; accessToken: string; refreshToken: string }> {
     try {
+      const incomingTokenHash = this.hashRefreshToken(token);
+
+      // 1. Grace Window check: if this refresh token was rotated within the last 30 seconds,
+      // return the active rotated session instead of causing a concurrency conflict.
+      const cached = this.rotatedTokensGraceCache.get(incomingTokenHash);
+      if (cached && cached.expiresAt > Date.now()) {
+        this.logger.debug(
+          `Returning recent rotated session tokens within grace period for user ${cached.user.id}`,
+        );
+        return {
+          user: cached.user,
+          accessToken: cached.accessToken,
+          refreshToken: cached.refreshToken,
+        };
+      }
+
+      // Cleanup expired items if cache grows
+      if (this.rotatedTokensGraceCache.size > 200) {
+        const now = Date.now();
+        for (const [key, val] of this.rotatedTokensGraceCache.entries()) {
+          if (val.expiresAt <= now) {
+            this.rotatedTokensGraceCache.delete(key);
+          }
+        }
+      }
+
       const payload = this.jwtService.verify<{
         sub: string;
         sv: number;
@@ -493,15 +532,24 @@ export class AuthService {
       const rotated = await this.prisma.user.updateMany({
         where: {
           id: user.id,
-          refreshToken: this.hashRefreshToken(token),
+          refreshToken: incomingTokenHash,
           sessionVersion: payload.sv,
         },
         data: {
           refreshToken: this.hashRefreshToken(newRefreshToken),
         },
       });
+
       if (rotated.count !== 1) {
-        await this.userService.revokeSessions(user.id);
+        // Double-check if another concurrent request just completed the rotation
+        const doubleCheckCached = this.rotatedTokensGraceCache.get(incomingTokenHash);
+        if (doubleCheckCached && doubleCheckCached.expiresAt > Date.now()) {
+          return {
+            user: doubleCheckCached.user,
+            accessToken: doubleCheckCached.accessToken,
+            refreshToken: doubleCheckCached.refreshToken,
+          };
+        }
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -511,8 +559,19 @@ export class AuthService {
         sessionVersion: user.sessionVersion,
       });
 
+      // Cache the rotated token for 30 seconds to handle concurrent requests gracefully
+      this.rotatedTokensGraceCache.set(incomingTokenHash, {
+        user: safeUser,
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresAt: Date.now() + 30_000,
+      });
+
       return { user: safeUser, accessToken, refreshToken: newRefreshToken };
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      }
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }

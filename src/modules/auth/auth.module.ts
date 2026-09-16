@@ -27,7 +27,7 @@ import { TurnstileGuard } from '../../common/security/turnstile.guard';
         return {
           secret: configService.get<string>('jwt.secret'),
           signOptions: {
-            expiresIn: (expiresIn ?? '15m') as unknown as number,
+            expiresIn: (expiresIn ?? '7d') as unknown as number,
             algorithm: 'HS256' as const,
             issuer: configService.get<string>('jwt.issuer'),
             audience: configService.get<string>('jwt.audience'),

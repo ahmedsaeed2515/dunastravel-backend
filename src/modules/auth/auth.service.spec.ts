@@ -418,6 +418,25 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
     });
+
+    it('should return cached tokens when the same refresh token is sent concurrently within grace window', async () => {
+      jwtService.verify.mockReturnValue({
+        sub: mockUser.id,
+        sv: 1,
+        type: 'refresh',
+      });
+      userService.findById.mockResolvedValue(mockUser);
+      jwtService.sign.mockReturnValue('new-token');
+
+      const result1 = await authService.refresh('concurrent-token');
+      expect(result1.accessToken).toBe('new-token');
+
+      // Second concurrent refresh call with the same token within grace window returns the cached session
+      const result2 = await authService.refresh('concurrent-token');
+      expect(result2.accessToken).toBe(result1.accessToken);
+      expect(result2.refreshToken).toBe(result1.refreshToken);
+      expect(result2.user).toEqual(result1.user);
+    });
   });
 
   // ─── Forgot & Reset Password ─────────────────────────────────────────────

@@ -168,11 +168,24 @@ export class UniversalAiProvider implements IAiProvider {
     model: string,
   ): Promise<IAiProviderResponse> {
     const timeoutMs = options.timeoutMs || 15_000;
-    const maxTokens = options.maxTokens || 1_024;
+    const maxTokens = Math.max(options.maxTokens || 1_024, 2_048);
     const temperature = options.temperature ?? 0.7;
 
     const cleanModel = model.replace(/^models\//, '');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const generationConfig: any = {
+      temperature,
+      maxOutputTokens: maxTokens,
+    };
+
+    // Google Gemini 2.5 / 3.x models enable thinking by default which consumes maxOutputTokens.
+    // Set thinkingBudget to 0 for instant, full-length concierge responses.
+    if (/gemini-(?:2\.5|3\.)/i.test(cleanModel)) {
+      generationConfig.thinkingConfig = {
+        thinkingBudget: 0,
+      };
+    }
 
     const payload: any = {
       contents: [
@@ -181,10 +194,7 @@ export class UniversalAiProvider implements IAiProvider {
           parts: [{ text: prompt }],
         },
       ],
-      generationConfig: {
-        temperature,
-        maxOutputTokens: maxTokens,
-      },
+      generationConfig,
     };
 
     if (options.systemPrompt) {
@@ -211,6 +221,34 @@ export class UniversalAiProvider implements IAiProvider {
 
       if (!res.ok) {
         const errorBody = await res.text().catch(() => '');
+        // Graceful retry without thinkingConfig if the model rejects thinkingConfig
+        if (
+          payload.generationConfig?.thinkingConfig &&
+          (errorBody.includes('thinkingConfig') || errorBody.includes('thinking_config'))
+        ) {
+          delete payload.generationConfig.thinkingConfig;
+          const retryRes = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: abortController.signal,
+          });
+          if (retryRes.ok) {
+            const retryJson = await retryRes.json();
+            const retryParts = retryJson.candidates?.[0]?.content?.parts || [];
+            const retryText = retryParts.map((p: any) => p.text || '').filter(Boolean).join('\n') || '';
+            const inTokens = retryJson.usageMetadata?.promptTokenCount || 0;
+            const outTokens = retryJson.usageMetadata?.candidatesTokenCount || 0;
+            return {
+              text: retryText,
+              inputTokens: inTokens,
+              outputTokens: outTokens,
+              latencyMs: Date.now() - startTime,
+              provider: 'google',
+              model: cleanModel,
+            };
+          }
+        }
         throw classifyHttpError(res.status, errorBody, 'google', cleanModel);
       }
 

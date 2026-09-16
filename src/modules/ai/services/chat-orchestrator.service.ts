@@ -400,7 +400,7 @@ export class ChatOrchestratorService {
       defaultMsg = 'The GuideR AI Concierge service is currently offline. Please explore our curated tours or contact our team directly.';
     }
 
-    const message = tourSettings.disabledMessage || defaultMsg;
+    const message = isAvailable ? null : (tourSettings.disabledMessage || defaultMsg);
 
     return {
       enabled: isAvailable,

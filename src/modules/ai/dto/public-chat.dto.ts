@@ -18,6 +18,11 @@ export class SendChatMessageDto {
   @IsOptional()
   locale?: string;
 
+  @ApiPropertyOptional({ description: 'Client-generated idempotency key for deduplication' })
+  @IsString()
+  @IsOptional()
+  idempotencyKey?: string;
+
   @ApiPropertyOptional({ description: 'Context of the page currently viewed by visitor' })
   @IsObject()
   @IsOptional()
