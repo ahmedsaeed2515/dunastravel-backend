@@ -49,7 +49,8 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
-    summary: 'Submit an authenticated customer review for a tour (pending moderation)',
+    summary:
+      'Submit an authenticated customer review for a tour (pending moderation)',
   })
   async createReview(
     @Param('tourId') tourId: string,
@@ -59,5 +60,3 @@ export class ReviewsController {
     return this.reviewsService.createCustomerReview(tourId, user, dto);
   }
 }
-
-

@@ -4,7 +4,6 @@ import {
   ConflictException,
   BadRequestException,
   UnauthorizedException,
-  UnprocessableEntityException,
   Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -118,7 +117,9 @@ export class ReviewsService {
         _count: { rating: true },
       });
 
-      const avgRating = agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 5.0;
+      const avgRating = agg._avg.rating
+        ? Number(agg._avg.rating.toFixed(1))
+        : 5.0;
       const count = agg._count.rating || 0;
 
       await client.tour.updateMany({
@@ -289,7 +290,11 @@ export class ReviewsService {
     if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
       const tJson = tour.titleJsonb as Record<string, string>;
       tourTitle =
-        tJson.en || tJson.ar || tJson.es || Object.values(tJson)[0] || 'Luxury Tour';
+        tJson.en ||
+        tJson.ar ||
+        tJson.es ||
+        Object.values(tJson)[0] ||
+        'Luxury Tour';
     }
 
     // Emit decoupled event for notification consumers
@@ -401,9 +406,7 @@ export class ReviewsService {
     const reviewerName = sanitizePlainText(dto.reviewerName).slice(0, 100);
     const status = dto.status || 'APPROVED';
     const isPublished =
-      dto.isPublished !== undefined
-        ? dto.isPublished
-        : status === 'APPROVED';
+      dto.isPublished !== undefined ? dto.isPublished : status === 'APPROVED';
 
     return this.prisma.$transaction(async (tx) => {
       const review = await tx.tourReview.create({
@@ -504,7 +507,9 @@ export class ReviewsService {
           entityType: 'TOUR_REVIEW',
           entityId: id,
           metadata: {
-            changes: JSON.parse(JSON.stringify(dto)),
+            changes: JSON.parse(
+              JSON.stringify(dto),
+            ) as Prisma.InputJsonValue,
           },
         },
       });
@@ -528,8 +533,7 @@ export class ReviewsService {
       throw new NotFoundException(`Review '${id}' not found`);
     }
 
-    const isPublished =
-      dto.status === 'APPROVED' && dto.isPublished !== false;
+    const isPublished = dto.status === 'APPROVED' && dto.isPublished !== false;
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.tourReview.update({
@@ -569,12 +573,15 @@ export class ReviewsService {
     dto: BatchUpdateReviewStatusDto,
     actor: AuthenticatedUser,
   ) {
-    if (!dto.reviewIds || !Array.isArray(dto.reviewIds) || dto.reviewIds.length === 0) {
+    if (
+      !dto.reviewIds ||
+      !Array.isArray(dto.reviewIds) ||
+      dto.reviewIds.length === 0
+    ) {
       throw new BadRequestException('At least one review ID must be provided');
     }
 
-    const isPublished =
-      dto.status === 'APPROVED' && dto.isPublished !== false;
+    const isPublished = dto.status === 'APPROVED' && dto.isPublished !== false;
 
     return this.prisma.$transaction(async (tx) => {
       const existingReviews = await tx.tourReview.findMany({
@@ -614,7 +621,9 @@ export class ReviewsService {
         },
       });
 
-      const uniqueTourIds = Array.from(new Set(existingReviews.map((r) => r.tourId)));
+      const uniqueTourIds = Array.from(
+        new Set(existingReviews.map((r) => r.tourId)),
+      );
       for (const tourId of uniqueTourIds) {
         await this.recalculateTourRating(tourId, tx);
       }
@@ -705,4 +714,3 @@ export class ReviewsService {
     return { success: true, message: `Review '${id}' deleted.` };
   }
 }
-

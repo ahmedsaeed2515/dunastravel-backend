@@ -2,15 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
 import { REVIEW_EVENTS, ReviewCreatedPayload } from '../../../common/events';
-import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 
 @Injectable()
 export class ReviewCreatedListener {
   private readonly logger = new Logger(ReviewCreatedListener.name);
 
-  constructor(
-    private readonly inAppNotifications: InAppNotificationsService,
-  ) {}
+  constructor(private readonly inAppNotifications: InAppNotificationsService) {}
 
   @OnEvent(REVIEW_EVENTS.CREATED, { async: true })
   async handleReviewCreatedEvent(payload: ReviewCreatedPayload) {

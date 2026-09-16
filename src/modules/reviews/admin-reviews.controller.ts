@@ -19,7 +19,6 @@ import {
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import {
-  CreateReviewDto,
   AdminCreateReviewDto,
   AdminUpdateReviewDto,
 } from './dto/create-review.dto';
@@ -52,9 +51,7 @@ export class AdminReviewsController {
   @ApiQuery({ name: 'isPublished', required: false, type: Boolean })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'rating', required: false, type: Number })
-  async findAll(
-    @Query() query: AdminReviewQueryDto,
-  ) {
+  async findAll(@Query() query: AdminReviewQueryDto) {
     return this.reviewsService.findAllAdmin(
       query.page,
       query.limit,
@@ -74,7 +71,9 @@ export class AdminReviewsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new customer review or testimonial manually' })
+  @ApiOperation({
+    summary: 'Create a new customer review or testimonial manually',
+  })
   async create(
     @Body() dto: AdminCreateReviewDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -83,7 +82,9 @@ export class AdminReviewsController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Edit review content, rating, reviewer name, or status' })
+  @ApiOperation({
+    summary: 'Edit review content, rating, reviewer name, or status',
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: AdminUpdateReviewDto,
@@ -134,4 +135,3 @@ export class AdminReviewsController {
     return this.reviewsService.softDeleteAdmin(id, user);
   }
 }
-
