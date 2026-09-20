@@ -70,20 +70,27 @@ export class TransformInterceptor<T> implements NestInterceptor<
         // Do not treat a business object with a `data` property as an envelope.
         if (isCanonicalPaginatedPayload(resData)) {
           const { data, meta } = resData;
+          const timestamp =
+            (resData as any).timestamp || new Date().toISOString();
           return {
             success: true,
             statusCode: response.statusCode,
             data: data as T,
             meta,
-            timestamp: new Date().toISOString(),
+            timestamp,
           };
         }
+
+        const timestamp =
+          (resData && typeof resData === 'object' && (resData as any).timestamp)
+            ? (resData as any).timestamp
+            : new Date().toISOString();
 
         return {
           success: true,
           statusCode: response.statusCode,
           data: resData as T,
-          timestamp: new Date().toISOString(),
+          timestamp,
         };
       }),
     );

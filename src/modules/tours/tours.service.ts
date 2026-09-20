@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { CacheService } from '../../common/cache/cache.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   extractI18n,
@@ -85,9 +86,32 @@ export class ToursService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly cacheService: CacheService,
     @InjectMetric('tours_viewed_total')
     private readonly toursCounter: Counter<string>,
   ) {}
+
+  private async getCatalogVersion(): Promise<number> {
+    try {
+      const v = await this.cacheManager.get<number>('tours:catalog:version');
+      return typeof v === 'number' ? v : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  async bumpCatalogVersion(): Promise<number> {
+    try {
+      const current = await this.getCatalogVersion();
+      const next = current + 1;
+      await this.cacheManager.set('tours:catalog:version', next, 86_400_000);
+      this.logger.log(`Tours catalog version bumped to v${next}`);
+      return next;
+    } catch (err) {
+      this.logger.warn(`Failed to bump tours catalog version: ${(err as Error).message}`);
+      return 1;
+    }
+  }
 
   async findAll(
     query: GetToursQueryDto,
@@ -97,163 +121,188 @@ export class ToursService {
       query.limit,
     );
 
-    const where: Prisma.TourWhereInput = {
-      isActive: true,
-      status: 'PUBLISHED',
-      deletedAt: null,
-    };
-    if (query.category) {
-      const catTrim = query.category.trim();
-      const catLower = catTrim.toLowerCase();
-      if (catLower.includes('multi')) {
-        where.OR = [
-          { category: { contains: 'multi', mode: 'insensitive' } },
-          { category: { contains: 'متعددة' } },
-        ];
-      } else {
-        where.category = { contains: catTrim, mode: 'insensitive' };
-      }
-    }
-    if (query.destination) {
-      const canonSlug = canonicalDestinationSlug(query.destination);
-      const isMulti = canonSlug === 'multi-country';
-      const destinationCondition: Prisma.TourWhereInput = {
-        landingPages: {
-          some: {
-            isVisible: true,
-            landingPage: {
-              slug: canonSlug,
-              type: 'DESTINATION',
-              status: 'PUBLISHED',
-              isActive: true,
-              deletedAt: null,
-            },
-          },
-        },
-      };
-
-      if (isMulti) {
-        const multiConditions: Prisma.TourWhereInput[] = [
-          destinationCondition,
-          { category: { contains: 'multi', mode: 'insensitive' } },
-          { category: { contains: 'متعددة' } },
-          { country: { equals: 'Multi-Country', mode: 'insensitive' } },
-        ];
-        if (where.OR) {
-          where.AND = [
-            { OR: where.OR },
-            { OR: multiConditions },
-          ];
-          delete where.OR;
-        } else {
-          where.OR = multiConditions;
-        }
-      } else {
-        where.landingPages = destinationCondition.landingPages;
-      }
-    }
-    if (query.country) {
-      where.country = { equals: query.country, mode: 'insensitive' };
-    }
-    if (query.city) {
-      where.city = { equals: query.city, mode: 'insensitive' };
-    }
-    if (query.region) {
-      where.region = { equals: query.region, mode: 'insensitive' };
-    }
-    if (query.isFeatured !== undefined) {
-      where.isFeatured = query.isFeatured;
-    }
-    if (query.priceMin !== undefined || query.priceMax !== undefined) {
-      where.basePriceUsd = {};
-      if (query.priceMin !== undefined) where.basePriceUsd.gte = query.priceMin;
-      if (query.priceMax !== undefined) where.basePriceUsd.lte = query.priceMax;
-    }
-    if (query.search) {
-      where.OR = [
-        { slug: { contains: query.search, mode: 'insensitive' } },
-        { category: { contains: query.search, mode: 'insensitive' } },
-        { city: { contains: query.search, mode: 'insensitive' } },
-        { country: { contains: query.search, mode: 'insensitive' } },
-        { region: { contains: query.search, mode: 'insensitive' } },
-      ];
-    }
-
-    const orderBy: Prisma.TourOrderByWithRelationInput[] = query.sortPrice
-      ? [{ basePriceUsd: query.sortPrice }]
-      : [
-          { isFeatured: 'desc' },
-          { displayOrder: 'asc' },
-          { createdAt: 'desc' },
-        ];
-
-    const [total, records] = await this.prisma.$transaction([
-      this.prisma.tour.count({ where }),
-      this.prisma.tour.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        select: {
-          id: true,
-          slug: true,
-          titleJsonb: true,
-          category: true,
-          basePriceUsd: true,
-          currency: true,
-          durationJsonb: true,
-          overviewJsonb: true,
-          highlightsJsonb: true,
-          includedServicesJsonb: true,
-          excludedServicesJsonb: true,
-          country: true,
-          city: true,
-          languages: true,
-          isFeatured: true,
-          displayOrder: true,
-          images: {
-            take: 10,
-            orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
-            select: { imageUrl: true, isHero: true, sortOrder: true },
-          },
-        },
-      }),
-    ]);
-
-    this.logger.debug(
-      `Tours catalog queried | category=${query.category ?? 'all'} lang=${query.lang} page=${page} limit=${limit}`,
-    );
-
-    const mappedItems: TourSummaryResponse[] = records.map((record) => {
-      const heroUrl = record.images.find((img) => img.isHero)?.imageUrl ?? record.images[0]?.imageUrl ?? null;
-      return {
-        id: record.id,
-        slug: record.slug,
-        title: extractI18n(record.titleJsonb, query.lang),
-        category: record.category,
-        basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
-        currency: record.currency,
-        duration: extractI18n(record.durationJsonb, query.lang),
-        overview: extractI18n(record.overviewJsonb, query.lang),
-        highlights: extractI18nList(record.highlightsJsonb, query.lang),
-        includedServices: extractI18nList(record.includedServicesJsonb, query.lang),
-        excludedServices: extractI18nList(record.excludedServicesJsonb, query.lang),
-        heroImage: heroUrl,
-        heroImageUrl: heroUrl,
-        images: record.images.map((img) => img.imageUrl),
-        country: record.country,
-        city: record.city,
-        languages: record.languages,
-        isFeatured: record.isFeatured,
-        displayOrder: record.displayOrder ?? 0,
-      };
+    const version = await this.getCatalogVersion();
+    const queryKey = JSON.stringify({
+      v: version,
+      cat: query.category ?? '',
+      dest: query.destination ?? '',
+      cntry: query.country ?? '',
+      city: query.city ?? '',
+      reg: query.region ?? '',
+      feat: query.isFeatured ?? '',
+      pmin: query.priceMin ?? '',
+      pmax: query.priceMax ?? '',
+      s: query.search ?? '',
+      sp: query.sortPrice ?? '',
+      p: page,
+      l: limit,
+      lang: query.lang ?? 'en',
     });
+    const cacheKey = `tours:catalog:v${version}:${queryKey}`;
 
-    // Visibility may change through either a tour lifecycle action or an
-    // interface relation action.  Do not cache this public catalogue without
-    // a shared relation-aware invalidation key, otherwise an unpublished or
-    // hidden tour can remain visible until its TTL expires.
-    return paginate(mappedItems, total, page, limit);
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const where: Prisma.TourWhereInput = {
+          isActive: true,
+          status: 'PUBLISHED',
+          deletedAt: null,
+        };
+        if (query.category) {
+          const catTrim = query.category.trim();
+          const catLower = catTrim.toLowerCase();
+          if (catLower.includes('multi')) {
+            where.OR = [
+              { category: { contains: 'multi', mode: 'insensitive' } },
+              { category: { contains: 'متعددة' } },
+            ];
+          } else {
+            where.category = { contains: catTrim, mode: 'insensitive' };
+          }
+        }
+        if (query.destination) {
+          const canonSlug = canonicalDestinationSlug(query.destination);
+          const isMulti = canonSlug === 'multi-country';
+          const destinationCondition: Prisma.TourWhereInput = {
+            landingPages: {
+              some: {
+                isVisible: true,
+                landingPage: {
+                  slug: canonSlug,
+                  type: 'DESTINATION',
+                  status: 'PUBLISHED',
+                  isActive: true,
+                  deletedAt: null,
+                },
+              },
+            },
+          };
+
+          if (isMulti) {
+            const multiConditions: Prisma.TourWhereInput[] = [
+              destinationCondition,
+              { category: { contains: 'multi', mode: 'insensitive' } },
+              { category: { contains: 'متعددة' } },
+              { country: { equals: 'Multi-Country', mode: 'insensitive' } },
+            ];
+            if (where.OR) {
+              where.AND = [
+                { OR: where.OR },
+                { OR: multiConditions },
+              ];
+              delete where.OR;
+            } else {
+              where.OR = multiConditions;
+            }
+          } else {
+            where.landingPages = destinationCondition.landingPages;
+          }
+        }
+        if (query.country) {
+          where.country = { equals: query.country, mode: 'insensitive' };
+        }
+        if (query.city) {
+          where.city = { equals: query.city, mode: 'insensitive' };
+        }
+        if (query.region) {
+          where.region = { equals: query.region, mode: 'insensitive' };
+        }
+        if (query.isFeatured !== undefined) {
+          where.isFeatured = query.isFeatured;
+        }
+        if (query.priceMin !== undefined || query.priceMax !== undefined) {
+          where.basePriceUsd = {};
+          if (query.priceMin !== undefined) where.basePriceUsd.gte = query.priceMin;
+          if (query.priceMax !== undefined) where.basePriceUsd.lte = query.priceMax;
+        }
+        if (query.search) {
+          where.OR = [
+            { slug: { contains: query.search, mode: 'insensitive' } },
+            { category: { contains: query.search, mode: 'insensitive' } },
+            { city: { contains: query.search, mode: 'insensitive' } },
+            { country: { contains: query.search, mode: 'insensitive' } },
+            { region: { contains: query.search, mode: 'insensitive' } },
+          ];
+        }
+
+        const orderBy: Prisma.TourOrderByWithRelationInput[] = query.sortPrice
+          ? [{ basePriceUsd: query.sortPrice }]
+          : [
+              { isFeatured: 'desc' },
+              { displayOrder: 'asc' },
+              { createdAt: 'desc' },
+            ];
+
+        const [total, records] = await Promise.all([
+          this.prisma.tour.count({ where }),
+          this.prisma.tour.findMany({
+            where,
+            skip,
+            take,
+            orderBy,
+            select: {
+              id: true,
+              slug: true,
+              titleJsonb: true,
+              category: true,
+              basePriceUsd: true,
+              currency: true,
+              durationJsonb: true,
+              overviewJsonb: true,
+              highlightsJsonb: true,
+              includedServicesJsonb: true,
+              excludedServicesJsonb: true,
+              country: true,
+              city: true,
+              languages: true,
+              isFeatured: true,
+              displayOrder: true,
+              images: {
+                take: 10,
+                orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
+                select: { imageUrl: true, isHero: true, sortOrder: true },
+              },
+            },
+          }),
+        ]);
+
+        this.logger.debug(
+          `Tours catalog queried from DB | category=${query.category ?? 'all'} lang=${query.lang} page=${page} limit=${limit}`,
+        );
+
+        const mappedItems: TourSummaryResponse[] = records.map((record) => {
+          const heroUrl = record.images.find((img) => img.isHero)?.imageUrl ?? record.images[0]?.imageUrl ?? null;
+          return {
+            id: record.id,
+            slug: record.slug,
+            title: extractI18n(record.titleJsonb, query.lang),
+            category: record.category,
+            basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
+            currency: record.currency,
+            duration: extractI18n(record.durationJsonb, query.lang),
+            overview: extractI18n(record.overviewJsonb, query.lang),
+            highlights: extractI18nList(record.highlightsJsonb, query.lang),
+            includedServices: extractI18nList(record.includedServicesJsonb, query.lang),
+            excludedServices: extractI18nList(record.excludedServicesJsonb, query.lang),
+            heroImage: heroUrl,
+            heroImageUrl: heroUrl,
+            images: record.images.map((img) => img.imageUrl),
+            country: record.country,
+            city: record.city,
+            languages: record.languages,
+            isFeatured: record.isFeatured,
+            displayOrder: record.displayOrder ?? 0,
+          };
+        });
+
+        const paginated = paginate(mappedItems, total, page, limit);
+        return {
+          ...paginated,
+          timestamp: new Date().toISOString(),
+        } as any;
+      },
+      300_000,
+    );
   }
 
   async findBySlug(rawSlug: string, lang: string): Promise<TourDetailResponse> {
@@ -264,41 +313,17 @@ export class ToursService {
 
     this.toursCounter.inc();
     const cacheKey = `tour:detail:${trimmed}:${lang}`;
-    const cached = await this.cacheManager.get<TourDetailResponse>(cacheKey);
-    if (cached) return cached;
 
-    // 1. First attempt: match by exact slug or id
-    let tour = await this.prisma.tour.findFirst({
-      where: {
-        OR: [
-          { slug: trimmed },
-          { id: trimmed },
-        ],
-        isActive: true,
-        status: 'PUBLISHED',
-        deletedAt: null,
-      },
-      include: {
-        itineraries: { orderBy: { sortOrder: 'asc' } },
-        images: { orderBy: { sortOrder: 'asc' } },
-      },
-    });
-
-    // 2. Second attempt: check only true legacy generic aliases if exact match failed
-    if (!tour) {
-      const GENERIC_ALIASES: Record<string, string> = {
-        'classic': 'classic-program',
-        'honeymooners': 'honeymoon-egypt',
-        'reg-21-jordan-extension-4-days': 'reg-21-jordan-extension---4-days',
-        'reg-20-jordan-extension-5-days': 'reg-20-jordan-extension---5-days',
-        'reg-21': 'reg-21-jordan-extension---4-days',
-        'reg-20': 'reg-20-jordan-extension---5-days',
-      };
-      const aliasTarget = GENERIC_ALIASES[trimmed];
-      if (aliasTarget) {
-        tour = await this.prisma.tour.findFirst({
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        // 1. First attempt: match by exact slug or id
+        let tour = await this.prisma.tour.findFirst({
           where: {
-            OR: [{ slug: aliasTarget }, { id: aliasTarget }],
+            OR: [
+              { slug: trimmed },
+              { id: trimmed },
+            ],
             isActive: true,
             status: 'PUBLISHED',
             deletedAt: null,
@@ -308,20 +333,47 @@ export class ToursService {
             images: { orderBy: { sortOrder: 'asc' } },
           },
         });
-      }
-    }
 
-    if (!tour) {
-      this.logger.warn(`Tour not found | slug=${trimmed}`);
-      throw new NotFoundException('Tour not found');
-    }
+        // 2. Second attempt: check only true legacy generic aliases if exact match failed
+        if (!tour) {
+          const GENERIC_ALIASES: Record<string, string> = {
+            'classic': 'classic-program',
+            'honeymooners': 'honeymoon-egypt',
+            'reg-21-jordan-extension-4-days': 'reg-21-jordan-extension---4-days',
+            'reg-20-jordan-extension-5-days': 'reg-20-jordan-extension---5-days',
+            'reg-21': 'reg-21-jordan-extension---4-days',
+            'reg-20': 'reg-20-jordan-extension---5-days',
+          };
+          const aliasTarget = GENERIC_ALIASES[trimmed];
+          if (aliasTarget) {
+            tour = await this.prisma.tour.findFirst({
+              where: {
+                OR: [{ slug: aliasTarget }, { id: aliasTarget }],
+                isActive: true,
+                status: 'PUBLISHED',
+                deletedAt: null,
+              },
+              include: {
+                itineraries: { orderBy: { sortOrder: 'asc' } },
+                images: { orderBy: { sortOrder: 'asc' } },
+              },
+            });
+          }
+        }
 
-    this.logger.debug(`Tour detail queried | slug=${tour.slug} lang=${lang}`);
+        if (!tour) {
+          this.logger.warn(`Tour not found | slug=${trimmed}`);
+          throw new NotFoundException('Tour not found');
+        }
 
-    const response = this.toTourDetailResponse(tour, lang);
-    await this.cacheManager.set(cacheKey, response, 60_000);
-
-    return response;
+        this.logger.debug(`Tour detail queried from DB | slug=${tour.slug} lang=${lang}`);
+        return {
+          ...this.toTourDetailResponse(tour, lang),
+          timestamp: new Date().toISOString(),
+        } as any;
+      },
+      300_000,
+    );
   }
 
   /**
@@ -458,8 +510,11 @@ export class ToursService {
       data,
     });
     // Invalidate detail and list cache immediately after update
+    await this.bumpCatalogVersion();
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const l of langs) {
+      await this.cacheService.del(`tour:detail:${slug}:${l}`);
+      await this.cacheService.del(`tour:${slug}:${l}`);
       await this.cacheManager.del(`tour:detail:${slug}:${l}`);
       await this.cacheManager.del(`tour:${slug}:${l}`);
     }
@@ -470,61 +525,72 @@ export class ToursService {
     const deleted = await this.prisma.tour.delete({
       where: { slug },
     });
+    await this.bumpCatalogVersion();
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const l of langs) {
+      await this.cacheService.del(`tour:detail:${slug}:${l}`);
+      await this.cacheService.del(`tour:${slug}:${l}`);
       await this.cacheManager.del(`tour:detail:${slug}:${l}`);
       await this.cacheManager.del(`tour:${slug}:${l}`);
     }
     return deleted;
   }
+
   async getTourReviews(
     slug: string,
     pageVal: number = 1,
     limitVal: number = 10,
   ): Promise<PaginatedResponse<any>> {
     const { skip, take, page, limit } = getPaginationParams(pageVal, limitVal);
+    const cacheKey = `tour:reviews:${slug}:${page}:${limit}`;
 
-    const tour = await this.prisma.tour.findFirst({
-      where: {
-        slug,
-        status: 'PUBLISHED',
-        isActive: true,
-        deletedAt: null,
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const tour = await this.prisma.tour.findFirst({
+          where: {
+            slug,
+            status: 'PUBLISHED',
+            isActive: true,
+            deletedAt: null,
+          },
+        });
+        if (!tour) throw new NotFoundException('Tour not found');
+
+        const [total, records] = await Promise.all([
+          this.prisma.tourReview.count({
+            where: {
+              tourId: tour.id,
+              isPublished: true,
+              status: 'APPROVED',
+              deletedAt: null,
+            },
+          }),
+          this.prisma.tourReview.findMany({
+            where: {
+              tourId: tour.id,
+              isPublished: true,
+              status: 'APPROVED',
+              deletedAt: null,
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take,
+          }),
+        ]);
+
+        const data = records.map((r) => ({
+          id: r.id,
+          rating: r.rating,
+          reviewerName: r.reviewerName,
+          comment: r.comment,
+          createdAt: r.createdAt.toISOString(),
+        }));
+
+        return paginate(data, total, page, limit);
       },
-    });
-    if (!tour) throw new NotFoundException('Tour not found');
-
-    const [total, records] = await this.prisma.$transaction([
-      this.prisma.tourReview.count({
-        where: {
-          tourId: tour.id,
-          isPublished: true,
-          status: 'APPROVED',
-          deletedAt: null,
-        },
-      }),
-      this.prisma.tourReview.findMany({
-        where: {
-          tourId: tour.id,
-          isPublished: true,
-          status: 'APPROVED',
-          deletedAt: null,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-    ]);
-
-    const data = records.map((r) => ({
-      id: r.id,
-      rating: r.rating,
-      reviewerName: r.reviewerName,
-      comment: r.comment,
-      createdAt: r.createdAt.toISOString(),
-    }));
-
-    return paginate(data, total, page, limit);
+      120_000,
+    );
   }
 
   async addTourReview(slug: string, userId: string, dto: CreateTourReviewDto) {

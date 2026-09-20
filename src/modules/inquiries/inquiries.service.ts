@@ -173,7 +173,7 @@ export class InquiriesService {
       }
     }
 
-    const [total, records] = await this.prisma.$transaction([
+    const [total, records] = await Promise.all([
       this.prisma.tailorMadeInquiry.count({ where }),
       this.prisma.tailorMadeInquiry.findMany({
         where,

@@ -41,7 +41,9 @@ async function bootstrap(): Promise<void> {
   });
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('port') ?? 5000;
+  const port = process.env.APP_PORT
+    ? parseInt(process.env.APP_PORT, 10)
+    : (configService.get<number>('port') ?? 5000);
   const frontendUrl = configService.get<string>('frontendUrl');
   const nodeEnv = configService.get<string>('nodeEnv');
 

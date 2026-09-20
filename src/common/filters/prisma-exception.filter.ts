@@ -62,8 +62,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         code: 'POOL_TIMEOUT',
       },
       P2028: {
-        status: HttpStatus.BAD_REQUEST,
-        message: 'Transaction failed. Please retry.',
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        message: 'Database transaction timed out. Please retry.',
         code: 'TRANSACTION_FAILED',
       },
     };

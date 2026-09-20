@@ -21,6 +21,7 @@ import {
   sanitizeHtmlContent,
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
+import { CacheService } from '../../common/cache/cache.service';
 
 const SUPPORTED_LOCALES = ['en', 'ar', 'es', 'pt', 'it'];
 
@@ -31,7 +32,32 @@ export class TourLandingPagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly cacheService: CacheService,
   ) {}
+
+  private async getLandingPagesVersion(): Promise<number> {
+    try {
+      const v = await this.cacheService.get<number>('landing-pages:version');
+      return typeof v === 'number' ? v : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  async bumpLandingPagesVersion(): Promise<number> {
+    try {
+      const current = await this.getLandingPagesVersion();
+      const next = current + 1;
+      await this.cacheService.set('landing-pages:version', next, 86_400_000);
+      const tourVer = (await this.cacheService.get<number>('tours:catalog:version')) || 1;
+      await this.cacheService.set('tours:catalog:version', tourVer + 1, 86_400_000);
+      this.logger.log(`Landing pages version bumped to v${next}`);
+      return next;
+    } catch (err) {
+      this.logger.warn(`Failed to bump landing pages version: ${(err as Error).message}`);
+      return 1;
+    }
+  }
 
   private async audit(
     actor: AuthenticatedUser,
@@ -266,6 +292,7 @@ export class TourLandingPagesService {
       type: created.type,
       status: created.status,
     });
+    await this.bumpLandingPagesVersion();
     return this.findOneAdmin(created.id);
   }
 
@@ -391,6 +418,7 @@ export class TourLandingPagesService {
       status: updated.status,
       isActive: updated.isActive,
     });
+    await this.bumpLandingPagesVersion();
     return this.findOneAdmin(existing.id);
   }
 
@@ -420,6 +448,7 @@ export class TourLandingPagesService {
       status: updated.status,
       isActive: updated.isActive,
     });
+    await this.bumpLandingPagesVersion();
     return this.findOneAdmin(existing.id);
   }
 
@@ -441,6 +470,7 @@ export class TourLandingPagesService {
     await this.audit(actor, 'TOUR_LANDING_PAGE_DELETED', existing.id, {
       slug: existing.slug,
     });
+    await this.bumpLandingPagesVersion();
     return {
       success: true,
       message: `Landing page '${existing.slug}' deleted.`,
@@ -476,6 +506,7 @@ export class TourLandingPagesService {
     await this.audit(actor, 'TOUR_LANDING_PAGE_REORDERED', ids[0], {
       items,
     });
+    await this.bumpLandingPagesVersion();
     return { success: true, count: items.length };
   }
 
@@ -549,6 +580,7 @@ export class TourLandingPagesService {
       isFeatured: dto.isFeatured ?? false,
       isVisible: dto.isVisible ?? true,
     });
+    await this.bumpLandingPagesVersion();
     return this.findOneAdmin(landingPage.id);
   }
 
@@ -575,6 +607,7 @@ export class TourLandingPagesService {
     await this.audit(actor, 'TOUR_LANDING_PAGE_TOUR_DETACHED', landingPage.id, {
       tourId,
     });
+    await this.bumpLandingPagesVersion();
 
     return {
       success: true,
@@ -620,6 +653,7 @@ export class TourLandingPagesService {
       tourId,
       changedFields: Object.keys(dto),
     });
+    await this.bumpLandingPagesVersion();
 
     return this.findOneAdmin(landingPage.id);
   }
@@ -694,6 +728,7 @@ export class TourLandingPagesService {
     await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_REORDERED', landingPage.id, {
       items: dto.items,
     });
+    await this.bumpLandingPagesVersion();
 
     return this.findOneAdmin(landingPage.id);
   }
@@ -709,144 +744,164 @@ export class TourLandingPagesService {
     const { page, limit, skip } = getPaginationParams(query.page, query.limit);
     const { type, locale = 'en' } = query;
 
-    const where: Prisma.TourLandingPageWhereInput = {
-      status: 'PUBLISHED',
-      isActive: true,
-      deletedAt: null,
-    };
-    if (type) where.type = type;
+    const version = await this.getLandingPagesVersion();
+    const cacheKey = `landing-pages:public:v${version}:${type || 'all'}:${locale}:${page}:${limit}`;
 
-    const [total, items] = await Promise.all([
-      this.prisma.tourLandingPage.count({ where }),
-      this.prisma.tourLandingPage.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: {
-          tours: {
-            where: {
-              isVisible: true,
-              tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
-            },
-            orderBy: { sortOrder: 'asc' },
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const where: Prisma.TourLandingPageWhereInput = {
+          status: 'PUBLISHED',
+          isActive: true,
+          deletedAt: null,
+        };
+        if (type) where.type = type;
+
+        const [total, items] = await Promise.all([
+          this.prisma.tourLandingPage.count({ where }),
+          this.prisma.tourLandingPage.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
             include: {
-              tour: {
+              tours: {
+                where: {
+                  isVisible: true,
+                  tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+                },
+                orderBy: { sortOrder: 'asc' },
                 include: {
-                  images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
+                  tour: {
+                    include: {
+                      images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        ]);
+
+        const formatted = items.map((lp) => ({
+          id: lp.id,
+          slug: lp.slug,
+          type: lp.type,
+          title: extractI18n(lp.titleJsonb, locale),
+          subtitle: extractI18n(lp.subtitleJsonb, locale),
+          description: extractI18n(lp.descriptionJsonb, locale),
+          brief: extractI18n(lp.briefJsonb, locale),
+          heroImageUrl: lp.heroImageUrl,
+          heroVideoUrl: lp.heroVideoUrl,
+          seoTitle: extractI18n(lp.seoTitleJsonb, locale),
+          seoDescription: extractI18n(lp.seoDescriptionJsonb, locale),
+          seoKeywords: extractI18n(lp.seoKeywordsJsonb, locale),
+          sections: lp.sectionsJsonb,
+          toursCount: lp.tours.length,
+          tours: lp.tours.map((t) => ({
+            id: t.tour.id,
+            slug: t.tour.slug,
+            title: extractI18n(t.tour.titleJsonb, locale),
+            overview: extractI18n(t.tour.overviewJsonb, locale),
+            duration: extractI18n(t.tour.durationJsonb, locale),
+            basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
+            currency: t.tour.currency,
+            country: t.tour.country,
+            city: t.tour.city,
+            category: t.tour.category,
+            isFeatured: t.isFeatured || t.tour.isFeatured,
+            customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
+            heroImage: t.tour.images.find((img) => img.isHero)?.imageUrl || t.tour.images[0]?.imageUrl || null,
+            images: t.tour.images.map((img) => img.imageUrl),
+            sortOrder: t.sortOrder,
+          })),
+        }));
+
+        const paginated = paginate(formatted, total, page, limit);
+        return {
+          ...paginated,
+          timestamp: new Date().toISOString(),
+        } as any;
+      },
+      600_000,
+    );
+  }
+
+  async findOnePublic(slug: string, locale = 'en') {
+    const version = await this.getLandingPagesVersion();
+    const cacheKey = `landing-page:public:v${version}:${slug}:${locale}`;
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const lp = await this.prisma.tourLandingPage.findFirst({
+          where: {
+            slug,
+            status: 'PUBLISHED',
+            isActive: true,
+            deletedAt: null,
+          },
+          include: {
+            tours: {
+              where: {
+                isVisible: true,
+                tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+              },
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                tour: {
+                  include: {
+                    images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
+                  },
                 },
               },
             },
           },
-        },
-      }),
-    ]);
+        });
 
-    const formatted = items.map((lp) => ({
-      id: lp.id,
-      slug: lp.slug,
-      type: lp.type,
-      title: extractI18n(lp.titleJsonb, locale),
-      subtitle: extractI18n(lp.subtitleJsonb, locale),
-      description: extractI18n(lp.descriptionJsonb, locale),
-      brief: extractI18n(lp.briefJsonb, locale),
-      heroImageUrl: lp.heroImageUrl,
-      heroVideoUrl: lp.heroVideoUrl,
-      seoTitle: extractI18n(lp.seoTitleJsonb, locale),
-      seoDescription: extractI18n(lp.seoDescriptionJsonb, locale),
-      seoKeywords: extractI18n(lp.seoKeywordsJsonb, locale),
-      sections: lp.sectionsJsonb,
-      toursCount: lp.tours.length,
-      // The destination catalogue is the authoritative owner of a tour's
-      // public placement. Returning its visible relations prevents clients
-      // from guessing membership from country labels or a partial global list.
-      tours: lp.tours.map((t) => ({
-        id: t.tour.id,
-        slug: t.tour.slug,
-        title: extractI18n(t.tour.titleJsonb, locale),
-        overview: extractI18n(t.tour.overviewJsonb, locale),
-        duration: extractI18n(t.tour.durationJsonb, locale),
-        basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
-        currency: t.tour.currency,
-        country: t.tour.country,
-        city: t.tour.city,
-        category: t.tour.category,
-        isFeatured: t.isFeatured || t.tour.isFeatured,
-        customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
-        heroImage: t.tour.images.find((img) => img.isHero)?.imageUrl || t.tour.images[0]?.imageUrl || null,
-        images: t.tour.images.map((img) => img.imageUrl),
-        sortOrder: t.sortOrder,
-      })),
-    }));
+        if (!lp) {
+          throw new NotFoundException('Landing page not found');
+        }
 
-    return paginate(formatted, total, page, limit);
-  }
-
-  async findOnePublic(slug: string, locale = 'en') {
-    const lp = await this.prisma.tourLandingPage.findFirst({
-      where: {
-        slug,
-        status: 'PUBLISHED',
-        isActive: true,
-        deletedAt: null,
+        return {
+          id: lp.id,
+          slug: lp.slug,
+          type: lp.type,
+          title: extractI18n(lp.titleJsonb, locale),
+          subtitle: extractI18n(lp.subtitleJsonb, locale),
+          description: extractI18n(lp.descriptionJsonb, locale),
+          brief: extractI18n(lp.briefJsonb, locale),
+          heroImageUrl: lp.heroImageUrl,
+          heroVideoUrl: lp.heroVideoUrl,
+          seoTitle: extractI18n(lp.seoTitleJsonb, locale),
+          seoDescription: extractI18n(lp.seoDescriptionJsonb, locale),
+          seoKeywords: extractI18n(lp.seoKeywordsJsonb, locale),
+          sections: lp.sectionsJsonb,
+          tours: lp.tours.map((t) => ({
+            id: t.tour.id,
+            slug: t.tour.slug,
+            title: extractI18n(t.tour.titleJsonb, locale),
+            overview: extractI18n(t.tour.overviewJsonb, locale),
+            duration: extractI18n(t.tour.durationJsonb, locale),
+            basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
+            currency: t.tour.currency,
+            country: t.tour.country,
+            city: t.tour.city,
+            category: t.tour.category,
+            isFeatured: t.isFeatured || t.tour.isFeatured,
+            customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
+            heroImage:
+              t.tour.images.find((img) => img.isHero)?.imageUrl ||
+              t.tour.images[0]?.imageUrl ||
+              null,
+            images: t.tour.images.map((img) => img.imageUrl),
+            sortOrder: t.sortOrder,
+          })),
+          timestamp: new Date().toISOString(),
+        };
       },
-      include: {
-        tours: {
-          where: {
-            isVisible: true,
-            tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
-          },
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            tour: {
-              include: {
-                images: { orderBy: { sortOrder: 'asc' } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!lp) {
-      throw new NotFoundException('Landing page not found');
-    }
-
-    return {
-      id: lp.id,
-      slug: lp.slug,
-      type: lp.type,
-      title: extractI18n(lp.titleJsonb, locale),
-      subtitle: extractI18n(lp.subtitleJsonb, locale),
-      description: extractI18n(lp.descriptionJsonb, locale),
-      brief: extractI18n(lp.briefJsonb, locale),
-      heroImageUrl: lp.heroImageUrl,
-      heroVideoUrl: lp.heroVideoUrl,
-      seoTitle: extractI18n(lp.seoTitleJsonb, locale),
-      seoDescription: extractI18n(lp.seoDescriptionJsonb, locale),
-      seoKeywords: extractI18n(lp.seoKeywordsJsonb, locale),
-      sections: lp.sectionsJsonb,
-      tours: lp.tours.map((t) => ({
-        id: t.tour.id,
-        slug: t.tour.slug,
-        title: extractI18n(t.tour.titleJsonb, locale),
-        overview: extractI18n(t.tour.overviewJsonb, locale),
-        duration: extractI18n(t.tour.durationJsonb, locale),
-        basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
-        currency: t.tour.currency,
-        country: t.tour.country,
-        city: t.tour.city,
-        category: t.tour.category,
-        isFeatured: t.isFeatured || t.tour.isFeatured,
-        customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
-        heroImage:
-          t.tour.images.find((img) => img.isHero)?.imageUrl ||
-          t.tour.images[0]?.imageUrl ||
-          null,
-        images: t.tour.images.map((img) => img.imageUrl),
-        sortOrder: t.sortOrder,
-      })),
-    };
+      600_000,
+    );
   }
 
   private sanitizeLocalized(

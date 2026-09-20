@@ -61,6 +61,8 @@ import Keyv from 'keyv';
 
 import { InAppNotificationsModule } from './modules/in-app-notifications/in-app-notifications.module';
 import { HotelsModule } from './modules/hotels/hotels.module';
+import { DunasCacheModule } from './common/cache/dunas-cache.module';
+import { HttpCacheInterceptor } from './common/interceptors/http-cache.interceptor';
 
 @Module({
   controllers: [RootController],
@@ -123,7 +125,7 @@ import { HotelsModule } from './modules/hotels/hotels.module';
           stores: new Keyv({
             store,
             namespace: 'dunas-cache',
-            throwOnErrors: true,
+            throwOnErrors: false,
           }),
           ttl: 300_000,
         };
@@ -184,11 +186,16 @@ import { HotelsModule } from './modules/hotels/hotels.module';
     JourneyMapsModule,
     InAppNotificationsModule,
     HotelsModule,
+    DunasCacheModule,
   ],
 
   providers: [
     AsyncContextService,
     JsonLoggerService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpCacheInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: TimeoutInterceptor,

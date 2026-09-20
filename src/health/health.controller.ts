@@ -12,6 +12,9 @@ import { Public } from '../common/decorators/public.decorator';
 @Controller('health')
 @Public()
 export class HealthController {
+  private lastHealthResult: any = null;
+  private lastHealthTime = 0;
+
   constructor(
     private health: HealthCheckService,
     private db: PrismaHealthIndicator,
@@ -22,9 +25,16 @@ export class HealthController {
   @HealthCheck()
   @ApiOperation({ summary: 'Health check endpoint' })
   async checkHealth() {
-    return this.health.check([
-      () => this.db.pingCheck('database', this.prisma),
+    const now = Date.now();
+    if (this.lastHealthResult && now - this.lastHealthTime < 5_000) {
+      return this.lastHealthResult;
+    }
+    const res = await this.health.check([
+      () => this.db.pingCheck('database', this.prisma, { timeout: 4000 }),
     ]);
+    this.lastHealthResult = res;
+    this.lastHealthTime = now;
+    return res;
   }
 
   @Get('liveness')
@@ -41,9 +51,16 @@ export class HealthController {
   @ApiOperation({ summary: 'Readiness probe checking database connectivity' })
   async checkReady() {
     try {
-      return await this.health.check([
-        () => this.db.pingCheck('database', this.prisma),
+      const now = Date.now();
+      if (this.lastHealthResult && now - this.lastHealthTime < 5_000) {
+        return this.lastHealthResult;
+      }
+      const res = await this.health.check([
+        () => this.db.pingCheck('database', this.prisma, { timeout: 4000 }),
       ]);
+      this.lastHealthResult = res;
+      this.lastHealthTime = now;
+      return res;
     } catch {
       throw new ServiceUnavailableException({
         status: 'error',

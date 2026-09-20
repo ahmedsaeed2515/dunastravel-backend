@@ -15,10 +15,34 @@ import {
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate, slugify } from '../../common/utils';
+import { CacheService } from '../../common/cache/cache.service';
 
 @Injectable()
 export class BlogsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
+
+  private async getBlogsVersion(): Promise<number> {
+    try {
+      const v = await this.cacheService.get<number>('blogs:version');
+      return typeof v === 'number' ? v : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  async bumpBlogsVersion(): Promise<number> {
+    try {
+      const current = await this.getBlogsVersion();
+      const next = current + 1;
+      await this.cacheService.set('blogs:version', next, 86_400_000);
+      return next;
+    } catch {
+      return 1;
+    }
+  }
 
   private sanitizeLocalizedContent(
     jsonb: Record<string, string>,
@@ -57,64 +81,73 @@ export class BlogsService {
   async findAllPublic(query: ListBlogsQueryDto) {
     const { page, limit, skip } = getPaginationParams(query.page, query.limit);
     const { search, category, tag, locale = 'en' } = query;
-    const now = new Date();
 
-    const where: Prisma.BlogArticleWhereInput = {
-      deletedAt: null,
-      isPublished: true,
-      AND: [
-        {
-          OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
-        },
-      ],
-    };
+    const version = await this.getBlogsVersion();
+    const cacheKey = `blogs:public:v${version}:${category || 'all'}:${tag || 'all'}:${search || 'none'}:${locale}:${page}:${limit}`;
 
-    if (category) where.category = category;
-    if (tag) where.tags = { has: tag };
-    if (search) {
-      where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : []),
-        {
-          OR: [
-            { slug: { contains: search, mode: 'insensitive' } },
-            { author: { contains: search, mode: 'insensitive' } },
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const now = new Date();
+        const where: Prisma.BlogArticleWhereInput = {
+          deletedAt: null,
+          isPublished: true,
+          AND: [
+            {
+              OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+            },
           ],
-        },
-      ];
-    }
+        };
 
-    const [total, items] = await Promise.all([
-      this.prisma.blogArticle.count({ where }),
-      this.prisma.blogArticle.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-      }),
-    ]);
+        if (category) where.category = category;
+        if (tag) where.tags = { has: tag };
+        if (search) {
+          where.AND = [
+            ...(Array.isArray(where.AND) ? where.AND : []),
+            {
+              OR: [
+                { slug: { contains: search, mode: 'insensitive' } },
+                { author: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          ];
+        }
 
-    const formatted = items.map((article) => ({
-      id: article.id,
-      slug: article.slug,
-      title: extractI18nFallback(article.titleJsonb, locale),
-      excerpt: article.excerptJsonb
-        ? extractI18nFallback(article.excerptJsonb, locale)
-        : '',
-      content: extractI18nFallback(article.contentJsonb, locale),
-      seoTitle: article.seoTitleJsonb
-        ? extractI18nFallback(article.seoTitleJsonb, locale)
-        : null,
-      seoDescription: article.seoDescriptionJsonb
-        ? extractI18nFallback(article.seoDescriptionJsonb, locale)
-        : null,
-      coverImage: article.coverImage,
-      author: article.author,
-      category: article.category,
-      tags: article.tags,
-      publishedAt: article.publishedAt || article.createdAt,
-    }));
+        const [total, items] = await Promise.all([
+          this.prisma.blogArticle.count({ where }),
+          this.prisma.blogArticle.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+          }),
+        ]);
 
-    return paginate(formatted, total, page, limit);
+        const formatted = items.map((article) => ({
+          id: article.id,
+          slug: article.slug,
+          title: extractI18nFallback(article.titleJsonb, locale),
+          excerpt: article.excerptJsonb
+            ? extractI18nFallback(article.excerptJsonb, locale)
+            : '',
+          content: extractI18nFallback(article.contentJsonb, locale),
+          seoTitle: article.seoTitleJsonb
+            ? extractI18nFallback(article.seoTitleJsonb, locale)
+            : null,
+          seoDescription: article.seoDescriptionJsonb
+            ? extractI18nFallback(article.seoDescriptionJsonb, locale)
+            : null,
+          coverImage: article.coverImage,
+          author: article.author,
+          category: article.category,
+          tags: article.tags,
+          publishedAt: article.publishedAt || article.createdAt,
+        }));
+
+        return paginate(formatted, total, page, limit);
+      },
+      300_000,
+    );
   }
 
   async findOnePublic(slug: string, locale = 'en') {
@@ -122,70 +155,98 @@ export class BlogsService {
     if (!['en', 'ar', 'es', 'pt', 'it'].includes(locale)) {
       throw new BadRequestException('Unsupported locale');
     }
-    const now = new Date();
-    const article = await this.prisma.blogArticle.findFirst({
-      where: {
-        slug,
-        deletedAt: null,
-        isPublished: true,
-        OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+
+    const version = await this.getBlogsVersion();
+    const cacheKey = `blog:public:v${version}:${slug}:${locale}`;
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const now = new Date();
+        const article = await this.prisma.blogArticle.findFirst({
+          where: {
+            slug,
+            deletedAt: null,
+            isPublished: true,
+            OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+          },
+        });
+
+        if (!article) {
+          throw new NotFoundException('Blog article not found');
+        }
+
+        return {
+          id: article.id,
+          slug: article.slug,
+          title: extractI18nFallback(article.titleJsonb, locale),
+          excerpt: article.excerptJsonb
+            ? extractI18nFallback(article.excerptJsonb, locale)
+            : '',
+          content: extractI18nFallback(article.contentJsonb, locale),
+          seoTitle: article.seoTitleJsonb
+            ? extractI18nFallback(article.seoTitleJsonb, locale)
+            : null,
+          seoDescription: article.seoDescriptionJsonb
+            ? extractI18nFallback(article.seoDescriptionJsonb, locale)
+            : null,
+          coverImage: article.coverImage,
+          author: article.author,
+          category: article.category,
+          tags: article.tags,
+          publishedAt: article.publishedAt || article.createdAt,
+          createdAt: article.createdAt,
+          updatedAt: article.updatedAt,
+        };
       },
-    });
-
-    if (!article) {
-      throw new NotFoundException('Blog article not found');
-    }
-
-    return {
-      id: article.id,
-      slug: article.slug,
-      title: extractI18nFallback(article.titleJsonb, locale),
-      excerpt: article.excerptJsonb
-        ? extractI18nFallback(article.excerptJsonb, locale)
-        : '',
-      content: extractI18nFallback(article.contentJsonb, locale),
-      seoTitle: article.seoTitleJsonb
-        ? extractI18nFallback(article.seoTitleJsonb, locale)
-        : null,
-      seoDescription: article.seoDescriptionJsonb
-        ? extractI18nFallback(article.seoDescriptionJsonb, locale)
-        : null,
-      coverImage: article.coverImage,
-      author: article.author,
-      category: article.category,
-      tags: article.tags,
-      publishedAt: article.publishedAt || article.createdAt,
-      createdAt: article.createdAt,
-      updatedAt: article.updatedAt,
-    };
+      300_000,
+    );
   }
 
   async getCategoriesPublic() {
-    const categories = await this.prisma.blogArticle.findMany({
-      where: {
-        deletedAt: null,
-        isPublished: true,
-        category: { not: null },
+    const version = await this.getBlogsVersion();
+    const cacheKey = `blogs:categories:v${version}`;
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const categories = await this.prisma.blogArticle.findMany({
+          where: {
+            deletedAt: null,
+            isPublished: true,
+            category: { not: null },
+          },
+          select: { category: true },
+          distinct: ['category'],
+        });
+        return categories
+          .map((c) => c.category)
+          .filter((c): c is string => Boolean(c));
       },
-      select: { category: true },
-      distinct: ['category'],
-    });
-    return categories
-      .map((c) => c.category)
-      .filter((c): c is string => Boolean(c));
+      600_000,
+    );
   }
 
   async getTagsPublic() {
-    const articles = await this.prisma.blogArticle.findMany({
-      where: {
-        deletedAt: null,
-        isPublished: true,
+    const version = await this.getBlogsVersion();
+    const cacheKey = `blogs:tags:v${version}`;
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const articles = await this.prisma.blogArticle.findMany({
+          where: {
+            deletedAt: null,
+            isPublished: true,
+          },
+          select: { tags: true },
+        });
+        const tagSet = new Set<string>();
+        articles.forEach((a) => a.tags?.forEach((t) => tagSet.add(t)));
+        return Array.from(tagSet);
       },
-      select: { tags: true },
-    });
-    const tagSet = new Set<string>();
-    articles.forEach((a) => a.tags?.forEach((t) => tagSet.add(t)));
-    return Array.from(tagSet);
+      600_000,
+    );
   }
 
   // --- ADMIN API ---
@@ -327,6 +388,7 @@ export class BlogsService {
       },
     });
 
+    await this.bumpBlogsVersion();
     return created;
   }
 
@@ -440,6 +502,7 @@ export class BlogsService {
       },
     });
 
+    await this.bumpBlogsVersion();
     return updated;
   }
 
@@ -466,6 +529,7 @@ export class BlogsService {
       },
     });
 
+    await this.bumpBlogsVersion();
     return {
       success: true,
       message: `Blog article '${existing.slug}' deleted.`,

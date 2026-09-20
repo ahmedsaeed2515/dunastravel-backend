@@ -14,10 +14,34 @@ import {
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
+import { CacheService } from '../../common/cache/cache.service';
 
 @Injectable()
 export class FaqService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
+
+  private async getFaqVersion(): Promise<number> {
+    try {
+      const v = await this.cacheService.get<number>('faq:version');
+      return typeof v === 'number' ? v : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  async bumpFaqVersion(): Promise<number> {
+    try {
+      const current = await this.getFaqVersion();
+      const next = current + 1;
+      await this.cacheService.set('faq:version', next, 86_400_000);
+      return next;
+    } catch {
+      return 1;
+    }
+  }
 
   private sanitizeJsonb(
     jsonb: unknown,
@@ -56,27 +80,36 @@ export class FaqService {
   // --- PUBLIC API ---
 
   async findAllPublic(category?: string, locale: string = 'en') {
-    const where: Prisma.FaqItemWhereInput = {
-      isPublished: true,
-      deletedAt: null,
-    };
+    const version = await this.getFaqVersion();
+    const cacheKey = `faq:public:v${version}:${category || 'all'}:${locale}`;
 
-    if (category) {
-      where.category = category;
-    }
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const where: Prisma.FaqItemWhereInput = {
+          isPublished: true,
+          deletedAt: null,
+        };
 
-    const items = await this.prisma.faqItem.findMany({
-      where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    });
+        if (category) {
+          where.category = category;
+        }
 
-    return items.map((item) => ({
-      id: item.id,
-      category: item.category,
-      question: extractI18nFallback(item.questionJsonb, locale),
-      answer: extractI18nFallback(item.answerJsonb, locale),
-      sortOrder: item.sortOrder,
-    }));
+        const items = await this.prisma.faqItem.findMany({
+          where,
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        });
+
+        return items.map((item) => ({
+          id: item.id,
+          category: item.category,
+          question: extractI18nFallback(item.questionJsonb, locale),
+          answer: extractI18nFallback(item.answerJsonb, locale),
+          sortOrder: item.sortOrder,
+        }));
+      },
+      300_000,
+    );
   }
 
   // --- ADMIN API ---
@@ -112,7 +145,7 @@ export class FaqService {
   }
 
   async createAdmin(dto: CreateFaqDto) {
-    return this.prisma.faqItem.create({
+    const result = await this.prisma.faqItem.create({
       data: {
         questionJsonb: this.sanitizeJsonb(dto.questionJsonb, false),
         answerJsonb: this.sanitizeJsonb(dto.answerJsonb, true),
@@ -123,12 +156,14 @@ export class FaqService {
         isPublished: dto.isPublished ?? false,
       },
     });
+    await this.bumpFaqVersion();
+    return result;
   }
 
   async updateAdmin(id: string, dto: UpdateFaqDto) {
     await this.findOneAdmin(id);
 
-    return this.prisma.faqItem.update({
+    const result = await this.prisma.faqItem.update({
       where: { id },
       data: {
         ...(dto.questionJsonb && {
@@ -144,6 +179,8 @@ export class FaqService {
         ...(dto.isPublished !== undefined && { isPublished: dto.isPublished }),
       },
     });
+    await this.bumpFaqVersion();
+    return result;
   }
 
   async reorderAdmin(dto: ReorderFaqDto) {
@@ -155,6 +192,7 @@ export class FaqService {
         }),
       ),
     );
+    await this.bumpFaqVersion();
     return { success: true, count: dto.items.length };
   }
 
@@ -165,6 +203,7 @@ export class FaqService {
       where: { id },
       data: { deletedAt: new Date(), isPublished: false },
     });
+    await this.bumpFaqVersion();
 
     return { success: true, message: `FAQ item '${id}' deleted.` };
   }
