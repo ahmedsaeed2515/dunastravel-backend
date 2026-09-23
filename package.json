@@ -100,7 +100,7 @@
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "29.5.14",
     "@types/jsdom": "^28.0.3",
     "@types/multer": "^2.1.0",
     "@types/node": "^24.13.2",
@@ -114,50 +114,17 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.0.0",
-    "jest": "^30.0.0",
+    "jest": "29.7.0",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "tough-cookie": "^6.0.1",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "29.2.5",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "setupFiles": [
-      "<rootDir>/test-setup.ts"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.[cm]?[tj]sx?$": [
-        "ts-jest",
-        {
-          "tsconfig": {
-            "allowJs": true
-          }
-        }
-      ]
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "transformIgnorePatterns": [
-      "node_modules/(?!(@exodus|parse5|entities|@asamuzakjp|@csstools|htmlparser2|sanitize-html|domhandler|domelementtype|dom-serializer|domutils)/)"
-    ],
-    "moduleNameMapper": {
-      "^@asamuzakjp/css-color$": "<rootDir>/../node_modules/@asamuzakjp/css-color/dist/esm/index.js"
-    }
   },
   "overrides": {
     "@nestjs/platform-express": {
