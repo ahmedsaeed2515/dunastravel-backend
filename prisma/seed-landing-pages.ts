@@ -247,7 +247,7 @@ const LANDING_PAGES = [
     type: 'DESTINATION',
     titleJsonb: {
       en: 'Holy Land',
-      ar: 'الأرض المقدسة',
+      ar: 'الأراضي المقدسة',
       es: 'Tierra Santa',
       pt: 'Terra Santa',
       it: 'Terra Santa',
@@ -415,10 +415,10 @@ async function main() {
     if (country.includes('greece') || country.includes('اليونان') || country.includes('grecia')) targetSlugs.push('greece');
     if (country.includes('dubai') || country.includes('دبي') || country.includes('uae')) targetSlugs.push('dubai');
     if (country.includes('tunisia') || country.includes('تونس')) targetSlugs.push('tunisia');
-    if (country.includes('holyland') || country.includes('الأراضي المقدسة') || category.includes('holy')) targetSlugs.push('holyland');
+    if ((country.includes('holyland') || country.includes('الأراضي المقدسة') || country.includes('holy land')) && !slug.includes('holy-family')) targetSlugs.push('holyland');
 
     if (category.includes('multi') || slug.includes('multi')) targetSlugs.push('multi-country');
-    if (category.includes('religious') || category.includes('coptic') || slug.includes('religious')) targetSlugs.push('religious');
+    if (category.includes('religious') || category.includes('coptic') || slug.includes('religious') || slug.includes('holy-family')) targetSlugs.push('religious');
     if (category.includes('honeymoon') || slug.includes('honeymoon')) targetSlugs.push('honeymooners');
 
     for (const targetSlug of targetSlugs) {
@@ -437,6 +437,16 @@ async function main() {
         console.log(`Attached Tour '${tour.slug}' to Landing Page '${lp.slug}'`);
       }
     }
+  }
+
+  // Ensure Holy Family Egypt tour is detached from holyland landing page
+  const holyLandPage = await prisma.tourLandingPage.findUnique({ where: { slug: 'holyland' } });
+  const holyFamilyTour = await prisma.tour.findFirst({ where: { slug: 'holy-family-egypt' } });
+  if (holyLandPage && holyFamilyTour) {
+    await prisma.tourLandingPageTour.deleteMany({
+      where: { landingPageId: holyLandPage.id, tourId: holyFamilyTour.id },
+    });
+    console.log('Detached Holy Family tour from Holy Land landing page.');
   }
 
   console.log('Seeding completed successfully!');
