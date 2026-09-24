@@ -11,6 +11,7 @@ import {
   IsIn,
   Matches,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -186,7 +187,8 @@ export class CreateBookingDto {
   invoiceType?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((o: CreateBookingDto) => o.invoiceType === 'COMPANY')
+  @IsNotEmpty({ message: 'companyName is required when invoiceType is COMPANY' })
   @IsString()
   @MaxLength(255)
   @Transform(({ value }: { value: unknown }) =>

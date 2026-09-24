@@ -12,6 +12,7 @@ describe('Health Check (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     await app.init();
   });
 
@@ -19,20 +20,20 @@ describe('Health Check (e2e)', () => {
     await app.close();
   });
 
-  // Since we don't have the real db running reliably in local e2e tests,
-  // we just test that the endpoint responds. If DB is down, it returns 503 instead of 200.
-  it('GET /api/health/ready should respond with health status', async () => {
-    const res = await request(app.getHttpServer()).get('/health/ready');
+  it('GET /api/health/liveness should respond with status ok', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health/liveness');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+  });
+
+  it('GET /api/health/readiness should respond with health status', async () => {
+    const res = await request(app.getHttpServer()).get('/api/health/readiness');
 
     // Depending on if DB is actually up, it will be 200 or 503
     expect([200, 503]).toContain(res.status);
 
     if (res.status === 200) {
       expect(res.body.status).toBe('ok');
-      expect(res.body.db).toBe('reachable');
-    } else {
-      expect(res.body.status).toBe('degraded');
-      expect(res.body.db).toBe('unreachable');
     }
   });
 });

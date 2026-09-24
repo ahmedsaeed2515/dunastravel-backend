@@ -390,12 +390,16 @@ export class BookingsService {
               /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
                 dto.tourId,
               );
-            const tour =
+            let tour =
               isUUID && typeof tx.tour.findUnique === 'function'
                 ? await tx.tour.findUnique({ where: { id: dto.tourId } })
                 : typeof tx.tour.findFirst === 'function'
                   ? await tx.tour.findFirst({ where: { slug: dto.tourId } })
                   : null;
+
+            if (!tour && typeof tx.tour.findUnique === 'function') {
+              tour = await tx.tour.findUnique({ where: { id: dto.tourId } });
+            }
 
             if (
               !tour ||

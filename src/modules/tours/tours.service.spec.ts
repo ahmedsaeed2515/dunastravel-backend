@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { Prisma } from '@prisma/client';
+import { CacheService } from '../../common/cache/cache.service';
 
 describe('ToursService', () => {
   let service: ToursService;
@@ -40,6 +41,15 @@ describe('ToursService', () => {
           useValue: {
             get: jest.fn(),
             set: jest.fn(),
+          },
+        },
+        {
+          provide: CacheService,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+            getOrSet: jest.fn((key, fn) => fn()),
           },
         },
         {
@@ -218,9 +228,10 @@ describe('ToursService', () => {
 
       const publicDetail = await service.findBySlug('published-tour', 'en');
       const preview = await service.findPreviewBySlug('published-tour', 'en');
+      const { timestamp, ...restPublicDetail } = publicDetail as any;
 
       expect(preview).toMatchObject({
-        ...publicDetail,
+        ...restPublicDetail,
         preview: { status: 'PUBLISHED', isActive: true, isPublic: true },
       });
     });

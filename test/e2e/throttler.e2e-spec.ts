@@ -5,8 +5,10 @@ import { AppModule } from '../../src/app.module';
 
 describe('Rate Limiting (e2e)', () => {
   let app: INestApplication;
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeAll(async () => {
+    process.env.NODE_ENV = 'development';
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -22,7 +24,10 @@ describe('Rate Limiting (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    process.env.NODE_ENV = originalNodeEnv;
+    if (app) {
+      await app.close();
+    }
   });
 
   // Note: we can't fully run e2e with Prisma unless DB is up, so this test might fail
@@ -31,13 +36,18 @@ describe('Rate Limiting (e2e)', () => {
     const limit = 100; // Default global limit is 100
 
     // The global rate limit is applied to all routes
-    for (let i = 0; i < limit; i++) {
-      await request(app.getHttpServer()).get('/api/admin/currency/rates');
+    const batchSize = 25;
+    for (let i = 0; i < limit; i += batchSize) {
+      await Promise.all(
+        Array.from({ length: batchSize }).map(() =>
+          request(app.getHttpServer()).get('/api/currency/rates'),
+        ),
+      );
     }
 
     // The (limit + 1)th request must be rate-limited
     const res = await request(app.getHttpServer()).get(
-      '/api/admin/currency/rates',
+      '/api/currency/rates',
     );
 
     // Assuming throttling catches it

@@ -21,8 +21,8 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
   const testUserEmail = 'traveler.test@dunastravel.com';
   const testUserPassword = 'Password123!';
   const testTourSlug = 'cairo-express-4d';
-  const testSlotId = '70e66fa4-05bc-41e8-a7d3-77a4c09d6b92';
-  const testDate = '2026-09-14';
+  let testSlotId: string;
+  const testDate = '2028-09-20';
 
   let hashToken: string;
   let accessToken: string;
@@ -81,11 +81,30 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       hashToken: hashToken,
     });
 
-    // Ensure slot has seats
-    await prisma.tourAvailability.update({
-      where: { id: testSlotId },
-      data: { totalCapacity: 50, remainingSeats: 50, status: 'AVAILABLE' },
+    // Lookup tour and upsert availability slot
+    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
+    const slot = await prisma.tourAvailability.upsert({
+      where: {
+        tourId_date: {
+          tourId: tour.id,
+          date: new Date(`${testDate}T00:00:00.000Z`),
+        },
+      },
+      update: {
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
+      create: {
+        tourId: tour.id,
+        date: new Date(`${testDate}T00:00:00.000Z`),
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
     });
+    testSlotId = slot.id;
 
     // Login
     const loginRes = await request(app.getHttpServer())
@@ -102,6 +121,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
   afterAll(async () => {
     fetchSpy?.mockRestore();
     await app?.close();
+    await prisma?.$disconnect();
   });
 
   it('1. Signature Verification: rejects tampered body and forged HMAC signatures', async () => {

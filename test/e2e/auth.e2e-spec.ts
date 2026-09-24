@@ -13,7 +13,7 @@ describe('Auth (e2e)', () => {
   const testUser = {
     name: 'E2E Test User',
     email: `e2e-auth-${Date.now()}@test.com`,
-    password: 'TestPassword123!',
+    password: 'Str0ng#Auth2026!',
   };
 
   beforeAll(async () => {
@@ -30,7 +30,6 @@ describe('Auth (e2e)', () => {
         forbidNonWhitelisted: true,
       }),
     );
-    app.useGlobalInterceptors(new TransformInterceptor());
     app.setGlobalPrefix('api');
     await app.init();
 
@@ -41,6 +40,7 @@ describe('Auth (e2e)', () => {
     // Cleanup test user
     await prisma.user.deleteMany({ where: { email: testUser.email } });
     await app.close();
+    await prisma.$disconnect();
   });
 
   describe('POST /api/auth/register', () => {
@@ -114,7 +114,7 @@ describe('Auth (e2e)', () => {
     it('should reject wrong password with 401', async () => {
       await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ email: testUser.email, password: 'WrongPassword!' })
+        .send({ email: testUser.email, password: 'Wr0ng#Auth999!' })
         .expect(401);
     });
   });

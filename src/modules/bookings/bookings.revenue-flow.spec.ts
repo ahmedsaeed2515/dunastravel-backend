@@ -223,6 +223,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         titleJsonb: { en: 'Lux Tour' },
       };
       mockTx.tour.findUnique.mockResolvedValue(tour);
+      mockTx.tour.findFirst.mockResolvedValue(tour);
 
       const availability = {
         id: 'avail-1',

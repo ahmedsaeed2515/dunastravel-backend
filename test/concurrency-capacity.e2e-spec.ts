@@ -58,9 +58,20 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
     if (!tour) throw new Error('Cairo Express tour not found');
     testTourId = tour.id;
 
-    // Create a dedicated isolated test slot with exactly 1 seat
-    const slot = await prisma.tourAvailability.create({
-      data: {
+    // Create/upsert a dedicated isolated test slot with exactly 1 seat
+    const slot = await prisma.tourAvailability.upsert({
+      where: {
+        tourId_date: {
+          tourId: testTourId,
+          date: new Date(`${testDateStr}T00:00:00.000Z`),
+        },
+      },
+      update: {
+        totalCapacity: 1,
+        remainingSeats: 1,
+        status: 'AVAILABLE',
+      },
+      create: {
         tourId: testTourId,
         date: new Date(`${testDateStr}T00:00:00.000Z`),
         totalCapacity: 1,

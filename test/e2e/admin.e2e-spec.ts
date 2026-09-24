@@ -4,7 +4,6 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 
 describe('Admin (e2e)', () => {
   let app: INestApplication;
@@ -13,17 +12,18 @@ describe('Admin (e2e)', () => {
   let userCookie: string;
   let testTourId: string;
   let testBookingRef: string;
+  const csrfToken = 'dummy_csrf_token_for_testing_123456';
 
   const adminCredentials = {
     name: 'E2E Admin User',
     email: `e2e-admin-${Date.now()}@test.com`,
-    password: 'AdminPass123!',
+    password: 'Str0ng#Adm2026!',
   };
 
   const regularUser = {
     name: 'E2E Regular User',
     email: `e2e-user-${Date.now()}@test.com`,
-    password: 'UserPass123!',
+    password: 'Str0ng#Usr2026!',
   };
 
   beforeAll(async () => {
@@ -36,7 +36,6 @@ describe('Admin (e2e)', () => {
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
-    app.useGlobalInterceptors(new TransformInterceptor());
     app.setGlobalPrefix('api');
     await app.init();
 
@@ -47,11 +46,33 @@ describe('Admin (e2e)', () => {
       data: {
         slug: `e2e-admin-tour-${Date.now()}`,
         titleJsonb: { en: 'Admin E2E Tour' },
-        basePriceUsd: 299.99,
+        basePriceUsd: 199.99,
+        status: 'PUBLISHED',
         isActive: true,
       },
     });
     testTourId = tour.id;
+
+    await prisma.tourAvailability.upsert({
+      where: {
+        tourId_date: {
+          tourId: testTourId,
+          date: new Date('2028-06-01T00:00:00.000Z'),
+        },
+      },
+      update: {
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
+      create: {
+        tourId: testTourId,
+        date: new Date('2028-06-01T00:00:00.000Z'),
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
+    });
 
     // Setup admin user
     await request(app.getHttpServer())
@@ -71,7 +92,7 @@ describe('Admin (e2e)', () => {
       (adminLogin.headers['set-cookie'] as unknown as string[]).find(
         (c: string) => c.startsWith('access_token='),
       ) ?? '';
-    adminCookie = `${adminCookie}; csrf_token=dummy_csrf`;
+    adminCookie = `${adminCookie}; csrf_token=${csrfToken}`;
 
     // Setup regular user
     await request(app.getHttpServer())
@@ -88,39 +109,72 @@ describe('Admin (e2e)', () => {
       (userLogin.headers['set-cookie'] as unknown as string[]).find(
         (c: string) => c.startsWith('access_token='),
       ) ?? '';
-    userCookie = `${userCookie}; csrf_token=dummy_csrf`;
+    userCookie = `${userCookie}; csrf_token=${csrfToken}`;
 
     // Create a test booking
     const bookingRes = await request(app.getHttpServer())
       .post('/api/bookings')
       .set('Cookie', userCookie)
-      .set('x-csrf-token', 'dummy_csrf')
+      .set('x-csrf-token', csrfToken)
+      .set('idempotency-key', `bkg_admin_e2e_${Date.now()}`)
       .send({
         tourId: testTourId,
-        arrivalDate: '2027-06-01',
+        arrivalDate: '2028-06-01',
         adults: 2,
         children: 0,
         infants: 0,
-        passengerNames: [
-          { passengerType: 'adult', fullName: 'Admin E2E Passenger' },
-          { passengerType: 'adult', fullName: 'Second Passenger' },
-        ],
-        billing: {
-          fullName: 'Admin E2E',
-          email: 'admin-e2e@booking.com',
-          phone: '+1234567890',
-          invoiceType: 'PERSONAL',
+        type: 'booking',
+        fullName: 'Admin E2E Passenger',
+        email: 'admin-e2e@booking.com',
+        phone: '+1234567890',
+        passengerNames: {
+          adult_0: 'Admin E2E Passenger',
+          adult_1: 'Second Passenger',
         },
+        invoiceType: 'PERSONAL',
       });
     testBookingRef = bookingRes.body.data?.referenceCode;
   });
 
   afterAll(async () => {
-    await prisma.booking.deleteMany({ where: { tourId: testTourId } });
-    await prisma.tour.deleteMany({ where: { id: testTourId } });
-    await prisma.user.deleteMany({
-      where: { email: { in: [adminCredentials.email, regularUser.email] } },
-    });
+    try {
+      if (testBookingRef) {
+        const bkg = await prisma.booking.findFirst({
+          where: { referenceCode: testBookingRef },
+        });
+        if (bkg) {
+          await prisma.bookingActivityLog.deleteMany({
+            where: { bookingId: bkg.id },
+          }).catch(() => {});
+          await prisma.payment.deleteMany({
+            where: { bookingId: bkg.id },
+          }).catch(() => {});
+          await prisma.invoice.deleteMany({
+            where: { bookingId: bkg.id },
+          }).catch(() => {});
+          await prisma.billingInfo.deleteMany({
+            where: { bookingId: bkg.id },
+          }).catch(() => {});
+          await prisma.passenger.deleteMany({
+            where: { bookingId: bkg.id },
+          }).catch(() => {});
+          await prisma.booking.deleteMany({
+            where: { id: bkg.id },
+          }).catch(() => {});
+        }
+      }
+      await prisma.tourAvailability.deleteMany({
+        where: { tourId: testTourId },
+      }).catch(() => {});
+      await prisma.tour.deleteMany({
+        where: { id: testTourId },
+      }).catch(() => {});
+      await prisma.user.deleteMany({
+        where: { email: { in: [adminCredentials.email, regularUser.email] } },
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
     await app.close();
   });
 
@@ -166,8 +220,8 @@ describe('Admin (e2e)', () => {
 
       expect(res.body.success).toBe(true);
       expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body).toHaveProperty('total');
-      expect(res.body).toHaveProperty('totalPages');
+      expect(res.body.meta).toHaveProperty('total');
+      expect(res.body.meta).toHaveProperty('totalPages');
     });
 
     it('should filter by status=PENDING', async () => {
@@ -207,7 +261,7 @@ describe('Admin (e2e)', () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/admin/bookings/${testBookingRef}/status`)
         .set('Cookie', adminCookie)
-        .set('x-csrf-token', 'dummy_csrf')
+        .set('x-csrf-token', csrfToken)
         .send({ status: 'CONFIRMED' })
         .expect(200);
 
@@ -218,7 +272,7 @@ describe('Admin (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/bookings/${testBookingRef}/status`)
         .set('Cookie', adminCookie)
-        .set('x-csrf-token', 'dummy_csrf')
+        .set('x-csrf-token', csrfToken)
         .send({ status: 'INVALID_STATUS' })
         .expect(400);
     });

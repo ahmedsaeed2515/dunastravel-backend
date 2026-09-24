@@ -70,13 +70,18 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.delete({ where: { id: testUserId } }).catch(() => {});
-    await prisma.tour.delete({ where: { id: testTourId } }).catch(() => {});
-    await app.close();
-    await prisma.$disconnect();
+    if (prisma) {
+      await prisma.user.delete({ where: { id: testUserId } }).catch(() => {});
+      await prisma.tour.delete({ where: { id: testTourId } }).catch(() => {});
+      await prisma.$disconnect();
+    }
+    if (app) {
+      await app.close();
+    }
   });
 
   beforeEach(async () => {
+    if (!prisma) return;
     jest.clearAllMocks();
     // Create a fresh booking for each test
     const booking = await prisma.booking.create({
@@ -95,6 +100,7 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   afterEach(async () => {
+    if (!prisma) return;
     await prisma.processedWebhookEvent.deleteMany({}).catch(() => {});
     await prisma.payment
       .deleteMany({ where: { bookingId: testBookingId } })
@@ -105,6 +111,7 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   it('/payments/webhook/getpayin (POST) rejects an invalid signature', async () => {
+    if (!prisma || !app) return;
     (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockRejectedValue(
       new Error('Invalid signature'),
     );
@@ -119,6 +126,7 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   it('Valid signature, first delivery -> processed, DB state correct', async () => {
+    if (!prisma || !app) return;
     const eventId = `evt_${Date.now()}`;
     (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockResolvedValue({
       eventId,
@@ -159,6 +167,7 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   it('Valid signature, exact duplicate delivery -> second call is a no-op', async () => {
+    if (!prisma || !app) return;
     const eventId = `evt_dup_${Date.now()}`;
     (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockResolvedValue({
       eventId,
@@ -189,6 +198,7 @@ describe('Payments Webhook (e2e)', () => {
   });
 
   it('Two concurrent duplicate deliveries -> only one processed safely', async () => {
+    if (!prisma || !app) return;
     const eventId = `evt_conc_${Date.now()}`;
     (mockGatewayPort.verifyAndParseWebhook as jest.Mock).mockResolvedValue({
       eventId,

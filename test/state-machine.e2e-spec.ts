@@ -25,8 +25,8 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
   const testUserEmail = 'traveler.test@dunastravel.com';
   const testUserPassword = 'Password123!';
   const testTourSlug = 'cairo-express-4d';
-  const testSlotId = '70e66fa4-05bc-41e8-a7d3-77a4c09d6b92';
-  const testDate = '2026-09-14';
+  let testSlotId: string;
+  const testDate = '2028-09-15';
 
   let hashToken: string;
   let accessToken: string;
@@ -86,11 +86,30 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       hashToken: hashToken,
     });
 
-    // Reset availability slot
-    await prisma.tourAvailability.update({
-      where: { id: testSlotId },
-      data: { totalCapacity: 50, remainingSeats: 50, status: 'AVAILABLE' },
+    // Upsert availability slot for testDate
+    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
+    const slot = await prisma.tourAvailability.upsert({
+      where: {
+        tourId_date: {
+          tourId: tour.id,
+          date: new Date(`${testDate}T00:00:00.000Z`),
+        },
+      },
+      update: {
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
+      create: {
+        tourId: tour.id,
+        date: new Date(`${testDate}T00:00:00.000Z`),
+        totalCapacity: 50,
+        remainingSeats: 50,
+        status: 'AVAILABLE',
+      },
     });
+    testSlotId = slot.id;
 
     // Login
     const loginRes = await request(app.getHttpServer())
@@ -105,8 +124,21 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
   });
 
   afterAll(async () => {
-    fetchSpy?.mockRestore();
-    await app?.close();
+    try {
+      fetchSpy?.mockRestore();
+    } catch {
+      // ignore
+    }
+    try {
+      await app?.close();
+    } catch {
+      // ignore
+    }
+    try {
+      await prisma?.$disconnect();
+    } catch {
+      // ignore
+    }
   });
 
   it('1. State Transition Matrix: strictly forbids illegal regressions (CONFIRMED -> PENDING)', async () => {

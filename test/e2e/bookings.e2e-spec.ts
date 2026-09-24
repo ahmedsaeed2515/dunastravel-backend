@@ -17,25 +17,25 @@ describe('Bookings (e2e)', () => {
   const adminUser = {
     name: 'E2E Admin',
     email: `e2e-admin-booking-${Date.now()}@test.com`,
-    password: 'AdminPass123!',
+    password: 'Str0ng#Adm2026!',
   };
 
   const createBookingPayload = () => ({
+    type: 'booking' as const,
     tourId,
     arrivalDate: '2027-03-15',
     adults: 2,
     children: 1,
     infants: 0,
-    passengerNames: [
-      { passengerType: 'adult', fullName: 'John Doe' },
-      { passengerType: 'adult', fullName: 'Jane Doe' },
-      { passengerType: 'child', fullName: 'Baby Doe' },
-    ],
-    billing: {
-      fullName: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1234567890',
-      invoiceType: 'PERSONAL',
+    fullName: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1234567890',
+    invoiceType: 'PERSONAL',
+    language: 'en',
+    passengerNames: {
+      adult_0: 'John Doe',
+      adult_1: 'Jane Doe',
+      child_0: 'Baby Doe',
     },
   });
 
@@ -60,6 +60,7 @@ describe('Bookings (e2e)', () => {
         slug: `e2e-tour-${Date.now()}`,
         titleJsonb: { en: 'E2E Test Tour', ar: '���� �������' },
         basePriceUsd: 199.99,
+        status: 'PUBLISHED',
         isActive: true,
       },
     });
@@ -91,22 +92,44 @@ describe('Bookings (e2e)', () => {
       csrfCookies
         ?.find((c: string) => c.startsWith('csrf_token='))
         ?.split(';')[0] ?? '';
-    csrfToken = csrfRes.body.csrfToken;
+    csrfToken =
+      csrfRes.body?.data?.csrfToken ||
+      csrfRes.body?.csrfToken ||
+      csrfCookie.replace('csrf_token=', '');
   });
 
   afterAll(async () => {
-    // Cleanup
-    await prisma.tour.deleteMany({ where: { id: tourId } });
-    await prisma.user.deleteMany({ where: { email: adminUser.email } });
-    await app.close();
+    try {
+      if (createdRefCode) {
+        const bkg = await prisma.booking.findFirst({ where: { referenceCode: createdRefCode } });
+        if (bkg) {
+          await prisma.bookingActivityLog.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
+          await prisma.payment.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
+          await prisma.invoice.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
+          await prisma.billingInfo.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
+          await prisma.passenger.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
+          await prisma.booking.deleteMany({ where: { id: bkg.id } }).catch(() => {});
+        }
+      }
+      if (tourId) {
+        await prisma.tour.deleteMany({ where: { id: tourId } }).catch(() => {});
+      }
+      if (adminUser.email) {
+        await prisma.user.deleteMany({ where: { email: adminUser.email } }).catch(() => {});
+      }
+    } finally {
+      await app?.close();
+      await prisma?.$disconnect();
+    }
   });
 
   describe('POST /api/bookings', () => {
-    it('should create a booking as guest and return 201', async () => {
+    it('should create a booking as authenticated user and return 201', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/bookings')
-        .set('Cookie', csrfCookie)
+        .set('Cookie', `${adminCookie}; ${csrfCookie}`)
         .set('x-csrf-token', csrfToken)
+        .set('idempotency-key', `bkg_e2e_1_${Date.now()}`)
         .send(createBookingPayload())
         .expect(201);
 
@@ -122,8 +145,9 @@ describe('Bookings (e2e)', () => {
     it('should reject invalid tourId with 422', async () => {
       await request(app.getHttpServer())
         .post('/api/bookings')
-        .set('Cookie', csrfCookie)
+        .set('Cookie', `${adminCookie}; ${csrfCookie}`)
         .set('x-csrf-token', csrfToken)
+        .set('idempotency-key', `bkg_e2e_2_${Date.now()}`)
         .send({
           ...createBookingPayload(),
           tourId: '00000000-0000-0000-0000-000000000000',
@@ -134,41 +158,41 @@ describe('Bookings (e2e)', () => {
     it('should reject adults=0 with 400', async () => {
       await request(app.getHttpServer())
         .post('/api/bookings')
-        .set('Cookie', csrfCookie)
+        .set('Cookie', `${adminCookie}; ${csrfCookie}`)
         .set('x-csrf-token', csrfToken)
+        .set('idempotency-key', `bkg_e2e_3_${Date.now()}`)
         .send({ ...createBookingPayload(), adults: 0 })
         .expect(400);
     });
 
     it('should require companyName when invoiceType=COMPANY', async () => {
-      const payload = createBookingPayload();
-      payload.billing = { ...payload.billing, invoiceType: 'COMPANY' };
+      const payload: any = {
+        ...createBookingPayload(),
+        invoiceType: 'COMPANY',
+      };
+      delete payload.companyName;
       await request(app.getHttpServer())
         .post('/api/bookings')
-        .set('Cookie', csrfCookie)
+        .set('Cookie', `${adminCookie}; ${csrfCookie}`)
         .set('x-csrf-token', csrfToken)
+        .set('idempotency-key', `bkg_e2e_4_${Date.now()}`)
         .send(payload)
         .expect(400);
     });
   });
 
   describe('GET /api/bookings/:referenceCode', () => {
-    it('should retrieve booking by refCode + billing email', async () => {
+    it('should retrieve booking by refCode when authenticated', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/api/bookings/${createdRefCode}?email=john.doe@example.com`)
+        .get(`/api/bookings/${createdRefCode}`)
+        .set('Cookie', adminCookie)
         .expect(200);
 
       expect(res.body.data.referenceCode).toBe(createdRefCode);
       expect(res.body.data.adults).toBe(2);
     });
 
-    it('should return 404 when wrong email is provided (IDOR protection)', async () => {
-      await request(app.getHttpServer())
-        .get(`/api/bookings/${createdRefCode}?email=hacker@evil.com`)
-        .expect(404);
-    });
-
-    it('should return 404 when no email or auth provided', async () => {
+    it('should return 404 when no email or auth provided (IDOR protection)', async () => {
       await request(app.getHttpServer())
         .get(`/api/bookings/${createdRefCode}`)
         .expect(404);
@@ -176,13 +200,14 @@ describe('Bookings (e2e)', () => {
 
     it('should return 400 for invalid referenceCode format', async () => {
       await request(app.getHttpServer())
-        .get('/api/bookings/INVALID-CODE?email=x@x.com')
+        .get('/api/bookings/INVALID-BOOKING-REFERENCE-CODE-THAT-IS-TOO-LONG')
         .expect(400);
     });
 
     it('should return 404 for non-existent referenceCode', async () => {
       await request(app.getHttpServer())
-        .get('/api/bookings/BKG-ZZZZZZ?email=john.doe@example.com')
+        .get('/api/bookings/BKG-ZZZZZZ')
+        .set('Cookie', adminCookie)
         .expect(404);
     });
   });
@@ -190,13 +215,14 @@ describe('Bookings (e2e)', () => {
   describe('GET /api/invoices/:invoiceNumber', () => {
     it('should retrieve invoice details', async () => {
       // Get invoice number from booking
-      const bookingRes = await request(app.getHttpServer()).get(
-        `/api/bookings/${createdRefCode}?email=john.doe@example.com`,
-      );
+      const bookingRes = await request(app.getHttpServer())
+        .get(`/api/bookings/${createdRefCode}`)
+        .set('Cookie', adminCookie);
       const invoiceNumber = bookingRes.body.data.invoiceNumber;
 
       const res = await request(app.getHttpServer())
         .get(`/api/invoices/${invoiceNumber}`)
+        .set('Cookie', adminCookie)
         .expect(200);
 
       expect(res.body.data.invoiceNumber).toBe(invoiceNumber);
