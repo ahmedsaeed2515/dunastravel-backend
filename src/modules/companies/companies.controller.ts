@@ -70,7 +70,7 @@ export class CompaniesController {
   }
 
   @Post()
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Create a new B2B company' })
   async create(
     @Body() createCompanyDto: CreateCompanyDto,
@@ -84,21 +84,21 @@ export class CompaniesController {
   }
 
   @Get()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'List companies with filters' })
   findAll(@Query() filters: CompanyQueryFilters) {
     return this.companiesService.findAll(filters);
   }
 
   @Get(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Get company by ID with full relations' })
   findOne(@Param('id') id: string) {
     return this.companiesService.findOne(id);
   }
 
   @Patch('bulk/update')
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Bulk update companies' })
   async bulkUpdate(
     @Body() data: BulkUpdateCompaniesDto,
@@ -112,7 +112,7 @@ export class CompaniesController {
   }
 
   @Patch(':id')
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Update company details' })
   async update(
     @Param('id') id: string,

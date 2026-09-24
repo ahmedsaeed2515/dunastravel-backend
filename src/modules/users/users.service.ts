@@ -85,6 +85,7 @@ export interface UpdateUserData {
   phone?: string;
   passwordHash?: string;
   role?: UserRole;
+  companyId?: string | null;
 }
 
 import { Inject } from '@nestjs/common';
@@ -111,10 +112,7 @@ export class UserService {
   }
 
   async hasActiveCompanyMembership(user: User): Promise<boolean> {
-    if (
-      user.role !== UserRole.AGENT &&
-      user.role !== UserRole.COMPANY
-    ) {
+    if (user.role !== UserRole.AGENT && user.role !== UserRole.COMPANY) {
       return true;
     }
     if (!user.companyId) return false;
@@ -230,6 +228,7 @@ export class UserService {
           : undefined,
         passwordHash: data.passwordHash,
         role: data.role,
+        ...(data.companyId !== undefined ? { companyId: data.companyId } : {}),
         ...(data.passwordHash || roleIsChanging
           ? {
               refreshToken: null,
@@ -273,8 +272,19 @@ export class UserService {
     isVerified?: boolean;
     dateFrom?: string;
     dateTo?: string;
+    companyId?: string;
   }): Promise<{ users: UserListItem[]; total: number }> {
-    const { page, limit, search, role, status, isVerified, dateFrom, dateTo } = options;
+    const {
+      page,
+      limit,
+      search,
+      role,
+      status,
+      isVerified,
+      dateFrom,
+      dateTo,
+      companyId,
+    } = options;
     const skip = (page - 1) * limit;
 
     const where: Prisma.UserWhereInput = {
@@ -282,6 +292,11 @@ export class UserService {
       ...(role && { role }),
       ...(status && { status }),
       ...(isVerified !== undefined && { isVerified }),
+      ...(companyId === 'null'
+        ? { companyId: null }
+        : companyId
+          ? { companyId }
+          : {}),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -400,7 +415,11 @@ export class UserService {
       );
     }
 
-    if (actorRole && actorRole !== UserRole.SUPER_ADMIN && user.role === UserRole.ADMIN) {
+    if (
+      actorRole &&
+      actorRole !== UserRole.SUPER_ADMIN &&
+      user.role === UserRole.ADMIN
+    ) {
       throw new ForbiddenException(
         'Only SUPER_ADMIN can delete administrator accounts',
       );
@@ -659,7 +678,9 @@ export class UserService {
             select: {
               totalAmountUsd: true,
               status: true,
-              payments: { select: { amount: true, isRefund: true, status: true } },
+              payments: {
+                select: { amount: true, isRefund: true, status: true },
+              },
             },
           },
           _count: {
@@ -734,7 +755,10 @@ export class UserService {
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const customerNumber = `CUST-2026-${randomSuffix}`;
-    const dummyHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12);
+    const dummyHash = await bcrypt.hash(
+      crypto.randomBytes(16).toString('hex'),
+      12,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -746,14 +770,22 @@ export class UserService {
           passwordHash: dummyHash,
           isVerified: true,
           customerNumber,
-          nationality: dto.nationality ? sanitizePlainText(dto.nationality) : null,
+          nationality: dto.nationality
+            ? sanitizePlainText(dto.nationality)
+            : null,
           isVip: dto.isVip ?? false,
           preferredLanguage: dto.preferredLanguage || 'en',
           preferredCurrency: dto.preferredCurrency || 'USD',
-          preferredDestination: dto.preferredDestination ? sanitizePlainText(dto.preferredDestination) : null,
-          preferredTravelType: dto.preferredTravelType ? sanitizePlainText(dto.preferredTravelType) : null,
+          preferredDestination: dto.preferredDestination
+            ? sanitizePlainText(dto.preferredDestination)
+            : null,
+          preferredTravelType: dto.preferredTravelType
+            ? sanitizePlainText(dto.preferredTravelType)
+            : null,
           customerSource: dto.customerSource || 'ADMIN',
-          passportNumber: dto.passportNumber ? encryptSensitiveField(dto.passportNumber) : null,
+          passportNumber: dto.passportNumber
+            ? encryptSensitiveField(dto.passportNumber)
+            : null,
           tags: dto.tags || [],
           segments: dto.segments || [],
           status: 'ACTIVE',
@@ -998,6 +1030,21 @@ export class UserService {
       throw new BadRequestException('Date of birth cannot be in the future');
     }
 
+    let normalizedEmail: string | undefined;
+    if (dto.email !== undefined && dto.email.trim() !== '') {
+      normalizedEmail = dto.email.trim().toLowerCase();
+      if (normalizedEmail !== user.email) {
+        const existing = await this.prisma.user.findFirst({
+          where: { email: normalizedEmail, id: { not: id }, deletedAt: null },
+        });
+        if (existing) {
+          throw new ConflictException(
+            'Email address is already in use by another user',
+          );
+        }
+      }
+    }
+
     const tags = this.sanitizeStringArray(dto.tags);
     const segments = this.sanitizeStringArray(dto.segments);
     const changedFields = Object.keys(dto);
@@ -1008,6 +1055,11 @@ export class UserService {
       const result = await tx.user.update({
         where: { id },
         data: {
+          ...(normalizedEmail && { email: normalizedEmail }),
+          ...(dto.name && { name: sanitizePlainText(dto.name).slice(0, 100) }),
+          ...(dto.phone !== undefined && {
+            phone: dto.phone ? dto.phone.trim() : null,
+          }),
           ...(dto.customerNumber && {
             customerNumber: dto.customerNumber.toUpperCase(),
           }),
@@ -1223,8 +1275,8 @@ export class UserService {
           throw new BadRequestException('Invalid customer document asset');
         }
 
-        const [existingDocument, existingBookingAttachment] =
-          await Promise.all([
+        const [existingDocument, existingBookingAttachment] = await Promise.all(
+          [
             tx.customerDocument.findFirst({
               where: { mediaAssetId: dto.mediaAssetId },
               select: { id: true },
@@ -1233,7 +1285,8 @@ export class UserService {
               where: { mediaAssetId: dto.mediaAssetId },
               select: { id: true },
             }),
-          ]);
+          ],
+        );
         if (existingDocument || existingBookingAttachment) {
           throw new ConflictException('Document asset is already attached');
         }
@@ -1328,7 +1381,9 @@ export class UserService {
             select: {
               totalAmountUsd: true,
               status: true,
-              payments: { select: { amount: true, isRefund: true, status: true } },
+              payments: {
+                select: { amount: true, isRefund: true, status: true },
+              },
             },
           },
         },
@@ -1418,8 +1473,8 @@ export class UserService {
     if (!address) return {};
     return Object.fromEntries(
       Object.entries(address)
-        .filter((entry): entry is [string, string] =>
-          typeof entry[1] === 'string',
+        .filter(
+          (entry): entry is [string, string] => typeof entry[1] === 'string',
         )
         .map(([key, value]) => [key, sanitizePlainText(value)]),
     );
@@ -1453,9 +1508,9 @@ export class UserService {
   private redactActivityDetails(value: unknown, depth = 0): unknown {
     if (depth > 5 || value === null || value === undefined) return null;
     if (Array.isArray(value)) {
-      return value.slice(0, 100).map((item) =>
-        this.redactActivityDetails(item, depth + 1),
-      );
+      return value
+        .slice(0, 100)
+        .map((item) => this.redactActivityDetails(item, depth + 1));
     }
     if (typeof value !== 'object') {
       return typeof value === 'string' ? value.slice(0, 1000) : value;
@@ -1478,7 +1533,11 @@ export class UserService {
 
   async getMonitoringOverview() {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -1497,11 +1556,19 @@ export class UserService {
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.user.count({ where: { deletedAt: null, status: 'ACTIVE' } }),
-      this.prisma.user.count({ where: { deletedAt: null, status: 'SUSPENDED' } }),
+      this.prisma.user.count({
+        where: { deletedAt: null, status: 'SUSPENDED' },
+      }),
       this.prisma.user.count({ where: { deletedAt: null, isVip: true } }),
-      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: todayStart } } }),
-      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
-      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.user.count({
+        where: { deletedAt: null, createdAt: { gte: todayStart } },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } },
+      }),
       this.prisma.user.groupBy({
         by: ['role'],
         where: { deletedAt: null },
@@ -1518,10 +1585,13 @@ export class UserService {
       }),
     ]);
 
-    const rolesDistribution = roleCounts.reduce((acc, curr) => {
-      acc[curr.role] = curr._count._all;
-      return acc;
-    }, {} as Record<string, number>);
+    const rolesDistribution = roleCounts.reduce(
+      (acc, curr) => {
+        acc[curr.role] = curr._count._all;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       totalUsers,
@@ -1546,7 +1616,12 @@ export class UserService {
       where: { id, deletedAt: null },
       include: {
         company: {
-          select: { id: true, name: true, referenceCode: true, companyType: true },
+          select: {
+            id: true,
+            name: true,
+            referenceCode: true,
+            companyType: true,
+          },
         },
         bookings: {
           take: 20,
@@ -1582,7 +1657,12 @@ export class UserService {
           orderBy: { createdAt: 'desc' },
           include: {
             tour: {
-              select: { id: true, slug: true, titleJsonb: true, basePriceUsd: true },
+              select: {
+                id: true,
+                slug: true,
+                titleJsonb: true,
+                basePriceUsd: true,
+              },
             },
           },
         },
@@ -1628,23 +1708,22 @@ export class UserService {
 
     const auditLogs = await this.prisma.auditLog.findMany({
       where: {
-        OR: [
-          { actorId: user.id },
-          { entityId: user.id },
-        ],
+        OR: [{ actorId: user.id }, { entityId: user.id }],
       },
       take: 50,
       orderBy: { createdAt: 'desc' },
     });
 
-    const customerActivityLogs = await this.prisma.customerActivityLog.findMany({
-      where: { customerId: user.id },
-      take: 50,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
+    const customerActivityLogs = await this.prisma.customerActivityLog.findMany(
+      {
+        where: { customerId: user.id },
+        take: 50,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
       },
-    });
+    );
 
     const analyticsEvents = await this.prisma.analyticsEvent.findMany({
       where: { userId: user.id },
@@ -1663,7 +1742,14 @@ export class UserService {
 
     const rawTimeline: Array<{
       id: string;
-      type: 'AUTH' | 'BOOKING' | 'INQUIRY' | 'REVIEW' | 'FAVORITE' | 'ADMIN_ACTION' | 'NAVIGATION';
+      type:
+        | 'AUTH'
+        | 'BOOKING'
+        | 'INQUIRY'
+        | 'REVIEW'
+        | 'FAVORITE'
+        | 'ADMIN_ACTION'
+        | 'NAVIGATION';
       action: string;
       title: string;
       description?: string;
@@ -1680,7 +1766,9 @@ export class UserService {
         type: log.action.includes('LOGIN') ? 'AUTH' : 'ADMIN_ACTION',
         action: log.action,
         title: log.action.replace(/_/g, ' '),
-        description: log.entityType ? `Target: ${log.entityType} ${log.entityId || ''}` : undefined,
+        description: log.entityType
+          ? `Target: ${log.entityType} ${log.entityId || ''}`
+          : undefined,
         timestamp: log.createdAt,
         ipAddress: log.ipAddress,
         userAgent: log.userAgent,
@@ -1703,7 +1791,11 @@ export class UserService {
 
     for (const b of user.bookings) {
       const tourTitleObj = b.tour?.titleJsonb as any;
-      const tourTitle = tourTitleObj?.en || tourTitleObj?.ar || tourTitleObj?.es || 'Tour booking';
+      const tourTitle =
+        tourTitleObj?.en ||
+        tourTitleObj?.ar ||
+        tourTitleObj?.es ||
+        'Tour booking';
       rawTimeline.push({
         id: `booking-${b.id}`,
         type: 'BOOKING',
@@ -1712,12 +1804,19 @@ export class UserService {
         description: `${tourTitle} — $${b.totalAmountUsd}`,
         timestamp: b.createdAt,
         status: b.status,
-        metadata: { bookingId: b.id, tourId: b.tourId, status: b.status, totalPrice: Number(b.totalAmountUsd) },
+        metadata: {
+          bookingId: b.id,
+          tourId: b.tourId,
+          status: b.status,
+          totalPrice: Number(b.totalAmountUsd),
+        },
       });
     }
 
     for (const inq of inquiries) {
-      const dest = Array.isArray(inq.destinations) ? inq.destinations.join(', ') : 'Tailor-Made Tour';
+      const dest = Array.isArray(inq.destinations)
+        ? inq.destinations.join(', ')
+        : 'Tailor-Made Tour';
       rawTimeline.push({
         id: `inquiry-${inq.id}`,
         type: 'INQUIRY',
@@ -1736,7 +1835,9 @@ export class UserService {
         type: 'REVIEW',
         action: 'REVIEW_POSTED',
         title: `Review rating: ${rev.rating}★`,
-        description: rev.comment ? (rev.comment.slice(0, 120) + (rev.comment.length > 120 ? '...' : '')) : undefined,
+        description: rev.comment
+          ? rev.comment.slice(0, 120) + (rev.comment.length > 120 ? '...' : '')
+          : undefined,
         timestamp: rev.createdAt,
         status: rev.status,
         metadata: { tourId: rev.tourId, rating: rev.rating },
@@ -1745,7 +1846,8 @@ export class UserService {
 
     for (const fav of user.tourFavorites) {
       const tourTitleObj = fav.tour?.titleJsonb as any;
-      const tourTitle = tourTitleObj?.en || tourTitleObj?.ar || tourTitleObj?.es || 'Tour';
+      const tourTitle =
+        tourTitleObj?.en || tourTitleObj?.ar || tourTitleObj?.es || 'Tour';
       rawTimeline.push({
         id: `fav-${fav.id}`,
         type: 'FAVORITE',
@@ -1761,20 +1863,27 @@ export class UserService {
         type: 'NAVIGATION',
         action: ev.eventName,
         title: `Page event: ${ev.eventName}`,
-        description: ev.pathname || (ev.tourSlug ? `Tour: ${ev.tourSlug}` : undefined),
+        description:
+          ev.pathname || (ev.tourSlug ? `Tour: ${ev.tourSlug}` : undefined),
         timestamp: ev.createdAt,
         metadata: ev.properties,
       });
     }
 
-    rawTimeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    rawTimeline.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
 
-    const completedBookings = user.bookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED').length;
+    const completedBookings = user.bookings.filter(
+      (b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED',
+    ).length;
     const totalSpent = user.bookings
       .filter((b) => b.status !== 'CANCELLED')
       .reduce((sum, b) => sum + Number(b.totalAmountUsd || 0), 0);
 
-    const lastActiveTimestamp = rawTimeline.length > 0 ? rawTimeline[0].timestamp : user.updatedAt;
+    const lastActiveTimestamp =
+      rawTimeline.length > 0 ? rawTimeline[0].timestamp : user.updatedAt;
     const lastLoginLog = auditLogs.find((l) => l.action.includes('LOGIN'));
 
     return {
@@ -1831,7 +1940,10 @@ export class UserService {
         totalPrice: Number(b.totalAmountUsd),
         currency: 'USD',
         tourId: b.tourId,
-        tourTitle: (b.tour?.titleJsonb as any)?.en || (b.tour?.titleJsonb as any)?.ar || 'Tour booking',
+        tourTitle:
+          (b.tour?.titleJsonb as any)?.en ||
+          (b.tour?.titleJsonb as any)?.ar ||
+          'Tour booking',
         startDate: b.arrivalDate ? b.arrivalDate.toISOString() : undefined,
         endDate: b.departureDate ? b.departureDate.toISOString() : undefined,
         createdAt: b.createdAt.toISOString(),
@@ -1865,14 +1977,23 @@ export class UserService {
       this.prisma.auditLog.count({ where: whereAudit }),
     ]);
 
-    const actorIds = [...new Set(auditLogs.map(l => l.actorId).filter((id): id is string => Boolean(id)))];
-    const actors = actorIds.length > 0 ? await this.prisma.user.findMany({
-      where: { id: { in: actorIds } },
-      select: { id: true, name: true, email: true, role: true },
-    }) : [];
-    const actorMap = new Map(actors.map(a => [a.id, a]));
+    const actorIds = [
+      ...new Set(
+        auditLogs
+          .map((l) => l.actorId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const actors =
+      actorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: actorIds } },
+            select: { id: true, name: true, email: true, role: true },
+          })
+        : [];
+    const actorMap = new Map(actors.map((a) => [a.id, a]));
 
-    const items = auditLogs.map(l => ({
+    const items = auditLogs.map((l) => ({
       id: l.id,
       action: l.action,
       entityType: l.entityType,
@@ -1897,7 +2018,13 @@ export class UserService {
     };
   }
 
-  async suspendUser(id: string, reason: string, actorId: string, actorRole: string, ip?: string) {
+  async suspendUser(
+    id: string,
+    reason: string,
+    actorId: string,
+    actorRole: string,
+    ip?: string,
+  ) {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
 
@@ -1937,7 +2064,12 @@ export class UserService {
     return this.toSafeUser(updated);
   }
 
-  async activateUser(id: string, actorId: string, actorRole: string, ip?: string) {
+  async activateUser(
+    id: string,
+    actorId: string,
+    actorRole: string,
+    ip?: string,
+  ) {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
 
@@ -2000,7 +2132,11 @@ export class UserService {
     return { success: true };
   }
 
-  async addUserMonitoringNote(id: string, dto: AddUserMonitoringNoteDto, actorId: string) {
+  async addUserMonitoringNote(
+    id: string,
+    dto: AddUserMonitoringNoteDto,
+    actorId: string,
+  ) {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
 

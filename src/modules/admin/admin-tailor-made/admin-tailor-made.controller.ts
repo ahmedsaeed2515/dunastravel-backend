@@ -27,6 +27,7 @@ import {
   AssignTailorMadeInquiryDto,
   QuoteTailorMadeInquiryDto,
   UpdateTailorMadeStatusDto,
+  UpdateTailorMadeInquiryDto,
 } from './dto/admin-tailor-made.dto';
 
 @ApiTags('admin-tailor-made')
@@ -66,19 +67,10 @@ export class AdminTailorMadeController {
   @ApiOperation({ summary: 'Update inquiry assignment and/or status' })
   async updateInquiry(
     @Param('id') id: string,
-    @Body() body: { assigneeId?: string; status?: any; notes?: string },
+    @Body() body: UpdateTailorMadeInquiryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    if (body.assigneeId !== undefined) {
-      if (user.role === UserRole.AGENT) {
-        throw new ForbiddenException('Agents cannot reassign inquiries');
-      }
-      await this.service.assignInquiry(id, body.assigneeId, user);
-    }
-    if (body.status !== undefined) {
-      return this.service.updateStatus(id, body.status, body.notes, user);
-    }
-    return this.service.findOne(id, user);
+    return this.service.updateInquiry(id, body, user);
   }
 
   @Patch(':id/status')

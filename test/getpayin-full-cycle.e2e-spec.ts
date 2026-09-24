@@ -188,7 +188,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     expect(data).toHaveProperty('csrfToken');
 
     // Extract access token from cookies
-    const cookies = res.headers['set-cookie'] as string[] | undefined;
+    const cookies = res.headers['set-cookie'] as unknown as string[] | undefined;
     expect(cookies).toBeDefined();
 
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
@@ -325,7 +325,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     };
 
     // Calculate official PayLink HMAC-SHA256 signature using PaylinkClient
-    payload.signature = paylinkClient.webhooks.computeSignature(payload, hashToken);
+    payload.signature = (paylinkClient.webhooks as any).computeSignature(payload, hashToken);
 
     const res = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -401,7 +401,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
       success: 1,
       message: 'Payment received successfully',
     };
-    validPayload.signature = paylinkClient.webhooks.computeSignature(validPayload, hashToken);
+    validPayload.signature = (paylinkClient.webhooks as any).computeSignature(validPayload, hashToken);
 
     const replayRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')

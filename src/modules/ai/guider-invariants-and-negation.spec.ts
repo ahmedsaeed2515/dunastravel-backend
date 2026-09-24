@@ -1,7 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResponseInvariantNormalizer } from './services/guider-invariants';
-import { TourCatalogToolService, TravelConstraints, GroundedTourRecommendation } from './services/tour-catalog-tool.service';
-import { ChatOrchestratorService, GuiderOrchestratorResponse } from './services/chat-orchestrator.service';
+import {
+  TourCatalogToolService,
+  TravelConstraints,
+  GroundedTourRecommendation,
+} from './services/tour-catalog-tool.service';
+import {
+  ChatOrchestratorService,
+  GuiderOrchestratorResponse,
+} from './services/chat-orchestrator.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -118,10 +125,25 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
           createdAt: new Date().toISOString(),
         },
         recommendations: {
-          tours: [{ id: 't-1', title: 'Leaked Tour', destination: 'Cairo', durationDays: 3, price: 500, currency: 'USD' }],
+          tours: [
+            {
+              id: 't-1',
+              slug: 't-1',
+              publicUrl: '/tours/t-1',
+              title: 'Leaked Tour',
+              destination: 'Cairo',
+              durationDays: 3,
+              price: 500,
+              currency: 'USD',
+            },
+          ],
           destinations: [],
-          proposal: { title: 'Leaked Proposal', destinations: ['Cairo'], days: [] },
-          comparison: { tours: [] },
+          proposal: {
+            title: 'Leaked Proposal',
+            destinations: ['Cairo'],
+            days: [],
+          } as any,
+          comparison: { tours: [] } as any,
         },
         suggestedReplies: ['Tell me more'],
         actions: [],
@@ -130,13 +152,16 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'en');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'en',
+      );
 
       expect(normalized.responseType).toBe('text');
       expect(normalized.recommendations.tours).toEqual([]);
       expect(normalized.recommendations.proposal).toBeFalsy();
       expect(normalized.recommendations.comparison).toBeFalsy();
-      expect(normalized.leadCapture.required).toBe(false);
+      expect(normalized.leadCapture?.required).toBe(false);
     });
 
     it('downgrades recommendation with 0 matching tours to text and injects polite fallback guidance', () => {
@@ -161,10 +186,15 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'ar');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'ar',
+      );
 
       expect(normalized.responseType).toBe('text');
-      expect(normalized.message.content).toContain('لم نجد حالياً باقة في الكتالوج');
+      expect(normalized.message.content).toContain(
+        'لم نجد حالياً باقة في الكتالوج',
+      );
       expect(normalized.recommendations.tours).toEqual([]);
     });
 
@@ -182,7 +212,11 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         recommendations: {
           tours: [],
           destinations: [],
-          proposal: { title: 'Empty proposal', destinations: [], days: [] },
+          proposal: {
+            title: 'Empty proposal',
+            destinations: [],
+            days: [],
+          } as any,
         },
         suggestedReplies: [],
         actions: [],
@@ -191,7 +225,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'en');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'en',
+      );
 
       expect(normalized.responseType).toBe('text');
       expect(normalized.recommendations.proposal).toBeFalsy();
@@ -209,11 +246,33 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
           createdAt: new Date().toISOString(),
         },
         recommendations: {
-          tours: [{ id: 't-1', title: 'Single Tour', destination: 'Luxor', durationDays: 4, price: 800, currency: 'USD' }],
+          tours: [
+            {
+              id: 't-1',
+              title: 'Single Tour',
+              destination: 'Luxor',
+              durationDays: 4,
+              price: 800,
+              currency: 'USD',
+              slug: 'single-tour',
+              publicUrl: '/tours/single-tour',
+            },
+          ],
           destinations: [],
           comparison: {
-            tours: [{ id: 't-1', title: 'Single Tour', destination: 'Luxor', durationDays: 4, price: 800, currency: 'USD' }],
-          },
+            tours: [
+              {
+                id: 't-1',
+                title: 'Single Tour',
+                destination: 'Luxor',
+                durationDays: 4,
+                price: 800,
+                currency: 'USD',
+                slug: 'single-tour',
+                publicUrl: '/tours/single-tour',
+              } as any,
+            ],
+          } as any,
         },
         suggestedReplies: [],
         actions: [],
@@ -222,7 +281,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'en');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'en',
+      );
 
       // Since only 1 tour was present, comparison is invalid; downgraded to recommendation
       expect(normalized.responseType).toBe('recommendation');
@@ -245,7 +307,18 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
           createdAt: new Date().toISOString(),
         },
         recommendations: {
-          tours: [{ id: 't-1', title: 'Cairo VIP Tour', destination: 'Cairo', durationDays: 3, price: 600, currency: 'USD', slug: 'cairo-vip' }],
+          tours: [
+            {
+              id: 't-1',
+              title: 'Cairo VIP Tour',
+              destination: 'Cairo',
+              durationDays: 3,
+              price: 600,
+              currency: 'USD',
+              slug: 'cairo-vip',
+              publicUrl: '/tours/cairo-vip',
+            },
+          ],
           destinations: [],
         },
         suggestedReplies: [],
@@ -255,7 +328,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'ar');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'ar',
+      );
 
       // Content must NOT claim confirmed booking
       expect(normalized.message.content).not.toContain('تم تأكيد حجزك');
@@ -276,10 +352,46 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         },
         recommendations: {
           tours: [
-            { id: 't-1', slug: 'cairo-tour', title: 'Cairo Tour', destination: 'Cairo', durationDays: 3, price: 500, currency: 'USD' },
-            { id: 't-1', slug: 'cairo-tour', title: 'Cairo Tour Dup', destination: 'Cairo', durationDays: 3, price: 500, currency: 'USD' },
-            { id: 't-2', slug: 'cairo-tour', title: 'Same Slug Tour', destination: 'Cairo', durationDays: 3, price: 500, currency: 'USD' },
-            { id: 't-3', slug: 'luxor-tour', title: 'Luxor Tour', destination: 'Luxor', durationDays: 4, price: 700, currency: 'USD' },
+            {
+              id: 't-1',
+              slug: 'cairo-tour',
+              title: 'Cairo Tour',
+              destination: 'Cairo',
+              durationDays: 3,
+              price: 500,
+              currency: 'USD',
+              publicUrl: '/tours/cairo-tour',
+            },
+            {
+              id: 't-1',
+              slug: 'cairo-tour',
+              title: 'Cairo Tour Dup',
+              destination: 'Cairo',
+              durationDays: 3,
+              price: 500,
+              currency: 'USD',
+              publicUrl: '/tours/cairo-tour',
+            },
+            {
+              id: 't-2',
+              slug: 'cairo-tour',
+              title: 'Same Slug Tour',
+              destination: 'Cairo',
+              durationDays: 3,
+              price: 500,
+              currency: 'USD',
+              publicUrl: '/tours/cairo-tour',
+            },
+            {
+              id: 't-3',
+              slug: 'luxor-tour',
+              title: 'Luxor Tour',
+              destination: 'Luxor',
+              durationDays: 4,
+              price: 700,
+              currency: 'USD',
+              publicUrl: '/tours/luxor-tour',
+            },
           ],
           destinations: [],
         },
@@ -290,48 +402,70 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         sources: [],
       };
 
-      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(input, 'en');
+      const normalized = ResponseInvariantNormalizer.normalizeAndValidate(
+        input,
+        'en',
+      );
 
       expect(normalized.recommendations.tours.length).toBe(2);
-      expect(normalized.recommendations.tours.map((t) => t.id)).toEqual(['t-1', 't-3']);
+      expect(normalized.recommendations.tours.map((t) => t.id)).toEqual([
+        't-1',
+        't-3',
+      ]);
     });
   });
 
   describe('2. Negation Resistance in Travel Constraints', () => {
     it('detects explicit Nile Cruise negation: "بدون كروز" / "no cruise"', () => {
-      const resAr = catalogTool.extractTravelConstraints('عايز رحلة 7 أيام في الأقصر وأسوان بس بدون كروز أو مراكب');
+      const resAr = catalogTool.extractTravelConstraints(
+        'عايز رحلة 7 أيام في الأقصر وأسوان بس بدون كروز أو مراكب',
+      );
       expect(resAr.nileCruiseRequired).toBe(false);
 
-      const resEn = catalogTool.extractTravelConstraints('I want a 5-day Luxor trip, no cruise, land only');
+      const resEn = catalogTool.extractTravelConstraints(
+        'I want a 5-day Luxor trip, no cruise, land only',
+      );
       expect(resEn.nileCruiseRequired).toBe(false);
     });
 
     it('detects explicit Beach negation: "بدون شواطئ" / "no beach"', () => {
-      const resAr = catalogTool.extractTravelConstraints('رحلة ثقافية في مصر بدون شواطئ أو بحر');
+      const resAr = catalogTool.extractTravelConstraints(
+        'رحلة ثقافية في مصر بدون شواطئ أو بحر',
+      );
       expect(resAr.beachRequired).toBe(false);
 
-      const resEn = catalogTool.extractTravelConstraints('Cultural tour without beach or diving');
+      const resEn = catalogTool.extractTravelConstraints(
+        'Cultural tour without beach or diving',
+      );
       expect(resEn.beachRequired).toBe(false);
     });
 
     it('handles duration negation: "مش 7 أيام، 10 أيام"', () => {
-      const res = catalogTool.extractTravelConstraints('عايز برنامج سياحي مش 7 أيام، 10 أيام');
+      const res = catalogTool.extractTravelConstraints(
+        'عايز برنامج سياحي مش 7 أيام، 10 أيام',
+      );
       expect(res.targetDuration).toBe(10);
       expect(res.durationDays).toBe(10);
     });
 
     it('parses currency and budget correctly for EGP vs USD', () => {
-      const egpRes = catalogTool.extractTravelConstraints('ميزانيتي 60000 جنيه للرحلة');
+      const egpRes = catalogTool.extractTravelConstraints(
+        'ميزانيتي 60000 جنيه للرحلة',
+      );
       expect(egpRes.maxBudget).toBe(60000);
       expect(egpRes.currency).toBe('EGP');
 
-      const usdRes = catalogTool.extractTravelConstraints('My budget is around $3500 for two people');
+      const usdRes = catalogTool.extractTravelConstraints(
+        'My budget is around $3500 for two people',
+      );
       expect(usdRes.maxBudget).toBe(3500);
       expect(usdRes.currency).toBe('USD');
     });
 
     it('filters out negated destinations: "مش دبي، عايز أسوان"', () => {
-      const res = catalogTool.extractTravelConstraints('مش عايز دبي، عايز رحلة في أسوان والقاهرة');
+      const res = catalogTool.extractTravelConstraints(
+        'مش عايز دبي، عايز رحلة في أسوان والقاهرة',
+      );
       expect(res.destinations).toContain('Aswan');
       expect(res.destinations).toContain('Cairo');
       expect(res.destinations).not.toContain('Dubai');
@@ -369,12 +503,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         },
       ]);
 
-      const results = await catalogTool.searchGroundedTours(
-        [],
-        4,
-        'en',
-        { maxBudget: 1000, currency: 'USD' }
-      );
+      const results = await catalogTool.searchGroundedTours([], 4, 'en', {
+        maxBudget: 1000,
+        currency: 'USD',
+      });
 
       const ids = results.map((t) => t.id);
       expect(ids).toContain('t-cheap');
@@ -386,7 +518,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         {
           id: 't-hotel',
           slug: 't-hotel',
-          titleJsonb: { en: 'Luxor Land & Hotel Tour', ar: 'فنادق الأقصر البرية' },
+          titleJsonb: {
+            en: 'Luxor Land & Hotel Tour',
+            ar: 'فنادق الأقصر البرية',
+          },
           durationDays: 4,
           basePriceUsd: 900,
           city: 'Luxor',
@@ -399,7 +534,10 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         {
           id: 't-cruise',
           slug: 't-cruise',
-          titleJsonb: { en: '5-Star Nile Cruise Luxury Sailing', ar: 'نايل كروز 5 نجوم فاخر' },
+          titleJsonb: {
+            en: '5-Star Nile Cruise Luxury Sailing',
+            ar: 'نايل كروز 5 نجوم فاخر',
+          },
           durationDays: 4,
           basePriceUsd: 1100,
           city: 'Luxor',
@@ -415,7 +553,7 @@ describe('GuideR Response Invariants, Negation Resistance & Idempotency Tests', 
         ['Luxor'],
         4,
         'en',
-        { nileCruiseRequired: false }
+        { nileCruiseRequired: false },
       );
 
       const ids = results.map((t) => t.id);

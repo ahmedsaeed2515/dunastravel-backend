@@ -57,4 +57,9 @@ export class ListUsersQueryDto {
   @IsOptional()
   @IsString()
   dateTo?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by companyId (use "null" for unassigned)' })
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 }

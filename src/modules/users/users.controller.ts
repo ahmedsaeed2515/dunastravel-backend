@@ -186,14 +186,18 @@ export class UsersController {
   // ─── USER MONITORING & ACTIVITY HUB ─────────────────────────────
 
   @Get('monitoring/overview')
-  @ApiOperation({ summary: 'Get global user monitoring metrics and analytics overview.' })
+  @ApiOperation({
+    summary: 'Get global user monitoring metrics and analytics overview.',
+  })
   @ApiOkResponse({ description: 'Aggregated user monitoring metrics' })
   async getMonitoringOverview() {
     return this.userService.getMonitoringOverview();
   }
 
   @Get('monitoring/live-stream')
-  @ApiOperation({ summary: 'Get real-time / recent user activity stream across platform.' })
+  @ApiOperation({
+    summary: 'Get real-time / recent user activity stream across platform.',
+  })
   @ApiOkResponse({ description: 'Paginated live activity items' })
   async getLiveActivityStream(@Query() query: ListActivityStreamQueryDto) {
     return this.userService.getLiveActivityStream(query);
@@ -202,7 +206,9 @@ export class UsersController {
   // ─── USERS DIRECTORY & MANAGEMENT ENDPOINTS ───────────────────
 
   @Get()
-  @ApiOperation({ summary: 'List all users with advanced monitoring filters and pagination.' })
+  @ApiOperation({
+    summary: 'List all users with advanced monitoring filters and pagination.',
+  })
   @ApiOkResponse({ description: 'Paginated list of users with summary counts' })
   async listUsers(@Query() query: ListUsersQueryDto) {
     const page = query.page || 1;
@@ -216,6 +222,7 @@ export class UsersController {
       isVerified: query.isVerified,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
+      companyId: query.companyId,
     });
 
     return {
@@ -230,7 +237,10 @@ export class UsersController {
   }
 
   @Get(':id/monitoring')
-  @ApiOperation({ summary: 'Get comprehensive user monitoring profile, deep activity timeline, and relations.' })
+  @ApiOperation({
+    summary:
+      'Get comprehensive user monitoring profile, deep activity timeline, and relations.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'Full user monitoring payload and timeline' })
   async getUserMonitoringDetail(
@@ -240,7 +250,9 @@ export class UsersController {
   }
 
   @Post(':id/suspend')
-  @ApiOperation({ summary: 'Suspend a user account with reason and audit log.' })
+  @ApiOperation({
+    summary: 'Suspend a user account with reason and audit log.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: SuspendUserDto })
   @ApiOkResponse({ description: 'User account suspended' })
@@ -251,7 +263,13 @@ export class UsersController {
     @Req() req: Request,
   ) {
     await this.assertCanManageTarget(actor, id, undefined, false, false);
-    return this.userService.suspendUser(id, dto.reason, actor.id, actor.role, req.ip);
+    return this.userService.suspendUser(
+      id,
+      dto.reason,
+      actor.id,
+      actor.role,
+      req.ip,
+    );
   }
 
   @Post(':id/activate')
@@ -281,7 +299,9 @@ export class UsersController {
   }
 
   @Post(':id/notes')
-  @ApiOperation({ summary: 'Add an admin monitoring / investigation note to a user.' })
+  @ApiOperation({
+    summary: 'Add an admin monitoring / investigation note to a user.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: AddUserMonitoringNoteDto })
   @ApiOkResponse({ description: 'Monitoring note added successfully' })
@@ -297,9 +317,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get details for a single user.' })
   @ApiOkResponse({ description: 'User record' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  async getUser(
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-  ) {
+  async getUser(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     const user = await this.userService.findById(id);
     if (!user) throw new NotFoundException('User not found');
     return this.userService.toSafeUser(user);
@@ -387,6 +405,7 @@ export class UsersController {
         email: dto.email,
         phone: dto.phone,
         role: dto.role,
+        companyId: dto.companyId,
         passwordHash,
       },
       user.role,

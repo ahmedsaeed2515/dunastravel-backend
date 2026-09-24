@@ -6,6 +6,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEmail,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -16,10 +17,16 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 
-const CUSTOMER_STATUSES = ['ACTIVE', 'INACTIVE', 'BLOCKED'] as const;
+const CUSTOMER_STATUSES = [
+  'ACTIVE',
+  'INACTIVE',
+  'SUSPENDED',
+  'BLOCKED',
+] as const;
 const CRM_SORT_FIELDS = [
   'createdAt',
   'updatedAt',
@@ -185,6 +192,23 @@ export class ListCustomersQueryDto {
 }
 
 export class UpdateCustomerCrmDto {
+  @ApiPropertyOptional({ example: 'Ahmed Saeed' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'customer@example.com' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '+201000000000' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+?[0-9 ()-]{7,30}$/)
+  phone?: string;
+
   @ApiPropertyOptional({ example: 'CUST-2026-0001' })
   @IsOptional()
   @IsString()
@@ -220,6 +244,8 @@ export class UpdateCustomerCrmDto {
   @ApiPropertyOptional({ example: 'P12345678' })
   @IsOptional()
   @IsString()
+  @MinLength(3)
+  @MaxLength(30)
   @Matches(/^[A-Za-z0-9 -]{3,30}$/)
   passportNumber?: string;
 
@@ -458,7 +484,8 @@ export class CreateCustomerCrmDto {
   @ApiPropertyOptional({ example: 'GB987654321' })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MinLength(3)
+  @MaxLength(30)
+  @Matches(/^[A-Za-z0-9 -]{3,30}$/)
   passportNumber?: string;
 }
-

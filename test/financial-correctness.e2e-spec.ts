@@ -112,7 +112,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
@@ -258,7 +258,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       order_currency: 'USD',
       paid_amount: 1.00,
     };
-    fraudPayload.signature = paylinkClient.webhooks.computeSignature(fraudPayload, hashToken);
+    fraudPayload.signature = (paylinkClient.webhooks as any).computeSignature(fraudPayload, hashToken);
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -317,7 +317,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'EUR', // Mismatched currency!
     };
-    currMismatchPayload.signature = paylinkClient.webhooks.computeSignature(currMismatchPayload, hashToken);
+    currMismatchPayload.signature = (paylinkClient.webhooks as any).computeSignature(currMismatchPayload, hashToken);
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -366,7 +366,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'USD',
     };
-    authenticPayload.signature = paylinkClient.webhooks.computeSignature(authenticPayload, hashToken);
+    authenticPayload.signature = (paylinkClient.webhooks as any).computeSignature(authenticPayload, hashToken);
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')

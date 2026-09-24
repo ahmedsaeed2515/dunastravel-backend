@@ -94,7 +94,7 @@ export class WalletsController {
   }
 
   @Post('transactions/manual')
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({
     summary: 'Manually add a transaction to a wallet (Credit/Debit)',
   })

@@ -98,7 +98,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
@@ -148,7 +148,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'USD',
     };
-    paidPayload.signature = paylinkClient.webhooks.computeSignature(paidPayload, hashToken);
+    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(paidPayload, hashToken);
 
     await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -232,7 +232,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       order_amount: 10.00,
       order_currency: 'USD',
     };
-    latePaidPayload.signature = paylinkClient.webhooks.computeSignature(latePaidPayload, hashToken);
+    latePaidPayload.signature = (paylinkClient.webhooks as any).computeSignature(latePaidPayload, hashToken);
 
     // Associate a dummy payment with the cancelled booking to test payment capture barrier
     await prisma.payment.create({
@@ -349,7 +349,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'USD',
     };
-    paidPayload.signature = paylinkClient.webhooks.computeSignature(paidPayload, hashToken);
+    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(paidPayload, hashToken);
 
     await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -363,7 +363,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       success: 1,
       message: 'Refunded',
     };
-    refundPayload.signature = paylinkClient.webhooks.computeSignature(refundPayload, hashToken);
+    refundPayload.signature = (paylinkClient.webhooks as any).computeSignature(refundPayload, hashToken);
 
     const refundRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')

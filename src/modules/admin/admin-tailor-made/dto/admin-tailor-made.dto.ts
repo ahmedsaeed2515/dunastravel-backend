@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsDateString,
   IsEnum,
   IsInt,
   IsNumber,
@@ -69,4 +70,35 @@ export class QuoteTailorMadeInquiryDto {
   @IsString()
   @MaxLength(5_000)
   quoteNotes?: string;
+}
+
+export class UpdateTailorMadeInquiryDto {
+  @IsOptional()
+  @IsUUID('4')
+  assigneeId?: string | null;
+
+  @IsOptional()
+  @IsEnum(TailorMadeInquiryStatus)
+  status?: TailorMadeInquiryStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2, allowInfinity: false, allowNaN: false })
+  @Min(0)
+  @Max(10_000_000)
+  quotedAmountUsd?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5_000)
+  internalNote?: string;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  followUpAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5_000)
+  notes?: string;
 }

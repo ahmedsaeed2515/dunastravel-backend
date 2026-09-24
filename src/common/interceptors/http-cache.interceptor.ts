@@ -15,8 +15,10 @@ export class HttpCacheInterceptor implements NestInterceptor {
   private readonly publicRoutes = [
     '/api/tours',
     '/api/destinations',
+    '/api/tour-landing-pages',
     '/api/blogs',
     '/api/faq',
+    '/api/faqs',
     '/api/currency/rates',
     '/api/settings',
     '/api/journey-maps',
@@ -58,6 +60,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
       );
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Vary', 'Origin, Authorization, Accept-Encoding');
+      res.setHeader('X-Cache', 'PRIVATE-BYPASS');
       return next.handle();
     }
 
@@ -69,6 +72,21 @@ export class HttpCacheInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    const cacheKey = req.originalUrl || req.url || path;
+    const clientEtag = req.headers['if-none-match'];
+
+    // FAST 304 SHORT-CIRCUIT: If we have an active ETag and client sends matching If-None-Match,
+    // respond 304 immediately without executing route handlers, services, or database queries!
+    const activeCached = this.etagCache.get(cacheKey);
+    if (activeCached && activeCached.expiresAt > Date.now() && clientEtag && clientEtag === activeCached.etag) {
+      res.setHeader('ETag', activeCached.etag);
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+      res.setHeader('Vary', 'Origin, Accept-Encoding');
+      res.setHeader('X-Cache', 'HIT-304');
+      res.status(304).end();
+      return of(null);
+    }
+
     // Public Cache Headers for Browser & CDN Edge
     res.setHeader(
       'Cache-Control',
@@ -78,19 +96,24 @@ export class HttpCacheInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map((data) => {
-        if (!data) return data;
+        if (!data || res.headersSent) return data;
 
         try {
-          const cacheKey = req.originalUrl || req.url || path;
-          const cached = this.etagCache.get(cacheKey);
           let etag: string;
+          const cached = this.etagCache.get(cacheKey);
 
           if (cached && cached.expiresAt > Date.now()) {
             etag = cached.etag;
+            res.setHeader('X-Cache', 'HIT-WARM');
           } else {
-            const bodyStr = JSON.stringify(data);
+            // Compute deterministic ETag over authoritative business payload (ignoring volatile outer timestamps)
+            const contentToHash =
+              data && typeof data === 'object' && 'data' in data
+                ? { data: (data as any).data, meta: (data as any).meta }
+                : data;
+            const bodyStr = JSON.stringify(contentToHash);
             etag = `W/"${crypto
-              .createHash('md5')
+              .createHash('sha1')
               .update(bodyStr)
               .digest('hex')}"`;
 
@@ -102,12 +125,13 @@ export class HttpCacheInterceptor implements NestInterceptor {
               etag,
               expiresAt: Date.now() + 60_000,
             });
+            res.setHeader('X-Cache', 'MISS-POPULATED');
           }
 
           res.setHeader('ETag', etag);
 
-          const clientEtag = req.headers['if-none-match'];
           if (clientEtag && clientEtag === etag) {
+            res.setHeader('X-Cache', 'HIT-304');
             res.status(304).end();
             return null;
           }

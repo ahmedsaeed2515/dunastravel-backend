@@ -21,10 +21,8 @@ export class CompaniesService {
   constructor(private readonly prisma: PrismaService) {}
 
   private assertSuperAdmin(actor: { id: string; role: string }): void {
-    if (actor.role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Only super administrators can manage companies',
-      );
+    if (actor.role !== UserRole.SUPER_ADMIN && actor.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only administrators can manage companies');
     }
   }
 
@@ -47,9 +45,7 @@ export class CompaniesService {
   ) {
     this.assertSuperAdmin(actor);
     this.assertContractDates(
-      data.contractStartDate
-        ? new Date(data.contractStartDate)
-        : undefined,
+      data.contractStartDate ? new Date(data.contractStartDate) : undefined,
       data.contractEndDate ? new Date(data.contractEndDate) : undefined,
     );
     const referenceCode = this.generateReferenceCode(
@@ -84,6 +80,21 @@ export class CompaniesService {
           contractEndDate: data.contractEndDate
             ? new Date(data.contractEndDate)
             : null,
+        },
+      });
+
+      await tx.wallet.upsert({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'COMPANY',
+            ownerId: company.id,
+          },
+        },
+        update: {},
+        create: {
+          ownerType: 'COMPANY',
+          ownerId: company.id,
+          balance: 0,
         },
       });
 
@@ -167,8 +178,19 @@ export class CompaniesService {
       }),
     ]);
 
+    const companyIds = data.map((c) => c.id);
+    const wallets = await this.prisma.wallet.findMany({
+      where: { ownerType: 'COMPANY', ownerId: { in: companyIds } },
+      select: { ownerId: true, balance: true },
+    });
+    const walletMap = new Map(wallets.map((w) => [w.ownerId, w.balance]));
+    const dataWithAuthoritativeBalance = data.map((c) => ({
+      ...c,
+      currentBalance: walletMap.get(c.id) ?? c.currentBalance,
+    }));
+
     return {
-      data,
+      data: dataWithAuthoritativeBalance,
       meta: {
         total,
         page,
@@ -228,7 +250,15 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    return company;
+    const wallet = await this.prisma.wallet.findFirst({
+      where: { ownerType: 'COMPANY', ownerId: company.id },
+      select: { balance: true },
+    });
+
+    return {
+      ...company,
+      currentBalance: wallet?.balance ?? company.currentBalance,
+    };
   }
 
   async update(
@@ -402,9 +432,10 @@ export class CompaniesService {
           data: {
             ...(status !== undefined && { status }),
             ...(sanitizedTags !== undefined && {
-              tags: [
-                ...new Set([...company.tags, ...sanitizedTags]),
-              ].slice(0, 20),
+              tags: [...new Set([...company.tags, ...sanitizedTags])].slice(
+                0,
+                20,
+              ),
             }),
             ...(sanitizedSegments !== undefined && {
               segments: [
@@ -593,13 +624,10 @@ export class CompaniesService {
   private sanitizeRecord(value: object): Record<string, string> {
     return Object.fromEntries(
       Object.entries(value)
-        .filter((entry): entry is [string, string] =>
-          typeof entry[1] === 'string',
+        .filter(
+          (entry): entry is [string, string] => typeof entry[1] === 'string',
         )
-        .map(([key, item]) => [
-          key,
-          sanitizePlainText(item).slice(0, 255),
-        ]),
+        .map(([key, item]) => [key, sanitizePlainText(item).slice(0, 255)]),
     );
   }
 }

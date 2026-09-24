@@ -379,7 +379,7 @@ export class AdminTailorMadeService {
       this.prisma.user.findFirst({
         where: {
           id: assigneeId,
-          role: UserRole.AGENT,
+          role: { in: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN] },
           status: 'ACTIVE',
           deletedAt: null,
         },
@@ -387,7 +387,7 @@ export class AdminTailorMadeService {
       }),
     ]);
     if (!assignee) {
-      throw new BadRequestException('Assignee must be an active agent');
+      throw new BadRequestException('Assignee must be an active staff member or agent');
     }
 
     return this.prisma.$transaction(
@@ -426,11 +426,12 @@ export class AdminTailorMadeService {
     const inquiry = await this.getInquiry(id);
     this.assertActorCanAccess(inquiry.assigneeId, actor);
     if (
+      inquiry.status !== TailorMadeInquiryStatus.NEWLY_RECEIVED &&
       inquiry.status !== TailorMadeInquiryStatus.IN_PROGRESS &&
       inquiry.status !== TailorMadeInquiryStatus.QUOTED
     ) {
       throw new BadRequestException(
-        'Only in-progress or already quoted inquiries can be quoted',
+        'Only newly received, in-progress, or already quoted inquiries can be quoted',
       );
     }
     const quotedAmount = new Prisma.Decimal(amount);
@@ -478,6 +479,101 @@ export class AdminTailorMadeService {
           where: { id },
           select: this.inquirySelect,
         });
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  }
+
+  async updateInquiry(
+    id: string,
+    data: {
+      assigneeId?: string | null;
+      status?: TailorMadeInquiryStatus;
+      quotedAmountUsd?: number;
+      internalNote?: string;
+      followUpAt?: string;
+      notes?: string;
+    },
+    actor: AuthenticatedUser,
+  ) {
+    const inquiry = await this.getInquiry(id);
+    this.assertActorCanAccess(inquiry.assigneeId, actor);
+
+    if (data.assigneeId !== undefined) {
+      if (actor.role === UserRole.AGENT) {
+        throw new ForbiddenException('Agents cannot reassign inquiries');
+      }
+      if (data.assigneeId) {
+        const assignee = await this.prisma.user.findFirst({
+          where: {
+            id: data.assigneeId,
+            role: { in: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+            status: 'ACTIVE',
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (!assignee) {
+          throw new BadRequestException('Assignee must be an active staff member or agent');
+        }
+      }
+    }
+
+    if (data.status !== undefined && data.status !== inquiry.status) {
+      if (data.status === TailorMadeInquiryStatus.CONVERTED_TO_BOOKING) {
+        throw new BadRequestException(
+          'Cannot set status to CONVERTED_TO_BOOKING directly. Use the Convert to Booking action instead.',
+        );
+      }
+    }
+
+    const safeInternalNote = data.internalNote !== undefined
+      ? sanitizePlainText(data.internalNote).slice(0, 5_000)
+      : undefined;
+
+    const safeNotes = data.notes !== undefined
+      ? sanitizePlainText(data.notes).slice(0, 5_000)
+      : undefined;
+
+    const parsedFollowUpAt = data.followUpAt !== undefined
+      ? (data.followUpAt ? new Date(data.followUpAt) : null)
+      : undefined;
+
+    const quotedAmount = data.quotedAmountUsd !== undefined
+      ? new Prisma.Decimal(data.quotedAmountUsd)
+      : undefined;
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.tailorMadeInquiry.update({
+          where: { id: inquiry.id },
+          data: {
+            ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId || null }),
+            ...(data.status !== undefined && { status: data.status }),
+            ...(quotedAmount !== undefined && { quotedAmountUsd: quotedAmount }),
+            ...(safeInternalNote !== undefined && { internalNote: safeInternalNote }),
+            ...(safeNotes !== undefined && { notes: safeNotes }),
+            ...(parsedFollowUpAt !== undefined && { followUpAt: parsedFollowUpAt }),
+          },
+          select: this.inquirySelect,
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TAILOR_MADE_INQUIRY_UPDATED',
+            entityType: 'TAILOR_MADE_INQUIRY',
+            entityId: id,
+            metadata: {
+              status: data.status,
+              assigneeId: data.assigneeId,
+              quotedAmountUsd: data.quotedAmountUsd,
+            },
+          },
+        });
+
+        return updated;
       },
       { isolationLevel: 'Serializable' },
     );

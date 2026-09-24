@@ -122,7 +122,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
@@ -454,7 +454,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         order_amount: 5.00,
         order_currency: 'USD',
       };
-      webhook1.signature = paylinkClient.webhooks.computeSignature(webhook1, hashToken);
+      webhook1.signature = (paylinkClient.webhooks as any).computeSignature(webhook1, hashToken);
 
       const res1 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')
@@ -479,7 +479,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         order_amount: 5.00,
         order_currency: 'USD',
       };
-      webhook2.signature = paylinkClient.webhooks.computeSignature(webhook2, hashToken);
+      webhook2.signature = (paylinkClient.webhooks as any).computeSignature(webhook2, hashToken);
 
       const res2 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')
@@ -501,7 +501,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         order_amount: 5.00,
         order_currency: 'USD',
       };
-      webhook3.signature = paylinkClient.webhooks.computeSignature(webhook3, hashToken);
+      webhook3.signature = (paylinkClient.webhooks as any).computeSignature(webhook3, hashToken);
 
       const res3 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')

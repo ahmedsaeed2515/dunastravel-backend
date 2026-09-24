@@ -207,7 +207,15 @@ export class AdminService {
           invoice: { select: { invoiceNumber: true } },
           _count: { select: { passengers: true } },
           tour: { select: { id: true, slug: true, titleJsonb: true } },
-          billingInfo: { select: { fullName: true, email: true, phone: true, country: true, city: true } },
+          billingInfo: {
+            select: {
+              fullName: true,
+              email: true,
+              phone: true,
+              country: true,
+              city: true,
+            },
+          },
           user: { select: { id: true, name: true, email: true } },
         },
       }),
@@ -565,6 +573,19 @@ export class AdminService {
     );
   }
 
+  async cancelWithRefund(
+    referenceCode: string,
+    adminUserId: string,
+    role: string,
+    reason?: string,
+  ) {
+    return this.bookingsService.cancelWithRefund(
+      referenceCode,
+      { id: adminUserId, role },
+      reason,
+    );
+  }
+
   async recordManualBookingPayment(
     referenceCode: string,
     dto: {
@@ -591,7 +612,9 @@ export class AdminService {
 
       if (!lockedBooking) throw new NotFoundException('Booking not found');
 
-      if (['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(lockedBooking.status)) {
+      if (
+        ['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(lockedBooking.status)
+      ) {
         throw new BadRequestException(
           `Cannot record a payment for a booking with status ${lockedBooking.status}`,
         );
@@ -1283,12 +1306,24 @@ export class AdminService {
       activeInquiries,
     ] = await Promise.all([
       this.prisma.tailorMadeInquiry.count({ where }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'NEWLY_RECEIVED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'IN_PROGRESS' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'QUOTED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'APPROVED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CONVERTED_TO_BOOKING' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CLOSED' } }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'NEWLY_RECEIVED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'IN_PROGRESS' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'QUOTED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'APPROVED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'CONVERTED_TO_BOOKING' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'CLOSED' },
+      }),
       this.prisma.tailorMadeInquiry.findMany({
         where: { ...where, status: { notIn: ['CLOSED'] } },
         select: { quotedAmountUsd: true, budgetAmount: true },
@@ -1298,7 +1333,9 @@ export class AdminService {
     const pipelineValue = activeInquiries.reduce((acc, curr) => {
       const val = curr.quotedAmountUsd
         ? Number(curr.quotedAmountUsd)
-        : (curr.budgetAmount ? Number(curr.budgetAmount) : 0);
+        : curr.budgetAmount
+          ? Number(curr.budgetAmount)
+          : 0;
       return acc + val;
     }, 0);
 
@@ -1440,7 +1477,9 @@ export class AdminService {
         select: { id: true },
       });
       if (!assignee) {
-        throw new BadRequestException('Assignee must be an active agent or admin');
+        throw new BadRequestException(
+          'Assignee must be an active agent or admin',
+        );
       }
     }
 
@@ -1454,38 +1493,15 @@ export class AdminService {
       }
 
       const validTransitions: Record<string, string[]> = {
-        NEWLY_RECEIVED: [
-          'IN_PROGRESS',
-          'QUOTED',
-          'APPROVED',
-          'CLOSED',
-        ],
-        IN_PROGRESS: [
-          'QUOTED',
-          'APPROVED',
-          'CLOSED',
-          'NEWLY_RECEIVED',
-        ],
-        QUOTED: [
-          'APPROVED',
-          'IN_PROGRESS',
-          'CLOSED',
-          'NEWLY_RECEIVED',
-        ],
-        APPROVED: [
-          'QUOTED',
-          'IN_PROGRESS',
-          'CLOSED',
-        ],
+        NEWLY_RECEIVED: ['IN_PROGRESS', 'QUOTED', 'APPROVED', 'CLOSED'],
+        IN_PROGRESS: ['QUOTED', 'APPROVED', 'CLOSED', 'NEWLY_RECEIVED'],
+        QUOTED: ['APPROVED', 'IN_PROGRESS', 'CLOSED', 'NEWLY_RECEIVED'],
+        APPROVED: ['QUOTED', 'IN_PROGRESS', 'CLOSED'],
         CONVERTED_TO_BOOKING: [
           'CLOSED',
           'APPROVED', // Admin can revert a mis-converted inquiry back to APPROVED
         ],
-        CLOSED: [
-          'IN_PROGRESS',
-          'NEWLY_RECEIVED',
-          'QUOTED',
-        ],
+        CLOSED: ['IN_PROGRESS', 'NEWLY_RECEIVED', 'QUOTED'],
       };
 
       const allowed = validTransitions[inquiry.status] || [];
@@ -1710,7 +1726,7 @@ export class AdminService {
       const tourTitle = `Tailor-Made Itinerary: ${
         Array.isArray(inquiry.destinations)
           ? inquiry.destinations.join(', ')
-          : inquiry.destinations ?? 'Custom Egypt Experience'
+          : (inquiry.destinations ?? 'Custom Egypt Experience')
       }`;
       const snapshotJsonb = {
         version: 1,
@@ -2211,11 +2227,19 @@ export class AdminService {
     // Build orderBy: custom sort fields take precedence; default is priority order
     let orderByClause: any;
     if (sortBy === 'isFeatured' || sortBy === 'displayOrder') {
-      orderByClause = [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }];
+      orderByClause = [
+        { isFeatured: 'desc' },
+        { displayOrder: 'asc' },
+        { createdAt: 'desc' },
+      ];
     } else if (sortBy && sortBy !== 'createdAt') {
       orderByClause = { [sortBy]: sortOrder };
     } else {
-      orderByClause = [{ isFeatured: 'desc' }, { displayOrder: 'asc' }, { createdAt: sortOrder }];
+      orderByClause = [
+        { isFeatured: 'desc' },
+        { displayOrder: 'asc' },
+        { createdAt: sortOrder },
+      ];
     }
 
     const [total, records] = await Promise.all([
@@ -2338,15 +2362,17 @@ export class AdminService {
    * endpoint: a published, active tour must have an active published
    * destination interface relation marked visible.
    */
-  async getTourCatalogOverview(adminUserId: string): Promise<Record<string, unknown>> {
+  async getTourCatalogOverview(
+    adminUserId: string,
+  ): Promise<Record<string, unknown>> {
     this.logger.log(`getTourCatalogOverview invoked by admin ${adminUserId}`);
     const locales = ['ar', 'en', 'es', 'pt', 'it'];
     const hasText = (value: unknown, locale: string) =>
       Boolean(
         value &&
-          typeof value === 'object' &&
-          typeof (value as Record<string, unknown>)[locale] === 'string' &&
-          ((value as Record<string, string>)[locale] || '').trim(),
+        typeof value === 'object' &&
+        typeof (value as Record<string, unknown>)[locale] === 'string' &&
+        ((value as Record<string, string>)[locale] || '').trim(),
       );
 
     const [tours, interfaces] = await Promise.all([
@@ -2394,14 +2420,18 @@ export class AdminService {
       }),
     ]);
 
-    const isPublicRelation = (relation: (typeof tours)[number]['landingPages'][number]) =>
+    const isPublicRelation = (
+      relation: (typeof tours)[number]['landingPages'][number],
+    ) =>
       relation.isVisible &&
       relation.landingPage.type === 'DESTINATION' &&
       relation.landingPage.status === 'PUBLISHED' &&
       relation.landingPage.isActive &&
       !relation.landingPage.deletedAt;
     const isVisibleOnWebsite = (tour: (typeof tours)[number]) =>
-      tour.status === 'PUBLISHED' && tour.isActive && tour.landingPages.some(isPublicRelation);
+      tour.status === 'PUBLISHED' &&
+      tour.isActive &&
+      tour.landingPages.some(isPublicRelation);
 
     const issues = tours.flatMap((tour) => {
       const missingLocales = locales.filter(
@@ -2411,11 +2441,16 @@ export class AdminService {
           !hasText(tour.durationJsonb, locale),
       );
       const missingFields: string[] = [];
-      if (missingLocales.length) missingFields.push('five-language core content');
+      if (missingLocales.length)
+        missingFields.push('five-language core content');
       if (tour.basePriceUsd.lte(0)) missingFields.push('base price');
       if (tour.images.length === 0) missingFields.push('image');
       if (tour.itineraries.length === 0) missingFields.push('itinerary');
-      if (!tour.landingPages.some((relation) => relation.landingPage.type === 'DESTINATION')) {
+      if (
+        !tour.landingPages.some(
+          (relation) => relation.landingPage.type === 'DESTINATION',
+        )
+      ) {
         missingFields.push('destination interface');
       }
       return missingFields.length
@@ -2426,17 +2461,32 @@ export class AdminService {
     return {
       totalTours: tours.length,
       visibleOnWebsite: tours.filter(isVisibleOnWebsite).length,
-      hiddenFromWebsite: tours.filter((tour) => !isVisibleOnWebsite(tour)).length,
-      unpublished: tours.filter((tour) => tour.status !== 'PUBLISHED' || !tour.isActive).length,
-      unlinked: tours.filter((tour) => !tour.landingPages.some((relation) => relation.landingPage.type === 'DESTINATION')).length,
+      hiddenFromWebsite: tours.filter((tour) => !isVisibleOnWebsite(tour))
+        .length,
+      unpublished: tours.filter(
+        (tour) => tour.status !== 'PUBLISHED' || !tour.isActive,
+      ).length,
+      unlinked: tours.filter(
+        (tour) =>
+          !tour.landingPages.some(
+            (relation) => relation.landingPage.type === 'DESTINATION',
+          ),
+      ).length,
       interfaces: interfaces.map((landingPage) => {
         const attached = tours.filter((tour) =>
-          tour.landingPages.some((relation) => relation.landingPage.id === landingPage.id),
+          tour.landingPages.some(
+            (relation) => relation.landingPage.id === landingPage.id,
+          ),
         );
-        const visible = attached.filter((tour) =>
-          tour.status === 'PUBLISHED' &&
-          tour.isActive &&
-          tour.landingPages.some((relation) => relation.landingPage.id === landingPage.id && isPublicRelation(relation)),
+        const visible = attached.filter(
+          (tour) =>
+            tour.status === 'PUBLISHED' &&
+            tour.isActive &&
+            tour.landingPages.some(
+              (relation) =>
+                relation.landingPage.id === landingPage.id &&
+                isPublicRelation(relation),
+            ),
         );
         return {
           slug: landingPage.slug,
@@ -2818,7 +2868,11 @@ export class AdminService {
       await this.cacheManager.del(`tour:${slug}:${l}`);
     }
 
-    return { success: true, slug: updated.slug, isFeatured: updated.isFeatured };
+    return {
+      success: true,
+      slug: updated.slug,
+      isFeatured: updated.isFeatured,
+    };
   }
 
   /**
@@ -2835,8 +2889,12 @@ export class AdminService {
 
     const moved = await this.prisma.$transaction(
       async (tx) => {
-        const tour = await tx.tour.findUnique({ where: { slug }, select: { id: true, category: true } });
-        if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+        const tour = await tx.tour.findUnique({
+          where: { slug },
+          select: { id: true, category: true },
+        });
+        if (!tour)
+          throw new NotFoundException(`Tour with slug ${slug} not found`);
 
         let target = await tx.tourLandingPage.findFirst({
           where: {
@@ -2891,7 +2949,11 @@ export class AdminService {
               create: {
                 userId: adminUserId,
                 action: 'TOUR_MOVED',
-                details: { destinationSlug: target ? target.slug : targetSlug, country: dto.country, city: dto.city ?? null },
+                details: {
+                  destinationSlug: target ? target.slug : targetSlug,
+                  country: dto.country,
+                  city: dto.city ?? null,
+                },
               },
             },
           },
@@ -2901,9 +2963,11 @@ export class AdminService {
       { isolationLevel: 'Serializable' },
     );
 
-    await Promise.all(['en', 'es', 'pt', 'it', 'ar'].map((lang) =>
-      this.cacheManager.del(`tour:${slug}:${lang}`),
-    ));
+    await Promise.all(
+      ['en', 'es', 'pt', 'it', 'ar'].map((lang) =>
+        this.cacheManager.del(`tour:${slug}:${lang}`),
+      ),
+    );
     return { success: true, slug: moved.slug, destinationSlug: targetSlug };
   }
 
@@ -2946,8 +3010,16 @@ export class AdminService {
     const c = country.trim().toLowerCase();
     if (c.includes('egypt') || c.includes('مصر')) return 'egypt';
     if (c.includes('turk') || c.includes('ترك')) return 'turkey';
-    if (c.includes('jordan') || c.includes('أردن') || c.includes('اردن')) return 'jordan';
-    if (c.includes('emirates') || c.includes('dubai') || c.includes('إمارات') || c.includes('امارات') || c.includes('دبي')) return 'dubai';
+    if (c.includes('jordan') || c.includes('أردن') || c.includes('اردن'))
+      return 'jordan';
+    if (
+      c.includes('emirates') ||
+      c.includes('dubai') ||
+      c.includes('إمارات') ||
+      c.includes('امارات') ||
+      c.includes('دبي')
+    )
+      return 'dubai';
     if (c.includes('morocco') || c.includes('مغرب')) return 'morocco';
     if (c.includes('greece') || c.includes('يونان')) return 'greece';
     if (c.includes('tunis') || c.includes('تونس')) return 'tunisia';
@@ -2963,9 +3035,19 @@ export class AdminService {
   ) {
     try {
       const isMulti =
-        Boolean(category && (category.toLowerCase().includes('multi') || category.includes('متعدد'))) ||
-        Boolean(country && (country.toLowerCase().includes('multi') || country.includes('متعدد')));
-      const targetSlug = isMulti ? 'multi-country' : this.canonicalDestinationSlugForCountry(country);
+        Boolean(
+          category &&
+          (category.toLowerCase().includes('multi') ||
+            category.includes('متعدد')),
+        ) ||
+        Boolean(
+          country &&
+          (country.toLowerCase().includes('multi') ||
+            country.includes('متعدد')),
+        );
+      const targetSlug = isMulti
+        ? 'multi-country'
+        : this.canonicalDestinationSlugForCountry(country);
 
       const target = await tx.tourLandingPage.findFirst({
         where: {
@@ -3471,10 +3553,16 @@ export class AdminService {
     });
     const langs = ['en', 'es', 'pt', 'it', 'ar'];
     await Promise.allSettled(
-      tours.flatMap((t) => langs.map((l) => this.cacheManager.del(`tour:${t.slug}:${l}`))),
+      tours.flatMap((t) =>
+        langs.map((l) => this.cacheManager.del(`tour:${t.slug}:${l}`)),
+      ),
     );
 
-    return { success: true, message: `${result.count} tours archived`, count: result.count };
+    return {
+      success: true,
+      message: `${result.count} tours archived`,
+      count: result.count,
+    };
   }
 
   async publishTour(slug: string, adminUserId: string) {
@@ -3508,9 +3596,10 @@ export class AdminService {
     if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
 
     if (tour.deletedAt && !restoreDeleted) {
-      throw new BadRequestException('Restore the soft-deleted tour before changing its lifecycle');
+      throw new BadRequestException(
+        'Restore the soft-deleted tour before changing its lifecycle',
+      );
     }
-
 
     const isPublic = targetStatus === 'PUBLISHED';
     const updated = await this.prisma.tour.update({
@@ -3760,11 +3849,7 @@ export class AdminService {
     return image;
   }
 
-  async setTourHeroImage(
-    slug: string,
-    imageId: string,
-    adminUserId: string,
-  ) {
+  async setTourHeroImage(slug: string, imageId: string, adminUserId: string) {
     this.logger.log(
       `Admin ${adminUserId} selecting image ${imageId} as hero for tour ${slug}`,
     );
@@ -3817,7 +3902,11 @@ export class AdminService {
           tourId: tour.id,
           dayLabel: sanitizePlainText(dto.dayLabel).slice(0, 100),
           titleJsonb: dto.titleJsonb
-            ? this.sanitizeTourLocalizedJson(dto.titleJsonb, 'titleJsonb', false)
+            ? this.sanitizeTourLocalizedJson(
+                dto.titleJsonb,
+                'titleJsonb',
+                false,
+              )
             : Prisma.JsonNull,
           descriptionJsonb: this.sanitizeTourLocalizedJson(
             dto.descriptionJsonb,
@@ -3866,7 +3955,11 @@ export class AdminService {
           }),
           ...(dto.titleJsonb !== undefined && {
             titleJsonb: dto.titleJsonb
-              ? this.sanitizeTourLocalizedJson(dto.titleJsonb, 'titleJsonb', false)
+              ? this.sanitizeTourLocalizedJson(
+                  dto.titleJsonb,
+                  'titleJsonb',
+                  false,
+                )
               : Prisma.JsonNull,
           }),
           ...(dto.descriptionJsonb && {

@@ -15,30 +15,48 @@ export class CacheService {
     private readonly stampedeService: CacheStampedeService,
   ) {}
 
+  private readonly localFallback = new Map<string, { val: any; expiresAt: number }>();
+
   async get<T>(key: string): Promise<T | null> {
     try {
       const val = await this.cacheManager.get<T>(key);
       if (val !== undefined && val !== null) {
         this.hits++;
+        this.localFallback.set(key, { val, expiresAt: Date.now() + 60_000 });
         return val;
+      }
+      // Check L1 local fallback if cacheManager missed or timed out
+      const fallback = this.localFallback.get(key);
+      if (fallback && fallback.expiresAt > Date.now()) {
+        this.hits++;
+        return fallback.val as T;
       }
       this.misses++;
       return null;
     } catch (err) {
+      // Redis outage/timeout: serve from L1 local fallback to prevent DB query storm
+      const fallback = this.localFallback.get(key);
+      if (fallback && fallback.expiresAt > Date.now()) {
+        this.hits++;
+        return fallback.val as T;
+      }
       this.misses++;
       return null;
     }
   }
 
   async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+    const ttl = ttlMs ?? 300_000;
+    this.localFallback.set(key, { val: value, expiresAt: Date.now() + Math.min(ttl, 60_000) });
     try {
-      await this.cacheManager.set(key, value, ttlMs ?? 300_000);
+      await this.cacheManager.set(key, value, ttl);
     } catch (err) {
       this.logger.warn(`Cache set failed for key ${key}: ${(err as Error).message}`);
     }
   }
 
   async del(key: string): Promise<void> {
+    this.localFallback.delete(key);
     try {
       await this.cacheManager.del(key);
     } catch (err) {

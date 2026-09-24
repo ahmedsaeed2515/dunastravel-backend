@@ -56,10 +56,7 @@ import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { RecordManualBookingPaymentDto } from './dto/record-manual-booking-payment.dto';
 import { BookingsService } from '../bookings/bookings.service';
-import {
-  ParseBookingRefPipe,
-  ParseUuidOrSlugPipe,
-} from '../../common/pipes';
+import { ParseBookingRefPipe, ParseUuidOrSlugPipe } from '../../common/pipes';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -214,7 +211,11 @@ export class AdminController {
     @Body() dto: RecordManualBookingPaymentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.adminService.recordManualBookingPayment(referenceCode, dto, user.id);
+    return this.adminService.recordManualBookingPayment(
+      referenceCode,
+      dto,
+      user.id,
+    );
   }
 
   @Post('users/:id/suspend')
@@ -287,6 +288,24 @@ export class AdminController {
     );
   }
 
+  @Post('bookings/:referenceCode/refund-and-cancel')
+  @ApiOperation({ summary: 'Refund and cancel a booking (Admin only).' })
+  @ApiParam({ name: 'referenceCode', type: 'string' })
+  @ApiOkResponse({ description: 'Booking cancelled and refund recorded' })
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async cancelWithRefund(
+    @Param('referenceCode', ParseBookingRefPipe) referenceCode: string,
+    @Body() dto: { reason?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.cancelWithRefund(
+      referenceCode,
+      user.id,
+      user.role,
+      dto?.reason,
+    );
+  }
+
   @Patch('bookings/:referenceCode/passengers')
   @ApiOperation({ summary: 'Upsert passengers for a booking.' })
   @ApiParam({ name: 'referenceCode', type: 'string' })
@@ -349,7 +368,6 @@ export class AdminController {
   ) {
     return this.adminService.softDeleteBooking(referenceCode, user.id);
   }
-
 
   @Get('notification-logs')
   @ApiOperation({
@@ -487,7 +505,10 @@ export class AdminController {
   }
 
   @Patch('tours/:slug/move')
-  @ApiOperation({ summary: 'Move a tour between destination landing pages, countries, cities, and categories.' })
+  @ApiOperation({
+    summary:
+      'Move a tour between destination landing pages, countries, cities, and categories.',
+  })
   @ApiParam({ name: 'slug', type: 'string' })
   @ApiBody({ type: MoveTourDto })
   @ApiOkResponse({ description: 'Tour moved successfully' })
@@ -509,7 +530,9 @@ export class AdminController {
   }
 
   @Post('tours/:slug/unpublish')
-  @ApiOperation({ summary: 'Return a public tour to draft without deleting it.' })
+  @ApiOperation({
+    summary: 'Return a public tour to draft without deleting it.',
+  })
   async unpublishTour(
     @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -518,7 +541,9 @@ export class AdminController {
   }
 
   @Post('tours/:slug/archive')
-  @ApiOperation({ summary: 'Archive a tour while preserving bookings and history.' })
+  @ApiOperation({
+    summary: 'Archive a tour while preserving bookings and history.',
+  })
   async archiveTour(
     @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -527,7 +552,9 @@ export class AdminController {
   }
 
   @Post('tours/:slug/unarchive')
-  @ApiOperation({ summary: 'Restore an archived/deleted tour as a non-public draft.' })
+  @ApiOperation({
+    summary: 'Restore an archived/deleted tour as a non-public draft.',
+  })
   async unarchiveTour(
     @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -535,10 +562,11 @@ export class AdminController {
     return this.adminService.unarchiveTour(slug, user.id);
   }
 
-
   @Delete('tours/clear-all')
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Soft-delete ALL tours (nuclear wipe - SUPER_ADMIN only).' })
+  @ApiOperation({
+    summary: 'Soft-delete ALL tours (nuclear wipe - SUPER_ADMIN only).',
+  })
   @ApiOkResponse({ description: 'Count of archived tours' })
   async clearAllTours(@CurrentUser() user: AuthenticatedUser) {
     return this.adminService.clearAllTours(user.id);

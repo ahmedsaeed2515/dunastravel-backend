@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MinLength,
   MaxLength,
   ValidateIf,
@@ -88,4 +89,12 @@ export class UpdateUserDto {
   @IsEnum(UserRole)
   @IsOptional()
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Company ID to associate user/agent with',
+  })
+  @IsUUID()
+  @IsOptional()
+  companyId?: string | null;
 }

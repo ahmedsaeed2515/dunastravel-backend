@@ -806,6 +806,7 @@ enum CompanyType {
 enum CompanyStatus {
   ACTIVE
   INACTIVE
+  SUSPENDED
   BLACKLISTED
 }
 

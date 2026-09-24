@@ -23,15 +23,20 @@ export function formatInvoiceNumber(
   return `INV-${year}-${paddedCount}`;
 }
 
+export function generateInvoiceNumber(): string;
 export function generateInvoiceNumber(year: number, count: number): string;
 export function generateInvoiceNumber(
   tx: Prisma.TransactionClient,
 ): Promise<string>;
 export function generateInvoiceNumber(
-  arg1: number | Prisma.TransactionClient,
+  arg1?: number | Prisma.TransactionClient,
   arg2?: number,
 ): string | Promise<string> {
   const currentYear = new Date().getFullYear();
+  if (arg1 === undefined) {
+    const randomSuffix = crypto.randomBytes(3).toString('hex').toUpperCase();
+    return `INV-${currentYear}-${randomSuffix}`;
+  }
   if (typeof arg1 === 'number') {
     if (arg2 !== undefined && arg2 < 1) {
       throw new Error('Invoice count must be ≥ 1');

@@ -170,7 +170,8 @@ export class BookingsService {
       if (Array.isArray(target)) {
         if (
           target.some(
-            (t) => typeof t === 'string' && t.toLowerCase().includes('idempotency'),
+            (t) =>
+              typeof t === 'string' && t.toLowerCase().includes('idempotency'),
           )
         ) {
           return true;
@@ -210,7 +211,9 @@ export class BookingsService {
     idempotencyKey?: string,
     clientGuestToken?: string,
   ): Promise<BookingCreatedResponse> {
-    this.logger.log(`Initiating booking creation | tourId=${dto.tourId} | user=${userId || 'GUEST'}`);
+    this.logger.log(
+      `Initiating booking creation | tourId=${dto.tourId} | user=${userId || 'GUEST'}`,
+    );
 
     if (!idempotencyKey) {
       idempotencyKey = `bkg_auto_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -243,7 +246,12 @@ export class BookingsService {
       try {
         const userRecord = await this.prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, isVerified: true, status: true, suspendedAt: true },
+          select: {
+            id: true,
+            isVerified: true,
+            status: true,
+            suspendedAt: true,
+          },
         });
         if (userRecord && userRecord.isVerified === false) {
           throw new ForbiddenException(
@@ -375,379 +383,386 @@ export class BookingsService {
 
     while (attempt < maxAttempts) {
       try {
-        const result = await this.prisma.$transaction(async (tx) => {
-          // 1. Load exact active, published, non-deleted tour
-          const isUUID =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-              dto.tourId,
-            );
-          let tour = isUUID && typeof tx.tour.findUnique === 'function'
-            ? await tx.tour.findUnique({ where: { id: dto.tourId } })
-            : null;
+        const result = await this.prisma.$transaction(
+          async (tx) => {
+            // 1. Load exact active, published, non-deleted tour
+            const isUUID =
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                dto.tourId,
+              );
+            const tour =
+              isUUID && typeof tx.tour.findUnique === 'function'
+                ? await tx.tour.findUnique({ where: { id: dto.tourId } })
+                : typeof tx.tour.findFirst === 'function'
+                  ? await tx.tour.findFirst({ where: { slug: dto.tourId } })
+                  : null;
 
-          if (!tour && typeof tx.tour.findUnique === 'function') {
-            tour = await tx.tour.findUnique({ where: { id: dto.tourId } });
-          }
-
-          if (!tour && !isUUID && typeof tx.tour.findFirst === 'function') {
-            tour = await tx.tour.findFirst({ where: { slug: dto.tourId } });
-          }
-
-          if (
-            !tour ||
-            tour.status !== 'PUBLISHED' ||
-            !tour.isActive ||
-            tour.deletedAt !== null
-          ) {
-            throw new UnprocessableEntityException(
-              'Tour is not available for booking',
-            );
-          }
-
-          // 2. Resolve & Validate Availability
-          const availId = dto.availabilityId || dto.departureId;
-          let availIdToStore: string;
-
-          if (availId) {
-            const avail = await tx.tourAvailability.findUnique({
-              where: { id: availId },
-            });
             if (
-              !avail ||
-              avail.tourId !== tour.id ||
-              avail.status === 'CLOSED'
+              !tour ||
+              tour.status !== 'PUBLISHED' ||
+              !tour.isActive ||
+              tour.deletedAt !== null
             ) {
               throw new UnprocessableEntityException(
-                'Selected departure date is closed or not available for this tour',
+                'Tour is not available for booking',
               );
             }
-            const availDate = new Date(avail.date);
-            const availDateStr = `${availDate.getUTCFullYear()}-${String(availDate.getUTCMonth() + 1).padStart(2, '0')}-${String(availDate.getUTCDate()).padStart(2, '0')}`;
-            if (availDateStr !== arrivalDateStr) {
-              throw new UnprocessableEntityException(
-                'Selected availability slot date does not match arrival date',
-              );
-            }
-            availIdToStore = avail.id;
-          } else {
-            // Find or initialize scheduling slot for (tourId, arrivalDate)
-            let matchedAvail = await tx.tourAvailability.findFirst({
-              where: {
-                tourId: tour.id,
-                date: arrivalDateObj,
-                status: { not: 'CLOSED' },
-              },
-            });
-            if (!matchedAvail) {
-              // Tours are open to all registrants; ensure slot exists if not explicitly closed
-              matchedAvail = await tx.tourAvailability.upsert({
-                where: { tourId_date: { tourId: tour.id, date: arrivalDateObj } },
-                update: {},
-                create: {
+
+            // 2. Resolve & Validate Availability
+            const availId = dto.availabilityId || dto.departureId;
+            let availIdToStore: string;
+
+            if (availId) {
+              const avail = await tx.tourAvailability.findUnique({
+                where: { id: availId },
+              });
+              if (
+                !avail ||
+                avail.tourId !== tour.id ||
+                avail.status === 'CLOSED'
+              ) {
+                throw new UnprocessableEntityException(
+                  'Selected departure date is closed or not available for this tour',
+                );
+              }
+              const availDate = new Date(avail.date);
+              const availDateStr = `${availDate.getUTCFullYear()}-${String(availDate.getUTCMonth() + 1).padStart(2, '0')}-${String(availDate.getUTCDate()).padStart(2, '0')}`;
+              if (availDateStr !== arrivalDateStr) {
+                throw new UnprocessableEntityException(
+                  'Selected availability slot date does not match arrival date',
+                );
+              }
+              availIdToStore = avail.id;
+            } else {
+              // Find or initialize scheduling slot for (tourId, arrivalDate)
+              let matchedAvail = await tx.tourAvailability.findFirst({
+                where: {
                   tourId: tour.id,
                   date: arrivalDateObj,
-                  totalCapacity: 9999,
-                  remainingSeats: 9999,
-                  status: 'AVAILABLE',
+                  status: { not: 'CLOSED' },
                 },
               });
-            }
-            if (matchedAvail.status === 'CLOSED') {
-              throw new UnprocessableEntityException(
-                'Selected departure date is closed for bookings',
-              );
-            }
-            availIdToStore = matchedAvail.id;
-          }
+              if (!matchedAvail) {
+                // Auto-created departure slot default capacity. Managed via BOOKING_DEFAULT_SLOT_CAPACITY
+                // env var (defaults to 50 pax per slot) instead of unbound 9999 to respect tour operations capacity planning.
+                const defaultSlotCapacity = Number.isFinite(
+                  parseInt(process.env.BOOKING_DEFAULT_SLOT_CAPACITY ?? '', 10),
+                )
+                  ? parseInt(process.env.BOOKING_DEFAULT_SLOT_CAPACITY!, 10)
+                  : 50;
 
-          // 3. Calculate price against PRE-reservation state
-          const breakdownResult = await this.pricingService.calculatePrice(
-            {
-              tourId: tour.id,
-              availabilityId: availIdToStore,
-              date: arrivalDateStr,
-              adults: adultsCount,
-              children: childrenCount,
-              infants: dto.infants ?? 0,
-              promoCode: dto.promoCode,
-              language: dto.language,
-            },
-            tx,
-          );
-
-          if (dto.promoCode && !breakdownResult.promoValid) {
-            throw new BadRequestException(
-              breakdownResult.promoMessage || 'Invalid or expired promo code',
-            );
-          }
-
-          const finalTotalAmountUsd = new Prisma.Decimal(
-            breakdownResult.totalAmountUsd,
-          );
-
-          // 4. Acquire promotion quota conditionally inside transaction
-          let promoToRedeem: { id: string; discount: Prisma.Decimal } | null =
-            null;
-          if (
-            dto.promoCode &&
-            breakdownResult.promoValid &&
-            breakdownResult.discounts &&
-            breakdownResult.discounts.length > 0
-          ) {
-            const codeUpper = dto.promoCode.trim().toUpperCase();
-            const promo = await tx.promotion.findFirst({
-              where: {
-                code: codeUpper,
-                isActive: true,
-                validFrom: { lte: new Date() },
-                validUntil: { gte: new Date() },
-              },
-            });
-
-            if (!promo) {
-              throw new BadRequestException('Invalid or expired promo code');
-            }
-
-            const updatedPromo = await tx.promotion.updateMany({
-              where: {
-                id: promo.id,
-                currentUses: { lt: promo.maxUses },
-                isActive: true,
-                validFrom: { lte: new Date() },
-                validUntil: { gte: new Date() },
-              },
-              data: {
-                currentUses: { increment: 1 },
-              },
-            });
-
-            if (updatedPromo.count === 0) {
-              throw new BadRequestException(
-                'Promotion code usage limit reached',
-              );
-            }
-
-            promoToRedeem = {
-              id: promo.id,
-              discount: new Prisma.Decimal(
-                breakdownResult.discounts[0].amountUsd,
-              ),
-            };
-          }
-
-          // 5. Atomically reserve capacity
-          await this.availabilityService.reserveCapacity(
-            tx,
-            availIdToStore,
-            totalPassengers,
-          );
-
-          // 6. Create booking, passengers, billing, redemption, invoice
-          const referenceCode = await this.generateUniqueReferenceCode(tx);
-          const bookingId = crypto.randomUUID();
-          const guestToken =
-            clientGuestToken ||
-            this.generateGuestToken(bookingId, referenceCode);
-          const guestTokenHash = crypto
-            .createHash('sha256')
-            .update(guestToken)
-            .digest('hex');
-
-          const isZeroAmount = finalTotalAmountUsd.lte(0);
-          const initialStatus: BookingStatus = isZeroAmount
-            ? 'CONFIRMED'
-            : 'PENDING';
-
-          const booking = await tx.booking.create({
-            data: {
-              id: bookingId,
-              referenceCode,
-              userId: userId || null,
-              tourId: tour.id,
-              availabilityId: availIdToStore,
-              arrivalDate: arrivalDateObj,
-              departureDate: departureDateObj,
-              status: initialStatus,
-              adults: adultsCount,
-              children: childrenCount,
-              infants: dto.infants ?? 0,
-              totalAmountUsd: finalTotalAmountUsd,
-              paidAmountUsd: isZeroAmount
-                ? finalTotalAmountUsd
-                : new Prisma.Decimal(0),
-              idempotencyKey: idempotencyKey || null,
-              requestHash,
-              guestTokenHash,
-            },
-          });
-
-          const passengerData: Array<{
-            bookingId: string;
-            passengerType: string;
-            fullName: string;
-          }> = [];
-
-          if (dto.passengerNames && typeof dto.passengerNames === 'object') {
-            let adultKeysCount = 0;
-            let childKeysCount = 0;
-            let infantKeysCount = 0;
-
-            for (const [key, name] of Object.entries(dto.passengerNames)) {
-              if (name && typeof name === 'string' && name.trim()) {
-                let type = 'ADULT';
-                const lowerKey = key.toLowerCase();
-                if (lowerKey.includes('child')) {
-                  type = 'CHILD';
-                  childKeysCount++;
-                } else if (lowerKey.includes('infant')) {
-                  type = 'INFANT';
-                  infantKeysCount++;
-                } else {
-                  adultKeysCount++;
-                }
-                passengerData.push({
-                  bookingId: booking.id,
-                  passengerType: type,
-                  fullName: name.trim(),
+                matchedAvail = await tx.tourAvailability.upsert({
+                  where: {
+                    tourId_date: { tourId: tour.id, date: arrivalDateObj },
+                  },
+                  update: {},
+                  create: {
+                    tourId: tour.id,
+                    date: arrivalDateObj,
+                    totalCapacity: defaultSlotCapacity,
+                    remainingSeats: defaultSlotCapacity,
+                    status: 'AVAILABLE',
+                  },
                 });
+              }
+              if (matchedAvail.status === 'CLOSED') {
+                throw new UnprocessableEntityException(
+                  'Selected departure date is closed for bookings',
+                );
+              }
+              availIdToStore = matchedAvail.id;
+            }
+
+            // 3. Calculate price against PRE-reservation state
+            const breakdownResult = await this.pricingService.calculatePrice(
+              {
+                tourId: tour.id,
+                availabilityId: availIdToStore,
+                date: arrivalDateStr,
+                adults: adultsCount,
+                children: childrenCount,
+                infants: dto.infants ?? 0,
+                promoCode: dto.promoCode,
+                language: dto.language,
+              },
+              tx,
+            );
+
+            if (dto.promoCode && !breakdownResult.promoValid) {
+              throw new BadRequestException(
+                breakdownResult.promoMessage || 'Invalid or expired promo code',
+              );
+            }
+
+            const finalTotalAmountUsd = new Prisma.Decimal(
+              breakdownResult.totalAmountUsd,
+            );
+
+            // 4. Acquire promotion quota conditionally inside transaction
+            let promoToRedeem: { id: string; discount: Prisma.Decimal } | null =
+              null;
+            if (
+              dto.promoCode &&
+              breakdownResult.promoValid &&
+              breakdownResult.discounts &&
+              breakdownResult.discounts.length > 0
+            ) {
+              const codeUpper = dto.promoCode.trim().toUpperCase();
+              const promo = await tx.promotion.findFirst({
+                where: {
+                  code: codeUpper,
+                  isActive: true,
+                  validFrom: { lte: new Date() },
+                  validUntil: { gte: new Date() },
+                },
+              });
+
+              if (!promo) {
+                throw new BadRequestException('Invalid or expired promo code');
+              }
+
+              const updatedPromo = await tx.promotion.updateMany({
+                where: {
+                  id: promo.id,
+                  currentUses: { lt: promo.maxUses },
+                  isActive: true,
+                  validFrom: { lte: new Date() },
+                  validUntil: { gte: new Date() },
+                },
+                data: {
+                  currentUses: { increment: 1 },
+                },
+              });
+
+              if (updatedPromo.count === 0) {
+                throw new BadRequestException(
+                  'Promotion code usage limit reached',
+                );
+              }
+
+              promoToRedeem = {
+                id: promo.id,
+                discount: new Prisma.Decimal(
+                  breakdownResult.discounts[0].amountUsd,
+                ),
+              };
+            }
+
+            // 5. Atomically reserve capacity
+            await this.availabilityService.reserveCapacity(
+              tx,
+              availIdToStore,
+              totalPassengers,
+            );
+
+            // 6. Create booking, passengers, billing, redemption, invoice
+            const referenceCode = await this.generateUniqueReferenceCode(tx);
+            const bookingId = crypto.randomUUID();
+            const guestToken =
+              clientGuestToken ||
+              this.generateGuestToken(bookingId, referenceCode);
+            const guestTokenHash = crypto
+              .createHash('sha256')
+              .update(guestToken)
+              .digest('hex');
+
+            const isZeroAmount = finalTotalAmountUsd.lte(0);
+            const initialStatus: BookingStatus = isZeroAmount
+              ? 'CONFIRMED'
+              : 'PENDING';
+
+            const booking = await tx.booking.create({
+              data: {
+                id: bookingId,
+                referenceCode,
+                userId: userId || null,
+                tourId: tour.id,
+                availabilityId: availIdToStore,
+                arrivalDate: arrivalDateObj,
+                departureDate: departureDateObj,
+                status: initialStatus,
+                adults: adultsCount,
+                children: childrenCount,
+                infants: dto.infants ?? 0,
+                totalAmountUsd: finalTotalAmountUsd,
+                paidAmountUsd: isZeroAmount
+                  ? finalTotalAmountUsd
+                  : new Prisma.Decimal(0),
+                idempotencyKey: idempotencyKey || null,
+                requestHash,
+                guestTokenHash,
+              },
+            });
+
+            const passengerData: Array<{
+              bookingId: string;
+              passengerType: string;
+              fullName: string;
+            }> = [];
+
+            if (dto.passengerNames && typeof dto.passengerNames === 'object') {
+              let adultKeysCount = 0;
+              let childKeysCount = 0;
+              let infantKeysCount = 0;
+
+              for (const [key, name] of Object.entries(dto.passengerNames)) {
+                if (name && typeof name === 'string' && name.trim()) {
+                  let type = 'ADULT';
+                  const lowerKey = key.toLowerCase();
+                  if (lowerKey.includes('child')) {
+                    type = 'CHILD';
+                    childKeysCount++;
+                  } else if (lowerKey.includes('infant')) {
+                    type = 'INFANT';
+                    infantKeysCount++;
+                  } else {
+                    adultKeysCount++;
+                  }
+                  passengerData.push({
+                    bookingId: booking.id,
+                    passengerType: type,
+                    fullName: name.trim(),
+                  });
+                }
+              }
+
+              if (
+                adultKeysCount !== adultsCount ||
+                childKeysCount !== childrenCount ||
+                infantKeysCount !== (dto.infants ?? 0)
+              ) {
+                throw new BadRequestException(
+                  'Passenger roster counts do not match declared adult/child/infant counts',
+                );
               }
             }
 
-            if (
-              adultKeysCount !== adultsCount ||
-              childKeysCount !== childrenCount ||
-              infantKeysCount !== (dto.infants ?? 0)
-            ) {
-              throw new BadRequestException(
-                'Passenger roster counts do not match declared adult/child/infant counts',
-              );
+            if (passengerData.length === 0) {
+              passengerData.push({
+                bookingId: booking.id,
+                passengerType: 'ADULT',
+                fullName: rawFullName,
+              });
             }
-          }
 
-          if (passengerData.length === 0) {
-            passengerData.push({
-              bookingId: booking.id,
-              passengerType: 'ADULT',
-              fullName: rawFullName,
+            await tx.passenger.createMany({ data: passengerData });
+
+            const invType = dto.invoiceType || InvoiceType.PERSONAL;
+            const billingInfo = await tx.billingInfo.create({
+              data: {
+                bookingId: booking.id,
+                fullName: rawFullName,
+                email: rawEmail,
+                phone: rawPhone,
+                invoiceType: invType as InvoiceType,
+                companyName: dto.companyName || null,
+                taxId: dto.taxId || null,
+                address: dto.address || null,
+                city: dto.city || null,
+                country: dto.country || null,
+              },
             });
-          }
 
-          await tx.passenger.createMany({ data: passengerData });
-
-          const invType = dto.invoiceType || InvoiceType.PERSONAL;
-          const billingInfo = await tx.billingInfo.create({
-            data: {
-              bookingId: booking.id,
-              fullName: rawFullName,
-              email: rawEmail,
-              phone: rawPhone,
-              invoiceType: invType as InvoiceType,
-              companyName: dto.companyName || null,
-              taxId: dto.taxId || null,
-              address: dto.address || null,
-              city: dto.city || null,
-              country: dto.country || null,
-            },
-          });
-
-          const invoiceNumber = await generateInvoiceNumber(tx);
-          const subtotalUsd =
-            breakdownResult.subtotalUsd ?? breakdownResult.basePriceUsd ?? 0;
-          const invoiceSnapshot: InvoiceSnapshot = {
-            version: 1,
-            tourId: tour.id,
-            tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
-            tourSlug: tour.slug,
-            arrivalDate: arrivalDateStr,
-            departureDate: departureDateObj
-              ? departureDateObj.toISOString().split('T')[0]
-              : null,
-            adults: adultsCount,
-            children: childrenCount,
-            infants: dto.infants ?? 0,
-            baseSubtotal: subtotalUsd,
-            adultTotal: breakdownResult.adultTotalUsd,
-            childTotal: breakdownResult.childTotalUsd,
-            seasonalAdjustment: breakdownResult.seasonalAdjustmentUsd,
-            discounts: (breakdownResult.discounts || []).map((d) => ({
-              name: d.name,
-              amount: d.amountUsd,
-              code: d.code,
-            })),
-            tax: breakdownResult.taxAmountUsd || '0.00',
-            total: breakdownResult.totalAmountUsd,
-            currency: breakdownResult.currency || 'USD',
-            billingRecipient: {
-              fullName: billingInfo.fullName,
-              email: billingInfo.email,
-              phone: billingInfo.phone,
-              invoiceType: billingInfo.invoiceType,
-              companyName: billingInfo.companyName,
-              taxId: billingInfo.taxId,
-              address: billingInfo.address,
-              city: billingInfo.city,
-              country: billingInfo.country,
-            },
-            passengers: passengerData.map((p) => ({
-              passengerType: p.passengerType,
-              fullName: p.fullName,
-            })),
-          };
-
-          await tx.invoice.create({
-            data: {
-              invoiceNumber,
-              bookingId: booking.id,
-              issuedAt: new Date(),
-              status: isZeroAmount ? 'PAID' : 'SENT',
-              subtotal: new Prisma.Decimal(subtotalUsd),
-              tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
-              total: finalTotalAmountUsd,
+            const invoiceNumber = await generateInvoiceNumber(tx);
+            const subtotalUsd =
+              breakdownResult.subtotalUsd ?? breakdownResult.basePriceUsd ?? 0;
+            const invoiceSnapshot: InvoiceSnapshot = {
+              version: 1,
+              tourId: tour.id,
+              tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
+              tourSlug: tour.slug,
+              arrivalDate: arrivalDateStr,
+              departureDate: departureDateObj
+                ? departureDateObj.toISOString().split('T')[0]
+                : null,
+              adults: adultsCount,
+              children: childrenCount,
+              infants: dto.infants ?? 0,
+              baseSubtotal: subtotalUsd,
+              adultTotal: breakdownResult.adultTotalUsd,
+              childTotal: breakdownResult.childTotalUsd,
+              seasonalAdjustment: breakdownResult.seasonalAdjustmentUsd,
+              discounts: (breakdownResult.discounts || []).map((d) => ({
+                name: d.name,
+                amount: d.amountUsd,
+                code: d.code,
+              })),
+              tax: breakdownResult.taxAmountUsd || '0.00',
+              total: breakdownResult.totalAmountUsd,
               currency: breakdownResult.currency || 'USD',
-              snapshotJsonb:
-                invoiceSnapshot as unknown as Prisma.InputJsonValue,
-            },
-          });
+              billingRecipient: {
+                fullName: billingInfo.fullName,
+                email: billingInfo.email,
+                phone: billingInfo.phone,
+                invoiceType: billingInfo.invoiceType,
+                companyName: billingInfo.companyName,
+                taxId: billingInfo.taxId,
+                address: billingInfo.address,
+                city: billingInfo.city,
+                country: billingInfo.country,
+              },
+              passengers: passengerData.map((p) => ({
+                passengerType: p.passengerType,
+                fullName: p.fullName,
+              })),
+            };
 
-          if (isZeroAmount) {
-            await tx.bookingActivityLog.create({
+            await tx.invoice.create({
               data: {
+                invoiceNumber,
                 bookingId: booking.id,
-                action: 'BOOKING_CONFIRMED_ZERO_AMOUNT',
-                details: {
-                  reason:
-                    'Zero-amount booking confirmed automatically without payment gateway',
-                  totalAmountUsd: '0.00',
+                issuedAt: new Date(),
+                status: isZeroAmount ? 'PAID' : 'SENT',
+                subtotal: new Prisma.Decimal(subtotalUsd),
+                tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
+                total: finalTotalAmountUsd,
+                currency: breakdownResult.currency || 'USD',
+                snapshotJsonb:
+                  invoiceSnapshot as unknown as Prisma.InputJsonValue,
+              },
+            });
+
+            if (isZeroAmount) {
+              await tx.bookingActivityLog.create({
+                data: {
+                  bookingId: booking.id,
+                  action: 'BOOKING_CONFIRMED_ZERO_AMOUNT',
+                  details: {
+                    reason:
+                      'Zero-amount booking confirmed automatically without payment gateway',
+                    totalAmountUsd: '0.00',
+                  },
                 },
-              },
+              });
+            }
+
+            if (promoToRedeem) {
+              await tx.promotionRedemption.create({
+                data: {
+                  bookingId: booking.id,
+                  promotionId: promoToRedeem.id,
+                  userId: userId ?? null,
+                  discount: promoToRedeem.discount,
+                  status: 'ACTIVE',
+                },
+              });
+            }
+
+            const passengers = await tx.passenger.findMany({
+              where: { bookingId: booking.id },
             });
-          }
 
-          if (promoToRedeem) {
-            await tx.promotionRedemption.create({
-              data: {
-                bookingId: booking.id,
-                promotionId: promoToRedeem.id,
-                userId: userId ?? null,
-                discount: promoToRedeem.discount,
-                status: 'ACTIVE',
-              },
-            });
-          }
-
-          const passengers = await tx.passenger.findMany({
-            where: { bookingId: booking.id },
-          });
-
-          return {
-            booking,
-            billingInfo,
-            invoiceNumber,
-            passengers,
-            tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
-            guestToken,
-          };
-        }, { maxWait: 10000, timeout: 20000 });
+            return {
+              booking,
+              billingInfo,
+              invoiceNumber,
+              passengers,
+              tourTitle: extractI18n(tour.titleJsonb, dto.language || 'en'),
+              guestToken,
+            };
+          },
+          { maxWait: 10000, timeout: 20000 },
+        );
 
         this.bookingsCounter.inc();
 
@@ -805,10 +820,7 @@ export class BookingsService {
         const errObj = error as { code?: string; meta?: { target?: unknown } };
         if (errObj?.code === 'P2002') {
           attempt++;
-          if (
-            idempotencyKey &&
-            this.isP2002IdempotencyTarget(error)
-          ) {
+          if (idempotencyKey && this.isP2002IdempotencyTarget(error)) {
             let winner = null;
             for (let waitAttempt = 0; waitAttempt < 10; waitAttempt++) {
               winner = await this.prisma.booking.findUnique({
@@ -1059,22 +1071,28 @@ export class BookingsService {
     }
 
     if (!booking.invoice) {
-      const currentYear = new Date().getFullYear();
-      const count = await this.prisma.invoice.count();
-      const invoiceNumber = `INV-${currentYear}-${(count + 1).toString().padStart(4, '0')}`;
+      const invoiceNumber = generateInvoiceNumber();
       const totalDec = new Prisma.Decimal(booking.totalAmountUsd);
       const subtotalVal = totalDec.toFixed(2);
       const taxVal = '0.00';
       const totalAmount = totalDec.toNumber();
-      const recipientName = booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest';
-      const recipientEmail = booking.billingInfo?.email || booking.user?.email || 'guest@dunastravel.com';
+      const recipientName =
+        booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest';
+      const recipientEmail =
+        booking.billingInfo?.email ||
+        booking.user?.email ||
+        'guest@dunastravel.com';
 
       const snap = {
         version: 1,
-        tourTitle: extractI18n(booking.tour?.titleJsonb, 'en') || 'Exclusive Luxury Tour',
+        tourTitle:
+          extractI18n(booking.tour?.titleJsonb, 'en') ||
+          'Exclusive Luxury Tour',
         tourSlug: booking.tour?.slug || 'luxury-tour',
         arrivalDate: booking.arrivalDate.toISOString().split('T')[0],
-        departureDate: booking.departureDate ? booking.departureDate.toISOString().split('T')[0] : null,
+        departureDate: booking.departureDate
+          ? booking.departureDate.toISOString().split('T')[0]
+          : null,
         adults: booking.adults,
         children: booking.children,
         infants: booking.infants,
@@ -1095,7 +1113,9 @@ export class BookingsService {
         },
       };
 
-      const isPaid = booking.status === 'CONFIRMED' || Number(booking.paidAmountUsd) >= totalAmount;
+      const isPaid =
+        booking.status === 'CONFIRMED' ||
+        Number(booking.paidAmountUsd) >= totalAmount;
 
       const created = await this.prisma.invoice.create({
         data: {
@@ -1155,14 +1175,20 @@ export class BookingsService {
       total: booking.invoice.total.toString(),
       currency: booking.invoice.currency,
       tourTitle: snap.tourTitle || extractI18n(booking.tour.titleJsonb, 'en'),
-      arrivalDate: snap.arrivalDate || booking.arrivalDate.toISOString().split('T')[0],
-      departureDate: snap.departureDate || (booking.departureDate ? booking.departureDate.toISOString().split('T')[0] : null),
+      arrivalDate:
+        snap.arrivalDate || booking.arrivalDate.toISOString().split('T')[0],
+      departureDate:
+        snap.departureDate ||
+        (booking.departureDate
+          ? booking.departureDate.toISOString().split('T')[0]
+          : null),
       adults: snap.adults ?? booking.adults,
       children: snap.children ?? booking.children,
       infants: snap.infants ?? booking.infants,
       snapshot: snap,
       billing: snap.billingRecipient || {
-        fullName: booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest',
+        fullName:
+          booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest',
         email: booking.billingInfo?.email || booking.user?.email || '—',
         phone: booking.billingInfo?.phone || booking.user?.phone || '—',
         invoiceType: booking.billingInfo?.invoiceType || 'PERSONAL',
@@ -1290,75 +1316,79 @@ export class BookingsService {
       );
     }
 
+    // Infants do not occupy reserved capacity slots (matches reserveCapacity contract)
+    const INFANTS_CONSUME_CAPACITY = false;
     const seatsToRestore = booking.adults + booking.children;
 
-    await this.prisma.$transaction(async (tx) => {
-      const updateResult = await tx.booking.updateMany({
-        where: {
-          id: booking.id,
-          status: { notIn: nonCancellableStatuses },
-        },
-        data: {
-          status: 'CANCELLED',
-          cancellationReason:
-            safeReason ?? 'Customer requested cancellation',
-        },
-      });
-
-      if (updateResult.count === 0) {
-        throw new BadRequestException(
-          `Booking cannot be cancelled in status: ${booking.status}`,
-        );
-      }
-
-      if (booking.availabilityId) {
-        await this.availabilityService.releaseCapacity(
-          tx,
-          booking.availabilityId,
-          seatsToRestore,
-        );
-      }
-
-      if (
-        booking.promotionRedemption &&
-        booking.promotionRedemption.status === 'ACTIVE'
-      ) {
-        const redemptionUpdate = await tx.promotionRedemption.updateMany({
+    await this.prisma.$transaction(
+      async (tx) => {
+        const updateResult = await tx.booking.updateMany({
           where: {
-            id: booking.promotionRedemption.id,
-            status: 'ACTIVE',
+            id: booking.id,
+            status: { notIn: nonCancellableStatuses },
           },
           data: {
-            status: 'REVERSED',
-            reversedAt: new Date(),
+            status: 'CANCELLED',
+            cancellationReason: safeReason ?? 'Customer requested cancellation',
           },
         });
 
-        if (redemptionUpdate.count > 0) {
-          await tx.promotion.updateMany({
+        if (updateResult.count === 0) {
+          throw new BadRequestException(
+            `Booking cannot be cancelled in status: ${booking.status}`,
+          );
+        }
+
+        if (booking.availabilityId) {
+          await this.availabilityService.releaseCapacity(
+            tx,
+            booking.availabilityId,
+            seatsToRestore,
+          );
+        }
+
+        if (
+          booking.promotionRedemption &&
+          booking.promotionRedemption.status === 'ACTIVE'
+        ) {
+          const redemptionUpdate = await tx.promotionRedemption.updateMany({
             where: {
-              id: booking.promotionRedemption.promotionId,
-              currentUses: { gt: 0 },
+              id: booking.promotionRedemption.id,
+              status: 'ACTIVE',
             },
             data: {
-              currentUses: { decrement: 1 },
+              status: 'REVERSED',
+              reversedAt: new Date(),
             },
           });
-        }
-      }
 
-      await tx.bookingActivityLog.create({
-        data: {
-          bookingId: booking.id,
-          userId: userId || null,
-          action: 'BOOKING_CANCELLED_BY_CUSTOMER',
-          details: {
-            actorType: userId ? 'AUTHENTICATED_USER' : 'GUEST_TOKEN',
-            reasonProvided: Boolean(safeReason),
+          if (redemptionUpdate.count > 0) {
+            await tx.promotion.updateMany({
+              where: {
+                id: booking.promotionRedemption.promotionId,
+                currentUses: { gt: 0 },
+              },
+              data: {
+                currentUses: { decrement: 1 },
+              },
+            });
+          }
+        }
+
+        await tx.bookingActivityLog.create({
+          data: {
+            bookingId: booking.id,
+            userId: userId || null,
+            action: 'BOOKING_CANCELLED_BY_CUSTOMER',
+            details: {
+              actorType: userId ? 'AUTHENTICATED_USER' : 'GUEST_TOKEN',
+              reasonProvided: Boolean(safeReason),
+            },
           },
-        },
-      });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     this.logger.log(`Booking successfully cancelled | ref=${referenceCode}`);
     return { message: 'Booking cancelled successfully' };
@@ -1447,233 +1477,238 @@ export class BookingsService {
       );
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      if (targetStatus === 'CANCELLED') {
-        const updateResult = await tx.booking.updateMany({
-          where: {
-            id: booking.id,
-            status: booking.status,
-          },
-          data: {
-            status: 'CANCELLED',
-            cancellationReason:
-              safeReason ?? 'Status transitioned to CANCELLED',
-          },
-        });
-
-        if (updateResult.count === 0) {
-          throw new BadRequestException(
-            `Booking cannot be cancelled in status ${booking.status}`,
-          );
-        }
-
-        if (booking.availabilityId) {
-          await this.availabilityService.releaseCapacity(
-            tx,
-            booking.availabilityId,
-            totalPassengers,
-          );
-        }
-
-        if (
-          booking.promotionRedemption &&
-          booking.promotionRedemption.status === 'ACTIVE'
-        ) {
-          const redemptionUpdate = await tx.promotionRedemption.updateMany({
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        if (targetStatus === 'CANCELLED') {
+          const updateResult = await tx.booking.updateMany({
             where: {
-              id: booking.promotionRedemption.id,
-              status: 'ACTIVE',
+              id: booking.id,
+              status: booking.status,
             },
             data: {
-              status: 'REVERSED',
-              reversedAt: new Date(),
+              status: 'CANCELLED',
+              cancellationReason:
+                safeReason ?? 'Status transitioned to CANCELLED',
             },
           });
 
-          if (redemptionUpdate.count > 0) {
-            await tx.promotion.updateMany({
-              where: {
-                id: booking.promotionRedemption.promotionId,
-                currentUses: { gt: 0 },
-              },
-              data: {
-                currentUses: { decrement: 1 },
-              },
-            });
+          if (updateResult.count === 0) {
+            throw new BadRequestException(
+              `Booking cannot be cancelled in status ${booking.status}`,
+            );
           }
-        }
-      } else if (
-        booking.status === 'CANCELLED' &&
-        ['CONFIRMED', 'PENDING'].includes(targetStatus)
-      ) {
-        if (booking.availabilityId) {
-          const avail = await tx.tourAvailability.findUnique({
-            where: { id: booking.availabilityId },
-          });
+
+          if (booking.availabilityId) {
+            await this.availabilityService.releaseCapacity(
+              tx,
+              booking.availabilityId,
+              totalPassengers,
+            );
+          }
 
           if (
-            !avail ||
-            !['AVAILABLE', 'LIMITED'].includes(avail.status) ||
-            avail.remainingSeats < totalPassengers
+            booking.promotionRedemption &&
+            booking.promotionRedemption.status === 'ACTIVE'
           ) {
-            throw new UnprocessableEntityException(
-              'Capacity is no longer available to restore this booking',
-            );
+            const redemptionUpdate = await tx.promotionRedemption.updateMany({
+              where: {
+                id: booking.promotionRedemption.id,
+                status: 'ACTIVE',
+              },
+              data: {
+                status: 'REVERSED',
+                reversedAt: new Date(),
+              },
+            });
+
+            if (redemptionUpdate.count > 0) {
+              await tx.promotion.updateMany({
+                where: {
+                  id: booking.promotionRedemption.promotionId,
+                  currentUses: { gt: 0 },
+                },
+                data: {
+                  currentUses: { decrement: 1 },
+                },
+              });
+            }
           }
-
-          await this.availabilityService.reserveCapacity(
-            tx,
-            booking.availabilityId,
-            totalPassengers,
-          );
-        }
-
-        if (
-          booking.promotionRedemption &&
-          booking.promotionRedemption.status === 'REVERSED'
+        } else if (
+          booking.status === 'CANCELLED' &&
+          ['CONFIRMED', 'PENDING'].includes(targetStatus)
         ) {
-          const promo = await tx.promotion.findUnique({
-            where: { id: booking.promotionRedemption.promotionId },
-          });
+          if (booking.availabilityId) {
+            const avail = await tx.tourAvailability.findUnique({
+              where: { id: booking.availabilityId },
+            });
 
-          if (promo && promo.isActive && promo.currentUses < promo.maxUses) {
-            await tx.promotion.update({
-              where: { id: promo.id },
-              data: { currentUses: { increment: 1 } },
+            if (
+              !avail ||
+              !['AVAILABLE', 'LIMITED'].includes(avail.status) ||
+              avail.remainingSeats < totalPassengers
+            ) {
+              throw new UnprocessableEntityException(
+                'Capacity is no longer available to restore this booking',
+              );
+            }
+
+            await this.availabilityService.reserveCapacity(
+              tx,
+              booking.availabilityId,
+              totalPassengers,
+            );
+          }
+
+          if (
+            booking.promotionRedemption &&
+            booking.promotionRedemption.status === 'REVERSED'
+          ) {
+            const promo = await tx.promotion.findUnique({
+              where: { id: booking.promotionRedemption.promotionId },
             });
-            await tx.promotionRedemption.update({
-              where: { id: booking.promotionRedemption.id },
-              data: { status: 'ACTIVE', reversedAt: null },
-            });
-          } else {
-            throw new UnprocessableEntityException(
-              'Promotion quota is no longer available to restore this booking discount',
+
+            if (promo && promo.isActive && promo.currentUses < promo.maxUses) {
+              await tx.promotion.update({
+                where: { id: promo.id },
+                data: { currentUses: { increment: 1 } },
+              });
+              await tx.promotionRedemption.update({
+                where: { id: booking.promotionRedemption.id },
+                data: { status: 'ACTIVE', reversedAt: null },
+              });
+            } else {
+              throw new UnprocessableEntityException(
+                'Promotion quota is no longer available to restore this booking discount',
+              );
+            }
+          }
+
+          const restored = await tx.booking.updateMany({
+            where: { id: booking.id, status: booking.status },
+            data: {
+              status: targetStatus as any,
+              cancellationReason: null,
+            },
+          });
+          if (restored.count !== 1) {
+            throw new BadRequestException(
+              'Booking changed; reload before restoring it',
+            );
+          }
+        } else {
+          const updated = await tx.booking.updateMany({
+            where: { id: booking.id, status: booking.status },
+            data: {
+              status: targetStatus as any,
+              ...(safeReason && { cancellationReason: safeReason }),
+            },
+          });
+          if (updated.count !== 1) {
+            throw new BadRequestException(
+              'Booking changed; reload before updating it',
             );
           }
         }
 
-        const restored = await tx.booking.updateMany({
-          where: { id: booking.id, status: booking.status },
+        await tx.bookingActivityLog.create({
           data: {
-            status: targetStatus as any,
-            cancellationReason: null,
+            bookingId: booking.id,
+            userId: actor.id,
+            action:
+              booking.status === 'CANCELLED'
+                ? 'BOOKING_RESTORED'
+                : 'STATUS_CHANGED',
+            details: {
+              oldStatus: booking.status,
+              newStatus: targetStatus,
+              reason: safeReason ?? null,
+              actorRole: actor.role,
+            },
           },
         });
-        if (restored.count !== 1) {
-          throw new BadRequestException(
-            'Booking changed; reload before restoring it',
-          );
-        }
-      } else {
-        const updated = await tx.booking.updateMany({
-          where: { id: booking.id, status: booking.status },
-          data: {
-            status: targetStatus as any,
-            ...(safeReason && { cancellationReason: safeReason }),
-          },
-        });
-        if (updated.count !== 1) {
-          throw new BadRequestException(
-            'Booking changed; reload before updating it',
-          );
-        }
-      }
 
-      await tx.bookingActivityLog.create({
-        data: {
-          bookingId: booking.id,
-          userId: actor.id,
-          action:
-            booking.status === 'CANCELLED'
-              ? 'BOOKING_RESTORED'
-              : 'STATUS_CHANGED',
-          details: {
-            oldStatus: booking.status,
-            newStatus: targetStatus,
-            reason: safeReason ?? null,
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
             actorRole: actor.role,
-          },
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: actor.id,
-          actorRole: actor.role,
-          action: 'BOOKING_STATUS_CHANGED',
-          entityType: 'BOOKING',
-          entityId: booking.id,
-          metadata: {
-            oldStatus: booking.status,
-            newStatus: targetStatus,
-          },
-        },
-      });
-
-      const updatedBooking = await tx.booking.findUnique({
-        where: { id: booking.id },
-        select: {
-          id: true,
-          referenceCode: true,
-          userId: true,
-          tourId: true,
-          status: true,
-          arrivalDate: true,
-          departureDate: true,
-          adults: true,
-          children: true,
-          infants: true,
-          totalAmountUsd: true,
-          paidAmountUsd: true,
-          cancellationReason: true,
-          priority: true,
-          assigneeId: true,
-          createdAt: true,
-          updatedAt: true,
-          passengers: {
-            select: {
-              id: true,
-              passengerType: true,
-              fullName: true,
-              dateOfBirth: true,
-              nationality: true,
-              passportExpiry: true,
-              passportNumber: true,
+            action: 'BOOKING_STATUS_CHANGED',
+            entityType: 'BOOKING',
+            entityId: booking.id,
+            metadata: {
+              oldStatus: booking.status,
+              newStatus: targetStatus,
             },
           },
-          billingInfo: {
-            select: {
-              fullName: true,
-              email: true,
-              phone: true,
-              invoiceType: true,
-              companyName: true,
-              taxId: true,
-              address: true,
-              city: true,
-              country: true,
-            },
-          },
-          invoice: {
-            select: {
-              id: true,
-              invoiceNumber: true,
-              status: true,
-              subtotal: true,
-              tax: true,
-              total: true,
-              currency: true,
-            },
-          },
-          tour: { select: { id: true, slug: true, titleJsonb: true } },
-        },
-      });
+        });
 
-      return updatedBooking;
-    }, { isolationLevel: 'Serializable' });
+        const updatedBooking = await tx.booking.findUnique({
+          where: { id: booking.id },
+          select: {
+            id: true,
+            referenceCode: true,
+            userId: true,
+            tourId: true,
+            status: true,
+            arrivalDate: true,
+            departureDate: true,
+            adults: true,
+            children: true,
+            infants: true,
+            totalAmountUsd: true,
+            paidAmountUsd: true,
+            cancellationReason: true,
+            priority: true,
+            assigneeId: true,
+            createdAt: true,
+            updatedAt: true,
+            passengers: {
+              select: {
+                id: true,
+                passengerType: true,
+                fullName: true,
+                dateOfBirth: true,
+                nationality: true,
+                passportExpiry: true,
+                passportNumber: true,
+              },
+            },
+            billingInfo: {
+              select: {
+                fullName: true,
+                email: true,
+                phone: true,
+                invoiceType: true,
+                companyName: true,
+                taxId: true,
+                address: true,
+                city: true,
+                country: true,
+              },
+            },
+            invoice: {
+              select: {
+                id: true,
+                invoiceNumber: true,
+                status: true,
+                subtotal: true,
+                tax: true,
+                total: true,
+                currency: true,
+              },
+            },
+            tour: { select: { id: true, slug: true, titleJsonb: true } },
+          },
+        });
+
+        return updatedBooking;
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     if (targetStatus === 'CANCELLED' || targetStatus === 'REFUNDED') {
       await this.commissionsService.reverseCommissionForBooking(booking.id);
+    } else if (targetStatus === 'CONFIRMED' && booking.companyId) {
+      await this.commissionsService.createCommissionForBooking(booking.id);
     }
 
     return result
@@ -1681,11 +1716,121 @@ export class BookingsService {
           ...result,
           passengers: result.passengers.map((passenger) => ({
             ...passenger,
-            passportNumber: decryptSensitiveField(
-              passenger.passportNumber,
-            ),
+            passportNumber: decryptSensitiveField(passenger.passportNumber),
           })),
         }
       : result;
+  }
+
+  async cancelWithRefund(
+    referenceCode: string,
+    actor: { id: string; role: string },
+    reason?: string,
+  ) {
+    if (actor.role !== 'SUPER_ADMIN' && actor.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Only administrators can cancel and refund bookings',
+      );
+    }
+
+    const booking = await this.prisma.booking.findFirst({
+      where: { referenceCode, deletedAt: null },
+      include: {
+        payments: {
+          where: { status: 'CAPTURED' },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const safeReason = reason
+      ? sanitizePlainText(reason).slice(0, 2_000)
+      : 'Admin cancelled with refund';
+
+    const latestPayment = booking.payments[0];
+
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        // 1. Transition booking to CANCELLED
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: 'CANCELLED',
+            cancellationReason: safeReason,
+          },
+        });
+
+        // 2. Release capacity if availability exists
+        if (booking.availabilityId) {
+          const totalPassengers = booking.adults + booking.children;
+          await this.availabilityService.releaseCapacity(
+            tx,
+            booking.availabilityId,
+            totalPassengers,
+          );
+        }
+
+        // 3. Create RefundRecord if payment exists
+        if (latestPayment) {
+          await tx.refundRecord.create({
+            data: {
+              idempotencyKey: `refund:${booking.id}:${Date.now()}`,
+              paymentId: latestPayment.id,
+              amount: booking.paidAmountUsd,
+              currency: latestPayment.currency || 'USD',
+              status: 'COMPLETED',
+              actorId: actor.id,
+              actorRole: actor.role,
+              reason: safeReason,
+            },
+          });
+
+          await tx.payment.update({
+            where: { id: latestPayment.id },
+            data: {
+              isRefund: true,
+              refundedAt: new Date(),
+            },
+          });
+        }
+
+        // 4. Audit Log
+        await tx.auditLog.create({
+          data: {
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'BOOKING_CANCELLED_WITH_REFUND',
+            entityType: 'BOOKING',
+            entityId: booking.id,
+            metadata: {
+              oldStatus: booking.status,
+              newStatus: 'CANCELLED',
+              refundAmount: booking.paidAmountUsd.toString(),
+              reason: safeReason,
+            },
+          },
+        });
+
+        return { success: true };
+      },
+      { isolationLevel: 'Serializable' },
+    );
+
+    // 5. Reverse commissions
+    await this.commissionsService.reverseCommissionForBooking(booking.id);
+
+    // 6. Emit event
+    this.eventEmitter.emit(BOOKING_EVENTS.CANCELLED, {
+      bookingId: booking.id,
+      referenceCode: booking.referenceCode,
+      reason: safeReason,
+      refundedAmount: booking.paidAmountUsd.toString(),
+    });
+
+    return result;
   }
 }

@@ -93,7 +93,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
@@ -130,7 +130,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       success: 1,
       message: 'Payment completed',
     };
-    (invalidEventPayload as any).signature = paylinkClient.webhooks.computeSignature(
+    (invalidEventPayload as any).signature = (paylinkClient.webhooks as any).computeSignature(
       invalidEventPayload,
       hashToken,
     );
@@ -182,7 +182,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'USD',
     };
-    webhookPayload.signature = paylinkClient.webhooks.computeSignature(webhookPayload, hashToken);
+    webhookPayload.signature = (paylinkClient.webhooks as any).computeSignature(webhookPayload, hashToken);
 
     // 3b. First delivery: processes successfully
     const firstDeliveryRes = await request(app.getHttpServer())
@@ -275,7 +275,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       order_amount: 5.00,
       order_currency: 'USD',
     };
-    latePaidPayload.signature = paylinkClient.webhooks.computeSignature(latePaidPayload, hashToken);
+    latePaidPayload.signature = (paylinkClient.webhooks as any).computeSignature(latePaidPayload, hashToken);
 
     const latePaidRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')

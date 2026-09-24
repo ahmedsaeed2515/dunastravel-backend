@@ -112,7 +112,7 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: testUserEmail, password: testUserPassword });
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     accessToken = accessTokenCookie
       ? accessTokenCookie.split(';')[0].replace('access_token=', '')
@@ -218,7 +218,7 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
       invoice_status: 'PAID',
       message: 'Payment completed successfully',
     };
-    callbackPayload.signature = paylinkClient.webhooks.computeSignature(callbackPayload, hashToken);
+    callbackPayload.signature = (paylinkClient.webhooks as any).computeSignature(callbackPayload, hashToken);
 
     // Request made WITHOUT any Authorization header (session expired)
     const callbackRes = await request(app.getHttpServer())

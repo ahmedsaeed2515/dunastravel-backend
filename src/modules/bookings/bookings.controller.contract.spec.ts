@@ -247,6 +247,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
         }),
         'usr-1',
         'idem-key-12345',
+        undefined,
       );
     });
 

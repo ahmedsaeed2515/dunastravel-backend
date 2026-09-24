@@ -49,7 +49,7 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
         email: 'traveler.test@dunastravel.com',
         password: 'Password123!',
       });
-    const cookies = loginRes.headers['set-cookie'] as string[] | undefined;
+    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
     const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
 

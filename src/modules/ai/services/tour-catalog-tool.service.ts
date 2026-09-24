@@ -13,6 +13,7 @@ export interface GroundedTourRecommendation {
   duration?: string;
   image?: string;
   publicUrl: string;
+  matchScore?: number;
   matchReasons?: string[];
   highlights?: string[];
 }

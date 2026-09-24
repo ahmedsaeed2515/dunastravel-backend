@@ -51,7 +51,7 @@ export class CommissionsController {
   }
 
   @Post()
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({
     summary: 'Manually create a commission record for a booking',
   })
@@ -75,7 +75,7 @@ export class CommissionsController {
   }
 
   @Patch(':id/status')
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Update commission status (e.g. APPROVE)' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
