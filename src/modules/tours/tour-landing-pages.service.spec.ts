@@ -23,7 +23,7 @@ describe('TourLandingPagesService', () => {
         TourLandingPagesService,
         { provide: PrismaService, useValue: { tourLandingPage: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() }, tour: { findMany: jest.fn() }, tourLandingPageTour: { count: jest.fn(), deleteMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), aggregate: jest.fn(), upsert: jest.fn() }, $transaction: jest.fn((value: any) => Array.isArray(value) ? Promise.all(value) : value({})) } },
         { provide: AuditService, useValue: { log: jest.fn() } },
-        { provide: CacheService, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn(), invalidatePrefix: jest.fn() } },
+        { provide: CacheService, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn(), invalidatePrefix: jest.fn(), getOrSet: jest.fn().mockImplementation((key, fn) => fn()) } },
       ],
     }).compile();
     service = module.get(TourLandingPagesService);
