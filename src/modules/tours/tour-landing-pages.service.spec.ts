@@ -5,6 +5,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { TourLandingPagesService } from './tour-landing-pages.service';
 
+import { CacheService } from '../../common/cache/cache.service';
+
 const actor = { id: 'admin-id', role: 'SUPER_ADMIN' } as any;
 const landingPage = {
   id: 'landing-id', slug: 'egypt', type: 'DESTINATION', titleJsonb: { en: 'Egypt', ar: 'مصر' }, subtitleJsonb: {}, descriptionJsonb: { en: 'Explore Egypt' }, briefJsonb: {}, heroImageUrl: 'https://cdn.example.test/egypt.jpg', heroVideoUrl: null, seoTitleJsonb: { en: 'Egypt SEO' }, seoDescriptionJsonb: { en: 'Egypt description' }, seoKeywordsJsonb: {}, sectionsJsonb: [], status: 'PUBLISHED', isActive: true, sortOrder: 0, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-02'), deletedAt: null,
@@ -21,6 +23,7 @@ describe('TourLandingPagesService', () => {
         TourLandingPagesService,
         { provide: PrismaService, useValue: { tourLandingPage: { count: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() }, tour: { findMany: jest.fn() }, tourLandingPageTour: { count: jest.fn(), deleteMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), aggregate: jest.fn(), upsert: jest.fn() }, $transaction: jest.fn((value: any) => Array.isArray(value) ? Promise.all(value) : value({})) } },
         { provide: AuditService, useValue: { log: jest.fn() } },
+        { provide: CacheService, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn(), invalidatePrefix: jest.fn() } },
       ],
     }).compile();
     service = module.get(TourLandingPagesService);
