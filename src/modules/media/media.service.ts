@@ -1465,7 +1465,7 @@ export class MediaService {
           deletedAt: null,
         },
         orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
-        take: 50,
+        take: 500,
       }),
       this.prisma.mediaAsset.findMany({
         where: {
@@ -1476,7 +1476,7 @@ export class MediaService {
           deletedAt: null,
         },
         orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
-        take: 50,
+        take: 500,
       }),
     ]);
 
