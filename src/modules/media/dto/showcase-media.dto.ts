@@ -153,7 +153,7 @@ export class UpdateShowcaseItemDto {
 
 export class ReorderItemDto {
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   id!: string;
 
   @ApiProperty()

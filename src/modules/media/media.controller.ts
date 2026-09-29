@@ -302,10 +302,19 @@ export class MediaAdminController {
   }
 
   @Post('showcase/reorder')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reorder showcase items transactionally (POST)' })
+  async reorderShowcasePost(
+    @Body() dto: ReorderShowcaseDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.mediaService.reorderShowcase(dto, user);
+  }
+
   @Patch('showcase/reorder')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reorder showcase items transactionally' })
-  async reorderShowcase(
+  @ApiOperation({ summary: 'Reorder showcase items transactionally (PATCH)' })
+  async reorderShowcasePatch(
     @Body() dto: ReorderShowcaseDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
