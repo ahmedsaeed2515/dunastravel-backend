@@ -1551,6 +1551,10 @@ export class DashboardService {
       entity: `Booking ${log.booking?.referenceCode || ''}`,
       timestamp: log.createdAt,
       type: 'BOOKING',
+      details: log.details,
+      bookingId: log.bookingId,
+      bookingRef: log.booking?.referenceCode,
+      rawAction: log.action,
     }));
 
     const formattedAuditLogs = auditLogs.map((log) => {
@@ -1568,6 +1572,13 @@ export class DashboardService {
         rawAction: log.action,
         timestamp: log.createdAt,
         type: 'AUDIT',
+        metadata: log.metadata,
+        ipAddress: log.ipAddress,
+        userAgent: log.userAgent,
+        entityType: log.entityType,
+        entityId: log.entityId,
+        actorRole: log.actorRole,
+        actorId: log.actorId,
       };
     });
 
