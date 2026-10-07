@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CompanyStatus" ADD VALUE IF NOT EXISTS 'SUSPENDED';
