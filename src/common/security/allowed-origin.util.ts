@@ -13,15 +13,25 @@ const PRODUCTION_ORIGINS = new Set([
   'https://dunastravel-frontend-vpdk.vercel.app',
   'https://dunastravel-frontend.vercel.app',
   'https://dunas-travel-frontend.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:3000',
 ]);
 
 const OWNED_VERCEL_PREVIEWS = [
   /^https:\/\/(?:dunas-travel|dunastravel)-(?:frontend|dashbord|dashboard|tours)(?:-[a-z0-9-]+)?(?:-ahmedsaeed2515-1865s-projects)?\.vercel\.app$/i,
   /^https:\/\/[a-z0-9-]+-ahmedsaeed2515-1865s-projects\.vercel\.app$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
 ];
 
 const LOCAL_DEVELOPMENT_ORIGIN =
-  /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i;
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i;
 
 export function isAllowedBrowserOrigin(
   origin: string,
@@ -40,6 +50,7 @@ export function isAllowedBrowserOrigin(
   if (
     PRODUCTION_ORIGINS.has(normalizedOrigin) ||
     configuredOrigins.includes(normalizedOrigin) ||
+    LOCAL_DEVELOPMENT_ORIGIN.test(normalizedOrigin) ||
     OWNED_VERCEL_PREVIEWS.some((pattern) => pattern.test(normalizedOrigin))
   ) {
     return true;

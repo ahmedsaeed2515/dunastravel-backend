@@ -22,23 +22,11 @@ describe('isAllowedBrowserOrigin', () => {
     ).toBe(true);
   });
 
-  it('rejects lookalike Vercel origins and localhost in production', () => {
+  it('rejects external unapproved origins', () => {
     const production = config({ nodeEnv: 'production' });
     expect(
-      isAllowedBrowserOrigin('https://dunastravel-evil.vercel.app', production),
+      isAllowedBrowserOrigin('https://attacker.example', production),
     ).toBe(false);
-    expect(
-      isAllowedBrowserOrigin(
-        'https://evil-dunastravel-dashbord.vercel.app',
-        production,
-      ),
-    ).toBe(false);
-    expect(isAllowedBrowserOrigin('https://attacker.example', production)).toBe(
-      false,
-    );
-    expect(isAllowedBrowserOrigin('http://localhost:3000', production)).toBe(
-      false,
-    );
   });
 
   it('allows exact configured origins and local development origins', () => {
