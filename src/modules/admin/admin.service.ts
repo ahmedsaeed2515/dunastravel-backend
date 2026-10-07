@@ -3204,6 +3204,7 @@ export class AdminService {
       'transportationJsonb',
       'cancellationPolicyJsonb',
       'termsJsonb',
+      'routeMapJsonb',
     ] as const;
     for (const key of plainJsonFields) {
       if (result[key] !== undefined && result[key] !== null) {

@@ -250,6 +250,7 @@ model Tour {
   tags                    String[]              @default([])
   termsJsonb              Json?                 @map("terms_jsonb")
   transportationJsonb     Json?                 @map("transportation_jsonb")
+  routeMapJsonb           Json?                 @map("route_map_jsonb")
   bookings                Booking[]
   activityLogs            TourActivityLog[]
   images                  TourImage[]

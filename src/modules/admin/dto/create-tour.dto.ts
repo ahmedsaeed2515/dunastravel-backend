@@ -397,6 +397,11 @@ export class CreateTourDto {
   @IsObject()
   sourceCodeJsonb?: Record<string, any>;
 
+  @ApiPropertyOptional({ description: 'Interactive Journey Route Map JSONB' })
+  @IsOptional()
+  @IsObject()
+  routeMapJsonb?: Record<string, any>;
+
   @ApiPropertyOptional({ description: 'Source market label' })
   @IsOptional()
   @IsString()
