@@ -498,6 +498,8 @@ export class ToursService {
       heroVideoUrl,
       languages: tour.languages,
       isFeatured: tour.isFeatured,
+      routeMapJsonb: (tour as any).routeMapJsonb,
+      routeMap: (tour as any).routeMapJsonb ? extractStructuredI18n((tour as any).routeMapJsonb, lang) : null,
 
       itinerary,
       images,

@@ -84,6 +84,8 @@ export interface TourDetailResponse {
   heroVideoUrl: string | null;
   languages: string[];
   isFeatured: boolean;
+  routeMapJsonb?: unknown | null;
+  routeMap?: unknown | null;
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
 }
