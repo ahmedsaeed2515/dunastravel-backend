@@ -21,7 +21,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
-import { KnowledgeTranslationService } from './services/knowledge-translation.service';
+import { KnowledgeTranslationService, FiveLanguageTranslationResult } from './services/knowledge-translation.service';
 import { createHash } from 'crypto';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
 import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto, CreateMultilingualKnowledgeDto } from './dto/knowledge.dto';
@@ -1317,6 +1317,286 @@ export class AdminKnowledgeController {
       groundedHotels: result.groundedHotels,
       groundedTransportation: result.groundedTransportation,
       groundedSummaryText: result.groundedSummaryText,
+    };
+  }
+
+  /**
+   * GET ALL DIRECT RESPONSE RULES (Q&A Directives: "لو اتسألت عن X قول Y")
+   */
+  @Get('response-rules')
+  @ApiOperation({ summary: 'Get all active & inactive GuideR Response Directives (Q&A Rules)' })
+  async getResponseRules() {
+    const items = await this.prisma.knowledgeBaseItem.findMany({
+      where: {
+        OR: [
+          { sourceType: 'RESPONSE_RULE' },
+          { sourceEntityType: 'QA_DIRECTIVE' },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    const groupedMap = new Map<string, any>();
+
+    for (const item of items) {
+      const ruleId = item.sourceEntityId || item.id;
+      if (!groupedMap.has(ruleId)) {
+        groupedMap.set(ruleId, {
+          ruleId,
+          triggerQuestion: item.title,
+          prescribedAnswer: item.content,
+          category: item.category,
+          priority: item.priority || 40,
+          isExcludedFromAi: item.isExcludedFromAi,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          languages: {},
+        });
+      }
+
+      const rule = groupedMap.get(ruleId);
+      rule.languages[item.locale] = {
+        id: item.id,
+        locale: item.locale,
+        triggerQuestion: item.title,
+        prescribedAnswer: item.content,
+        isExcludedFromAi: item.isExcludedFromAi,
+      };
+
+      if (item.locale === 'ar' || !rule.triggerQuestion) {
+        rule.triggerQuestion = item.title;
+        rule.prescribedAnswer = item.content;
+      }
+    }
+
+    const rulesList = Array.from(groupedMap.values()).map((rule) => {
+      const languagesList = SUPPORTED_LOCALES.map((loc) => ({
+        locale: loc,
+        isComplete: Boolean(rule.languages[loc]),
+        id: rule.languages[loc]?.id,
+        triggerQuestion: rule.languages[loc]?.triggerQuestion || '',
+        prescribedAnswer: rule.languages[loc]?.prescribedAnswer || '',
+        isExcludedFromAi: rule.languages[loc]?.isExcludedFromAi ?? rule.isExcludedFromAi,
+      }));
+
+      return {
+        ...rule,
+        languagesList,
+      };
+    });
+
+    return {
+      rules: rulesList,
+      total: rulesList.length,
+    };
+  }
+
+  /**
+   * CREATE A NEW DIRECT RESPONSE RULE ("لو اتسألت عن X قول Y")
+   */
+  @Post('response-rules')
+  @ApiOperation({ summary: 'Create a new GuideR Direct Response Rule (Q&A Directive)' })
+  async createResponseRule(
+    @Body()
+    body: {
+      triggerQuestion: string;
+      prescribedAnswer: string;
+      category?: string;
+      sourceLocale?: string;
+      autoTranslate?: boolean;
+      priority?: number;
+    },
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    if (!body.triggerQuestion?.trim() || !body.prescribedAnswer?.trim()) {
+      throw new BadRequestException('triggerQuestion and prescribedAnswer are required.');
+    }
+
+    const trigger = body.triggerQuestion.trim();
+    const answer = body.prescribedAnswer.trim();
+    const sourceLoc = (body.sourceLocale || 'ar').toLowerCase();
+    const category = (body.category || 'FAQ') as any;
+    const ruleId = `rule_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const shouldTranslate = body.autoTranslate !== false;
+    const priority = body.priority || 40;
+
+    let translations: FiveLanguageTranslationResult;
+
+    if (shouldTranslate) {
+      try {
+        translations = await this.translationService.generateFiveLanguageArticle({
+          title: trigger,
+          content: answer,
+          sourceLocale: sourceLoc,
+          category,
+        });
+      } catch (e: any) {
+        this.logger.warn(`AI Auto-translation failed for response rule: ${e.message}`);
+        translations = {
+          ar: { title: trigger, content: answer },
+          en: { title: trigger, content: answer },
+          es: { title: trigger, content: answer },
+          pt: { title: trigger, content: answer },
+          it: { title: trigger, content: answer },
+        };
+      }
+    } else {
+      translations = {
+        ar: { title: trigger, content: answer },
+        en: { title: trigger, content: answer },
+        es: { title: trigger, content: answer },
+        pt: { title: trigger, content: answer },
+        it: { title: trigger, content: answer },
+      };
+      translations[sourceLoc as keyof FiveLanguageTranslationResult] = { title: trigger, content: answer };
+    }
+
+    const createdItems: any[] = [];
+
+    for (const loc of SUPPORTED_LOCALES) {
+      const locData = translations[loc as keyof FiveLanguageTranslationResult] || { title: trigger, content: answer };
+      const itemHash = createHash('sha256').update(`${locData.title}:${locData.content}`).digest('hex');
+
+      const created = await this.prisma.knowledgeBaseItem.create({
+        data: {
+          title: locData.title || trigger,
+          content: locData.content || answer,
+          locale: loc,
+          category,
+          tags: ['QA_DIRECTIVE', 'RESPONSE_RULE', 'CUSTOM_QA'],
+          status: 'PUBLISHED',
+          source: 'ADMIN_DASHBOARD_QA_DIRECTIVE',
+          sourceType: 'RESPONSE_RULE',
+          sourceEntityType: 'QA_DIRECTIVE',
+          sourceEntityId: ruleId,
+          contentHash: itemHash,
+          isAutoGenerated: loc !== sourceLoc,
+          isManuallyOverridden: true,
+          isExcludedFromAi: false,
+          priority,
+          aiOverrideInstructions: `DIRECTIVE RULE: If asked about "${locData.title}", respond strictly with: "${locData.content}"`,
+          lastIndexedAt: new Date(),
+        },
+      });
+
+      // Upsert Chunk for vector/RAG retrieval
+      await (this.prisma as any).aiKnowledgeChunk.upsert({
+        where: { id: `chunk_${created.id}_0` },
+        create: {
+          id: `chunk_${created.id}_0`,
+          knowledgeItemId: created.id,
+          chunkIndex: 0,
+          locale: loc,
+          content: `[QA DIRECTIVE - IF ASKED ABOUT ${locData.title}] -> ANSWER: ${locData.content}`,
+          sourceType: 'RESPONSE_RULE',
+          sourceEntityId: ruleId,
+          metadataJsonb: {
+            title: locData.title,
+            category,
+            ruleId,
+            isDirective: true,
+          },
+        },
+        update: {
+          content: `[QA DIRECTIVE - IF ASKED ABOUT ${locData.title}] -> ANSWER: ${locData.content}`,
+          locale: loc,
+          metadataJsonb: {
+            title: locData.title,
+            category,
+            ruleId,
+            isDirective: true,
+          },
+        },
+      });
+
+      createdItems.push(created);
+    }
+
+    return {
+      success: true,
+      ruleId,
+      triggerQuestion: trigger,
+      prescribedAnswer: answer,
+      createdCount: createdItems.length,
+      items: createdItems,
+    };
+  }
+
+  /**
+   * TOGGLE DIRECT RESPONSE RULE ACTIVE/INACTIVE (isExcludedFromAi)
+   */
+  @Patch('response-rules/:ruleId/toggle')
+  @ApiOperation({ summary: 'Toggle response rule active/inactive state' })
+  async toggleResponseRule(
+    @Param('ruleId') ruleId: string,
+    @Body() body: { isExcludedFromAi: boolean },
+  ) {
+    const isExcluded = Boolean(body.isExcludedFromAi);
+
+    const items = await this.prisma.knowledgeBaseItem.findMany({
+      where: {
+        OR: [
+          { sourceEntityId: ruleId },
+          { id: ruleId },
+        ],
+      },
+    });
+
+    if (items.length === 0) {
+      throw new NotFoundException(`Response rule '${ruleId}' not found.`);
+    }
+
+    const itemIds = items.map((i) => i.id);
+
+    await this.prisma.knowledgeBaseItem.updateMany({
+      where: { id: { in: itemIds } },
+      data: {
+        isExcludedFromAi: isExcluded,
+        lastIndexedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      ruleId,
+      isExcludedFromAi: isExcluded,
+      affectedItemsCount: items.length,
+    };
+  }
+
+  /**
+   * DELETE DIRECT RESPONSE RULE
+   */
+  @Delete('response-rules/:ruleId')
+  @ApiOperation({ summary: 'Delete a direct response rule across all languages' })
+  async deleteResponseRule(@Param('ruleId') ruleId: string) {
+    const items = await this.prisma.knowledgeBaseItem.findMany({
+      where: {
+        OR: [
+          { sourceEntityId: ruleId },
+          { id: ruleId },
+        ],
+      },
+    });
+
+    if (items.length === 0) {
+      throw new NotFoundException(`Response rule '${ruleId}' not found.`);
+    }
+
+    const itemIds = items.map((i) => i.id);
+
+    await (this.prisma as any).aiKnowledgeChunk.deleteMany({
+      where: { knowledgeItemId: { in: itemIds } },
+    });
+
+    await this.prisma.knowledgeBaseItem.deleteMany({
+      where: { id: { in: itemIds } },
+    });
+
+    return {
+      success: true,
+      ruleId,
+      deletedCount: items.length,
     };
   }
 

@@ -1130,9 +1130,21 @@ export class ChatOrchestratorService {
     const retrievalLatencyMs = Date.now() - retrievalStart;
 
     // 8. Assemble system prompt stack with strict untrusted data isolation
-    const ragContext = sources.length > 0
-      ? `GROUNDED KNOWLEDGE BASE (UNTRUSTED DATA):\n${sources.map((s) => `[${s.title}]: ${s.content}`).join('\n')}`
-      : 'No specific knowledge base articles found.';
+    let ragContext = 'No specific knowledge base articles found.';
+    if (sources.length > 0) {
+      const customDirectives = sources.filter((s: any) => s.sourceEntityType === 'QA_DIRECTIVE' || s.sourceType === 'RESPONSE_RULE' || (s.tags && s.tags.includes('QA_DIRECTIVE')));
+      const standardKnowledge = sources.filter((s: any) => s.sourceEntityType !== 'QA_DIRECTIVE' && s.sourceType !== 'RESPONSE_RULE' && (!s.tags || !s.tags.includes('QA_DIRECTIVE')));
+
+      const directivesText = customDirectives.length > 0
+        ? `MANDATORY DIRECT RESPONSE RULES (قواعد وتوجيهات الرد المباشرة - إلزامية التطبيق إذا سأل العميل عن الموضوع):\n${customDirectives.map((d: any) => `* IF ASKED ABOUT "${d.title}": GuideR MUST ANSWER STRICTLY WITH: "${d.content}"`).join('\n')}\n`
+        : '';
+
+      const standardText = standardKnowledge.length > 0
+        ? `GROUNDED KNOWLEDGE BASE:\n${standardKnowledge.map((s: any) => `[${s.title}]: ${s.content}`).join('\n')}`
+        : '';
+
+      ragContext = `${directivesText}\n${standardText}`.trim();
+    }
 
     const destContext = destinationSummaryInfo
       ? `DESTINATION SUMMARY: The destination "${destinationSummaryInfo.destination}" has ${destinationSummaryInfo.totalToursCount} active luxury tours in the catalog. Landing page: /destinations/${destinationSummaryInfo.slug}. Mention the destination details and available tour count clearly.`
