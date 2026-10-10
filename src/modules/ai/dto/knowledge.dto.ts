@@ -167,3 +167,35 @@ export class CreateMultilingualKnowledgeDto {
   autoTranslate?: boolean;
 }
 
+export class CreateResponseRuleDto {
+  @ApiProperty({ example: 'ما هي مواعيد العمل الرسمية؟' })
+  @IsString()
+  @IsNotEmpty()
+  triggerQuestion!: string;
+
+  @ApiProperty({ example: 'مواعيد العمل اليومية من الساعة 9 صباحاً حتى 6 مساءً بتوقيت القاهرة.' })
+  @IsString()
+  @IsNotEmpty()
+  prescribedAnswer!: string;
+
+  @ApiPropertyOptional({ example: 'FAQ' })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiPropertyOptional({ example: 'ar' })
+  @IsString()
+  @IsOptional()
+  sourceLocale?: string;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  autoTranslate?: boolean;
+
+  @ApiPropertyOptional({ example: 40 })
+  @IsNumber()
+  @IsOptional()
+  priority?: number;
+}
+
+

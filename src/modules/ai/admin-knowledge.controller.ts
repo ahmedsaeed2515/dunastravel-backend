@@ -24,7 +24,7 @@ import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingesti
 import { KnowledgeTranslationService, FiveLanguageTranslationResult } from './services/knowledge-translation.service';
 import { createHash } from 'crypto';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto, CreateMultilingualKnowledgeDto } from './dto/knowledge.dto';
+import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto, CreateMultilingualKnowledgeDto, CreateResponseRuleDto } from './dto/knowledge.dto';
 
 const SUPPORTED_LOCALES = ['ar', 'en', 'es', 'pt', 'it'];
 
@@ -1397,15 +1397,7 @@ export class AdminKnowledgeController {
   @Post('response-rules')
   @ApiOperation({ summary: 'Create a new GuideR Direct Response Rule (Q&A Directive)' })
   async createResponseRule(
-    @Body()
-    body: {
-      triggerQuestion: string;
-      prescribedAnswer: string;
-      category?: string;
-      sourceLocale?: string;
-      autoTranslate?: boolean;
-      priority?: number;
-    },
+    @Body() body: CreateResponseRuleDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     if (!body.triggerQuestion?.trim() || !body.prescribedAnswer?.trim()) {
