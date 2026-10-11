@@ -8,7 +8,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { HotelsService } from './hotels.service';
 import { AdminHotelsQueryDto } from './dto/hotel-query.dto';
-import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
+import { CreateHotelDto, UpdateHotelDto, CreateSeasonDto, UpdateSeasonDto } from './dto/hotel.dto';
 import { AdminHotelBookingsQueryDto, UpdateHotelBookingStatusDto } from './dto/hotel-booking.dto';
 
 @ApiTags('admin-hotels')
@@ -23,6 +23,33 @@ export class AdminHotelsController {
   @ApiOperation({ summary: 'List hotels for administration' })
   findAll(@Query() query: AdminHotelsQueryDto) {
     return this.hotelsService.findAllAdmin(query.page, query.limit, query.search, query.status, query.destinationSlug);
+  }
+
+  // ----------------------------------------------------
+  // Seasons Management Endpoints
+  // ----------------------------------------------------
+  @Get('seasons')
+  @ApiOperation({ summary: 'List all pricing seasons for administration' })
+  findAllSeasons() {
+    return this.hotelsService.findAllSeasonsAdmin();
+  }
+
+  @Post('seasons')
+  @ApiOperation({ summary: 'Create a pricing season' })
+  createSeason(@Body() dto: CreateSeasonDto) {
+    return this.hotelsService.createSeasonAdmin(dto);
+  }
+
+  @Put('seasons/:seasonId')
+  @ApiOperation({ summary: 'Update a pricing season' })
+  updateSeason(@Param('seasonId') seasonId: string, @Body() dto: UpdateSeasonDto) {
+    return this.hotelsService.updateSeasonAdmin(seasonId, dto);
+  }
+
+  @Delete('seasons/:seasonId')
+  @ApiOperation({ summary: 'Delete a pricing season' })
+  deleteSeason(@Param('seasonId') seasonId: string) {
+    return this.hotelsService.deleteSeasonAdmin(seasonId);
   }
 
   // ----------------------------------------------------

@@ -46,6 +46,16 @@ export class CreateBookingDto {
   @IsUUID()
   departureId?: string;
 
+  @ApiPropertyOptional({ description: 'Optional TripAccommodation ID for hotel/tier supplement' })
+  @IsOptional()
+  @IsUUID()
+  accommodationId?: string;
+
+  @ApiPropertyOptional({ description: 'Optional HotelRoom ID for room-specific supplement' })
+  @IsOptional()
+  @IsUUID()
+  roomId?: string;
+
   @ApiProperty({
     example: '2027-03-15',
     description: 'Arrival Date (YYYY-MM-DD)',

@@ -235,5 +235,150 @@ describe('ToursService', () => {
         preview: { status: 'PUBLISHED', isActive: true, isPublic: true },
       });
     });
+
+    it('maps relational accommodations and enriches hotelInfo by city', async () => {
+      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({
+        id: 'tour-acc',
+        slug: 'luxury-egypt',
+        status: 'PUBLISHED',
+        isActive: true,
+        currency: 'USD',
+        titleJsonb: { en: 'Luxury Egypt' },
+        durationJsonb: { en: '7 days' },
+        overviewJsonb: { en: 'Overview' },
+        basePriceUsd: new Prisma.Decimal('1200.00'),
+        itineraries: [],
+        images: [],
+        accommodations: [
+          {
+            id: 'acc-1',
+            hotelId: 'hotel-1',
+            roomId: 'room-1',
+            city: 'Cairo',
+            categoryTier: 'Luxury',
+            boardBasis: 'BB',
+            nights: 3,
+            dayFrom: 1,
+            dayTo: 4,
+            priceSupplementUsd: new Prisma.Decimal('150.00'),
+            isDefault: true,
+            notesJsonb: { en: 'Nile view guaranteed' },
+            sortOrder: 0,
+            hotel: {
+              id: 'hotel-1',
+              slug: 'four-seasons-cairo',
+              nameJsonb: { en: 'Four Seasons Cairo' },
+              city: 'Cairo',
+              country: 'Egypt',
+              starRating: 5,
+              heroImageUrl: 'https://cdn.example.test/fs.jpg',
+              images: [],
+            },
+            room: {
+              id: 'room-1',
+              slug: 'nile-suite',
+              nameJsonb: { en: 'Nile Suite' },
+              roomType: 'Suite',
+              capacity: 2,
+              basePriceUsd: new Prisma.Decimal('450.00'),
+              currency: 'USD',
+              heroImageUrl: null,
+              seasonPricings: [],
+            },
+          },
+        ],
+      } as any);
+
+      const detail = await service.findBySlug('luxury-egypt', 'en');
+      expect(detail.accommodations).toHaveLength(1);
+      expect(detail.accommodations?.[0]).toMatchObject({
+        city: 'Cairo',
+        destination: 'Cairo',
+        categoryTier: 'Luxury',
+        nights: 3,
+        priceSupplementUsd: '150.00',
+        priceSupplement: 150,
+        hotel: expect.objectContaining({ name: 'Four Seasons Cairo', starRating: 5, stars: 5 }),
+        room: expect.objectContaining({ name: 'Nile Suite', basePriceUsd: '450.00', ratePerNight: 450 }),
+      });
+      expect(detail.hotelInfo).toMatchObject({
+        hotels: { Cairo: ['Four Seasons Cairo'] },
+      });
+    });
+
+    it('filters out soft-deleted or archived hotels and rooms on public findBySlug (BUG-08)', async () => {
+      jest.spyOn(prisma.tour, 'findFirst').mockResolvedValue({
+        id: 'tour-acc-filter',
+        slug: 'filtered-egypt',
+        status: 'PUBLISHED',
+        isActive: true,
+        currency: 'USD',
+        titleJsonb: { en: 'Filtered Egypt' },
+        durationJsonb: { en: '5 days' },
+        overviewJsonb: { en: 'Overview' },
+        basePriceUsd: new Prisma.Decimal('900.00'),
+        itineraries: [],
+        images: [],
+        accommodations: [
+          {
+            id: 'acc-deleted-hotel',
+            hotelId: 'hotel-del',
+            roomId: null,
+            destination: 'Cairo',
+            nights: 2,
+            regime: 'BB',
+            priceSupplementUsd: new Prisma.Decimal('0.00'),
+            hotel: {
+              id: 'hotel-del',
+              slug: 'deleted-hotel',
+              nameJsonb: { en: 'Deleted Hotel' },
+              city: 'Cairo',
+              stars: 5,
+              status: 'ARCHIVED',
+              isActive: false,
+              deletedAt: new Date(),
+            },
+            room: null,
+          },
+          {
+            id: 'acc-active-hotel-deleted-room',
+            hotelId: 'hotel-ok',
+            roomId: 'room-del',
+            destination: 'Luxor',
+            nights: 3,
+            regime: 'HB',
+            priceSupplementUsd: new Prisma.Decimal('50.00'),
+            hotel: {
+              id: 'hotel-ok',
+              slug: 'active-hotel',
+              nameJsonb: { en: 'Active Luxor Hotel' },
+              city: 'Luxor',
+              stars: 4,
+              status: 'PUBLISHED',
+              isActive: true,
+              deletedAt: null,
+            },
+            room: {
+              id: 'room-del',
+              slug: 'deleted-room',
+              nameJsonb: { en: 'Deleted Room' },
+              ratePerNight: new Prisma.Decimal('180.00'),
+              currency: 'USD',
+              maxOccupancy: 2,
+              isActive: false,
+              deletedAt: new Date(),
+              seasonPricings: [],
+            },
+          },
+        ],
+      } as any);
+
+      const detail = await service.findBySlug('filtered-egypt', 'en');
+      expect(detail.accommodations).toHaveLength(1);
+      expect(detail.accommodations?.[0]?.hotel?.slug).toBe('active-hotel');
+      expect(detail.accommodations?.[0]?.hotel?.stars).toBe(4);
+      expect(detail.accommodations?.[0]?.room).toBeNull();
+      expect(detail.accommodations?.[0]?.roomId).toBeNull();
+    });
   });
 });

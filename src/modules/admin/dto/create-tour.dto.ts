@@ -151,17 +151,157 @@ export class CreateTourImageDto {
 }
 
 export class SeasonPricingRuleDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  seasonId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  seasonCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  seasonName?: string | Record<string, any>;
+
   @IsDateString()
   startDate!: string;
 
   @IsDateString()
   endDate!: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0.5)
   @Max(5)
-  multiplier!: number;
+  multiplier?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ allowInfinity: false, allowNaN: false })
+  @Min(0)
+  @Max(99_999_999.99)
+  priceUsd?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ allowInfinity: false, allowNaN: false })
+  @Min(0)
+  @Max(99_999_999.99)
+  supplementUsd?: number;
+}
+
+export class TripAccommodationDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional({ description: 'Assigned Hotel ID' })
+  @IsOptional()
+  @IsString()
+  hotelId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Optional specific Room ID' })
+  @IsOptional()
+  @IsString()
+  roomId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Destination or city label (e.g. Cairo, Luxor)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  destination?: string | null;
+
+  @ApiPropertyOptional({ description: 'City label alias (e.g. Cairo, Luxor)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string | null;
+
+  @ApiPropertyOptional({ description: 'Category tier (e.g. Standard, Deluxe, Luxury)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  categoryTier?: string | null;
+
+  @ApiPropertyOptional({ description: 'Meal regime / board basis (BB, HB, FB, AI)', default: 'BB' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  regime?: string;
+
+  @ApiPropertyOptional({ description: 'Board basis alias (BB, HB, FB, AI)', default: 'BB' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  boardBasis?: string;
+
+  @ApiPropertyOptional({ description: 'Number of nights at this hotel', default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  nights?: number;
+
+  @ApiPropertyOptional({ description: 'Start day of the tour (1-based)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  dayFrom?: number | null;
+
+  @ApiPropertyOptional({ description: 'End day of the tour (1-based)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  dayTo?: number | null;
+
+  @ApiPropertyOptional({ description: 'Price supplement in USD', default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(999_999.99)
+  priceSupplementUsd?: number;
+
+  @ApiPropertyOptional({ description: 'Is default hotel choice for this city/tier', default: true })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+
+  @ApiPropertyOptional({ description: 'Multilingual notes for this accommodation' })
+  @IsOptional()
+  @IsObject()
+  notesJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Sort order', default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  sortOrder?: number;
+}
+
+export class UpsertTourAccommodationsDto {
+  @ApiProperty({ type: [TripAccommodationDto] })
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => TripAccommodationDto)
+  accommodations!: TripAccommodationDto[];
 }
 
 export class CreateTourDto {
@@ -338,14 +478,10 @@ export class CreateTourDto {
   tags?: string[];
 
   @ApiPropertyOptional({
-    description: 'Seasonal pricing and price rules JSONB',
+    description: 'Seasonal pricing and price rules JSONB (array of rules or { rules: [...] })',
   })
   @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(50)
-  @ValidateNested({ each: true })
-  @Type(() => SeasonPricingRuleDto)
-  seasonPricingJsonb?: SeasonPricingRuleDto[];
+  seasonPricingJsonb?: SeasonPricingRuleDto[] | Record<string, any> | null;
 
   @ApiPropertyOptional({ description: 'Currency code', default: 'USD' })
   @IsOptional()
@@ -487,4 +623,12 @@ export class CreateTourDto {
   @ValidateNested({ each: true })
   @Type(() => CreateTourImageDto)
   images?: CreateTourImageDto[];
+
+  @ApiPropertyOptional({ type: [TripAccommodationDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => TripAccommodationDto)
+  accommodations?: TripAccommodationDto[];
 }

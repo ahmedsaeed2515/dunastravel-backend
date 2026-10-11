@@ -260,6 +260,7 @@ model Tour {
   landingPages            TourLandingPageTour[]
   availabilities          TourAvailability[]
   journeyRoutes           JourneyRoute[]
+  accommodations          TripAccommodation[]
 
   @@index([isActive])
   @@index([category])
@@ -1057,8 +1058,9 @@ model Hotel {
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
   deletedAt        DateTime?   @map("deleted_at")
-  rooms            HotelRoom[]
-  bookings         HotelBooking[]
+  rooms              HotelRoom[]
+  bookings           HotelBooking[]
+  tripAccommodations TripAccommodation[]
 
   @@index([destinationSlug, status, isActive, deletedAt])
   @@index([city])
@@ -1067,27 +1069,94 @@ model Hotel {
 }
 
 model HotelRoom {
-  id               String    @id @default(uuid())
-  hotelId          String    @map("hotel_id")
-  slug             String    @db.VarChar(100)
-  nameJsonb        Json      @map("name_jsonb")
-  descriptionJsonb Json?     @map("description_jsonb")
-  ratePerNight     Decimal   @map("rate_per_night") @db.Decimal(10, 2)
-  currency         String    @default("USD") @db.VarChar(10)
-  mealPlanJsonb    Json?     @map("meal_plan_jsonb")
-  maxOccupancy     Int       @map("max_occupancy")
-  inventory        Int       @default(0)
-  isActive         Boolean   @default(false) @map("is_active")
-  sortOrder        Int       @default(0) @map("sort_order")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  deletedAt        DateTime? @map("deleted_at")
-  hotel            Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  bookings         HotelBooking[]
+  id                 String              @id @default(uuid())
+  hotelId            String              @map("hotel_id")
+  slug               String              @db.VarChar(100)
+  nameJsonb          Json                @map("name_jsonb")
+  descriptionJsonb   Json?               @map("description_jsonb")
+  ratePerNight       Decimal             @map("rate_per_night") @db.Decimal(10, 2)
+  currency           String              @default("USD") @db.VarChar(10)
+  mealPlanJsonb      Json?               @map("meal_plan_jsonb")
+  maxOccupancy       Int                 @map("max_occupancy")
+  inventory          Int                 @default(0)
+  isActive           Boolean             @default(false) @map("is_active")
+  sortOrder          Int                 @default(0) @map("sort_order")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  hotel              Hotel               @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  bookings           HotelBooking[]
+  seasonPricings     RoomSeasonPricing[]
+  tripAccommodations TripAccommodation[]
 
   @@unique([hotelId, slug])
   @@index([hotelId, isActive, deletedAt])
   @@map("hotel_rooms")
+}
+
+model Season {
+  id           String              @id @default(uuid())
+  code         String              @unique @db.VarChar(50)
+  nameJsonb    Json                @map("name_jsonb")
+  startDate    DateTime            @map("start_date") @db.Date
+  endDate      DateTime            @map("end_date") @db.Date
+  multiplier   Decimal             @default(1.00) @db.Decimal(5, 2)
+  isActive     Boolean             @default(true) @map("is_active")
+  sortOrder    Int                 @default(0) @map("sort_order")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  roomPricings RoomSeasonPricing[]
+
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("seasons")
+}
+
+model RoomSeasonPricing {
+  id               String    @id @default(uuid())
+  roomId           String    @map("room_id")
+  seasonId         String    @map("season_id")
+  ratePerNight     Decimal   @map("rate_per_night") @db.Decimal(10, 2)
+  singleSupplement Decimal   @default(0.00) @map("single_supplement") @db.Decimal(10, 2)
+  childRate        Decimal   @default(0.00) @map("child_rate") @db.Decimal(10, 2)
+  extraBedRate     Decimal   @default(0.00) @map("extra_bed_rate") @db.Decimal(10, 2)
+  currency         String    @default("USD") @db.VarChar(10)
+  boardBasis       String    @default("BB") @map("board_basis") @db.VarChar(50)
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  room             HotelRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  season           Season    @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, seasonId])
+  @@index([roomId])
+  @@index([seasonId])
+  @@map("room_season_pricings")
+}
+
+model TripAccommodation {
+  id                 String     @id @default(uuid())
+  tourId             String     @map("tour_id")
+  hotelId            String?    @map("hotel_id")
+  roomId             String?    @map("room_id")
+  destination        String     @db.VarChar(100)
+  nights             Int        @default(1)
+  regime             String     @default("BB") @db.VarChar(100)
+  categoryTier       String?    @map("category_tier") @db.VarChar(100)
+  priceSupplementUsd Decimal    @default(0.00) @map("price_supplement_usd") @db.Decimal(10, 2)
+  isDefault          Boolean    @default(true) @map("is_default")
+  sortOrder          Int        @default(0) @map("sort_order")
+  notesJsonb         Json?      @map("notes_jsonb")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  tour               Tour       @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  hotel              Hotel?     @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  room               HotelRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([tourId, sortOrder])
+  @@index([hotelId])
+  @@index([roomId])
+  @@map("trip_accommodations")
 }
 
 model HotelBooking {

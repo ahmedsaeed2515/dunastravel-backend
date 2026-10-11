@@ -10,7 +10,14 @@ import {
   sanitizePlainText,
 } from '../../common/utils/content-sanitizer.util';
 import { getPaginationParams, paginate } from '../../common/utils';
-import { CreateHotelDto, HotelRoomDto, UpdateHotelDto } from './dto/hotel.dto';
+import {
+  CreateHotelDto,
+  CreateSeasonDto,
+  HotelRoomDto,
+  RoomSeasonPricingDto,
+  UpdateHotelDto,
+  UpdateSeasonDto,
+} from './dto/hotel.dto';
 import {
   CreateHotelBookingDto,
   UpdateHotelBookingStatusDto,
@@ -65,7 +72,32 @@ export class HotelsService {
     return value as Prisma.InputJsonValue;
   }
 
+  private mapRoomSeasonPricingInput(sp: RoomSeasonPricingDto, defaultCurrency: string) {
+    return {
+      seasonId: sp.seasonId,
+      ratePerNight: new Prisma.Decimal(sp.ratePerNight),
+      singleSupplement: new Prisma.Decimal(sp.singleSupplement ?? 0),
+      childRate: new Prisma.Decimal(sp.childRate ?? 0),
+      extraBedRate: new Prisma.Decimal(sp.extraBedRate ?? 0),
+      currency: sp.currency ?? defaultCurrency,
+      boardBasis: sp.boardBasis ?? 'BB',
+      isActive: sp.isActive ?? true,
+    };
+  }
+
+  private deduplicateSeasonPricings(seasonPricings?: RoomSeasonPricingDto[]): RoomSeasonPricingDto[] {
+    if (!Array.isArray(seasonPricings) || seasonPricings.length === 0) return [];
+    const bySeasonId = new Map<string, RoomSeasonPricingDto>();
+    for (const sp of seasonPricings) {
+      if (!sp?.seasonId) continue;
+      bySeasonId.set(sp.seasonId, sp);
+    }
+    return Array.from(bySeasonId.values());
+  }
+
   private roomData(room: HotelRoomDto, currency: string) {
+    const resolvedCurrency = room.currency ?? currency;
+    const dedupedSeasonPricings = this.deduplicateSeasonPricings(room.seasonPricings);
     return {
       slug: room.slug,
       nameJsonb: this.sanitizeLocalized(room.nameJsonb, 255, true),
@@ -73,11 +105,11 @@ export class HotelsService {
         ? (typeof room.descriptionJsonb === 'object' && !Array.isArray(room.descriptionJsonb)
             ? (Object.keys(room.descriptionJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
                 ? this.sanitizeObject(room.descriptionJsonb as Record<string, unknown>)
-                : this.sanitizeLocalized(room.descriptionJsonb, 5_000))
+                : this.sanitizeLocalized(room.descriptionJsonb as Record<string, string>, 5_000))
             : undefined)
         : undefined,
       ratePerNight: room.ratePerNight,
-      currency: room.currency ?? currency,
+      currency: resolvedCurrency,
       mealPlanJsonb: room.mealPlanJsonb
         ? (typeof room.mealPlanJsonb === 'object' && !Array.isArray(room.mealPlanJsonb)
             ? (Object.keys(room.mealPlanJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
@@ -89,6 +121,15 @@ export class HotelsService {
       inventory: room.inventory ?? 0,
       isActive: room.isActive ?? false,
       sortOrder: room.sortOrder ?? 0,
+      ...(dedupedSeasonPricings.length > 0
+        ? {
+            seasonPricings: {
+              create: dedupedSeasonPricings.map((sp) =>
+                this.mapRoomSeasonPricingInput(sp, resolvedCurrency),
+              ),
+            },
+          }
+        : {}),
     };
   }
 
@@ -121,7 +162,10 @@ export class HotelsService {
     return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200';
   }
 
-  private hotelData(dto: CreateHotelDto | UpdateHotelDto): Prisma.HotelUncheckedCreateInput {
+  private hotelData(
+    dto: CreateHotelDto | UpdateHotelDto,
+    existingAmenities?: Record<string, unknown> | null,
+  ): Prisma.HotelUncheckedCreateInput {
     const data: Record<string, unknown> = {};
     if (dto.slug !== undefined) data.slug = dto.slug;
     if (dto.nameJsonb !== undefined) data.nameJsonb = this.sanitizeLocalized(dto.nameJsonb, 255, true);
@@ -136,14 +180,36 @@ export class HotelsService {
     if (dto.email !== undefined) data.email = dto.email.toLowerCase();
     if (dto.website !== undefined) data.website = dto.website;
 
-    const amenities = (dto.amenitiesJsonb && typeof dto.amenitiesJsonb === 'object' ? { ...dto.amenitiesJsonb } : {}) as Record<string, unknown>;
-    if (dto.heroImageUrl) {
-      amenities.heroImageUrl = dto.heroImageUrl;
+    const baseAmenities =
+      dto.amenitiesJsonb !== undefined
+        ? (dto.amenitiesJsonb && typeof dto.amenitiesJsonb === 'object' ? { ...dto.amenitiesJsonb } : {})
+        : (existingAmenities && typeof existingAmenities === 'object' ? { ...existingAmenities } : {});
+    const amenities = { ...baseAmenities } as Record<string, unknown>;
+
+    if (dto.amenitiesJsonb !== undefined && existingAmenities && typeof existingAmenities === 'object') {
+      if (dto.heroImageUrl === undefined && existingAmenities.heroImageUrl !== undefined && amenities.heroImageUrl === undefined) {
+        amenities.heroImageUrl = existingAmenities.heroImageUrl;
+      }
+      if (dto.images === undefined && existingAmenities.images !== undefined && amenities.images === undefined) {
+        amenities.images = existingAmenities.images;
+      }
     }
-    if (dto.images && Array.isArray(dto.images)) {
+
+    if (dto.heroImageUrl !== undefined) {
+      if (dto.heroImageUrl) {
+        amenities.heroImageUrl = dto.heroImageUrl;
+      } else {
+        delete amenities.heroImageUrl;
+      }
+    }
+    if (dto.images !== undefined && Array.isArray(dto.images)) {
       amenities.images = dto.images;
     }
-    if (Object.keys(amenities).length > 0 || dto.amenitiesJsonb !== undefined) {
+    if (
+      dto.amenitiesJsonb !== undefined ||
+      dto.heroImageUrl !== undefined ||
+      dto.images !== undefined
+    ) {
       data.amenitiesJsonb = this.sanitizeObject(amenities);
     }
 
@@ -191,8 +257,52 @@ export class HotelsService {
     return { mediaMap, galleryByHotelId };
   }
 
-  private roomView(room: { id: string; slug: string; nameJsonb: Prisma.JsonValue; descriptionJsonb: Prisma.JsonValue | null; ratePerNight: Prisma.Decimal; currency: string; mealPlanJsonb: Prisma.JsonValue | null; maxOccupancy: number; inventory: number; isActive: boolean }) {
+  private roomView(room: {
+    id: string;
+    slug: string;
+    nameJsonb: Prisma.JsonValue;
+    descriptionJsonb: Prisma.JsonValue | null;
+    ratePerNight: Prisma.Decimal;
+    currency: string;
+    mealPlanJsonb: Prisma.JsonValue | null;
+    maxOccupancy: number;
+    inventory: number;
+    isActive: boolean;
+    seasonPricings?: Array<any>;
+  }) {
     const desc = room.descriptionJsonb as Record<string, any> | null;
+    const seasonPricings = Array.isArray(room.seasonPricings)
+      ? room.seasonPricings.map((sp: any) => {
+          const ratePerNight = Number(sp.ratePerNight ?? sp.ratePerNightUsd ?? 0);
+          const singleSupplement = Number(sp.singleSupplement ?? sp.singleSupplementUsd ?? 0);
+          const childRate = Number(sp.childRate ?? sp.childRateUsd ?? 0);
+          const extraBedRate = Number(sp.extraBedRate ?? sp.extraBedUsd ?? 0);
+          return {
+            id: sp.id,
+            seasonId: sp.seasonId,
+            seasonCode: sp.season?.code ?? null,
+            seasonNameJsonb: sp.season?.nameJsonb ?? null,
+            startDate: sp.season?.startDate
+              ? new Date(sp.season.startDate).toISOString().split('T')[0]
+              : null,
+            endDate: sp.season?.endDate
+              ? new Date(sp.season.endDate).toISOString().split('T')[0]
+              : null,
+            ratePerNight,
+            ratePerNightUsd: ratePerNight,
+            singleSupplement,
+            singleSupplementUsd: singleSupplement,
+            childRate,
+            childRateUsd: childRate,
+            extraBedRate,
+            extraBedUsd: extraBedRate,
+            currency: sp.currency ?? room.currency,
+            boardBasis: sp.boardBasis ?? 'BB',
+            isActive: sp.isActive ?? true,
+          };
+        })
+      : [];
+
     return {
       id: room.id,
       slug: room.slug,
@@ -211,13 +321,14 @@ export class HotelsService {
       image: desc?.image || null,
       gallery: Array.isArray(desc?.gallery) ? desc.gallery : [],
       amenities: Array.isArray(desc?.amenities) ? desc.amenities : [],
+      seasonPricings,
     };
   }
 
   private async publicView(hotels: Array<any>, locale: string) {
     const { mediaMap, galleryByHotelId } = await this.heroUrls(hotels);
     return hotels.map((hotel) => {
-      const rooms = hotel.rooms.map((room: any) => {
+      const rooms = (hotel.rooms || []).map((room: any) => {
         const view = this.roomView(room);
         const desc = room.descriptionJsonb as Record<string, any> | null;
         return {
@@ -231,6 +342,12 @@ export class HotelsService {
           mealPlan: room.mealPlanJsonb
             ? extractI18nFallback(room.mealPlanJsonb, locale)
             : null,
+          seasonPricings: view.seasonPricings.map((sp) => ({
+            ...sp,
+            seasonName: sp.seasonNameJsonb
+              ? extractI18nFallback(sp.seasonNameJsonb, locale)
+              : sp.seasonCode,
+          })),
         };
       });
       const rates = rooms.map((room: { ratePerNight: number }) => room.ratePerNight);
@@ -280,6 +397,12 @@ export class HotelsService {
       include: {
         rooms: {
           where: { deletedAt: null, isActive: true },
+          include: {
+            seasonPricings: {
+              where: { isActive: true },
+              include: { season: true },
+            },
+          },
           orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
         },
       },
@@ -302,6 +425,12 @@ export class HotelsService {
       include: {
         rooms: {
           where: { deletedAt: null, isActive: true },
+          include: {
+            seasonPricings: {
+              where: { isActive: true },
+              include: { season: true },
+            },
+          },
           orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
         },
       },
@@ -329,7 +458,27 @@ export class HotelsService {
       this.prisma.hotel.count({ where }),
       this.prisma.hotel.findMany({
         where,
-        include: { rooms: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } } },
+        include: {
+          rooms: {
+            where: { deletedAt: null },
+            include: {
+              seasonPricings: {
+                include: { season: true },
+              },
+            },
+            orderBy: { sortOrder: 'asc' },
+          },
+          tripAccommodations: {
+            select: {
+              id: true,
+              tourId: true,
+              destination: true,
+              nights: true,
+              regime: true,
+              tour: { select: { id: true, slug: true, titleJsonb: true } },
+            },
+          },
+        },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
@@ -348,7 +497,7 @@ export class HotelsService {
         heroImageUrl: resolvedHeroUrl,
         heroImageAlt: hero?.altText ?? null,
         images: hotelGallery,
-        rooms: hotel.rooms.map((room) => this.roomView(room)),
+        rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
       };
     });
     return paginate(items, total, page, limit);
@@ -357,7 +506,17 @@ export class HotelsService {
   async findOneAdmin(id: string) {
     const hotel = await this.prisma.hotel.findFirst({
       where: { id, deletedAt: null },
-      include: { rooms: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } } },
+      include: {
+        rooms: {
+          where: { deletedAt: null },
+          include: {
+            seasonPricings: {
+              include: { season: true },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     });
     if (!hotel) throw new NotFoundException(`Hotel '${id}' not found`);
     const { mediaMap, galleryByHotelId } = await this.heroUrls([hotel]);
@@ -372,7 +531,7 @@ export class HotelsService {
       heroImageUrl: resolvedHeroUrl,
       heroImageAlt: hero?.altText ?? null,
       images: hotelGallery,
-      rooms: hotel.rooms.map((room) => this.roomView(room)),
+      rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
     };
   }
 
@@ -385,30 +544,235 @@ export class HotelsService {
           ? { create: dto.rooms.map((room) => this.roomData(room, dto.currency ?? 'USD')) }
           : undefined,
       },
-      include: { rooms: true },
+      include: {
+        rooms: {
+          include: {
+            seasonPricings: { include: { season: true } },
+          },
+        },
+      },
     });
   }
 
   async updateAdmin(id: string, dto: UpdateHotelDto) {
-    await this.findOneAdmin(id);
-    const data = this.hotelData(dto);
+    const existingHotel = await this.findOneAdmin(id);
+    const data = this.hotelData(
+      dto,
+      (existingHotel.amenitiesJsonb as Record<string, unknown> | null) ?? null,
+    );
+    const defaultCurrency = dto.currency ?? existingHotel.currency ?? 'USD';
+
     return this.prisma.$transaction(async (tx) => {
       if (dto.rooms !== undefined) {
+        if (typeof tx.hotelRoom?.findMany === 'function') {
+          const existingRooms = await tx.hotelRoom.findMany({
+            where: { hotelId: id },
+          });
+          const keptRoomIds = new Set<string>();
+
+          for (const roomDto of dto.rooms) {
+            const matched = existingRooms.find(
+              (r) => (roomDto.id && r.id === roomDto.id) || r.slug === roomDto.slug,
+            );
+            const { seasonPricings: _sp, ...coreRoomData } = this.roomData(
+              roomDto,
+              defaultCurrency,
+            );
+
+            if (matched) {
+              keptRoomIds.add(matched.id);
+              await tx.hotelRoom.update({
+                where: { id: matched.id },
+                data: {
+                  ...coreRoomData,
+                  deletedAt: null,
+                },
+              });
+
+              if (
+                roomDto.seasonPricings !== undefined &&
+                typeof tx.roomSeasonPricing?.deleteMany === 'function'
+              ) {
+                await tx.roomSeasonPricing.deleteMany({
+                  where: { roomId: matched.id },
+                });
+                const dedupedSeasonPricings = this.deduplicateSeasonPricings(roomDto.seasonPricings);
+                if (dedupedSeasonPricings.length > 0) {
+                  await tx.roomSeasonPricing.createMany({
+                    data: dedupedSeasonPricings.map((sp) => ({
+                      roomId: matched.id,
+                      ...this.mapRoomSeasonPricingInput(
+                        sp,
+                        roomDto.currency ?? defaultCurrency,
+                      ),
+                    })),
+                  });
+                }
+              }
+            } else {
+              const created = await tx.hotelRoom.create({
+                data: {
+                  hotelId: id,
+                  ...this.roomData(roomDto, defaultCurrency),
+                },
+              });
+              keptRoomIds.add(created.id);
+            }
+          }
+
+          const toSoftDeleteIds = existingRooms
+            .filter((r) => !r.deletedAt && !keptRoomIds.has(r.id))
+            .map((r) => r.id);
+
+          if (toSoftDeleteIds.length > 0) {
+            await tx.hotelRoom.updateMany({
+              where: { id: { in: toSoftDeleteIds } },
+              data: { deletedAt: new Date(), isActive: false },
+            });
+          }
+
+          return tx.hotel.update({
+            where: { id },
+            data,
+            include: {
+              rooms: {
+                where: { deletedAt: null },
+                include: { seasonPricings: { include: { season: true } } },
+                orderBy: { sortOrder: 'asc' },
+              },
+            },
+          });
+        }
+
         await tx.hotelRoom.deleteMany({
           where: { hotelId: id },
         });
       }
+
       return tx.hotel.update({
         where: { id },
         data: {
           ...data,
           ...(dto.rooms !== undefined
-            ? { rooms: { create: dto.rooms.map((room) => this.roomData(room, dto.currency ?? 'USD')) } }
+            ? { rooms: { create: dto.rooms.map((room) => this.roomData(room, defaultCurrency)) } }
             : {}),
         },
-        include: { rooms: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } } },
+        include: {
+          rooms: {
+            where: { deletedAt: null },
+            include: { seasonPricings: { include: { season: true } } },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
       });
     });
+  }
+
+  // ----------------------------------------------------
+  // Season Management (Public & Admin)
+  // ----------------------------------------------------
+  private validateSeasonDates(startDateStr: string, endDateStr: string) {
+    const start = new Date(`${startDateStr}T00:00:00.000Z`);
+    const end = new Date(`${endDateStr}T00:00:00.000Z`);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+      throw new BadRequestException('Season startDate must be on or before endDate');
+    }
+    return { start, end };
+  }
+
+  async findAllSeasonsPublic(locale = 'en') {
+    const seasons = await this.prisma.season.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
+    });
+    return seasons.map((s) => ({
+      id: s.id,
+      code: s.code,
+      name: extractI18nFallback(s.nameJsonb, locale),
+      nameJsonb: s.nameJsonb,
+      startDate: s.startDate.toISOString().split('T')[0],
+      endDate: s.endDate.toISOString().split('T')[0],
+      multiplier: Number(s.multiplier),
+      isActive: s.isActive,
+      sortOrder: s.sortOrder,
+    }));
+  }
+
+  async findAllSeasonsAdmin() {
+    const seasons = await this.prisma.season.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
+      include: {
+        _count: { select: { roomPricings: true } },
+      },
+    });
+    return seasons.map((s) => ({
+      id: s.id,
+      code: s.code,
+      nameJsonb: s.nameJsonb,
+      startDate: s.startDate.toISOString().split('T')[0],
+      endDate: s.endDate.toISOString().split('T')[0],
+      multiplier: Number(s.multiplier),
+      isActive: s.isActive,
+      sortOrder: s.sortOrder,
+      roomPricingsCount: s._count?.roomPricings ?? 0,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+    }));
+  }
+
+  async createSeasonAdmin(dto: CreateSeasonDto) {
+    const { start, end } = this.validateSeasonDates(dto.startDate, dto.endDate);
+    const code = dto.code.trim().toUpperCase();
+    const existing = await this.prisma.season.findUnique({ where: { code } });
+    if (existing) {
+      throw new BadRequestException(`Season with code '${code}' already exists`);
+    }
+    return this.prisma.season.create({
+      data: {
+        code,
+        nameJsonb: this.sanitizeLocalized(dto.nameJsonb, 255, true),
+        startDate: start,
+        endDate: end,
+        multiplier: new Prisma.Decimal(dto.multiplier ?? 1.0),
+        isActive: dto.isActive ?? true,
+        sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+  }
+
+  async updateSeasonAdmin(id: string, dto: UpdateSeasonDto) {
+    const existing = await this.prisma.season.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`Season '${id}' not found`);
+
+    const startStr = dto.startDate ?? existing.startDate.toISOString().split('T')[0];
+    const endStr = dto.endDate ?? existing.endDate.toISOString().split('T')[0];
+    const { start, end } = this.validateSeasonDates(startStr, endStr);
+
+    const data: Prisma.SeasonUpdateInput = {
+      startDate: start,
+      endDate: end,
+    };
+    if (dto.code !== undefined) data.code = dto.code.trim().toUpperCase();
+    if (dto.nameJsonb !== undefined) {
+      data.nameJsonb = this.sanitizeLocalized(dto.nameJsonb, 255, true);
+    }
+    if (dto.multiplier !== undefined) {
+      data.multiplier = new Prisma.Decimal(dto.multiplier);
+    }
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+
+    return this.prisma.season.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteSeasonAdmin(id: string) {
+    const existing = await this.prisma.season.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`Season '${id}' not found`);
+    await this.prisma.season.delete({ where: { id } });
+    return { success: true, id };
   }
 
   async softDeleteAdmin(id: string) {
@@ -483,8 +847,20 @@ export class HotelsService {
         where: {
           OR: [{ id: targetHotel }, { slug: targetHotel }],
           deletedAt: null,
+          status: 'PUBLISHED',
+          isActive: true,
         },
-        include: { rooms: { where: { deletedAt: null } } },
+        include: {
+          rooms: {
+            where: { deletedAt: null, isActive: true },
+            include: {
+              seasonPricings: {
+                where: { isActive: true },
+                include: { season: true },
+              },
+            },
+          },
+        },
       });
     }
 
@@ -493,10 +869,13 @@ export class HotelsService {
     }
 
     // Match Room
-    let room = null;
+    let room: any = null;
     const targetRoom = dto.roomId || dto.roomSlug;
     if (targetRoom) {
       room = hotel.rooms.find((r) => r.id === targetRoom || r.slug === targetRoom) || null;
+      if (!room) {
+        throw new NotFoundException('Selected room not found or currently unavailable');
+      }
     }
 
     // Parse Dates
@@ -515,9 +894,31 @@ export class HotelsService {
     const roomsCount = Math.max(1, dto.roomsCount || 1);
     const guestsCount = Math.max(1, dto.guestsCount || 1);
 
-    // Calculate Rate
-    const roomRate = room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
-    const totalAmount = nights * roomsCount * roomRate;
+    if (room && room.maxOccupancy && guestsCount > Number(room.maxOccupancy) * roomsCount) {
+      throw new BadRequestException(
+        `Guests count (${guestsCount}) exceeds maximum capacity (${Number(room.maxOccupancy) * roomsCount}) for ${roomsCount} room(s)`,
+      );
+    }
+
+    // Calculate Rate (with Seasonal Pricing Resolution & Single Supplement)
+    let roomRate = room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
+    let singleSupplementPerNight = 0;
+    if (room && Array.isArray(room.seasonPricings) && room.seasonPricings.length > 0) {
+      const checkInTime = checkIn.getTime();
+      const matchedSeasonal = room.seasonPricings.find((sp: any) => {
+        if (!sp.isActive || !sp.season?.isActive) return false;
+        const sStart = new Date(sp.season.startDate).getTime();
+        const sEnd = new Date(sp.season.endDate).getTime();
+        return checkInTime >= sStart && checkInTime <= sEnd;
+      });
+      if (matchedSeasonal && Number(matchedSeasonal.ratePerNight) > 0) {
+        roomRate = Number(matchedSeasonal.ratePerNight);
+      }
+      if (matchedSeasonal && guestsCount === 1 && roomsCount === 1 && Number(matchedSeasonal.singleSupplement) > 0) {
+        singleSupplementPerNight = Number(matchedSeasonal.singleSupplement);
+      }
+    }
+    const totalAmount = Number((nights * roomsCount * (roomRate + singleSupplementPerNight)).toFixed(2));
 
     // Unique Reference Code
     const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();

@@ -69,6 +69,16 @@ export class CalculatePriceDto {
   @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)
   promoCode?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  accommodationId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  roomId?: string;
+
   @ApiPropertyOptional({ default: 'en' })
   @IsOptional()
   @IsString()

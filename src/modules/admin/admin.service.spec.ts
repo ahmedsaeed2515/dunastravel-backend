@@ -315,4 +315,122 @@ describe('AdminService', () => {
       );
     });
   });
+
+  describe('Tour Accommodations, Seasonal Pricing, and Cache Invalidation (BUG-01..BUG-04)', () => {
+    it('accepts { rules: [...] } with priceUsd and rejects overlapping or reversed date ranges (BUG-01)', () => {
+      expect(() =>
+        (service as any).assertValidSeasonPricing({
+          rules: [
+            {
+              seasonCode: 'WINTER',
+              startDate: '2026-12-01',
+              endDate: '2026-12-31',
+              priceUsd: 1500,
+              supplementUsd: 200,
+            },
+          ],
+        }),
+      ).not.toThrow();
+
+      expect(() =>
+        (service as any).assertValidSeasonPricing({
+          rules: [
+            {
+              startDate: '2026-12-10',
+              endDate: '2026-12-25',
+              priceUsd: 1500,
+            },
+            {
+              startDate: '2026-12-20',
+              endDate: '2026-12-31',
+              priceUsd: 1700,
+            },
+          ],
+        }),
+      ).toThrow('Seasonal pricing rules are invalid or overlapping');
+    });
+
+    it('clears stale hotelInfoJsonb.hotels when accommodations array is empty (BUG-02)', async () => {
+      const txMock = {
+        tripAccommodation: {
+          deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+          createMany: jest.fn(),
+        },
+        tour: {
+          update: jest.fn().mockResolvedValue({ id: 'tour-1' }),
+        },
+      };
+
+      await (service as any).syncTourAccommodationsInTx(
+        txMock,
+        'tour-1',
+        [],
+        {
+          hotelCategory: '5 Stars',
+          hotels: { Cairo: ['Old Stale Hotel'] },
+          accommodation: [{ destination: 'Cairo', nights: 2, regime: 'BB' }],
+        },
+      );
+
+      expect(txMock.tripAccommodation.deleteMany).toHaveBeenCalledWith({
+        where: { tourId: 'tour-1' },
+      });
+      expect(txMock.tour.update).toHaveBeenCalledWith({
+        where: { id: 'tour-1' },
+        data: {
+          hotelInfoJsonb: expect.objectContaining({
+            hotelCategory: '5 Stars',
+            hotels: {},
+          }),
+        },
+      });
+    });
+
+    it('rejects non-existent hotelId or cross-hotel roomId with BadRequestException (BUG-03)', async () => {
+      const txMock = {
+        hotel: {
+          findMany: jest.fn().mockResolvedValue([{ id: 'hotel-1', city: 'Cairo', nameJsonb: { en: 'Mena House' } }]),
+        },
+        hotelRoom: {
+          findMany: jest.fn().mockResolvedValue([{ id: 'room-other', hotelId: 'hotel-2' }]),
+        },
+        tripAccommodation: {
+          deleteMany: jest.fn(),
+          createMany: jest.fn(),
+        },
+      };
+
+      await expect(
+        (service as any).syncTourAccommodationsInTx(
+          txMock,
+          'tour-1',
+          [{ hotelId: 'missing-hotel', destination: 'Cairo', nights: 2 }],
+          {},
+        ),
+      ).rejects.toThrow("Assigned hotel 'missing-hotel' does not exist or has been deleted");
+
+      await expect(
+        (service as any).syncTourAccommodationsInTx(
+          txMock,
+          'tour-1',
+          [{ hotelId: 'hotel-1', roomId: 'room-other', destination: 'Cairo', nights: 2 }],
+          {},
+        ),
+      ).rejects.toThrow("Room 'room-other' does not belong to hotel 'hotel-1'");
+    });
+
+    it('evicts both tour:${slug}:${locale} and tour:detail:${slug}:${locale} and bumps catalog version (BUG-04)', async () => {
+      const cacheManager = (service as any).cacheManager;
+      cacheManager.del = jest.fn().mockResolvedValue(undefined);
+      cacheManager.get = jest.fn().mockResolvedValue(3);
+      cacheManager.set = jest.fn().mockResolvedValue(undefined);
+
+      await (service as any).invalidateTourCache('luxury-nile');
+
+      expect(cacheManager.del).toHaveBeenCalledWith('tour:luxury-nile:en');
+      expect(cacheManager.del).toHaveBeenCalledWith('tour:detail:luxury-nile:en');
+      expect(cacheManager.del).toHaveBeenCalledWith('tour:detail:luxury-nile:ar');
+      expect(cacheManager.set).toHaveBeenCalledWith('tours:catalog:version', 4, 86_400_000);
+    });
+  });
 });

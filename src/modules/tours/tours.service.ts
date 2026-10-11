@@ -23,6 +23,7 @@ import {
   TourPreviewResponse,
   TourItineraryResponse,
   TourImageResponse,
+  TourAccommodationResponse,
 } from './types';
 import { Prisma } from '@prisma/client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -31,7 +32,9 @@ import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 
 type TourWithPresentation = Prisma.TourGetPayload<{
   include: { itineraries: true; images: true };
-}>;
+}> & {
+  accommodations?: any[];
+};
 
 function extractStructuredI18n(value: unknown, lang: string): unknown {
   if (Array.isArray(value)) return value.map((item) => extractStructuredI18n(item, lang));
@@ -331,6 +334,43 @@ export class ToursService {
           include: {
             itineraries: { orderBy: { sortOrder: 'asc' } },
             images: { orderBy: { sortOrder: 'asc' } },
+            accommodations: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                hotel: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    nameJsonb: true,
+                    destinationSlug: true,
+                    city: true,
+                    stars: true,
+                    amenitiesJsonb: true,
+                    heroMediaId: true,
+                    status: true,
+                    isActive: true,
+                    deletedAt: true,
+                  },
+                },
+                room: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    nameJsonb: true,
+                    descriptionJsonb: true,
+                    ratePerNight: true,
+                    currency: true,
+                    maxOccupancy: true,
+                    isActive: true,
+                    deletedAt: true,
+                    seasonPricings: {
+                      orderBy: { createdAt: 'asc' },
+                      include: { season: true },
+                    },
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -356,6 +396,43 @@ export class ToursService {
               include: {
                 itineraries: { orderBy: { sortOrder: 'asc' } },
                 images: { orderBy: { sortOrder: 'asc' } },
+                accommodations: {
+                  orderBy: { sortOrder: 'asc' },
+                  include: {
+                    hotel: {
+                      select: {
+                        id: true,
+                        slug: true,
+                        nameJsonb: true,
+                        destinationSlug: true,
+                        city: true,
+                        stars: true,
+                        amenitiesJsonb: true,
+                        heroMediaId: true,
+                        status: true,
+                        isActive: true,
+                        deletedAt: true,
+                      },
+                    },
+                    room: {
+                      select: {
+                        id: true,
+                        slug: true,
+                        nameJsonb: true,
+                        descriptionJsonb: true,
+                        ratePerNight: true,
+                        currency: true,
+                        maxOccupancy: true,
+                        isActive: true,
+                        deletedAt: true,
+                        seasonPricings: {
+                          orderBy: { createdAt: 'asc' },
+                          include: { season: true },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             });
           }
@@ -368,7 +445,7 @@ export class ToursService {
 
         this.logger.debug(`Tour detail queried from DB | slug=${tour.slug} lang=${lang}`);
         return {
-          ...this.toTourDetailResponse(tour, lang),
+          ...this.toTourDetailResponse(tour as unknown as TourWithPresentation, lang),
           timestamp: new Date().toISOString(),
         } as any;
       },
@@ -389,6 +466,43 @@ export class ToursService {
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
         images: { orderBy: { sortOrder: 'asc' } },
+        accommodations: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            hotel: {
+              select: {
+                id: true,
+                slug: true,
+                nameJsonb: true,
+                destinationSlug: true,
+                city: true,
+                stars: true,
+                amenitiesJsonb: true,
+                heroMediaId: true,
+                status: true,
+                isActive: true,
+                deletedAt: true,
+              },
+            },
+            room: {
+              select: {
+                id: true,
+                slug: true,
+                nameJsonb: true,
+                descriptionJsonb: true,
+                ratePerNight: true,
+                currency: true,
+                maxOccupancy: true,
+                isActive: true,
+                deletedAt: true,
+                seasonPricings: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { season: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -398,7 +512,7 @@ export class ToursService {
 
     this.logger.debug(`Admin tour preview queried | slug=${slug} lang=${lang}`);
     return {
-      ...this.toTourDetailResponse(tour, lang),
+      ...this.toTourDetailResponse(tour as unknown as TourWithPresentation, lang, true),
       preview: {
         status: tour.status,
         isActive: tour.isActive,
@@ -410,6 +524,7 @@ export class ToursService {
   private toTourDetailResponse(
     tour: TourWithPresentation,
     lang: string,
+    includeUnpublishedAccommodations = false,
   ): TourDetailResponse {
     const itinerary: TourItineraryResponse[] = tour.itineraries.map((it: any) => {
       const localizedTitle = it.titleJsonb ? extractI18n(it.titleJsonb, lang) : null;
@@ -438,10 +553,179 @@ export class ToursService {
       videoUrl: img.videoUrl,
     }));
 
+    const rawAccommodations = (tour.accommodations || []).filter((acc: any) => {
+      if (includeUnpublishedAccommodations) {
+        return !acc.hotel?.deletedAt;
+      }
+      if (!acc.hotel) return true;
+      if (acc.hotel.deletedAt) return false;
+      if (acc.hotel.isActive === false) return false;
+      if (acc.hotel.status && acc.hotel.status !== 'PUBLISHED') return false;
+      return true;
+    });
+
+    const accommodations: TourAccommodationResponse[] = rawAccommodations.map((acc: any) => {
+      const hotelAmenities = (acc.hotel?.amenitiesJsonb && typeof acc.hotel.amenitiesJsonb === 'object')
+        ? (acc.hotel.amenitiesJsonb as Record<string, any>)
+        : {};
+      const validRoom =
+        acc.room &&
+        !acc.room.deletedAt &&
+        (includeUnpublishedAccommodations || acc.room.isActive !== false)
+          ? acc.room
+          : null;
+      const roomDesc = (validRoom?.descriptionJsonb && typeof validRoom.descriptionJsonb === 'object')
+        ? (validRoom.descriptionJsonb as Record<string, any>)
+        : {};
+      const rawHotelImages = Array.isArray(acc.hotel?.images)
+        ? acc.hotel.images
+        : Array.isArray(hotelAmenities.images)
+          ? hotelAmenities.images
+          : [];
+      const resolvedStars = Number(acc.hotel?.stars ?? acc.hotel?.starRating ?? 5);
+      const resolvedRoomRate = validRoom
+        ? Number(validRoom.ratePerNight ?? validRoom.basePriceUsd ?? 0)
+        : 0;
+      const resolvedSupplement = Number(acc.priceSupplementUsd ?? acc.priceSupplement ?? 0);
+
+      return {
+        id: acc.id,
+        hotelId: acc.hotelId,
+        roomId: validRoom ? validRoom.id : null,
+        city: acc.destination ?? acc.city ?? acc.hotel?.city ?? null,
+        destination: acc.destination ?? acc.city ?? acc.hotel?.city ?? null,
+        categoryTier: acc.categoryTier ?? null,
+        boardBasis: acc.regime ?? acc.boardBasis ?? 'BB',
+        regime: acc.regime ?? acc.boardBasis ?? 'BB',
+        nights: acc.nights ?? 1,
+        dayFrom: acc.dayFrom ?? null,
+        dayTo: acc.dayTo ?? null,
+        dayRange: acc.dayRange ?? (acc.dayFrom && acc.dayTo ? `Days ${acc.dayFrom}-${acc.dayTo}` : null),
+        priceSupplementUsd: new Prisma.Decimal(resolvedSupplement).toFixed(2),
+        priceSupplement: resolvedSupplement,
+        isDefault: acc.isDefault ?? true,
+        notes: acc.notesJsonb ? extractI18n(acc.notesJsonb, lang) || null : null,
+        sortOrder: acc.sortOrder ?? 0,
+        hotel: acc.hotel
+          ? {
+              id: acc.hotel.id,
+              slug: acc.hotel.slug,
+              name: extractI18n(acc.hotel.nameJsonb, lang),
+              city: acc.hotel.city,
+              country: acc.hotel.country ?? acc.hotel.destinationSlug ?? tour.country ?? '',
+              starRating: resolvedStars,
+              stars: resolvedStars,
+              heroImageUrl:
+                acc.hotel.heroImageUrl ||
+                hotelAmenities.heroImageUrl ||
+                rawHotelImages[0]?.imageUrl ||
+                rawHotelImages[0]?.url ||
+                null,
+              images: rawHotelImages.map((img: any, idx: number) => ({
+                id: img.id ?? `img-${idx}`,
+                imageUrl: img.imageUrl ?? img.url ?? '',
+                altText: img.altText ? extractI18n(img.altText, lang) : null,
+                isHero: Boolean(img.isHero ?? idx === 0),
+              })),
+            }
+          : null,
+        room: validRoom
+          ? {
+              id: validRoom.id,
+              slug: validRoom.slug,
+              name: extractI18n(validRoom.nameJsonb, lang),
+              roomType: validRoom.roomType ?? (roomDesc.bedType ? extractI18n(roomDesc.bedType, lang) : null),
+              capacity: validRoom.maxOccupancy ?? validRoom.capacity ?? 2,
+              basePriceUsd: new Prisma.Decimal(resolvedRoomRate).toFixed(2),
+              ratePerNight: resolvedRoomRate,
+              currency: validRoom.currency ?? 'USD',
+              heroImageUrl: validRoom.heroImageUrl ?? roomDesc.image ?? null,
+              seasonPricings: (validRoom.seasonPricings || []).map((sp: any) => ({
+                id: sp.id,
+                seasonId: sp.seasonId ?? null,
+                seasonName: sp.season?.nameJsonb
+                  ? extractI18n(sp.season.nameJsonb, lang)
+                  : sp.seasonNameJsonb
+                    ? extractI18n(sp.seasonNameJsonb, lang)
+                    : sp.season?.code ?? null,
+                startDate: sp.startDate
+                  ? new Date(sp.startDate).toISOString().slice(0, 10)
+                  : sp.season?.startDate
+                    ? new Date(sp.season.startDate).toISOString().slice(0, 10)
+                    : null,
+                endDate: sp.endDate
+                  ? new Date(sp.endDate).toISOString().slice(0, 10)
+                  : sp.season?.endDate
+                    ? new Date(sp.season.endDate).toISOString().slice(0, 10)
+                    : null,
+                boardBasis: sp.boardBasis ?? 'BB',
+                pricePerNightUsd: new Prisma.Decimal(
+                  sp.ratePerNight ?? sp.pricePerNightUsd ?? 0,
+                ).toFixed(2),
+                ratePerNightUsd: Number(sp.ratePerNight ?? sp.pricePerNightUsd ?? 0),
+                singleSupplementUsd:
+                  (sp.singleSupplement ?? sp.singleSupplementUsd) !== null &&
+                  (sp.singleSupplement ?? sp.singleSupplementUsd) !== undefined
+                    ? new Prisma.Decimal(sp.singleSupplement ?? sp.singleSupplementUsd).toFixed(2)
+                    : null,
+                extraBedPriceUsd:
+                  (sp.extraBedRate ?? sp.extraBedPriceUsd) !== null &&
+                  (sp.extraBedRate ?? sp.extraBedPriceUsd) !== undefined
+                    ? new Prisma.Decimal(sp.extraBedRate ?? sp.extraBedPriceUsd)
+                        .toFixed(2)
+                    : null,
+                childPriceUsd:
+                  (sp.childRate ?? sp.childPriceUsd) !== null &&
+                  (sp.childRate ?? sp.childPriceUsd) !== undefined
+                    ? new Prisma.Decimal(sp.childRate ?? sp.childPriceUsd).toFixed(2)
+                    : null,
+                currency: sp.currency ?? 'USD',
+              })),
+            }
+          : null,
+      };
+    });
+
     const heroImgObj = tour.images.find((img) => img.isHero) || tour.images[0];
     const heroImage = heroImgObj?.imageUrl || null;
     const heroVideoObj = tour.images.find((img) => img.isVideo && img.videoUrl);
     const heroVideoUrl = heroVideoObj?.videoUrl || null;
+
+    let hotelInfo = tour.hotelInfoJsonb
+      ? extractStructuredI18n(tour.hotelInfoJsonb, lang)
+      : null;
+
+    if (accommodations.length > 0) {
+      const cityHotels: Record<string, string[]> = {};
+      for (const acc of accommodations) {
+        const cityKey = acc.city || acc.hotel?.city || 'Destination';
+        const hotelName = acc.hotel?.name;
+        if (hotelName) {
+          if (!cityHotels[cityKey]) cityHotels[cityKey] = [];
+          if (!cityHotels[cityKey].includes(hotelName)) {
+            cityHotels[cityKey].push(hotelName);
+          }
+        }
+      }
+      if (!hotelInfo || typeof hotelInfo !== 'object' || Array.isArray(hotelInfo)) {
+        hotelInfo = {
+          hotels: cityHotels,
+          accommodations,
+        };
+      } else {
+        const record = hotelInfo as Record<string, unknown>;
+        hotelInfo = {
+          ...record,
+          hotels:
+            record.hotels &&
+            typeof record.hotels === 'object' &&
+            Object.keys(record.hotels as object).length > 0
+              ? record.hotels
+              : cityHotels,
+          accommodations,
+        };
+      }
+    }
 
     return {
       id: tour.id,
@@ -471,9 +755,7 @@ export class ToursService {
         : null,
       includedServices: extractI18nList(tour.includedServicesJsonb, lang),
       excludedServices: extractI18nList(tour.excludedServicesJsonb, lang),
-      hotelInfo: tour.hotelInfoJsonb
-        ? extractStructuredI18n(tour.hotelInfoJsonb, lang)
-        : null,
+      hotelInfo,
       seasonPricing: tour.seasonPricingJsonb
         ? extractStructuredI18n(tour.seasonPricingJsonb, lang)
         : null,
@@ -503,6 +785,7 @@ export class ToursService {
 
       itinerary,
       images,
+      accommodations,
     };
   }
 

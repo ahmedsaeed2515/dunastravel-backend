@@ -150,5 +150,73 @@ describe('PricingService Unit Tests', () => {
         }),
       ).rejects.toThrow(UnprocessableEntityException);
     });
+
+    it('applies global Season multiplier fallback and accommodation supplement when present', async () => {
+      (prismaMock as any).season = {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'season-1',
+          slug: 'peak-winter',
+          nameJsonb: { en: 'Peak Winter' },
+          defaultMultiplier: new Prisma.Decimal(1.5),
+        }),
+      };
+      (prismaMock as any).tripAccommodation = {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'acc-1',
+          tourId: 'tour-100',
+          priceSupplementUsd: new Prisma.Decimal(40),
+        }),
+      };
+
+      const res = await service.calculatePrice({
+        tourId: 'tour-100',
+        date: '2027-01-15',
+        adults: 2,
+        children: 0,
+        accommodationId: 'acc-1',
+      });
+
+      // Base: 2 * 100 = 200; Season 1.5x = 300; Supplement: 2 * 40 = 80 -> Total 380.00
+      expect(res.adultTotalUsd).toBe('300.00');
+      expect(res.seasonalAdjustmentUsd).toBe('100.00');
+      expect(res.accommodationSupplementUsd).toBe('80.00');
+      expect(res.seasonName).toBe('Peak Winter');
+      expect(res.totalAmountUsd).toBe('380.00');
+    });
+
+    it('supports Dashboard { rules: [...] } seasonPricingJsonb with priceUsd override and supplementUsd (BUG-01)', async () => {
+      prismaMock.tour.findUnique.mockResolvedValue({
+        ...mockTour,
+        basePriceUsd: new Prisma.Decimal(100),
+        seasonPricingJsonb: {
+          rules: [
+            {
+              seasonCode: 'NEW_YEAR',
+              seasonName: { en: 'New Year Gala', ar: 'رأس السنة' },
+              startDate: '2026-12-20',
+              endDate: '2027-01-05',
+              priceUsd: 180,
+              supplementUsd: 20,
+            },
+          ],
+        },
+      });
+
+      const res = await service.calculatePrice({
+        tourId: 'tour-100',
+        date: '2026-12-25',
+        adults: 2,
+        children: 1,
+        language: 'ar',
+      });
+
+      // Effective adult price = 180 + 20 = 200; 2 adults = 400; 1 child (50%) = 100 -> Total 500.00
+      // Base without season = 2*100 + 1*50 = 250 -> seasonalAdjustmentUsd = 250.00
+      expect(res.seasonName).toBe('رأس السنة');
+      expect(res.adultTotalUsd).toBe('400.00');
+      expect(res.childTotalUsd).toBe('100.00');
+      expect(res.seasonalAdjustmentUsd).toBe('250.00');
+      expect(res.totalAmountUsd).toBe('500.00');
+    });
   });
 });

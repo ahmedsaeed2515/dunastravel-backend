@@ -34,7 +34,7 @@ import { UpsertPassengersDto } from './dto/upsert-passengers.dto';
 import { AssignBookingDto } from './dto/assign-booking.dto';
 import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
-import { CreateTourDto } from './dto/create-tour.dto';
+import { CreateTourDto, TripAccommodationDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { MoveTourDto } from './dto/move-tour.dto';
 import { ReorderToursDto } from './dto/reorder-tours.dto';
@@ -2256,6 +2256,34 @@ export class AdminService {
             take: 1,
             select: { imageUrl: true },
           },
+          accommodations: {
+            orderBy: { sortOrder: 'asc' },
+            include: {
+              hotel: {
+                select: {
+                  id: true,
+                  slug: true,
+                  nameJsonb: true,
+                  destinationSlug: true,
+                  city: true,
+                  stars: true,
+                  amenitiesJsonb: true,
+                  heroMediaId: true,
+                },
+              },
+              room: {
+                select: {
+                  id: true,
+                  slug: true,
+                  nameJsonb: true,
+                  descriptionJsonb: true,
+                  ratePerNight: true,
+                  currency: true,
+                  maxOccupancy: true,
+                },
+              },
+            },
+          },
           landingPages: {
             include: {
               landingPage: {
@@ -2295,6 +2323,19 @@ export class AdminService {
       departureInfoJsonb: t.departureInfoJsonb,
       hotelInfoJsonb: t.hotelInfoJsonb,
       seasonPricingJsonb: t.seasonPricingJsonb,
+      accommodations: (t.accommodations || []).map((acc) => ({
+        ...acc,
+        city: acc.destination,
+        boardBasis: acc.regime,
+        priceSupplementUsd: acc.priceSupplementUsd.toString(),
+        room: acc.room
+          ? {
+              ...acc.room,
+              ratePerNight: acc.room.ratePerNight.toString(),
+              basePriceUsd: acc.room.ratePerNight.toString(),
+            }
+          : null,
+      })),
 
       bookingCount: t._count.bookings,
       reviewCount: t._count.reviews,
@@ -2596,6 +2637,38 @@ export class AdminService {
       include: {
         itineraries: { orderBy: { sortOrder: 'asc' } },
         images: { orderBy: { sortOrder: 'asc' } },
+        accommodations: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            hotel: {
+              select: {
+                id: true,
+                slug: true,
+                nameJsonb: true,
+                destinationSlug: true,
+                city: true,
+                stars: true,
+                amenitiesJsonb: true,
+                heroMediaId: true,
+              },
+            },
+            room: {
+              select: {
+                id: true,
+                slug: true,
+                nameJsonb: true,
+                descriptionJsonb: true,
+                ratePerNight: true,
+                currency: true,
+                maxOccupancy: true,
+                seasonPricings: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { season: true },
+                },
+              },
+            },
+          },
+        },
         reviews: { orderBy: { createdAt: 'desc' }, take: 500 },
         activityLogs: { orderBy: { createdAt: 'desc' }, take: 500 },
         landingPages: {
@@ -2647,6 +2720,33 @@ export class AdminService {
     return {
       ...tour,
       basePriceUsd: tour.basePriceUsd.toString(),
+      accommodations: (tour.accommodations || []).map((acc) => ({
+        ...acc,
+        city: acc.destination,
+        boardBasis: acc.regime,
+        priceSupplementUsd: acc.priceSupplementUsd.toString(),
+        room: acc.room
+          ? {
+              ...acc.room,
+              ratePerNight: acc.room.ratePerNight.toString(),
+              basePriceUsd: acc.room.ratePerNight.toString(),
+              seasonPricings: (acc.room.seasonPricings || []).map((sp) => ({
+                ...sp,
+                ratePerNight: sp.ratePerNight.toString(),
+                pricePerNightUsd: sp.ratePerNight.toString(),
+                singleSupplement: sp.singleSupplement.toString(),
+                childRate: sp.childRate.toString(),
+                extraBedRate: sp.extraBedRate.toString(),
+                season: sp.season
+                  ? {
+                      ...sp.season,
+                      multiplier: sp.season.multiplier.toString(),
+                    }
+                  : undefined,
+              })),
+            }
+          : null,
+      })),
       bookings: tour.bookings.map((b) => ({
         ...b,
         totalAmountUsd: b.totalAmountUsd.toString(),
@@ -2667,7 +2767,7 @@ export class AdminService {
         `Tour with slug ${dto.slug} already exists`,
       );
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
-    const { itineraries, images, ...tourData } = dto;
+    const { itineraries, images, accommodations, ...tourData } = dto;
     this.assertTourImages(images);
     const safeTourData = this.prepareTourData(tourData, true, tourData.country);
     const safeItineraries = this.prepareTourItineraries(itineraries);
@@ -2699,6 +2799,15 @@ export class AdminService {
         },
       });
 
+      if (accommodations && accommodations.length > 0) {
+        await this.syncTourAccommodationsInTx(
+          tx,
+          createdTour.id,
+          accommodations,
+          safeTourData.hotelInfoJsonb,
+        );
+      }
+
       await this.autoLinkDestinationInterface(
         tx,
         createdTour.id,
@@ -2721,7 +2830,7 @@ export class AdminService {
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
-    const { itineraries, images, expectedUpdatedAt, ...tourData } = dto;
+    const { itineraries, images, accommodations, expectedUpdatedAt, ...tourData } = dto;
     this.assertTourImages(images);
 
     if (tourData.slug && tourData.slug.toLowerCase() !== slug.toLowerCase()) {
@@ -2740,6 +2849,19 @@ export class AdminService {
       false,
       tourData.country ?? tour.country,
     );
+    if (
+      safeTourData.seasonPricingJsonb &&
+      typeof safeTourData.seasonPricingJsonb === 'object' &&
+      !Array.isArray(safeTourData.seasonPricingJsonb) &&
+      tour.seasonPricingJsonb &&
+      typeof tour.seasonPricingJsonb === 'object' &&
+      !Array.isArray(tour.seasonPricingJsonb)
+    ) {
+      safeTourData.seasonPricingJsonb = {
+        ...(tour.seasonPricingJsonb as Record<string, unknown>),
+        ...(safeTourData.seasonPricingJsonb as Record<string, unknown>),
+      };
+    }
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -2793,12 +2915,24 @@ export class AdminService {
                   expectedUpdatedAt: expectedUpdatedAt ?? null,
                   itinerariesReplaced: Boolean(itineraries),
                   imagesReplaced: Boolean(images),
+                  accommodationsReplaced: Boolean(accommodations),
                 },
               },
             ],
           },
         },
       });
+
+      if (accommodations !== undefined) {
+        await this.syncTourAccommodationsInTx(
+          tx,
+          res.id,
+          accommodations,
+          safeTourData.hotelInfoJsonb !== undefined
+            ? safeTourData.hotelInfoJsonb
+            : tour.hotelInfoJsonb,
+        );
+      }
 
       await this.autoLinkDestinationInterface(
         tx,
@@ -2811,12 +2945,9 @@ export class AdminService {
     });
 
     // Invalidate cache for both current and updated slug
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
-    for (const l of langs) {
-      await this.cacheManager.del(`tour:${slug}:${l}`);
-      if (updated.slug !== slug) {
-        await this.cacheManager.del(`tour:${updated.slug}:${l}`);
-      }
+    await this.invalidateTourCache(slug);
+    if (updated.slug !== slug) {
+      await this.invalidateTourCache(updated.slug);
     }
 
     return { success: true, slug: updated.slug };
@@ -2837,11 +2968,8 @@ export class AdminService {
     await this.prisma.$transaction(updates);
 
     // Invalidate public tour cache
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const item of dto.orders) {
-      for (const l of langs) {
-        await this.cacheManager.del(`tour:${item.slug}:${l}`);
-      }
+      await this.invalidateTourCache(item.slug);
     }
 
     return { success: true, count: dto.orders.length };
@@ -2863,10 +2991,7 @@ export class AdminService {
       select: { id: true, slug: true, isFeatured: true, displayOrder: true },
     });
 
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
-    for (const l of langs) {
-      await this.cacheManager.del(`tour:${slug}:${l}`);
-    }
+    await this.invalidateTourCache(slug);
 
     return {
       success: true,
@@ -2963,39 +3088,78 @@ export class AdminService {
       { isolationLevel: 'Serializable' },
     );
 
-    await Promise.all(
-      ['en', 'es', 'pt', 'it', 'ar'].map((lang) =>
-        this.cacheManager.del(`tour:${slug}:${lang}`),
-      ),
-    );
+    await this.invalidateTourCache(slug);
     return { success: true, slug: moved.slug, destinationSlug: targetSlug };
   }
 
   private assertValidSeasonPricing(
-    rules?: Array<{
-      startDate: string;
-      endDate: string;
-      multiplier: number;
-    }>,
+    seasonPricing?:
+      | Array<{
+          startDate: string;
+          endDate: string;
+          multiplier?: number;
+          priceUsd?: number;
+          supplementUsd?: number;
+        }>
+      | Record<string, any>
+      | null,
   ): void {
-    if (!rules) return;
-    const normalized = rules
-      .map((rule) => ({
-        start: new Date(rule.startDate).getTime(),
-        end: new Date(rule.endDate).getTime(),
-        multiplier: rule.multiplier,
-      }))
+    if (!seasonPricing) return;
+    let rawRules: Array<any> = [];
+    if (Array.isArray(seasonPricing)) {
+      rawRules = seasonPricing;
+    } else if (typeof seasonPricing === 'object') {
+      if (seasonPricing.rules !== undefined && !Array.isArray(seasonPricing.rules)) {
+        throw new BadRequestException('Seasonal pricing rules must be an array');
+      }
+      rawRules = Array.isArray(seasonPricing.rules) ? seasonPricing.rules : [];
+    } else {
+      throw new BadRequestException('Seasonal pricing configuration is invalid');
+    }
+
+    if (rawRules.length === 0) return;
+
+    const normalized = rawRules
+      .map((rule) => {
+        const start = new Date(rule?.startDate).getTime();
+        const end = new Date(rule?.endDate).getTime();
+        const hasMultiplier = rule?.multiplier !== undefined && rule?.multiplier !== null;
+        const hasPrice = rule?.priceUsd !== undefined && rule?.priceUsd !== null;
+        const hasSupplement = rule?.supplementUsd !== undefined && rule?.supplementUsd !== null;
+        const multiplier = hasMultiplier ? Number(rule.multiplier) : 1;
+        const priceUsd = hasPrice ? Number(rule.priceUsd) : 0;
+        const supplementUsd = hasSupplement ? Number(rule.supplementUsd) : 0;
+        return {
+          start,
+          end,
+          hasMultiplier,
+          hasPrice,
+          hasSupplement,
+          multiplier,
+          priceUsd,
+          supplementUsd,
+        };
+      })
       .sort((a, b) => a.start - b.start);
 
     for (let index = 0; index < normalized.length; index++) {
       const rule = normalized[index];
+      const invalidMultiplier =
+        rule.hasMultiplier &&
+        (!Number.isFinite(rule.multiplier) || rule.multiplier < 0.5 || rule.multiplier > 5);
+      const invalidPrice =
+        rule.hasPrice && (!Number.isFinite(rule.priceUsd) || rule.priceUsd < 0);
+      const invalidSupplement =
+        rule.hasSupplement && (!Number.isFinite(rule.supplementUsd) || rule.supplementUsd < 0);
+
       if (
         !Number.isFinite(rule.start) ||
         !Number.isFinite(rule.end) ||
-        !Number.isFinite(rule.multiplier) ||
         rule.start > rule.end ||
-        rule.multiplier < 0.5 ||
-        rule.multiplier > 5 ||
+        (!rule.hasMultiplier && !rule.hasPrice && !rule.hasSupplement) ||
+        invalidMultiplier ||
+        invalidPrice ||
+        invalidSupplement ||
         (index > 0 && rule.start <= normalized[index - 1].end)
       ) {
         throw new BadRequestException(
@@ -3247,6 +3411,7 @@ export class AdminService {
       'longitude',
       'itineraries',
       'images',
+      'accommodations',
     ];
     for (const key of nonPrismaKeys) {
       delete result[key];
@@ -3481,11 +3646,8 @@ export class AdminService {
       { isolationLevel: 'Serializable' },
     );
 
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
     for (const t of tours) {
-      for (const l of langs) {
-        await this.cacheManager.del(`tour:${t.slug}:${l}`);
-      }
+      await this.invalidateTourCache(t.slug);
     }
 
     return { count: result.count };
@@ -3529,10 +3691,7 @@ export class AdminService {
       },
     });
 
-    const langs = ['en', 'es', 'pt', 'it', 'ar'];
-    for (const l of langs) {
-      await this.cacheManager.del(`tour:${slug}:${l}`);
-    }
+    await this.invalidateTourCache(slug);
 
     return { success: true };
   }
@@ -4028,10 +4187,334 @@ export class AdminService {
     return { message: 'Itinerary deleted' };
   }
 
+  async getTourAccommodations(slug: string, adminUserId: string) {
+    this.logger.log(
+      `Admin ${adminUserId} fetching accommodations for tour ${slug}`,
+    );
+    const tour = await this.prisma.tour.findUnique({
+      where: { slug },
+      select: { id: true, slug: true },
+    });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    const items = await this.prisma.tripAccommodation.findMany({
+      where: { tourId: tour.id },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        hotel: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            destinationSlug: true,
+            city: true,
+            stars: true,
+            amenitiesJsonb: true,
+            heroMediaId: true,
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            slug: true,
+            nameJsonb: true,
+            descriptionJsonb: true,
+            ratePerNight: true,
+            currency: true,
+            maxOccupancy: true,
+            seasonPricings: {
+              orderBy: { createdAt: 'asc' },
+              include: { season: true },
+            },
+          },
+        },
+      },
+    });
+
+    return items.map((acc) => ({
+      ...acc,
+      city: acc.destination,
+      boardBasis: acc.regime,
+      priceSupplementUsd: acc.priceSupplementUsd.toString(),
+      room: acc.room
+        ? {
+            ...acc.room,
+            ratePerNight: acc.room.ratePerNight.toString(),
+            basePriceUsd: acc.room.ratePerNight.toString(),
+            seasonPricings: (acc.room.seasonPricings || []).map((sp) => ({
+              ...sp,
+              ratePerNight: sp.ratePerNight.toString(),
+              pricePerNightUsd: sp.ratePerNight.toString(),
+              singleSupplement: sp.singleSupplement.toString(),
+              childRate: sp.childRate.toString(),
+              extraBedRate: sp.extraBedRate.toString(),
+              season: sp.season
+                ? {
+                    ...sp.season,
+                    multiplier: sp.season.multiplier.toString(),
+                  }
+                : undefined,
+            })),
+          }
+        : null,
+    }));
+  }
+
+  async upsertTourAccommodations(
+    slug: string,
+    accommodations: TripAccommodationDto[],
+    adminUserId: string,
+  ) {
+    this.logger.log(
+      `Admin ${adminUserId} updating accommodations for tour ${slug}`,
+    );
+    const tour = await this.prisma.tour.findUnique({
+      where: { slug },
+      select: { id: true, slug: true, hotelInfoJsonb: true },
+    });
+    if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.syncTourAccommodationsInTx(
+        tx,
+        tour.id,
+        accommodations,
+        tour.hotelInfoJsonb,
+      );
+      if (tx.tourActivityLog?.create) {
+        await tx.tourActivityLog.create({
+          data: {
+            tourId: tour.id,
+            userId: adminUserId,
+            action: 'TOUR_ACCOMMODATIONS_UPDATED',
+            details: { count: accommodations.length },
+          },
+        });
+      }
+    });
+
+    await this.invalidateTourCache(slug);
+    return this.getTourAccommodations(slug, adminUserId);
+  }
+
+  private async syncTourAccommodationsInTx(
+    tx: Prisma.TransactionClient,
+    tourId: string,
+    accommodations: TripAccommodationDto[],
+    existingHotelInfoJsonb: unknown,
+  ): Promise<void> {
+    if (!tx.tripAccommodation) return;
+
+    await tx.tripAccommodation.deleteMany({ where: { tourId } });
+
+    const hotelIds = [
+      ...new Set(
+        accommodations
+          .map((a) => a.hotelId?.trim())
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const roomIds = [
+      ...new Set(
+        accommodations
+          .map((a) => a.roomId?.trim())
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const hotelsMap = new Map<
+      string,
+      {
+        id: string;
+        slug: string;
+        nameJsonb: Prisma.JsonValue;
+        destinationSlug: string;
+        city: string;
+        stars: number;
+        amenitiesJsonb: Prisma.JsonValue | null;
+      }
+    >();
+    const roomsMap = new Map<
+      string,
+      {
+        id: string;
+        hotelId: string;
+        slug: string;
+      }
+    >();
+
+    if (hotelIds.length > 0 && tx.hotel?.findMany) {
+      const hotels = await tx.hotel.findMany({
+        where: { id: { in: hotelIds }, deletedAt: null },
+        select: {
+          id: true,
+          slug: true,
+          nameJsonb: true,
+          destinationSlug: true,
+          city: true,
+          stars: true,
+          amenitiesJsonb: true,
+        },
+      });
+      for (const h of hotels) {
+        hotelsMap.set(h.id, h);
+      }
+      for (const requestedHotelId of hotelIds) {
+        if (!hotelsMap.has(requestedHotelId)) {
+          throw new BadRequestException(
+            `Assigned hotel '${requestedHotelId}' does not exist or has been deleted`,
+          );
+        }
+      }
+    }
+
+    if (roomIds.length > 0 && tx.hotelRoom?.findMany) {
+      const rooms = await tx.hotelRoom.findMany({
+        where: { id: { in: roomIds }, deletedAt: null },
+        select: {
+          id: true,
+          hotelId: true,
+          slug: true,
+        },
+      });
+      for (const r of rooms) {
+        roomsMap.set(r.id, r);
+      }
+      for (const requestedRoomId of roomIds) {
+        if (!roomsMap.has(requestedRoomId)) {
+          throw new BadRequestException(
+            `Assigned room '${requestedRoomId}' does not exist or has been deleted`,
+          );
+        }
+      }
+    }
+
+    const cityHotelsMap: Record<string, string[]> = {};
+    const summaryAccommodations: Array<Record<string, unknown>> = [];
+
+    for (let index = 0; index < accommodations.length; index++) {
+      const item = accommodations[index];
+      const cleanHotelId = item.hotelId && item.hotelId.trim() ? item.hotelId.trim() : null;
+      const cleanRoomId = item.roomId && item.roomId.trim() ? item.roomId.trim() : null;
+
+      if (cleanRoomId && cleanHotelId && roomsMap.has(cleanRoomId)) {
+        const roomRecord = roomsMap.get(cleanRoomId)!;
+        if (roomRecord.hotelId !== cleanHotelId) {
+          throw new BadRequestException(
+            `Room '${cleanRoomId}' does not belong to hotel '${cleanHotelId}'`,
+          );
+        }
+      }
+
+      const hotelRecord = cleanHotelId ? hotelsMap.get(cleanHotelId) : undefined;
+      const effectiveCity =
+        (item.destination && item.destination.trim()) ||
+        (item.city && item.city.trim()) ||
+        hotelRecord?.city ||
+        'Destination';
+      const effectiveRegime =
+        (item.regime && item.regime.trim()) ||
+        (item.boardBasis && item.boardBasis.trim()) ||
+        'BB';
+
+      await tx.tripAccommodation.create({
+        data: {
+          tourId,
+          hotelId: cleanHotelId,
+          roomId: cleanRoomId,
+          destination: effectiveCity,
+          categoryTier: item.categoryTier?.trim() || null,
+          regime: effectiveRegime,
+          nights: item.nights ?? 1,
+          priceSupplementUsd: new Prisma.Decimal(item.priceSupplementUsd ?? 0),
+          isDefault: item.isDefault ?? true,
+          notesJsonb: item.notesJsonb ? (item.notesJsonb as Prisma.InputJsonValue) : Prisma.JsonNull,
+          sortOrder: item.sortOrder ?? index,
+        },
+      });
+
+      const nameObj =
+        hotelRecord?.nameJsonb && typeof hotelRecord.nameJsonb === 'object'
+          ? (hotelRecord.nameJsonb as Record<string, string>)
+          : {};
+      const hotelDisplayName =
+        nameObj.en ||
+        Object.values(nameObj).find((v) => typeof v === 'string' && v.trim()) ||
+        hotelRecord?.slug ||
+        cleanHotelId ||
+        effectiveCity;
+
+      if (hotelDisplayName) {
+        if (!cityHotelsMap[effectiveCity]) {
+          cityHotelsMap[effectiveCity] = [];
+        }
+        if (!cityHotelsMap[effectiveCity].includes(hotelDisplayName)) {
+          cityHotelsMap[effectiveCity].push(hotelDisplayName);
+        }
+      }
+
+      const heroImageUrl =
+        (hotelRecord?.amenitiesJsonb as Record<string, any> | null)?.heroImageUrl ?? null;
+
+      summaryAccommodations.push({
+        hotelId: cleanHotelId,
+        hotelSlug: hotelRecord?.slug ?? null,
+        hotelNameJsonb: hotelRecord?.nameJsonb ?? { en: hotelDisplayName },
+        stars: hotelRecord?.stars ?? 5,
+        starRating: hotelRecord?.stars ?? 5,
+        heroImageUrl,
+        roomId: cleanRoomId,
+        destination: effectiveCity,
+        city: effectiveCity,
+        categoryTier: item.categoryTier || null,
+        regime: effectiveRegime,
+        boardBasis: effectiveRegime,
+        nights: item.nights ?? 1,
+        dayFrom: item.dayFrom ?? null,
+        dayTo: item.dayTo ?? null,
+        priceSupplementUsd: Number(item.priceSupplementUsd ?? 0).toFixed(2),
+        isDefault: item.isDefault ?? true,
+        notesJsonb: item.notesJsonb ?? null,
+        sortOrder: item.sortOrder ?? index,
+      });
+    }
+
+    const baseHotelInfo =
+      existingHotelInfoJsonb &&
+      typeof existingHotelInfoJsonb === 'object' &&
+      !Array.isArray(existingHotelInfoJsonb)
+        ? { ...(existingHotelInfoJsonb as Record<string, unknown>) }
+        : {};
+
+    const updatedHotelInfo: Record<string, unknown> = {
+      ...baseHotelInfo,
+      hotels:
+        accommodations.length === 0
+          ? {}
+          : Object.keys(cityHotelsMap).length > 0
+            ? cityHotelsMap
+            : baseHotelInfo.hotels ?? {},
+      accommodations: summaryAccommodations,
+    };
+
+    await tx.tour.update({
+      where: { id: tourId },
+      data: {
+        hotelInfoJsonb: updatedHotelInfo as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   private async invalidateTourCache(slug: string): Promise<void> {
     for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
       await this.cacheManager.del(`tour:${slug}:${locale}`);
       await this.cacheManager.del(`tour:detail:${slug}:${locale}`);
+    }
+    try {
+      const currentVersion = await this.cacheManager.get<number>('tours:catalog:version');
+      const nextVersion = typeof currentVersion === 'number' ? currentVersion + 1 : 2;
+      await this.cacheManager.set('tours:catalog:version', nextVersion, 86_400_000);
+    } catch {
+      // Best-effort catalog version bump
     }
   }
 

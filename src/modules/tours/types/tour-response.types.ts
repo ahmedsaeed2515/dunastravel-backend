@@ -44,6 +44,67 @@ export interface TourSummaryResponse {
   displayOrder: number;
 }
 
+export interface TourAccommodationResponse {
+  id: string;
+  hotelId: string;
+  roomId: string | null;
+  city: string | null;
+  destination?: string | null;
+  categoryTier: string | null;
+  boardBasis: string;
+  regime?: string;
+  nights: number;
+  dayFrom: number | null;
+  dayTo: number | null;
+  dayRange?: string | null;
+  priceSupplementUsd: string;
+  priceSupplement?: number;
+  isDefault: boolean;
+  notes: string | null;
+  sortOrder: number;
+  hotel: {
+    id: string;
+    slug: string;
+    name: string;
+    city: string;
+    country: string;
+    starRating: number;
+    stars?: number;
+    heroImageUrl: string | null;
+    images: Array<{
+      id: string;
+      imageUrl: string;
+      altText: string | null;
+      isHero: boolean;
+    }>;
+  } | null;
+  room: {
+    id: string;
+    slug: string;
+    name: string;
+    roomType: string | null;
+    capacity: number;
+    basePriceUsd: string;
+    ratePerNight?: number;
+    currency: string;
+    heroImageUrl: string | null;
+    seasonPricings: Array<{
+      id: string;
+      seasonId: string | null;
+      seasonName: string | null;
+      startDate: string | null;
+      endDate: string | null;
+      boardBasis: string;
+      pricePerNightUsd: string;
+      ratePerNightUsd?: number;
+      singleSupplementUsd: string | null;
+      extraBedPriceUsd: string | null;
+      childPriceUsd: string | null;
+      currency: string;
+    }>;
+  } | null;
+}
+
 export interface TourDetailResponse {
   id: string;
   slug: string;
@@ -88,6 +149,7 @@ export interface TourDetailResponse {
   routeMap?: unknown | null;
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
+  accommodations?: TourAccommodationResponse[];
 }
 
 /**

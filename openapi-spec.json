@@ -2613,6 +2613,84 @@
         ]
       }
     },
+    "/api/admin/tours/{slug}/accommodations": {
+      "get": {
+        "operationId": "AdminController_getTourAccommodations",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of assigned tour accommodations"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get assigned accommodations (hotels & rooms) for a tour.",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "put": {
+        "operationId": "AdminController_upsertTourAccommodations",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertTourAccommodationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tour accommodations updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upsert assigned accommodations (hotels & rooms) for a tour.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/admin/tailor-made-inquiries": {
       "get": {
         "operationId": "AdminTailorMadeController_findAll[0]",
@@ -16654,6 +16732,30 @@
         ]
       }
     },
+    "/api/hotels/seasons": {
+      "get": {
+        "operationId": "HotelsController_findAllSeasons",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List active pricing seasons",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
     "/api/hotels/{slug}": {
       "get": {
         "operationId": "HotelsController_findOne",
@@ -16721,6 +16823,120 @@
           }
         ],
         "summary": "Create hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/seasons": {
+      "get": {
+        "operationId": "AdminHotelsController_findAllSeasons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all pricing seasons for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "post": {
+        "operationId": "AdminHotelsController_createSeason",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSeasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a pricing season",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/seasons/{seasonId}": {
+      "put": {
+        "operationId": "AdminHotelsController_updateSeason",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSeasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a pricing season",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminHotelsController_deleteSeason",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a pricing season",
         "tags": [
           "admin-hotels"
         ]
@@ -17520,6 +17736,76 @@
           "sortOrder"
         ]
       },
+      "TripAccommodationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "hotelId": {
+            "type": "object",
+            "description": "Assigned Hotel ID"
+          },
+          "roomId": {
+            "type": "object",
+            "description": "Optional specific Room ID"
+          },
+          "destination": {
+            "type": "object",
+            "description": "Destination or city label (e.g. Cairo, Luxor)"
+          },
+          "city": {
+            "type": "object",
+            "description": "City label alias (e.g. Cairo, Luxor)"
+          },
+          "categoryTier": {
+            "type": "object",
+            "description": "Category tier (e.g. Standard, Deluxe, Luxury)"
+          },
+          "regime": {
+            "type": "string",
+            "description": "Meal regime / board basis (BB, HB, FB, AI)",
+            "default": "BB"
+          },
+          "boardBasis": {
+            "type": "string",
+            "description": "Board basis alias (BB, HB, FB, AI)",
+            "default": "BB"
+          },
+          "nights": {
+            "type": "number",
+            "description": "Number of nights at this hotel",
+            "default": 1
+          },
+          "dayFrom": {
+            "type": "object",
+            "description": "Start day of the tour (1-based)"
+          },
+          "dayTo": {
+            "type": "object",
+            "description": "End day of the tour (1-based)"
+          },
+          "priceSupplementUsd": {
+            "type": "number",
+            "description": "Price supplement in USD",
+            "default": 0
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Is default hotel choice for this city/tier",
+            "default": true
+          },
+          "notesJsonb": {
+            "type": "object",
+            "description": "Multilingual notes for this accommodation"
+          },
+          "sortOrder": {
+            "type": "number",
+            "description": "Sort order",
+            "default": 0
+          }
+        }
+      },
       "CreateTourDto": {
         "type": "object",
         "properties": {
@@ -17649,11 +17935,8 @@
             }
           },
           "seasonPricingJsonb": {
-            "description": "Seasonal pricing and price rules JSONB",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "object",
+            "description": "Seasonal pricing and price rules JSONB (array of rules or { rules: [...] })"
           },
           "currency": {
             "type": "string",
@@ -17750,6 +18033,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CreateTourImageDto"
+            }
+          },
+          "accommodations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripAccommodationDto"
             }
           }
         },
@@ -17940,11 +18229,8 @@
             }
           },
           "seasonPricingJsonb": {
-            "description": "Seasonal pricing and price rules JSONB",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "object",
+            "description": "Seasonal pricing and price rules JSONB (array of rules or { rules: [...] })"
           },
           "currency": {
             "type": "string",
@@ -18041,6 +18327,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CreateTourImageDto"
+            }
+          },
+          "accommodations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripAccommodationDto"
             }
           },
           "expectedUpdatedAt": {
@@ -18159,6 +18451,20 @@
             "description": "Sort order for display"
           }
         }
+      },
+      "UpsertTourAccommodationsDto": {
+        "type": "object",
+        "properties": {
+          "accommodations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripAccommodationDto"
+            }
+          }
+        },
+        "required": [
+          "accommodations"
+        ]
       },
       "UpdateTailorMadeInquiryDto": {
         "type": "object",
@@ -18382,6 +18688,14 @@
             "type": "string",
             "description": "ID of departure slot"
           },
+          "accommodationId": {
+            "type": "string",
+            "description": "Optional TripAccommodation ID for hotel/tier supplement"
+          },
+          "roomId": {
+            "type": "string",
+            "description": "Optional HotelRoom ID for room-specific supplement"
+          },
           "arrivalDate": {
             "type": "string",
             "example": "2027-03-15",
@@ -18523,6 +18837,12 @@
             "default": 0
           },
           "promoCode": {
+            "type": "string"
+          },
+          "accommodationId": {
+            "type": "string"
+          },
+          "roomId": {
             "type": "string"
           },
           "language": {
@@ -22066,6 +22386,60 @@
           "checkInDate",
           "checkOutDate"
         ]
+      },
+      "CreateSeasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "WINTER_PEAK_2026"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Winter Peak Season",
+              "ar": "موسم ذروة الشتاء"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-11-01"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-03-31"
+          }
+        },
+        "required": [
+          "code",
+          "nameJsonb",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "UpdateSeasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "WINTER_PEAK_2026"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Winter Peak Season",
+              "ar": "موسم ذروة الشتاء"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-11-01"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-03-31"
+          }
+        }
       },
       "UpdateHotelBookingStatusDto": {
         "type": "object",

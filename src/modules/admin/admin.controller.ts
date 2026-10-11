@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Post,
+  Put,
   Delete,
   Query,
   Param,
@@ -42,7 +43,7 @@ import { AssignBookingDto } from './dto/assign-booking.dto';
 import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
-import { CreateTourDto } from './dto/create-tour.dto';
+import { CreateTourDto, UpsertTourAccommodationsDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { MoveTourDto } from './dto/move-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
@@ -681,5 +682,29 @@ export class AdminController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.removeTourItinerary(slug, dayId, user.id);
+  }
+
+  @Get('tours/:slug/accommodations')
+  @ApiOperation({ summary: 'Get assigned accommodations (hotels & rooms) for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiOkResponse({ description: 'List of assigned tour accommodations' })
+  async getTourAccommodations(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.getTourAccommodations(slug, user.id);
+  }
+
+  @Put('tours/:slug/accommodations')
+  @ApiOperation({ summary: 'Upsert assigned accommodations (hotels & rooms) for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ type: UpsertTourAccommodationsDto })
+  @ApiOkResponse({ description: 'Tour accommodations updated successfully' })
+  async upsertTourAccommodations(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Body() dto: UpsertTourAccommodationsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.upsertTourAccommodations(slug, dto.accommodations, user.id);
   }
 }

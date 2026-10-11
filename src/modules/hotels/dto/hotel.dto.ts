@@ -21,8 +21,100 @@ import {
 } from 'class-validator';
 
 const HOTEL_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
+const BOARD_BASIS_OPTIONS = ['RO', 'BB', 'HB', 'FB', 'AI'] as const;
+
+export class RoomSeasonPricingDto {
+  @IsString()
+  @IsNotEmpty()
+  seasonId!: string;
+
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  ratePerNight!: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  singleSupplement?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  childRate?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  extraBedRate?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z]{3}$/)
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(BOARD_BASIS_OPTIONS)
+  boardBasis?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class CreateSeasonDto {
+  @ApiProperty({ example: 'WINTER_PEAK_2026' })
+  @IsString()
+  @Matches(/^[A-Z0-9_\\-]+$/i)
+  @MaxLength(50)
+  code!: string;
+
+  @ApiProperty({ example: { en: 'Winter Peak Season', ar: 'موسم ذروة الشتاء' } })
+  @IsObject()
+  @IsNotEmpty()
+  nameJsonb!: Record<string, string>;
+
+  @ApiProperty({ example: '2026-11-01' })
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  startDate!: string;
+
+  @ApiProperty({ example: '2027-03-31' })
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  endDate!: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.5)
+  @Max(5)
+  multiplier?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
+  sortOrder?: number;
+}
+
+export class UpdateSeasonDto extends PartialType(CreateSeasonDto) {}
 
 export class HotelRoomDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  id?: string;
+
   @IsString()
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   @MaxLength(100)
@@ -34,7 +126,7 @@ export class HotelRoomDto {
 
   @IsOptional()
   @IsObject()
-  descriptionJsonb?: Record<string, string>;
+  descriptionJsonb?: Record<string, unknown>;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -80,6 +172,13 @@ export class HotelRoomDto {
   @IsOptional()
   @IsObject()
   amenitiesJsonb?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => RoomSeasonPricingDto)
+  seasonPricings?: RoomSeasonPricingDto[];
 }
 
 export class CreateHotelDto {

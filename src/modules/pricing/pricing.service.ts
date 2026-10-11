@@ -19,6 +19,8 @@ export interface CalculatedPriceResponse {
   adultTotalUsd: string;
   childTotalUsd: string;
   seasonalAdjustmentUsd: string;
+  accommodationSupplementUsd?: string;
+  seasonName?: string | null;
   subtotalUsd: string;
   discountAmountUsd: string;
   taxAmountUsd: string;
@@ -30,9 +32,14 @@ export interface CalculatedPriceResponse {
 }
 
 export interface SeasonPricingItem {
+  seasonId?: string;
+  seasonCode?: string;
+  seasonName?: string | Record<string, string>;
   startDate: string;
   endDate: string;
-  multiplier: number;
+  multiplier?: number;
+  priceUsd?: number;
+  supplementUsd?: number;
 }
 
 const PROMO_MESSAGES: Record<
@@ -55,7 +62,7 @@ const PROMO_MESSAGES: Record<
     valid: 'Código de promoción aplicado con éxito',
   },
   pt: {
-    invalid: 'Código de promoção inválido ou expirado',
+    invalid: 'Código de promoción inválido ou expirado',
     limitReached: 'Limite de uso do código de promoção atingido',
     valid: 'Código de promoção aplicado com sucesso',
   },
@@ -144,15 +151,19 @@ export class PricingService {
     const basePrice = new Prisma.Decimal(tour.basePriceUsd);
     const adultCount = dto.adults;
     const childCount = dto.children || 0;
+    const langKey = (dto.language || 'en').toLowerCase();
 
     // Blueprint P1-007 rule: Child price is 50% of adult base price
     const adultBaseTotal = basePrice.mul(adultCount);
     const childBaseTotal = basePrice.mul(0.5).mul(childCount);
     const unadjustedSubtotal = adultBaseTotal.add(childBaseTotal);
 
-    // Seasonal multiplier lookup
+    // Seasonal multiplier / price override / supplement lookup
     const seasonPricing = tour.seasonPricingJsonb as any;
     let seasonalMultiplier = new Prisma.Decimal(1);
+    let seasonalPriceOverride: Prisma.Decimal | null = null;
+    let seasonalSupplementPerAdult = new Prisma.Decimal(0);
+    let matchedSeasonName: string | null = null;
     const rulesArray: SeasonPricingItem[] | null = Array.isArray(seasonPricing)
       ? seasonPricing
       : (Array.isArray(seasonPricing?.rules)
@@ -161,16 +172,36 @@ export class PricingService {
           ? seasonPricing.seasonalMultipliers
           : null));
 
-    if (rulesArray && dto.date) {
+    if (rulesArray && rulesArray.length > 0 && dto.date) {
       const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
-      const matchingRules: Prisma.Decimal[] = [];
+      const matchingRules: Array<{
+        multiplier: Prisma.Decimal;
+        priceOverride: Prisma.Decimal | null;
+        supplement: Prisma.Decimal;
+        name: string | null;
+      }> = [];
       for (const season of rulesArray) {
-        if (!season?.startDate || !season?.endDate || season?.multiplier === undefined) continue;
+        if (!season?.startDate || !season?.endDate) continue;
+        const hasMult = season.multiplier !== undefined && season.multiplier !== null;
+        const hasPrice = season.priceUsd !== undefined && season.priceUsd !== null && Number(season.priceUsd) > 0;
+        const hasSupp = season.supplementUsd !== undefined && season.supplementUsd !== null;
+        if (!hasMult && !hasPrice && !hasSupp) continue;
+
         const start = new Date(`${season.startDate}T00:00:00.000Z`);
         const end = new Date(`${season.endDate}T00:00:00.000Z`);
-        let multiplier: Prisma.Decimal;
+        let multiplier = new Prisma.Decimal(1);
+        let priceOverride: Prisma.Decimal | null = null;
+        let supplement = new Prisma.Decimal(0);
         try {
-          multiplier = new Prisma.Decimal(season.multiplier);
+          if (hasMult) {
+            multiplier = new Prisma.Decimal(season.multiplier!);
+          }
+          if (hasPrice) {
+            priceOverride = new Prisma.Decimal(season.priceUsd!);
+          }
+          if (hasSupp) {
+            supplement = new Prisma.Decimal(season.supplementUsd!);
+          }
         } catch {
           throw new UnprocessableEntityException(
             'Tour seasonal pricing configuration is invalid',
@@ -181,15 +212,27 @@ export class PricingService {
           Number.isNaN(end.getTime()) ||
           start > end ||
           !multiplier.isFinite() ||
-          multiplier.lt(0.5) ||
-          multiplier.gt(5)
+          (hasMult && (multiplier.lt(0.5) || multiplier.gt(5))) ||
+          (priceOverride !== null && (!priceOverride.isFinite() || priceOverride.lt(0))) ||
+          !supplement.isFinite() ||
+          supplement.lt(0)
         ) {
           throw new UnprocessableEntityException(
             'Tour seasonal pricing configuration is invalid',
           );
         }
         if (start <= targetDate && end >= targetDate) {
-          matchingRules.push(multiplier);
+          const rawName = season.seasonName ?? (season as any).label ?? season.seasonCode ?? null;
+          const resolvedName =
+            rawName && typeof rawName === 'object'
+              ? (rawName[langKey] || rawName.en || rawName.ar || Object.values(rawName)[0] || null)
+              : (typeof rawName === 'string' ? rawName : null);
+          matchingRules.push({
+            multiplier,
+            priceOverride,
+            supplement,
+            name: resolvedName,
+          });
         }
       }
       if (matchingRules.length > 1) {
@@ -198,14 +241,66 @@ export class PricingService {
         );
       }
       if (matchingRules.length === 1) {
-        seasonalMultiplier = matchingRules[0];
+        seasonalMultiplier = matchingRules[0].multiplier;
+        seasonalPriceOverride = matchingRules[0].priceOverride;
+        seasonalSupplementPerAdult = matchingRules[0].supplement;
+        matchedSeasonName = matchingRules[0].name;
+      }
+    } else if (dto.date && typeof (db as any).season?.findFirst === 'function') {
+      const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
+      const dbSeason = await (db as any).season.findFirst({
+        where: {
+          isActive: true,
+          startDate: { lte: targetDate },
+          endDate: { gte: targetDate },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
+      });
+      const rawMult = dbSeason?.multiplier ?? dbSeason?.defaultMultiplier;
+      if (dbSeason && rawMult !== undefined) {
+        const candidate = new Prisma.Decimal(rawMult);
+        if (candidate.isFinite() && candidate.gte(0.5) && candidate.lte(5)) {
+          seasonalMultiplier = candidate;
+          const nameObj =
+            dbSeason.nameJsonb && typeof dbSeason.nameJsonb === 'object'
+              ? (dbSeason.nameJsonb as Record<string, string>)
+              : {};
+          matchedSeasonName =
+            nameObj[langKey] || nameObj.en || dbSeason.code || dbSeason.slug || null;
+        }
       }
     }
 
-    const adultTotal = adultBaseTotal.mul(seasonalMultiplier);
-    const childTotal = childBaseTotal.mul(seasonalMultiplier);
-    const adjustedSubtotal = adultTotal.add(childTotal);
+    const effectiveAdultUnit = (seasonalPriceOverride ?? basePrice)
+      .mul(seasonalMultiplier)
+      .add(seasonalSupplementPerAdult);
+    const adultTotal = effectiveAdultUnit.mul(adultCount);
+    const childTotal = effectiveAdultUnit.mul(0.5).mul(childCount);
+    let adjustedSubtotal = adultTotal.add(childTotal);
     const seasonalAdjustment = adjustedSubtotal.sub(unadjustedSubtotal);
+
+    // Optional TripAccommodation / Room supplement lookup
+    let accommodationSupplement = new Prisma.Decimal(0);
+    if (
+      (dto.accommodationId || dto.roomId) &&
+      typeof (db as any).tripAccommodation?.findFirst === 'function'
+    ) {
+      const accRecord = await (db as any).tripAccommodation.findFirst({
+        where: {
+          tourId: tour.id,
+          ...(dto.accommodationId ? { id: dto.accommodationId } : { roomId: dto.roomId }),
+        },
+      });
+      if (accRecord && accRecord.priceSupplementUsd) {
+        const suppPerAdult = new Prisma.Decimal(accRecord.priceSupplementUsd);
+        if (suppPerAdult.gt(0)) {
+          accommodationSupplement = suppPerAdult
+            .mul(adultCount)
+            .add(suppPerAdult.mul(0.5).mul(childCount));
+          adjustedSubtotal = adjustedSubtotal.add(accommodationSupplement);
+        }
+      }
+    }
 
     const lang = (dto.language || 'en').toLowerCase();
     const messages = PROMO_MESSAGES[lang] || PROMO_MESSAGES.en;
@@ -272,6 +367,10 @@ export class PricingService {
       adultTotalUsd: adultTotal.toFixed(2),
       childTotalUsd: childTotal.toFixed(2),
       seasonalAdjustmentUsd: seasonalAdjustment.toFixed(2),
+      ...(accommodationSupplement.gt(0)
+        ? { accommodationSupplementUsd: accommodationSupplement.toFixed(2) }
+        : {}),
+      ...(matchedSeasonName ? { seasonName: matchedSeasonName } : {}),
       subtotalUsd: finalTotal.toFixed(2),
       discountAmountUsd: discountAmount.toFixed(2),
       taxAmountUsd: '0.00',

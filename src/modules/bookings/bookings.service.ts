@@ -488,6 +488,8 @@ export class BookingsService {
                 infants: dto.infants ?? 0,
                 promoCode: dto.promoCode,
                 language: dto.language,
+                accommodationId: dto.accommodationId,
+                roomId: dto.roomId,
               },
               tx,
             );

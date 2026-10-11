@@ -33,6 +33,13 @@ export class HotelsController {
     return this.hotelsService.getBookingByReferencePublic(referenceCode);
   }
 
+  @Get('seasons')
+  @ApiOperation({ summary: 'List active pricing seasons' })
+  @ApiQuery({ name: 'locale', required: false, type: String })
+  async findAllSeasons(@Query('locale') locale?: string) {
+    return this.hotelsService.findAllSeasonsPublic(locale ?? 'en');
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Get a published, active hotel by slug' })
   async findOne(@Param('slug') slug: string, @Query() query: PublicHotelsQueryDto) {
