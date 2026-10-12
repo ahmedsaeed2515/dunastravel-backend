@@ -771,10 +771,28 @@ export class TourLandingPagesService {
                   tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
                 },
                 orderBy: { sortOrder: 'asc' },
-                include: {
+                select: {
+                  sortOrder: true,
+                  isFeatured: true,
+                  customBadge: true,
                   tour: {
-                    include: {
-                      images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
+                    select: {
+                      id: true,
+                      slug: true,
+                      titleJsonb: true,
+                      overviewJsonb: true,
+                      durationJsonb: true,
+                      basePriceUsd: true,
+                      currency: true,
+                      country: true,
+                      city: true,
+                      category: true,
+                      isFeatured: true,
+                      images: {
+                        take: 3,
+                        orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
+                        select: { imageUrl: true, isHero: true },
+                      },
                     },
                   },
                 },
@@ -848,10 +866,28 @@ export class TourLandingPagesService {
                 tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
               },
               orderBy: { sortOrder: 'asc' },
-              include: {
+              select: {
+                sortOrder: true,
+                isFeatured: true,
+                customBadge: true,
                 tour: {
-                  include: {
-                    images: { orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }] },
+                  select: {
+                    id: true,
+                    slug: true,
+                    titleJsonb: true,
+                    overviewJsonb: true,
+                    durationJsonb: true,
+                    basePriceUsd: true,
+                    currency: true,
+                    country: true,
+                    city: true,
+                    category: true,
+                    isFeatured: true,
+                    images: {
+                      take: 4,
+                      orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
+                      select: { imageUrl: true, isHero: true },
+                    },
                   },
                 },
               },

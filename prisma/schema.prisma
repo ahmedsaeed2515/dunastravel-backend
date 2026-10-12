@@ -297,6 +297,7 @@ model TourItinerary {
 
   @@index([tourId])
   @@index([sortOrder])
+  @@index([tourId, sortOrder])
   @@map("tour_itineraries")
 }
 
@@ -314,6 +315,7 @@ model TourImage {
 
   @@index([tourId])
   @@index([isHero])
+  @@index([tourId, isHero, sortOrder])
   @@map("tour_images")
 }
 
@@ -1013,6 +1015,8 @@ model TourLandingPage {
   @@index([type])
   @@index([isActive])
   @@index([deletedAt])
+  @@index([type, status, isActive, deletedAt, sortOrder])
+  @@index([slug, status, isActive, deletedAt])
   @@map("tour_landing_pages")
 }
 
@@ -1033,6 +1037,7 @@ model TourLandingPageTour {
   @@index([landingPageId])
   @@index([tourId])
   @@index([sortOrder])
+  @@index([landingPageId, isVisible, sortOrder])
   @@map("tour_landing_page_tours")
 }
 

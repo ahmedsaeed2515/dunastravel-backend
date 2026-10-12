@@ -261,7 +261,7 @@ export class ToursService {
               isFeatured: true,
               displayOrder: true,
               images: {
-                take: 10,
+                take: 4,
                 orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
                 select: { imageUrl: true, isHero: true, sortOrder: true },
               },

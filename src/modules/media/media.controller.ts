@@ -15,6 +15,7 @@ import {
   BadRequestException,
   HttpCode,
   HttpStatus,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -456,6 +457,7 @@ export class MediaPublicController {
 
   @Get('showcase')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get active public homepage media showcase (photos and videos)' })
   @ApiOkResponse({ type: HomepageMediaShowcaseResponseDto })
   async getPublicShowcase(): Promise<HomepageMediaShowcaseResponseDto> {
@@ -464,6 +466,7 @@ export class MediaPublicController {
 
   @Get('showcase/photos')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get active public homepage photo showcase slides' })
   @ApiOkResponse({ type: [ShowcasePhotoItemDto] })
   async getShowcasePhotos(): Promise<ShowcasePhotoItemDto[]> {
@@ -473,6 +476,7 @@ export class MediaPublicController {
 
   @Get('showcase/videos')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get active public homepage video showcase slides' })
   @ApiOkResponse({ type: [ShowcaseVideoItemDto] })
   async getShowcaseVideos(): Promise<ShowcaseVideoItemDto[]> {
@@ -482,6 +486,7 @@ export class MediaPublicController {
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get active public gallery assets with optional category filtering' })
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -499,6 +504,7 @@ export class MediaPublicController {
 
   @Get('category/:categorySlug')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get active public media assets for a category' })
   @ApiParam({ name: 'categorySlug', type: 'string' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -515,6 +521,7 @@ export class MediaPublicController {
   }
 
   @Get('tours/:tourId')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get all active media assets for a tour' })
   @ApiParam({ name: 'tourId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
@@ -527,6 +534,7 @@ export class MediaPublicController {
   }
 
   @Get('hotels/:hotelId')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=600')
   @ApiOperation({ summary: 'Get all active media assets for a hotel' })
   @ApiParam({ name: 'hotelId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
