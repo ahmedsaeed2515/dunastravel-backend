@@ -371,6 +371,21 @@ export class ToursService {
                 },
               },
             },
+            tripHotel: {
+              where: { deletedAt: null },
+              include: {
+                rooms: {
+                  where: { deletedAt: null },
+                  include: {
+                    seasonPricings: {
+                      where: { isActive: true },
+                      include: { season: true },
+                    },
+                  },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
+            },
           },
         });
 
@@ -430,6 +445,21 @@ export class ToursService {
                           include: { season: true },
                         },
                       },
+                    },
+                  },
+                },
+                tripHotel: {
+                  where: { deletedAt: null },
+                  include: {
+                    rooms: {
+                      where: { deletedAt: null },
+                      include: {
+                        seasonPricings: {
+                          where: { isActive: true },
+                          include: { season: true },
+                        },
+                      },
+                      orderBy: { sortOrder: 'asc' },
                     },
                   },
                 },
@@ -500,6 +530,20 @@ export class ToursService {
                   include: { season: true },
                 },
               },
+            },
+          },
+        },
+        tripHotel: {
+          where: { deletedAt: null },
+          include: {
+            rooms: {
+              where: { deletedAt: null },
+              include: {
+                seasonPricings: {
+                  include: { season: true },
+                },
+              },
+              orderBy: { sortOrder: 'asc' },
             },
           },
         },
@@ -686,6 +730,136 @@ export class ToursService {
       };
     });
 
+    const tripHotelRaw = (tour as any).tripHotel;
+    let tripHotelResponse: Record<string, any> | null = null;
+    if (
+      tripHotelRaw &&
+      !tripHotelRaw.deletedAt &&
+      (includeUnpublishedAccommodations || (tripHotelRaw.isActive !== false && tripHotelRaw.status === 'PUBLISHED'))
+    ) {
+      const amenities =
+        tripHotelRaw.amenitiesJsonb && typeof tripHotelRaw.amenitiesJsonb === 'object'
+          ? (tripHotelRaw.amenitiesJsonb as Record<string, any>)
+          : {};
+      const rawImages = Array.isArray(amenities.images) ? amenities.images : [];
+      const resolvedHero =
+        amenities.heroImageUrl || rawImages[0]?.imageUrl || rawImages[0]?.url || null;
+
+      tripHotelResponse = {
+        id: tripHotelRaw.id,
+        slug: tripHotelRaw.slug,
+        isGlobal: false,
+        name: extractI18n(tripHotelRaw.nameJsonb, lang),
+        nameJsonb: tripHotelRaw.nameJsonb,
+        description: tripHotelRaw.descriptionJsonb ? extractI18n(tripHotelRaw.descriptionJsonb, lang) : null,
+        descriptionJsonb: tripHotelRaw.descriptionJsonb,
+        city: tripHotelRaw.city,
+        destinationSlug: tripHotelRaw.destinationSlug,
+        stars: Number(tripHotelRaw.stars ?? 5),
+        starRating: Number(tripHotelRaw.stars ?? 5),
+        rating: tripHotelRaw.rating ? Number(tripHotelRaw.rating) : null,
+        currency: tripHotelRaw.currency || 'USD',
+        heroImageUrl: resolvedHero,
+        images: rawImages.map((img: any, idx: number) => ({
+          id: img.id ?? `img-${idx}`,
+          imageUrl: img.imageUrl ?? img.url ?? '',
+          altText: img.altText ? extractI18n(img.altText, lang) : null,
+          isHero: Boolean(img.isHero ?? idx === 0),
+        })),
+        amenities,
+        policies: tripHotelRaw.policiesJsonb,
+        rooms: (tripHotelRaw.rooms || [])
+          .filter((r: any) => !r.deletedAt && (includeUnpublishedAccommodations || r.isActive !== false))
+          .map((r: any) => {
+            const rDesc =
+              r.descriptionJsonb && typeof r.descriptionJsonb === 'object'
+                ? (r.descriptionJsonb as Record<string, any>)
+                : {};
+            const rRate = Number(r.ratePerNight ?? 0);
+            return {
+              id: r.id,
+              slug: r.slug,
+              name: extractI18n(r.nameJsonb, lang),
+              nameJsonb: r.nameJsonb,
+              ratePerNight: rRate,
+              ratePerNightUsd: rRate,
+              basePriceUsd: new Prisma.Decimal(rRate).toFixed(2),
+              maxOccupancy: r.maxOccupancy ?? 2,
+              capacity: r.maxOccupancy ?? 2,
+              roomType: rDesc.bedType ? extractI18n(rDesc.bedType, lang) : null,
+              seasonPricings: (r.seasonPricings || []).map((sp: any) => ({
+                id: sp.id,
+                seasonId: sp.seasonId,
+                ratePerNight: Number(sp.ratePerNight ?? 0),
+                ratePerNightUsd: Number(sp.ratePerNight ?? 0),
+                singleSupplementUsd:
+                  sp.singleSupplement !== null && sp.singleSupplement !== undefined
+                    ? new Prisma.Decimal(sp.singleSupplement).toFixed(2)
+                    : '0.00',
+                boardBasis: sp.boardBasis ?? 'BB',
+                startDate: sp.season?.startDate
+                  ? new Date(sp.season.startDate).toISOString().slice(0, 10)
+                  : null,
+                endDate: sp.season?.endDate
+                  ? new Date(sp.season.endDate).toISOString().slice(0, 10)
+                  : null,
+                seasonName: sp.season?.nameJsonb ? extractI18n(sp.season.nameJsonb, lang) : null,
+              })),
+            };
+          }),
+      };
+    }
+
+    const effectiveAccommodations = [...accommodations];
+    if (effectiveAccommodations.length === 0 && tripHotelResponse) {
+      const primaryRoom = tripHotelResponse.rooms?.[0];
+      effectiveAccommodations.push({
+        id: `acc-trip-${tripHotelResponse.id}`,
+        hotelId: tripHotelResponse.id,
+        roomId: primaryRoom ? primaryRoom.id : null,
+        city: tripHotelResponse.city,
+        destination: tripHotelResponse.city,
+        categoryTier: tripHotelResponse.stars >= 5 ? '5_STAR' : '4_STAR',
+        boardBasis: 'BB',
+        regime: 'BB',
+        nights: 1,
+        dayFrom: 1,
+        dayTo: null,
+        dayRange: null,
+        priceSupplementUsd: '0.00',
+        priceSupplement: 0,
+        isDefault: true,
+        notes: null,
+        sortOrder: 0,
+        hotel: {
+          id: tripHotelResponse.id,
+          slug: tripHotelResponse.slug,
+          isGlobal: false,
+          name: tripHotelResponse.name,
+          city: tripHotelResponse.city,
+          country: tour.country ?? 'Egypt',
+          starRating: tripHotelResponse.stars,
+          stars: tripHotelResponse.stars,
+          heroImageUrl: tripHotelResponse.heroImageUrl,
+          images: tripHotelResponse.images,
+        },
+        room: primaryRoom
+          ? {
+              id: primaryRoom.id,
+              slug: primaryRoom.slug,
+              name: primaryRoom.name,
+              roomType: primaryRoom.roomType,
+              capacity: primaryRoom.capacity,
+              basePriceUsd: primaryRoom.basePriceUsd,
+              ratePerNight: primaryRoom.ratePerNight,
+              currency: 'USD',
+              heroImageUrl: null,
+              seasonPricings: primaryRoom.seasonPricings,
+            }
+          : null,
+      });
+    }
+
     const heroImgObj = tour.images.find((img) => img.isHero) || tour.images[0];
     const heroImage = heroImgObj?.imageUrl || null;
     const heroVideoObj = tour.images.find((img) => img.isVideo && img.videoUrl);
@@ -695,9 +869,9 @@ export class ToursService {
       ? extractStructuredI18n(tour.hotelInfoJsonb, lang)
       : null;
 
-    if (accommodations.length > 0) {
+    if (effectiveAccommodations.length > 0) {
       const cityHotels: Record<string, string[]> = {};
-      for (const acc of accommodations) {
+      for (const acc of effectiveAccommodations) {
         const cityKey = acc.city || acc.hotel?.city || 'Destination';
         const hotelName = acc.hotel?.name;
         if (hotelName) {
@@ -710,7 +884,7 @@ export class ToursService {
       if (!hotelInfo || typeof hotelInfo !== 'object' || Array.isArray(hotelInfo)) {
         hotelInfo = {
           hotels: cityHotels,
-          accommodations,
+          accommodations: effectiveAccommodations,
         };
       } else {
         const record = hotelInfo as Record<string, unknown>;
@@ -722,7 +896,7 @@ export class ToursService {
             Object.keys(record.hotels as object).length > 0
               ? record.hotels
               : cityHotels,
-          accommodations,
+          accommodations: effectiveAccommodations,
         };
       }
     }
@@ -785,7 +959,8 @@ export class ToursService {
 
       itinerary,
       images,
-      accommodations,
+      accommodations: effectiveAccommodations,
+      tripHotel: tripHotelResponse,
     };
   }
 

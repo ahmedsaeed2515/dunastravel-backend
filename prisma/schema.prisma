@@ -261,6 +261,7 @@ model Tour {
   availabilities          TourAvailability[]
   journeyRoutes           JourneyRoute[]
   accommodations          TripAccommodation[]
+  tripHotel               Hotel?                @relation("TourTripHotel")
 
   @@index([isActive])
   @@index([category])
@@ -1058,13 +1059,18 @@ model Hotel {
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
   deletedAt        DateTime?   @map("deleted_at")
+  tourId             String?             @unique @map("tour_id")
+  isGlobal           Boolean             @default(true) @map("is_global")
   rooms              HotelRoom[]
   bookings           HotelBooking[]
   tripAccommodations TripAccommodation[]
+  tour               Tour?               @relation("TourTripHotel", fields: [tourId], references: [id], onDelete: Cascade)
 
   @@index([destinationSlug, status, isActive, deletedAt])
   @@index([city])
   @@index([deletedAt])
+  @@index([isGlobal])
+  @@index([tourId])
   @@map("hotels")
 }
 

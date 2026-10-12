@@ -280,6 +280,14 @@ export class CreateHotelDto {
   sortOrder?: number;
 
   @IsOptional()
+  @IsBoolean()
+  isGlobal?: boolean;
+
+  @IsOptional()
+  @IsString()
+  tourId?: string;
+
+  @IsOptional()
   @IsArray()
   @ArrayMaxSize(100)
   @ValidateNested({ each: true })

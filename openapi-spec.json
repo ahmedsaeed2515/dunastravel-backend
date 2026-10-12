@@ -2691,6 +2691,753 @@
         ]
       }
     },
+    "/api/admin/tours/{slug}/hotel": {
+      "get": {
+        "operationId": "AdminController_getTourTripHotel",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get dedicated trip-specific hotel for a tour.",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "put": {
+        "operationId": "AdminController_upsertTourTripHotel",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upsert dedicated trip-specific hotel for a tour.",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminController_deleteTourTripHotel",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden: Requires ADMIN role"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete dedicated trip-specific hotel for a tour.",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/hotels": {
+      "get": {
+        "operationId": "HotelsController_findAll",
+        "parameters": [
+          {
+            "name": "destinationSlug",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List published, active hotels",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/bookings": {
+      "post": {
+        "operationId": "HotelsController_createBooking",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a standalone hotel or room booking",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/bookings/{referenceCode}": {
+      "get": {
+        "operationId": "HotelsController_getBookingByReference",
+        "parameters": [
+          {
+            "name": "referenceCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get hotel booking confirmation by reference code",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/seasons": {
+      "get": {
+        "operationId": "HotelsController_findAllSeasons",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List active pricing seasons",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/hotels/{slug}": {
+      "get": {
+        "operationId": "HotelsController_findOne",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a published, active hotel by slug",
+        "tags": [
+          "hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels": {
+      "get": {
+        "operationId": "AdminHotelsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List hotels for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "post": {
+        "operationId": "AdminHotelsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/seasons": {
+      "get": {
+        "operationId": "AdminHotelsController_findAllSeasons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all pricing seasons for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "post": {
+        "operationId": "AdminHotelsController_createSeason",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSeasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a pricing season",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/seasons/{seasonId}": {
+      "put": {
+        "operationId": "AdminHotelsController_updateSeason",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSeasonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a pricing season",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminHotelsController_deleteSeason",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a pricing season",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/bookings": {
+      "get": {
+        "operationId": "AdminHotelsController_findAllBookings",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Page limit",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status (PENDING, CONFIRMED, CANCELLED, COMPLETED)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hotelId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hotel ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term by reference code, guest name, email or phone",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List standalone hotel bookings for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/bookings/{id}/status": {
+      "patch": {
+        "operationId": "AdminHotelsController_updateBookingStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHotelBookingStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update standalone hotel booking status",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}": {
+      "get": {
+        "operationId": "AdminHotelsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get hotel for administration",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "put": {
+        "operationId": "AdminHotelsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHotelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update hotel",
+        "tags": [
+          "admin-hotels"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminHotelsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete hotel and disable its rooms",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/publish": {
+      "post": {
+        "operationId": "AdminHotelsController_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a hotel with at least one active room",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/unpublish": {
+      "post": {
+        "operationId": "AdminHotelsController_unpublish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return a hotel to draft and hide it from the public catalog",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/archive": {
+      "post": {
+        "operationId": "AdminHotelsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a hotel without deleting its rooms",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/unarchive": {
+      "post": {
+        "operationId": "AdminHotelsController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore an archived hotel to draft",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
+    "/api/admin/hotels/{id}/restore": {
+      "post": {
+        "operationId": "AdminHotelsController_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a soft-deleted hotel as a draft",
+        "tags": [
+          "admin-hotels"
+        ]
+      }
+    },
     "/api/admin/tailor-made-inquiries": {
       "get": {
         "operationId": "AdminTailorMadeController_findAll[0]",
@@ -9166,7 +9913,7 @@
     },
     "/api/admin/media/showcase/reorder": {
       "post": {
-        "operationId": "MediaAdminController_reorderShowcase",
+        "operationId": "MediaAdminController_reorderShowcasePost",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9183,7 +9930,30 @@
             "description": ""
           }
         },
-        "summary": "Reorder showcase items transactionally",
+        "summary": "Reorder showcase items transactionally (POST)",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "patch": {
+        "operationId": "MediaAdminController_reorderShowcasePatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderShowcaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Reorder showcase items transactionally (PATCH)",
         "tags": [
           "Admin — Media"
         ]
@@ -12130,6 +12900,112 @@
           }
         ],
         "summary": "Test multi-lingual hybrid RAG retrieval against live catalog and knowledge chunks",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/response-rules": {
+      "get": {
+        "operationId": "AdminKnowledgeController_getResponseRules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all active & inactive GuideR Response Directives (Q&A Rules)",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      },
+      "post": {
+        "operationId": "AdminKnowledgeController_createResponseRule",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResponseRuleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new GuideR Direct Response Rule (Q&A Directive)",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/response-rules/{ruleId}/toggle": {
+      "patch": {
+        "operationId": "AdminKnowledgeController_toggleResponseRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Toggle response rule active/inactive state",
+        "tags": [
+          "Admin - Guider Knowledge Center V5"
+        ]
+      }
+    },
+    "/api/admin/ai/knowledge/response-rules/{ruleId}": {
+      "delete": {
+        "operationId": "AdminKnowledgeController_deleteResponseRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a direct response rule across all languages",
         "tags": [
           "Admin - Guider Knowledge Center V5"
         ]
@@ -16650,642 +17526,6 @@
           "Admin — Journey Maps"
         ]
       }
-    },
-    "/api/hotels": {
-      "get": {
-        "operationId": "HotelsController_findAll",
-        "parameters": [
-          {
-            "name": "destinationSlug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "locale",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List published, active hotels",
-        "tags": [
-          "hotels"
-        ]
-      }
-    },
-    "/api/hotels/bookings": {
-      "post": {
-        "operationId": "HotelsController_createBooking",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateHotelBookingDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a standalone hotel or room booking",
-        "tags": [
-          "hotels"
-        ]
-      }
-    },
-    "/api/hotels/bookings/{referenceCode}": {
-      "get": {
-        "operationId": "HotelsController_getBookingByReference",
-        "parameters": [
-          {
-            "name": "referenceCode",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Get hotel booking confirmation by reference code",
-        "tags": [
-          "hotels"
-        ]
-      }
-    },
-    "/api/hotels/seasons": {
-      "get": {
-        "operationId": "HotelsController_findAllSeasons",
-        "parameters": [
-          {
-            "name": "locale",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List active pricing seasons",
-        "tags": [
-          "hotels"
-        ]
-      }
-    },
-    "/api/hotels/{slug}": {
-      "get": {
-        "operationId": "HotelsController_findOne",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Get a published, active hotel by slug",
-        "tags": [
-          "hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels": {
-      "get": {
-        "operationId": "AdminHotelsController_findAll",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List hotels for administration",
-        "tags": [
-          "admin-hotels"
-        ]
-      },
-      "post": {
-        "operationId": "AdminHotelsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateHotelDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create hotel",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/seasons": {
-      "get": {
-        "operationId": "AdminHotelsController_findAllSeasons",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List all pricing seasons for administration",
-        "tags": [
-          "admin-hotels"
-        ]
-      },
-      "post": {
-        "operationId": "AdminHotelsController_createSeason",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSeasonDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create a pricing season",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/seasons/{seasonId}": {
-      "put": {
-        "operationId": "AdminHotelsController_updateSeason",
-        "parameters": [
-          {
-            "name": "seasonId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSeasonDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update a pricing season",
-        "tags": [
-          "admin-hotels"
-        ]
-      },
-      "delete": {
-        "operationId": "AdminHotelsController_deleteSeason",
-        "parameters": [
-          {
-            "name": "seasonId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Delete a pricing season",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/bookings": {
-      "get": {
-        "operationId": "AdminHotelsController_findAllBookings",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number",
-            "schema": {
-              "default": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Page limit",
-            "schema": {
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by status (PENDING, CONFIRMED, CANCELLED, COMPLETED)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "hotelId",
-            "required": false,
-            "in": "query",
-            "description": "Filter by hotel ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Search term by reference code, guest name, email or phone",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List standalone hotel bookings for administration",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/bookings/{id}/status": {
-      "patch": {
-        "operationId": "AdminHotelsController_updateBookingStatus",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateHotelBookingStatusDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update standalone hotel booking status",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}": {
-      "get": {
-        "operationId": "AdminHotelsController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get hotel for administration",
-        "tags": [
-          "admin-hotels"
-        ]
-      },
-      "put": {
-        "operationId": "AdminHotelsController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateHotelDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update hotel",
-        "tags": [
-          "admin-hotels"
-        ]
-      },
-      "delete": {
-        "operationId": "AdminHotelsController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Soft-delete hotel and disable its rooms",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}/publish": {
-      "post": {
-        "operationId": "AdminHotelsController_publish",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Publish a hotel with at least one active room",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}/unpublish": {
-      "post": {
-        "operationId": "AdminHotelsController_unpublish",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Return a hotel to draft and hide it from the public catalog",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}/archive": {
-      "post": {
-        "operationId": "AdminHotelsController_archive",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Archive a hotel without deleting its rooms",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}/unarchive": {
-      "post": {
-        "operationId": "AdminHotelsController_unarchive",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Restore an archived hotel to draft",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
-    },
-    "/api/admin/hotels/{id}/restore": {
-      "post": {
-        "operationId": "AdminHotelsController_restore",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Restore a soft-deleted hotel as a draft",
-        "tags": [
-          "admin-hotels"
-        ]
-      }
     }
   },
   "info": {
@@ -17975,6 +18215,10 @@
             "type": "object",
             "description": "Multilingual source program code"
           },
+          "routeMapJsonb": {
+            "type": "object",
+            "description": "Interactive Journey Route Map JSONB"
+          },
           "market": {
             "type": "string",
             "description": "Source market label"
@@ -18269,6 +18513,10 @@
             "type": "object",
             "description": "Multilingual source program code"
           },
+          "routeMapJsonb": {
+            "type": "object",
+            "description": "Interactive Journey Route Map JSONB"
+          },
           "market": {
             "type": "string",
             "description": "Source market label"
@@ -18465,6 +18713,172 @@
         "required": [
           "accommodations"
         ]
+      },
+      "CreateHotelDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "nile-palace-luxor"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Nile Palace Luxor"
+            }
+          }
+        },
+        "required": [
+          "slug",
+          "nameJsonb"
+        ]
+      },
+      "CreateHotelBookingDto": {
+        "type": "object",
+        "properties": {
+          "hotelSlug": {
+            "type": "string",
+            "description": "Hotel slug to book"
+          },
+          "hotelId": {
+            "type": "string",
+            "description": "Hotel ID"
+          },
+          "roomSlug": {
+            "type": "string",
+            "description": "Room slug to book"
+          },
+          "roomId": {
+            "type": "string",
+            "description": "Room ID"
+          },
+          "guestName": {
+            "type": "string",
+            "description": "Full name of guest"
+          },
+          "guestEmail": {
+            "type": "string",
+            "description": "Email address of guest"
+          },
+          "guestPhone": {
+            "type": "string",
+            "description": "Contact phone number with country code"
+          },
+          "checkInDate": {
+            "type": "string",
+            "description": "Check-in date (YYYY-MM-DD)"
+          },
+          "checkOutDate": {
+            "type": "string",
+            "description": "Check-out date (YYYY-MM-DD)"
+          },
+          "guestsCount": {
+            "type": "number",
+            "description": "Number of guests",
+            "default": 1
+          },
+          "roomsCount": {
+            "type": "number",
+            "description": "Number of rooms",
+            "default": 1
+          },
+          "specialRequests": {
+            "type": "string",
+            "description": "Special requests or preferences"
+          }
+        },
+        "required": [
+          "guestName",
+          "guestEmail",
+          "guestPhone",
+          "checkInDate",
+          "checkOutDate"
+        ]
+      },
+      "CreateSeasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "WINTER_PEAK_2026"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Winter Peak Season",
+              "ar": "موسم ذروة الشتاء"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-11-01"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-03-31"
+          }
+        },
+        "required": [
+          "code",
+          "nameJsonb",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "UpdateSeasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "WINTER_PEAK_2026"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Winter Peak Season",
+              "ar": "موسم ذروة الشتاء"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-11-01"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-03-31"
+          }
+        }
+      },
+      "UpdateHotelBookingStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Target booking status"
+          },
+          "adminNotes": {
+            "type": "string",
+            "description": "Admin operational notes"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "UpdateHotelDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "nile-palace-luxor"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Nile Palace Luxor"
+            }
+          }
+        }
       },
       "UpdateTailorMadeInquiryDto": {
         "type": "object",
@@ -21634,6 +22048,39 @@
           }
         }
       },
+      "CreateResponseRuleDto": {
+        "type": "object",
+        "properties": {
+          "triggerQuestion": {
+            "type": "string",
+            "example": "ما هي مواعيد العمل الرسمية؟"
+          },
+          "prescribedAnswer": {
+            "type": "string",
+            "example": "مواعيد العمل اليومية من الساعة 9 صباحاً حتى 6 مساءً بتوقيت القاهرة."
+          },
+          "category": {
+            "type": "string",
+            "example": "FAQ"
+          },
+          "sourceLocale": {
+            "type": "string",
+            "example": "ar"
+          },
+          "autoTranslate": {
+            "type": "boolean",
+            "default": true
+          },
+          "priority": {
+            "type": "number",
+            "example": 40
+          }
+        },
+        "required": [
+          "triggerQuestion",
+          "prescribedAnswer"
+        ]
+      },
       "CreateAgentDto": {
         "type": "object",
         "properties": {
@@ -22322,172 +22769,6 @@
           "tourId": {
             "type": "string",
             "description": "Associated Tour UUID"
-          }
-        }
-      },
-      "CreateHotelBookingDto": {
-        "type": "object",
-        "properties": {
-          "hotelSlug": {
-            "type": "string",
-            "description": "Hotel slug to book"
-          },
-          "hotelId": {
-            "type": "string",
-            "description": "Hotel ID"
-          },
-          "roomSlug": {
-            "type": "string",
-            "description": "Room slug to book"
-          },
-          "roomId": {
-            "type": "string",
-            "description": "Room ID"
-          },
-          "guestName": {
-            "type": "string",
-            "description": "Full name of guest"
-          },
-          "guestEmail": {
-            "type": "string",
-            "description": "Email address of guest"
-          },
-          "guestPhone": {
-            "type": "string",
-            "description": "Contact phone number with country code"
-          },
-          "checkInDate": {
-            "type": "string",
-            "description": "Check-in date (YYYY-MM-DD)"
-          },
-          "checkOutDate": {
-            "type": "string",
-            "description": "Check-out date (YYYY-MM-DD)"
-          },
-          "guestsCount": {
-            "type": "number",
-            "description": "Number of guests",
-            "default": 1
-          },
-          "roomsCount": {
-            "type": "number",
-            "description": "Number of rooms",
-            "default": 1
-          },
-          "specialRequests": {
-            "type": "string",
-            "description": "Special requests or preferences"
-          }
-        },
-        "required": [
-          "guestName",
-          "guestEmail",
-          "guestPhone",
-          "checkInDate",
-          "checkOutDate"
-        ]
-      },
-      "CreateSeasonDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "example": "WINTER_PEAK_2026"
-          },
-          "nameJsonb": {
-            "type": "object",
-            "example": {
-              "en": "Winter Peak Season",
-              "ar": "موسم ذروة الشتاء"
-            }
-          },
-          "startDate": {
-            "type": "string",
-            "example": "2026-11-01"
-          },
-          "endDate": {
-            "type": "string",
-            "example": "2027-03-31"
-          }
-        },
-        "required": [
-          "code",
-          "nameJsonb",
-          "startDate",
-          "endDate"
-        ]
-      },
-      "UpdateSeasonDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "example": "WINTER_PEAK_2026"
-          },
-          "nameJsonb": {
-            "type": "object",
-            "example": {
-              "en": "Winter Peak Season",
-              "ar": "موسم ذروة الشتاء"
-            }
-          },
-          "startDate": {
-            "type": "string",
-            "example": "2026-11-01"
-          },
-          "endDate": {
-            "type": "string",
-            "example": "2027-03-31"
-          }
-        }
-      },
-      "UpdateHotelBookingStatusDto": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "description": "Target booking status"
-          },
-          "adminNotes": {
-            "type": "string",
-            "description": "Admin operational notes"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "CreateHotelDto": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "nile-palace-luxor"
-          },
-          "nameJsonb": {
-            "type": "object",
-            "example": {
-              "en": "Nile Palace Luxor"
-            }
-          }
-        },
-        "required": [
-          "slug",
-          "nameJsonb"
-        ]
-      },
-      "UpdateHotelDto": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "nile-palace-luxor"
-          },
-          "nameJsonb": {
-            "type": "object",
-            "example": {
-              "en": "Nile Palace Luxor"
-            }
           }
         }
       }

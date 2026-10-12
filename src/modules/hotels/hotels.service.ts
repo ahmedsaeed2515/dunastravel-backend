@@ -218,6 +218,12 @@ export class HotelsService {
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.isGlobal !== undefined) {
+      data.isGlobal = dto.isGlobal;
+    } else if (!existingAmenities) {
+      data.isGlobal = true;
+    }
+    if (dto.tourId !== undefined) data.tourId = dto.tourId || null;
     return data as Prisma.HotelUncheckedCreateInput;
   }
 
@@ -389,6 +395,7 @@ export class HotelsService {
   async findAllPublic(locale = 'en', destinationSlug?: string, limit = 24) {
     const hotels = await this.prisma.hotel.findMany({
       where: {
+        isGlobal: true,
         deletedAt: null,
         status: 'PUBLISHED',
         isActive: true,
@@ -417,6 +424,7 @@ export class HotelsService {
     if (!trimmed) throw new NotFoundException(`Hotel not found`);
     const hotel = await this.prisma.hotel.findFirst({
       where: {
+        isGlobal: true,
         OR: [{ slug: trimmed }, { id: trimmed }],
         deletedAt: null,
         status: 'PUBLISHED',
@@ -442,6 +450,7 @@ export class HotelsService {
   async findAllAdmin(pageVal = 1, limitVal = 20, search?: string, status?: string, destinationSlug?: string) {
     const { page, limit, skip } = getPaginationParams(pageVal, limitVal);
     const where: Prisma.HotelWhereInput = {
+      isGlobal: true,
       deletedAt: null,
       ...(status ? { status } : {}),
       ...(destinationSlug ? { destinationSlug } : {}),
@@ -834,6 +843,126 @@ export class HotelsService {
       where: { id },
       data: { deletedAt: null, status: 'PUBLISHED', isActive: true },
     });
+  }
+
+  // ----------------------------------------------------
+  // Trip-Specific Hotel Dedicated API
+  // ----------------------------------------------------
+  async getTripHotel(tourSlugOrId: string) {
+    const trimmed = tourSlugOrId?.trim();
+    if (!trimmed) throw new NotFoundException('Tour slug or ID is required');
+
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        OR: [{ slug: trimmed }, { id: trimmed }],
+        deletedAt: null,
+      },
+      select: { id: true, slug: true },
+    });
+    if (!tour) throw new NotFoundException(`Tour '${trimmed}' not found`);
+
+    const hotel = await this.prisma.hotel.findFirst({
+      where: { tourId: tour.id, deletedAt: null },
+      include: {
+        rooms: {
+          where: { deletedAt: null },
+          include: {
+            seasonPricings: {
+              include: { season: true },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+    if (!hotel) return null;
+
+    const { mediaMap, galleryByHotelId } = await this.heroUrls([hotel]);
+    const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+    const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
+    const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
+    const resolvedHeroUrl =
+      hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+
+    return {
+      ...hotel,
+      rating: hotel.rating === null ? null : Number(hotel.rating),
+      heroImageUrl: resolvedHeroUrl,
+      heroImageAlt: hero?.altText ?? null,
+      images: hotelGallery,
+      rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
+    };
+  }
+
+  async upsertTripHotel(tourSlugOrId: string, dto: CreateHotelDto) {
+    const trimmed = tourSlugOrId?.trim();
+    if (!trimmed) throw new NotFoundException('Tour slug or ID is required');
+
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        OR: [{ slug: trimmed }, { id: trimmed }],
+        deletedAt: null,
+      },
+      select: { id: true, slug: true, city: true, country: true },
+    });
+    if (!tour) throw new NotFoundException(`Tour '${trimmed}' not found`);
+
+    const existingHotel = await this.prisma.hotel.findFirst({
+      where: { tourId: tour.id, deletedAt: null },
+    });
+
+    const fallbackSlug = `trip-${tour.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-hotel`.slice(0, 95);
+    const resolvedSlug = dto.slug && dto.slug.trim()
+      ? (dto.slug.startsWith('trip-') ? dto.slug.trim() : `trip-${dto.slug.trim()}`).slice(0, 95)
+      : fallbackSlug;
+
+    if (existingHotel) {
+      const updateData: UpdateHotelDto = {
+        ...dto,
+        slug: existingHotel.slug || resolvedSlug,
+        destinationSlug: dto.destinationSlug || existingHotel.destinationSlug || tour.city?.toLowerCase() || 'egypt',
+        city: dto.city || existingHotel.city || tour.city || 'Cairo',
+        stars: dto.stars ?? existingHotel.stars ?? 5,
+        isGlobal: false,
+        tourId: tour.id,
+      };
+      return this.updateAdmin(existingHotel.id, updateData);
+    } else {
+      const createData: CreateHotelDto = {
+        ...dto,
+        slug: resolvedSlug,
+        destinationSlug: dto.destinationSlug || tour.city?.toLowerCase() || 'egypt',
+        city: dto.city || tour.city || 'Cairo',
+        stars: dto.stars ?? 5,
+        isGlobal: false,
+        tourId: tour.id,
+        status: dto.status || 'PUBLISHED',
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
+      };
+      return this.createAdmin(createData);
+    }
+  }
+
+  async deleteTripHotel(tourSlugOrId: string) {
+    const trimmed = tourSlugOrId?.trim();
+    if (!trimmed) throw new NotFoundException('Tour slug or ID is required');
+
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        OR: [{ slug: trimmed }, { id: trimmed }],
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!tour) throw new NotFoundException(`Tour '${trimmed}' not found`);
+
+    const existingHotel = await this.prisma.hotel.findFirst({
+      where: { tourId: tour.id, deletedAt: null },
+    });
+    if (!existingHotel) {
+      return { success: true, message: 'No trip hotel associated' };
+    }
+    return this.softDeleteAdmin(existingHotel.id);
   }
 
   // ----------------------------------------------------

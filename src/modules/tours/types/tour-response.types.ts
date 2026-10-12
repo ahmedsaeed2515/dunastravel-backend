@@ -70,6 +70,7 @@ export interface TourAccommodationResponse {
     country: string;
     starRating: number;
     stars?: number;
+    isGlobal?: boolean;
     heroImageUrl: string | null;
     images: Array<{
       id: string;
@@ -150,6 +151,7 @@ export interface TourDetailResponse {
   itinerary: TourItineraryResponse[];
   images: TourImageResponse[];
   accommodations?: TourAccommodationResponse[];
+  tripHotel?: unknown | null;
 }
 
 /**

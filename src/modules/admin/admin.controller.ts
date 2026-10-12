@@ -57,6 +57,8 @@ import { AdminCreateBookingDto } from './dto/admin-create-booking.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { RecordManualBookingPaymentDto } from './dto/record-manual-booking-payment.dto';
 import { BookingsService } from '../bookings/bookings.service';
+import { HotelsService } from '../hotels/hotels.service';
+import { CreateHotelDto } from '../hotels/dto/hotel.dto';
 import { ParseBookingRefPipe, ParseUuidOrSlugPipe } from '../../common/pipes';
 
 @ApiTags('Admin')
@@ -70,6 +72,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly bookingsService: BookingsService,
+    private readonly hotelsService: HotelsService,
   ) {}
 
   @Get('bookings')
@@ -706,5 +709,34 @@ export class AdminController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.adminService.upsertTourAccommodations(slug, dto.accommodations, user.id);
+  }
+
+  @Get('tours/:slug/hotel')
+  @ApiOperation({ summary: 'Get dedicated trip-specific hotel for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async getTourTripHotel(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+  ) {
+    return this.hotelsService.getTripHotel(slug);
+  }
+
+  @Put('tours/:slug/hotel')
+  @ApiOperation({ summary: 'Upsert dedicated trip-specific hotel for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  @ApiBody({ type: CreateHotelDto })
+  async upsertTourTripHotel(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+    @Body() dto: CreateHotelDto,
+  ) {
+    return this.hotelsService.upsertTripHotel(slug, dto);
+  }
+
+  @Delete('tours/:slug/hotel')
+  @ApiOperation({ summary: 'Delete dedicated trip-specific hotel for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async deleteTourTripHotel(
+    @Param('slug', ParseUuidOrSlugPipe) slug: string,
+  ) {
+    return this.hotelsService.deleteTripHotel(slug);
   }
 }

@@ -6,6 +6,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { BookingsService } from '../bookings/bookings.service';
 import { ContactSubmissionsService } from '../contact-submissions/contact-submissions.service';
+import { HotelsService } from '../hotels/hotels.service';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
@@ -52,6 +53,14 @@ describe('AdminController (Roles & Permissions Contract)', () => {
             get: jest.fn(),
             set: jest.fn(),
             del: jest.fn(),
+          },
+        },
+        {
+          provide: HotelsService,
+          useValue: {
+            getTripHotel: jest.fn(),
+            upsertTripHotel: jest.fn(),
+            deleteTripHotel: jest.fn(),
           },
         },
       ],

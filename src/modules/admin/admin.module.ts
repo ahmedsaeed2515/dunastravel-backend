@@ -12,12 +12,14 @@ import { AdminCurrenciesModule } from './admin-currencies/admin-currencies.modul
 import { AdminReportsModule } from './admin-reports/admin-reports.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { ContactSubmissionsModule } from '../contact-submissions/contact-submissions.module';
+import { HotelsModule } from '../hotels/hotels.module';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [
     PrismaModule,
+    HotelsModule,
     AdminTailorMadeModule,
     AdminInvoicesModule,
     AdminWalletsModule,

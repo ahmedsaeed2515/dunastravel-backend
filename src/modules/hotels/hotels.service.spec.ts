@@ -451,6 +451,95 @@ describe('HotelsService', () => {
         ],
       });
     });
+
+    describe('Trip-Specific Hotel Operations & Strict Isolation', () => {
+      it('enforces isGlobal: true on findAllPublic and findAllAdmin to prevent leaking trip hotels', async () => {
+        const prisma = {
+          hotel: {
+            findMany: jest.fn().mockResolvedValue([]),
+            count: jest.fn().mockResolvedValue(0),
+          },
+          mediaAsset: { findMany: jest.fn().mockResolvedValue([]) },
+        };
+        const service = new HotelsService(prisma as never);
+
+        await service.findAllPublic('en');
+        expect(prisma.hotel.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ isGlobal: true }),
+          }),
+        );
+
+        await service.findAllAdmin(1, 10);
+        expect(prisma.hotel.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ isGlobal: true }),
+          }),
+        );
+      });
+
+      it('upsertTripHotel creates dedicated hotel with isGlobal: false and tourId set', async () => {
+        const tourRecord = { id: 'tour-123', slug: 'luxury-nile-adventure', city: 'Aswan', country: 'Egypt' };
+        const prisma = {
+          tour: { findFirst: jest.fn().mockResolvedValue(tourRecord) },
+          hotel: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({ id: 'trip-hotel-1', slug: 'trip-luxury-nile-adventure-hotel' }),
+          },
+        };
+        const service = new HotelsService(prisma as never);
+
+        await service.upsertTripHotel('luxury-nile-adventure', {
+          slug: 'luxury-nile-adventure-hotel',
+          nameJsonb: { en: 'Luxury Nile Trip Hotel', ar: 'فندق رحلة النيل الفاخر' },
+          destinationSlug: 'aswan',
+          city: 'Aswan',
+          stars: 5,
+        });
+
+        expect(prisma.hotel.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              isGlobal: false,
+              tourId: 'tour-123',
+              city: 'Aswan',
+              stars: 5,
+            }),
+          }),
+        );
+      });
+
+      it('getTripHotel retrieves dedicated hotel associated with tourId', async () => {
+        const tourRecord = { id: 'tour-123', slug: 'luxury-nile-adventure' };
+        const tripHotelRecord = {
+          id: 'trip-hotel-1',
+          tourId: 'tour-123',
+          slug: 'trip-luxury-nile-adventure-hotel',
+          nameJsonb: { en: 'Luxury Nile Trip Hotel' },
+          destinationSlug: 'aswan',
+          city: 'Aswan',
+          stars: 5,
+          rating: null,
+          amenitiesJsonb: { heroImageUrl: 'https://img.test/hero.jpg' },
+          rooms: [],
+        };
+        const prisma = {
+          tour: { findFirst: jest.fn().mockResolvedValue(tourRecord) },
+          hotel: { findFirst: jest.fn().mockResolvedValue(tripHotelRecord) },
+          mediaAsset: { findMany: jest.fn().mockResolvedValue([]) },
+        };
+        const service = new HotelsService(prisma as never);
+
+        const result = await service.getTripHotel('luxury-nile-adventure');
+        expect(result).toBeDefined();
+        expect(result?.id).toBe('trip-hotel-1');
+        expect(prisma.hotel.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { tourId: 'tour-123', deletedAt: null },
+          }),
+        );
+      });
+    });
   });
 });
 
