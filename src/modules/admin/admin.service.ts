@@ -12,6 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PAYMENT_EVENTS } from '../../common/events/payment-events';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { CacheService } from '../../common/cache/cache.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsService } from '../bookings/bookings.service';
 import {
@@ -71,6 +72,7 @@ export class AdminService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly bookingsService: BookingsService,
     @Optional() private readonly eventEmitter?: EventEmitter2,
+    @Optional() private readonly cacheService?: CacheService,
   ) {}
 
   async assertActiveBookingCustomer(
@@ -2249,7 +2251,23 @@ export class AdminService {
         skip,
         take: limit,
         orderBy: orderByClause,
-        include: {
+        select: {
+          id: true,
+          slug: true,
+          titleJsonb: true,
+          category: true,
+          basePriceUsd: true,
+          durationJsonb: true,
+          overviewJsonb: true,
+          currency: true,
+          isActive: true,
+          status: true,
+          isFeatured: true,
+          displayOrder: true,
+          country: true,
+          city: true,
+          createdAt: true,
+          updatedAt: true,
           _count: { select: { bookings: true, reviews: true } },
           images: {
             orderBy: [{ isHero: 'desc' }, { sortOrder: 'asc' }],
@@ -2267,7 +2285,6 @@ export class AdminService {
                   destinationSlug: true,
                   city: true,
                   stars: true,
-                  amenitiesJsonb: true,
                   heroMediaId: true,
                 },
               },
@@ -2276,7 +2293,6 @@ export class AdminService {
                   id: true,
                   slug: true,
                   nameJsonb: true,
-                  descriptionJsonb: true,
                   ratePerNight: true,
                   currency: true,
                   maxOccupancy: true,
@@ -2317,12 +2333,12 @@ export class AdminService {
       displayOrder: t.displayOrder,
       country: t.country,
       city: t.city,
-      highlightsJsonb: t.highlightsJsonb,
-      includedServicesJsonb: t.includedServicesJsonb,
-      excludedServicesJsonb: t.excludedServicesJsonb,
-      departureInfoJsonb: t.departureInfoJsonb,
-      hotelInfoJsonb: t.hotelInfoJsonb,
-      seasonPricingJsonb: t.seasonPricingJsonb,
+      highlightsJsonb: (t as any).highlightsJsonb ?? [],
+      includedServicesJsonb: (t as any).includedServicesJsonb ?? [],
+      excludedServicesJsonb: (t as any).excludedServicesJsonb ?? [],
+      departureInfoJsonb: (t as any).departureInfoJsonb ?? null,
+      hotelInfoJsonb: (t as any).hotelInfoJsonb ?? null,
+      seasonPricingJsonb: (t as any).seasonPricingJsonb ?? [],
       accommodations: (t.accommodations || []).map((acc) => ({
         ...acc,
         city: acc.destination,
@@ -4508,11 +4524,18 @@ export class AdminService {
     for (const locale of ['en', 'es', 'pt', 'it', 'ar']) {
       await this.cacheManager.del(`tour:${slug}:${locale}`);
       await this.cacheManager.del(`tour:detail:${slug}:${locale}`);
+      if (this.cacheService) {
+        await this.cacheService.del(`tour:${slug}:${locale}`);
+        await this.cacheService.del(`tour:detail:${slug}:${locale}`);
+      }
     }
     try {
       const currentVersion = await this.cacheManager.get<number>('tours:catalog:version');
       const nextVersion = typeof currentVersion === 'number' ? currentVersion + 1 : 2;
       await this.cacheManager.set('tours:catalog:version', nextVersion, 86_400_000);
+      if (this.cacheService) {
+        await this.cacheService.set('tours:catalog:version', nextVersion, 86_400_000);
+      }
     } catch {
       // Best-effort catalog version bump
     }
