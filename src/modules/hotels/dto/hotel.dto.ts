@@ -296,3 +296,19 @@ export class CreateHotelDto {
 }
 
 export class UpdateHotelDto extends PartialType(CreateHotelDto) {}
+
+export class UpsertTripHotelDto extends PartialType(CreateHotelDto) {
+  @ApiPropertyOptional({ example: 'trip-luxury-nile-adventure-hotel' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @MaxLength(100)
+  slug?: string;
+
+  @ApiPropertyOptional({ example: 'cairo' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @MaxLength(100)
+  destinationSlug?: string;
+}

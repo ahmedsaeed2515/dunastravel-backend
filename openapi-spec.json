@@ -2742,7 +2742,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateHotelDto"
+                "$ref": "#/components/schemas/UpsertTripHotelDto"
               }
             }
           }
@@ -18714,24 +18714,24 @@
           "accommodations"
         ]
       },
-      "CreateHotelDto": {
+      "UpsertTripHotelDto": {
         "type": "object",
         "properties": {
           "slug": {
             "type": "string",
-            "example": "nile-palace-luxor"
+            "example": "trip-luxury-nile-adventure-hotel"
           },
           "nameJsonb": {
             "type": "object",
             "example": {
               "en": "Nile Palace Luxor"
             }
+          },
+          "destinationSlug": {
+            "type": "string",
+            "example": "cairo"
           }
-        },
-        "required": [
-          "slug",
-          "nameJsonb"
-        ]
+        }
       },
       "CreateHotelBookingDto": {
         "type": "object",
@@ -18863,6 +18863,25 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "CreateHotelDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "nile-palace-luxor"
+          },
+          "nameJsonb": {
+            "type": "object",
+            "example": {
+              "en": "Nile Palace Luxor"
+            }
+          }
+        },
+        "required": [
+          "slug",
+          "nameJsonb"
         ]
       },
       "UpdateHotelDto": {

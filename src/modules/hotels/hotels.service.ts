@@ -17,6 +17,7 @@ import {
   RoomSeasonPricingDto,
   UpdateHotelDto,
   UpdateSeasonDto,
+  UpsertTripHotelDto,
 } from './dto/hotel.dto';
 import {
   CreateHotelBookingDto,
@@ -894,7 +895,7 @@ export class HotelsService {
     };
   }
 
-  async upsertTripHotel(tourSlugOrId: string, dto: CreateHotelDto) {
+  async upsertTripHotel(tourSlugOrId: string, dto: UpsertTripHotelDto | CreateHotelDto) {
     const trimmed = tourSlugOrId?.trim();
     if (!trimmed) throw new NotFoundException('Tour slug or ID is required');
 
@@ -930,6 +931,7 @@ export class HotelsService {
     } else {
       const createData: CreateHotelDto = {
         ...dto,
+        nameJsonb: dto.nameJsonb || { en: 'Trip Hotel', ar: 'فندق الرحلة' },
         slug: resolvedSlug,
         destinationSlug: dto.destinationSlug || tour.city?.toLowerCase() || 'egypt',
         city: dto.city || tour.city || 'Cairo',
