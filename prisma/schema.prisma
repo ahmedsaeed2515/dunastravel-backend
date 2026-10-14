@@ -1152,7 +1152,6 @@ model TripAccommodation {
   roomId             String?    @map("room_id")
   destination        String     @db.VarChar(100)
   nights             Int        @default(1)
-  regime             String     @default("BB") @db.VarChar(100)
   categoryTier       String?    @map("category_tier") @db.VarChar(100)
   priceSupplementUsd Decimal    @default(0.00) @map("price_supplement_usd") @db.Decimal(10, 2)
   isDefault          Boolean    @default(true) @map("is_default")

@@ -232,18 +232,6 @@ export class TripAccommodationDto {
   @MaxLength(100)
   categoryTier?: string | null;
 
-  @ApiPropertyOptional({ description: 'Meal regime / board basis (BB, HB, FB, AI)', default: 'BB' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  regime?: string;
-
-  @ApiPropertyOptional({ description: 'Board basis alias (BB, HB, FB, AI)', default: 'BB' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  boardBasis?: string;
-
   @ApiPropertyOptional({ description: 'Number of nights at this hotel', default: 1 })
   @IsOptional()
   @Type(() => Number)

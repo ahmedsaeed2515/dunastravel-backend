@@ -484,7 +484,6 @@ export class HotelsService {
               tourId: true,
               destination: true,
               nights: true,
-              regime: true,
               tour: { select: { id: true, slug: true, titleJsonb: true } },
             },
           },

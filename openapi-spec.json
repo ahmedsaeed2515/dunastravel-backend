@@ -18006,16 +18006,6 @@
             "type": "object",
             "description": "Category tier (e.g. Standard, Deluxe, Luxury)"
           },
-          "regime": {
-            "type": "string",
-            "description": "Meal regime / board basis (BB, HB, FB, AI)",
-            "default": "BB"
-          },
-          "boardBasis": {
-            "type": "string",
-            "description": "Board basis alias (BB, HB, FB, AI)",
-            "default": "BB"
-          },
           "nights": {
             "type": "number",
             "description": "Number of nights at this hotel",

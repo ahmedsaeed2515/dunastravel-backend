@@ -51,8 +51,6 @@ export interface TourAccommodationResponse {
   city: string | null;
   destination?: string | null;
   categoryTier: string | null;
-  boardBasis: string;
-  regime?: string;
   nights: number;
   dayFrom: number | null;
   dayTo: number | null;

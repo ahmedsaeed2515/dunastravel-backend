@@ -2342,7 +2342,6 @@ export class AdminService {
       accommodations: (t.accommodations || []).map((acc) => ({
         ...acc,
         city: acc.destination,
-        boardBasis: acc.regime,
         priceSupplementUsd: acc.priceSupplementUsd.toString(),
         room: acc.room
           ? {
@@ -2739,7 +2738,6 @@ export class AdminService {
       accommodations: (tour.accommodations || []).map((acc) => ({
         ...acc,
         city: acc.destination,
-        boardBasis: acc.regime,
         priceSupplementUsd: acc.priceSupplementUsd.toString(),
         room: acc.room
           ? {
@@ -3710,9 +3708,6 @@ export class AdminService {
         row.nights = Number.isFinite(nights)
           ? Math.min(Math.max(Math.round(nights), 1), 90)
           : 1;
-        if (raw.regime) {
-          row.regime = sanitizePlainText(String(raw.regime)).slice(0, 10);
-        }
         row.isDefault = Boolean(raw.isDefault ?? index === 0);
         const sortOrder = Number(raw.sortOrder);
         row.sortOrder = Number.isFinite(sortOrder) ? sortOrder : index;
@@ -3721,8 +3716,7 @@ export class AdminService {
       })
       .filter((row) =>
         Object.keys(row).some(
-          (key) =>
-            !['nights', 'regime', 'isDefault', 'sortOrder'].includes(key),
+          (key) => !['nights', 'isDefault', 'sortOrder'].includes(key),
         ),
       );
 
@@ -4462,7 +4456,6 @@ export class AdminService {
     return items.map((acc) => ({
       ...acc,
       city: acc.destination,
-      boardBasis: acc.regime,
       priceSupplementUsd: acc.priceSupplementUsd.toString(),
       room: acc.room
         ? {
@@ -4639,10 +4632,6 @@ export class AdminService {
         (item.city && item.city.trim()) ||
         hotelRecord?.city ||
         'Destination';
-      const effectiveRegime =
-        (item.regime && item.regime.trim()) ||
-        (item.boardBasis && item.boardBasis.trim()) ||
-        'BB';
 
       await tx.tripAccommodation.create({
         data: {
@@ -4651,7 +4640,6 @@ export class AdminService {
           roomId: cleanRoomId,
           destination: effectiveCity,
           categoryTier: item.categoryTier?.trim() || null,
-          regime: effectiveRegime,
           nights: item.nights ?? 1,
           priceSupplementUsd: new Prisma.Decimal(item.priceSupplementUsd ?? 0),
           isDefault: item.isDefault ?? true,
@@ -4694,8 +4682,6 @@ export class AdminService {
         destination: effectiveCity,
         city: effectiveCity,
         categoryTier: item.categoryTier || null,
-        regime: effectiveRegime,
-        boardBasis: effectiveRegime,
         nights: item.nights ?? 1,
         dayFrom: item.dayFrom ?? null,
         dayTo: item.dayTo ?? null,

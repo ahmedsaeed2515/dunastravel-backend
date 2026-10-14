@@ -368,7 +368,7 @@ describe('AdminService', () => {
         {
           hotelCategory: '5 Stars',
           hotels: { Cairo: ['Old Stale Hotel'] },
-          accommodation: [{ destination: 'Cairo', nights: 2, regime: 'BB' }],
+          accommodation: [{ destination: 'Cairo', nights: 2 }],
         },
       );
 
@@ -455,7 +455,6 @@ describe('AdminService', () => {
             boatJsonb: { ar: 'مركب نيلي', en: 'Nile Cruise Boat' },
             boatPriceUsd: 75,
             nights: 3,
-            regime: 'BB',
           },
         ],
       }) as any;
@@ -475,7 +474,6 @@ describe('AdminService', () => {
         boatJsonb: { ar: 'مركب نيلي', en: 'Nile Cruise Boat' },
         boatPriceUsd: 75,
         nights: 3,
-        regime: 'BB',
       });
       expect(row.isDefault).toBe(true);
     });
@@ -483,8 +481,8 @@ describe('AdminService', () => {
     it('drops empty rows so no empty column can ever be rendered', () => {
       const result = normalize({
         accommodation: [
-          { nights: 3, regime: 'BB' },
-          { nameJsonb: { en: 'Real Hotel' }, nights: 2, regime: 'HB' },
+          { nights: 3 },
+          { nameJsonb: { en: 'Real Hotel' }, nights: 2 },
         ],
       }) as any;
 

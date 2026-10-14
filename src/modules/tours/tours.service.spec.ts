@@ -256,7 +256,6 @@ describe('ToursService', () => {
             roomId: 'room-1',
             city: 'Cairo',
             categoryTier: 'Luxury',
-            boardBasis: 'BB',
             nights: 3,
             dayFrom: 1,
             dayTo: 4,
@@ -326,7 +325,6 @@ describe('ToursService', () => {
             roomId: null,
             destination: 'Cairo',
             nights: 2,
-            regime: 'BB',
             priceSupplementUsd: new Prisma.Decimal('0.00'),
             hotel: {
               id: 'hotel-del',
@@ -346,7 +344,6 @@ describe('ToursService', () => {
             roomId: 'room-del',
             destination: 'Luxor',
             nights: 3,
-            regime: 'HB',
             priceSupplementUsd: new Prisma.Decimal('50.00'),
             hotel: {
               id: 'hotel-ok',

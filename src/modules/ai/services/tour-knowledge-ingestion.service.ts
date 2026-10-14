@@ -635,8 +635,7 @@ export class TourKnowledgeIngestionService {
         hotelInfo.accommodation.forEach((acc: any) => {
           const dest = acc.destination || acc.city || '';
           const nights = acc.nights ? `${acc.nights} nights` : '';
-          const regime = acc.regime || acc.mealPlan || '';
-          const detail = [dest, nights, regime].filter(Boolean).join(' - ');
+          const detail = [dest, nights].filter(Boolean).join(' - ');
           if (detail) lines.push(`- ${detail}`);
         });
       }
