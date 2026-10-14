@@ -433,4 +433,137 @@ describe('AdminService', () => {
       expect(cacheManager.set).toHaveBeenCalledWith('tours:catalog:version', 4, 86_400_000);
     });
   });
+
+  describe('sanitizeTourHotelInfo (hotel rate sheet)', () => {
+    const normalize = (value: Record<string, any>) =>
+      (service as any).sanitizeTourHotelInfo(value);
+
+    it('keeps the six dashboard columns and localizes name/city/boat maps', () => {
+      const result = normalize({
+        hotelCategory: '5 Stars Deluxe',
+        notes: { ar: 'ملاحظات', en: 'Guests get Nile view' },
+        accommodation: [
+          {
+            hotelId: 'hotel-1',
+            categoryTier: '5_STAR',
+            nameJsonb: { ar: 'فندق النيل', en: 'Nile Palace' },
+            cityJsonb: { ar: 'القاهرة', en: 'Cairo' },
+            destination: 'Cairo',
+            doubleRoomPriceUsd: 220,
+            singleRoomPriceUsd: '160',
+            seasonSupplementUsd: 45,
+            boatJsonb: { ar: 'مركب نيلي', en: 'Nile Cruise Boat' },
+            boatPriceUsd: 75,
+            nights: 3,
+            regime: 'BB',
+          },
+        ],
+      }) as any;
+
+      expect(result.hotelCategory).toBe('5 Stars Deluxe');
+      expect(result.notes).toEqual({ ar: 'ملاحظات', en: 'Guests get Nile view' });
+      const row = result.accommodation[0];
+      expect(row).toMatchObject({
+        hotelId: 'hotel-1',
+        categoryTier: '5_STAR',
+        nameJsonb: { ar: 'فندق النيل', en: 'Nile Palace' },
+        cityJsonb: { ar: 'القاهرة', en: 'Cairo' },
+        destination: 'Cairo',
+        doubleRoomPriceUsd: 220,
+        singleRoomPriceUsd: 160,
+        seasonSupplementUsd: 45,
+        boatJsonb: { ar: 'مركب نيلي', en: 'Nile Cruise Boat' },
+        boatPriceUsd: 75,
+        nights: 3,
+        regime: 'BB',
+      });
+      expect(row.isDefault).toBe(true);
+    });
+
+    it('drops empty rows so no empty column can ever be rendered', () => {
+      const result = normalize({
+        accommodation: [
+          { nights: 3, regime: 'BB' },
+          { nameJsonb: { en: 'Real Hotel' }, nights: 2, regime: 'HB' },
+        ],
+      }) as any;
+
+      expect(result.accommodation).toHaveLength(1);
+      expect(result.accommodation[0].nameJsonb).toEqual({ en: 'Real Hotel' });
+    });
+
+    it('merges legacy priceSupplementUsd into seasonSupplementUsd and drops non-locale keys', () => {
+      const result = normalize({
+        accommodation: [
+          {
+            destination: 'Luxor',
+            priceSupplementUsd: 90,
+            nameJsonb: { en: 'Palm Inn', fr: 'Auberge du Palmier' },
+          },
+        ],
+      }) as any;
+
+      const row = result.accommodation[0];
+      expect(row.seasonSupplementUsd).toBe(90);
+      expect(row.nameJsonb).toEqual({ en: 'Palm Inn' });
+      expect(row.nameJsonb.fr).toBeUndefined();
+    });
+
+    it('merges a top-level accommodations array when hotelInfoJsonb has none', () => {
+      const result = normalize({
+        accommodations: [
+          { destination: 'Aswan', doubleRoomPriceUsd: 120, nights: 2 },
+        ],
+      }) as any;
+
+      expect(result.accommodation).toHaveLength(1);
+      expect(result.accommodation[0].doubleRoomPriceUsd).toBe(120);
+    });
+
+    it('returns an empty object when there is nothing usable', () => {
+      expect(normalize({ accommodation: [] })).toEqual({});
+    });
+  });
+
+  describe('prepareTourData hotel rate sheet persistence', () => {
+    const prepare = (data: Record<string, any>, isCreate = false) =>
+      (service as any).prepareTourData(data, isCreate) as Record<string, any>;
+
+    it('does not wipe hotel info on a partial update that omits hotel fields', () => {
+      const result = prepare({ title: 'Partial update' }, false);
+      expect(result).not.toHaveProperty('hotelInfoJsonb');
+    });
+
+    it('merges non-empty top-level accommodations into hotelInfoJsonb and strips the raw key', () => {
+      const result = prepare(
+        {
+          accommodations: [
+            { destination: 'Cairo', doubleRoomPriceUsd: 200 },
+          ],
+        },
+        false,
+      );
+
+      expect(result.hotelInfoJsonb).toMatchObject({
+        accommodation: [
+          expect.objectContaining({
+            destination: 'Cairo',
+            doubleRoomPriceUsd: 200,
+          }),
+        ],
+      });
+      // The raw top-level array must never reach Prisma.
+      expect(result).not.toHaveProperty('accommodations');
+    });
+
+    it('clears the rate sheet when the dashboard explicitly sends null', () => {
+      const result = prepare({ hotelInfoJsonb: null }, false);
+      expect(result.hotelInfoJsonb).toEqual({});
+    });
+
+    it('ignores an empty accommodations array on an unrelated partial update', () => {
+      const result = prepare({ accommodations: [] }, false);
+      expect(result).not.toHaveProperty('hotelInfoJsonb');
+    });
+  });
 });

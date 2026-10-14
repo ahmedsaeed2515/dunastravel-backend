@@ -486,7 +486,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -679,7 +679,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -4369,6 +4369,14 @@
       "get": {
         "operationId": "WalletsController_getWallet",
         "parameters": [
+          {
+            "name": "ownerType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "ownerId",
             "required": true,
@@ -8461,7 +8469,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -8469,7 +8477,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Object"
+              "type": "string"
             }
           },
           {
@@ -17545,10 +17553,6 @@
       }
     },
     "schemas": {
-      "Object": {
-        "type": "object",
-        "properties": {}
-      },
       "AdminCreatePassengerDto": {
         "type": "object",
         "properties": {
@@ -19015,7 +19019,7 @@
             "example": 30
           },
           "status": {
-            "type": "object",
+            "type": "string",
             "description": "Slot status",
             "example": "AVAILABLE"
           }
@@ -19080,7 +19084,7 @@
             "example": 25
           },
           "status": {
-            "type": "object",
+            "type": "string",
             "description": "Status override",
             "example": "AVAILABLE"
           }

@@ -3402,6 +3402,49 @@ export class AdminService {
       }
     }
 
+    // Normalize the trip hotel rate sheet (hotel category, hotel + city names,
+    // double & single room rates, seasonal fee, boats). The dashboard may send
+    // the rows either inside hotelInfoJsonb.accommodation or as a top-level
+    // `accommodations` array; both are merged into hotelInfoJsonb so the public
+    // API has a single, localized source of truth.
+    const topLevelAccommodations = Array.isArray(result.accommodations)
+      ? (result.accommodations as Record<string, any>[])
+      : undefined;
+    const hasHotelInfoKey = Object.prototype.hasOwnProperty.call(
+      result,
+      'hotelInfoJsonb',
+    );
+    const hasHotelInfo =
+      Boolean(result.hotelInfoJsonb) &&
+      typeof result.hotelInfoJsonb === 'object' &&
+      !Array.isArray(result.hotelInfoJsonb) &&
+      Object.keys(result.hotelInfoJsonb as Record<string, unknown>).length > 0;
+    // Only touch hotelInfoJsonb when the caller explicitly sent it (this is how
+    // the dashboard clears the rate sheet) or when there is non-empty row data to
+    // merge. This prevents an unrelated partial update that merely echoes an empty
+    // `accommodations: []` array from wiping existing hotel information.
+    if (
+      hasHotelInfo ||
+      hasHotelInfoKey ||
+      (topLevelAccommodations && topLevelAccommodations.length > 0)
+    ) {
+      const baseHotelInfo = hasHotelInfo
+        ? (result.hotelInfoJsonb as Record<string, any>)
+        : {};
+      const existingRows = Array.isArray(baseHotelInfo.accommodation)
+        ? baseHotelInfo.accommodation
+        : Array.isArray(baseHotelInfo.accommodations)
+          ? baseHotelInfo.accommodations
+          : [];
+      result.hotelInfoJsonb = this.sanitizeTourHotelInfo({
+        ...baseHotelInfo,
+        accommodation:
+          existingRows.length > 0
+            ? existingRows
+            : (topLevelAccommodations ?? []),
+      });
+    }
+
     if (isCreate) {
       const status = data.status ?? 'DRAFT';
       result.status = status;
@@ -3517,6 +3560,175 @@ export class AdminService {
         : null,
       sortOrder: image.sortOrder ?? 1,
     }));
+  }
+
+  private static readonly TOUR_CONTENT_LOCALES = [
+    'ar',
+    'en',
+    'es',
+    'pt',
+    'it',
+  ];
+
+  /**
+   * Sanitizes a 5-locale map (or a plain string) into a clean `{ locale: text }`
+   * object. Returns `undefined` when there is no usable text so that empty
+   * columns are never persisted or rendered.
+   */
+  private sanitizeTourLocalizedMap(
+    value: unknown,
+    maxLength = 255,
+  ): Record<string, string> | undefined {
+    if (typeof value === 'string') {
+      const clean = sanitizePlainText(value).slice(0, maxLength);
+      return clean ? { en: clean } : undefined;
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+    const out: Record<string, string> = {};
+    for (const [locale, raw] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (!AdminService.TOUR_CONTENT_LOCALES.includes(locale)) continue;
+      if (typeof raw !== 'string') continue;
+      const clean = sanitizePlainText(raw).slice(0, maxLength);
+      if (clean) out[locale] = clean;
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+
+  private static toNonNegativeNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+    return Math.round(parsed * 100) / 100;
+  }
+
+  /**
+   * Normalizes the trip hotel rate sheet stored in `hotelInfoJsonb`.
+   *
+   * Each accommodation row carries the six dashboard columns:
+   *  1. hotel category              -> categoryTier
+   *  2. hotel name + city           -> nameJsonb / cityJsonb (5 locales)
+   *  3. double room price           -> doubleRoomPriceUsd
+   *  4. single room price           -> singleRoomPriceUsd
+   *  5. seasonal fee / surcharge    -> seasonSupplementUsd
+   *  6. boats (name + extra price)  -> boatJsonb / boatPriceUsd
+   *
+   * Rows without any meaningful value are dropped so the public API never
+   * renders an empty column.
+   */
+  private sanitizeTourHotelInfo(
+    value: Record<string, any>,
+  ): Prisma.InputJsonValue {
+    const result: Record<string, unknown> = {};
+
+    if (typeof value.hotelCategory === 'string' && value.hotelCategory.trim()) {
+      result.hotelCategory = sanitizePlainText(value.hotelCategory).slice(
+        0,
+        100,
+      );
+    }
+
+    const notes = this.sanitizeTourLocalizedMap(value.notes, 5_000);
+    if (notes) result.notes = notes;
+
+    const rawRows = Array.isArray(value.accommodation)
+      ? value.accommodation
+      : Array.isArray(value.accommodations)
+        ? value.accommodations
+        : [];
+
+    const rows = rawRows
+      .filter(
+        (row): row is Record<string, any> =>
+          Boolean(row) && typeof row === 'object' && !Array.isArray(row),
+      )
+      .map((raw, index) => {
+        const row: Record<string, unknown> = {};
+
+        if (raw.id) row.id = sanitizePlainText(String(raw.id)).slice(0, 100);
+        if (raw.hotelId) {
+          row.hotelId = sanitizePlainText(String(raw.hotelId)).slice(0, 100);
+        }
+        if (
+          raw.roomId !== undefined &&
+          raw.roomId !== null &&
+          raw.roomId !== ''
+        ) {
+          row.roomId = sanitizePlainText(String(raw.roomId)).slice(0, 100);
+        }
+        if (raw.categoryTier) {
+          row.categoryTier = sanitizePlainText(String(raw.categoryTier)).slice(
+            0,
+            50,
+          );
+        }
+
+        const hotelName = this.sanitizeTourLocalizedMap(
+          raw.nameJsonb ?? raw.hotelName ?? raw.name,
+          255,
+        );
+        if (hotelName) row.nameJsonb = hotelName;
+
+        const city = this.sanitizeTourLocalizedMap(
+          raw.cityJsonb ?? raw.city,
+          120,
+        );
+        if (city) row.cityJsonb = city;
+
+        if (typeof raw.destination === 'string' && raw.destination.trim()) {
+          row.destination = sanitizePlainText(raw.destination).slice(0, 120);
+        }
+
+        const doublePrice = AdminService.toNonNegativeNumber(
+          raw.doubleRoomPriceUsd,
+        );
+        if (doublePrice !== undefined) row.doubleRoomPriceUsd = doublePrice;
+
+        const singlePrice = AdminService.toNonNegativeNumber(
+          raw.singleRoomPriceUsd,
+        );
+        if (singlePrice !== undefined) row.singleRoomPriceUsd = singlePrice;
+
+        const seasonFee = AdminService.toNonNegativeNumber(
+          raw.seasonSupplementUsd ?? raw.priceSupplementUsd,
+        );
+        if (seasonFee !== undefined) row.seasonSupplementUsd = seasonFee;
+
+        const boatName = this.sanitizeTourLocalizedMap(
+          raw.boatJsonb ?? raw.boatName,
+          255,
+        );
+        if (boatName) row.boatJsonb = boatName;
+
+        const boatPrice = AdminService.toNonNegativeNumber(raw.boatPriceUsd);
+        if (boatPrice !== undefined) row.boatPriceUsd = boatPrice;
+
+        const nights = Number(raw.nights);
+        row.nights = Number.isFinite(nights)
+          ? Math.min(Math.max(Math.round(nights), 1), 90)
+          : 1;
+        if (raw.regime) {
+          row.regime = sanitizePlainText(String(raw.regime)).slice(0, 10);
+        }
+        row.isDefault = Boolean(raw.isDefault ?? index === 0);
+        const sortOrder = Number(raw.sortOrder);
+        row.sortOrder = Number.isFinite(sortOrder) ? sortOrder : index;
+
+        return row;
+      })
+      .filter((row) =>
+        Object.keys(row).some(
+          (key) =>
+            !['nights', 'regime', 'isDefault', 'sortOrder'].includes(key),
+        ),
+      );
+
+    if (rows.length > 0) result.accommodation = rows;
+
+    return result as Prisma.InputJsonValue;
   }
 
   private sanitizeTourLocalizedJson(
