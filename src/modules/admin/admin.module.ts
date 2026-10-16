@@ -14,11 +14,13 @@ import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { ContactSubmissionsModule } from '../contact-submissions/contact-submissions.module';
 import { HotelsModule } from '../hotels/hotels.module';
 
+import { CurrencyModule } from '../currency/currency.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [
     PrismaModule,
+    CurrencyModule,
     HotelsModule,
     AdminTailorMadeModule,
     AdminInvoicesModule,

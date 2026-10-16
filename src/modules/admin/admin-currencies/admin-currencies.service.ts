@@ -13,6 +13,21 @@ export class AdminCurrenciesService {
     return this.currencyService.getRates();
   }
 
+  async syncRates(adminUserId: string) {
+    const result = await this.currencyService.syncRatesNow();
+    await this.auditService.log({
+      actorId: adminUserId,
+      actorRole: 'SUPER_ADMIN',
+      action: 'CURRENCY_RATES_SYNCED',
+      entityType: 'CURRENCY_RATE',
+      metadata: {
+        success: result.success,
+        source: 'ECB_FRANKFURTER',
+      },
+    });
+    return result;
+  }
+
   async updateRates(
     rates: Array<{
       code: string;

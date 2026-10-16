@@ -311,12 +311,20 @@ export class CreateTourDto {
   @MaxLength(100)
   category?: string;
 
-  @ApiProperty({ description: 'Base price in USD' })
+  @ApiProperty({ description: 'Base price in USD (or base currency equivalent)' })
   @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
   @Max(99_999_999.99)
   @Type(() => Number)
   basePriceUsd!: number;
+
+  @ApiPropertyOptional({ description: 'Authoritative original price in specified currency' })
+  @IsOptional()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99_999_999.99)
+  @Type(() => Number)
+  originalPrice?: number;
 
   @ApiPropertyOptional({ description: 'Multilingual duration object' })
   @IsOptional()
@@ -471,10 +479,10 @@ export class CreateTourDto {
   @IsOptional()
   seasonPricingJsonb?: SeasonPricingRuleDto[] | Record<string, any> | null;
 
-  @ApiPropertyOptional({ description: 'Currency code', default: 'USD' })
+  @ApiPropertyOptional({ description: 'Currency code', default: 'USD', enum: ['USD', 'EUR'] })
   @IsOptional()
   @IsString()
-  @IsIn(['USD'])
+  @IsIn(['USD', 'EUR'])
   currency?: string;
 
   @ApiPropertyOptional({ description: 'Capacity or max seats' })

@@ -249,6 +249,8 @@ export class ToursService {
               titleJsonb: true,
               category: true,
               basePriceUsd: true,
+              originalPrice: true,
+              originalCurrency: true,
               currency: true,
               priceDisplayMode: true,
               priceLabelJsonb: true,
@@ -284,7 +286,10 @@ export class ToursService {
             title: extractI18n(record.titleJsonb, query.lang),
             category: record.category,
             basePriceUsd: new Prisma.Decimal(record.basePriceUsd).toFixed(2),
-            currency: record.currency,
+            price: (record.originalPrice ?? record.basePriceUsd).toString(),
+            originalPrice: record.originalPrice ? record.originalPrice.toString() : null,
+            originalCurrency: record.originalCurrency ?? record.currency ?? 'USD',
+            currency: record.currency || 'USD',
             priceDisplayMode: record.priceDisplayMode ?? 'PRICE',
             priceLabel: record.priceLabelJsonb
               ? extractI18n(record.priceLabelJsonb, query.lang) || null
@@ -912,7 +917,10 @@ export class ToursService {
       subtitle: tour.subtitleJsonb ? extractI18n(tour.subtitleJsonb, lang) || null : null,
       category: tour.category,
       basePriceUsd: new Prisma.Decimal(tour.basePriceUsd).toFixed(2),
-      currency: tour.currency,
+      price: (tour.originalPrice ?? tour.basePriceUsd).toString(),
+      originalPrice: tour.originalPrice ? tour.originalPrice.toString() : null,
+      originalCurrency: tour.originalCurrency ?? tour.currency ?? 'USD',
+      currency: tour.currency || 'USD',
       priceDisplayMode: (tour as any).priceDisplayMode ?? 'PRICE',
       priceLabel: (tour as any).priceLabelJsonb
         ? extractI18n((tour as any).priceLabelJsonb, lang) || null

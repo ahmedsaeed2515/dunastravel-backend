@@ -28,6 +28,13 @@ export interface BookingCreatedResponse {
   children: number;
   infants: number;
   totalAmountUsd: string;
+  currency?: string;
+  originalAmount?: string;
+  originalCurrency?: string;
+  convertedAmount?: string;
+  convertedCurrency?: string;
+  exchangeRate?: string;
+  exchangeRateDate?: string;
   paymentRequired?: boolean;
   passengers: PassengerResponse[];
   billing: BillingInfoResponse;
@@ -47,6 +54,9 @@ export interface BookingSummaryResponse {
   children: number;
   infants: number;
   totalAmountUsd: string;
+  currency?: string;
+  originalAmount?: string;
+  originalCurrency?: string;
   paymentStatus: string | null;
   paymentAttemptId: string | null;
   createdAt: string;

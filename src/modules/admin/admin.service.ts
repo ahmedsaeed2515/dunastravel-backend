@@ -15,6 +15,7 @@ import { Cache } from 'cache-manager';
 import { CacheService } from '../../common/cache/cache.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BookingsService } from '../bookings/bookings.service';
+import { CurrencyService } from '../currency/currency.service';
 import {
   TailorMadeInquiryStatus,
   ContactSubmissionStatus,
@@ -73,6 +74,7 @@ export class AdminService {
     private readonly bookingsService: BookingsService,
     @Optional() private readonly eventEmitter?: EventEmitter2,
     @Optional() private readonly cacheService?: CacheService,
+    @Optional() private readonly currencyService?: CurrencyService,
   ) {}
 
   async assertActiveBookingCustomer(
@@ -2257,6 +2259,11 @@ export class AdminService {
           titleJsonb: true,
           category: true,
           basePriceUsd: true,
+          originalPrice: true,
+          originalCurrency: true,
+          exchangeRate: true,
+          exchangeRateDate: true,
+          exchangeRateSource: true,
           durationJsonb: true,
           overviewJsonb: true,
           currency: true,
@@ -2324,9 +2331,17 @@ export class AdminService {
       titleJsonb: t.titleJsonb,
       category: t.category,
       basePriceUsd: t.basePriceUsd.toString(),
+      price: (t.originalPrice ?? t.basePriceUsd).toString(),
+      originalPrice: (t.originalPrice ?? t.basePriceUsd).toString(),
       durationJsonb: t.durationJsonb,
       overviewJsonb: t.overviewJsonb,
-      currency: t.currency,
+      currency: t.currency || 'USD',
+      originalCurrency: t.originalCurrency ?? t.currency ?? 'USD',
+      exchangeRate: t.exchangeRate ? t.exchangeRate.toString() : null,
+      exchangeRateDate: t.exchangeRateDate
+        ? t.exchangeRateDate.toISOString()
+        : null,
+      exchangeRateSource: t.exchangeRateSource || null,
       isActive: t.isActive,
       status: t.status,
       isFeatured: t.isFeatured,
@@ -2735,6 +2750,15 @@ export class AdminService {
     return {
       ...tour,
       basePriceUsd: tour.basePriceUsd.toString(),
+      price: (tour.originalPrice ?? tour.basePriceUsd).toString(),
+      originalPrice: (tour.originalPrice ?? tour.basePriceUsd).toString(),
+      currency: tour.currency || 'USD',
+      originalCurrency: tour.originalCurrency ?? tour.currency ?? 'USD',
+      exchangeRate: tour.exchangeRate ? tour.exchangeRate.toString() : null,
+      exchangeRateDate: tour.exchangeRateDate
+        ? tour.exchangeRateDate.toISOString()
+        : null,
+      exchangeRateSource: tour.exchangeRateSource || null,
       accommodations: (tour.accommodations || []).map((acc) => ({
         ...acc,
         city: acc.destination,
@@ -2784,6 +2808,7 @@ export class AdminService {
     const { itineraries, images, accommodations, ...tourData } = dto;
     this.assertTourImages(images);
     const safeTourData = this.prepareTourData(tourData, true, tourData.country);
+    await this.applyCurrencyPricingToTourData(safeTourData);
     const safeItineraries = this.prepareTourItineraries(itineraries);
     const safeImages = this.prepareTourImages(images);
 
@@ -2863,6 +2888,7 @@ export class AdminService {
       false,
       tourData.country ?? tour.country,
     );
+    await this.applyCurrencyPricingToTourData(safeTourData, tour);
     if (
       safeTourData.seasonPricingJsonb &&
       typeof safeTourData.seasonPricingJsonb === 'object' &&
@@ -3305,6 +3331,63 @@ export class AdminService {
     }
   }
 
+  private async applyCurrencyPricingToTourData(
+    data: Record<string, unknown>,
+    existingTour?: { currency?: string; basePriceUsd?: any; originalPrice?: any },
+  ): Promise<void> {
+    const rawPrice =
+      data.originalPrice !== undefined && data.originalPrice !== null
+        ? data.originalPrice
+        : data.basePriceUsd !== undefined && data.basePriceUsd !== null
+          ? data.basePriceUsd
+          : existingTour?.originalPrice ?? existingTour?.basePriceUsd;
+
+    const currency =
+      ((data.currency as string) || existingTour?.currency || 'USD').toUpperCase();
+
+    if (rawPrice !== undefined && rawPrice !== null) {
+      const enteredPrice = new Prisma.Decimal(rawPrice as any);
+      data.currency = currency;
+      data.originalCurrency = currency;
+      data.originalPrice = enteredPrice;
+
+      if (currency === 'EUR') {
+        let ecbEurUsd = new Prisma.Decimal('1.125300');
+        let rateDate = new Date();
+        let source = 'ECB';
+        if (this.currencyService) {
+          try {
+            const rates = await this.currencyService.getEurUsdRate();
+            if (rates?.ecbEurUsdRate) {
+              ecbEurUsd = new Prisma.Decimal(rates.ecbEurUsdRate);
+            }
+            if (rates?.rateDate) {
+              rateDate = new Date(rates.rateDate);
+            }
+            if (rates?.source) {
+              source = rates.source;
+            }
+          } catch {
+            // Safe fallback
+          }
+        }
+        data.exchangeRate = ecbEurUsd;
+        data.exchangeRateDate = rateDate;
+        data.exchangeRateSource = source;
+        // 1 EUR = ecbEurUsd USD -> basePriceUsd = EUR * (EUR->USD)
+        data.basePriceUsd = enteredPrice
+          .mul(ecbEurUsd)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      } else {
+        // USD
+        data.exchangeRate = new Prisma.Decimal(1);
+        data.exchangeRateDate = new Date();
+        data.exchangeRateSource = 'ECB';
+        data.basePriceUsd = enteredPrice;
+      }
+    }
+  }
+
   private prepareTourData(
     data: Partial<CreateTourDto>,
     isCreate: boolean,
@@ -3457,9 +3540,17 @@ export class AdminService {
       const status = data.status ?? 'DRAFT';
       result.status = status;
       result.isActive = status === 'PUBLISHED' && data.isActive === true;
-      result.currency = 'USD';
-    } else if (data.status && data.status !== 'PUBLISHED') {
-      result.isActive = false;
+      result.currency =
+        data.currency === 'EUR' || data.currency === 'USD'
+          ? data.currency
+          : 'USD';
+    } else {
+      if (data.currency === 'EUR' || data.currency === 'USD') {
+        result.currency = data.currency;
+      }
+      if (data.status && data.status !== 'PUBLISHED') {
+        result.isActive = false;
+      }
     }
 
     // Strip non-Prisma Tour model fields so Prisma update does not fail

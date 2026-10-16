@@ -1,8 +1,13 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  Optional,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculatePriceDto } from './dto/calculate-price.dto';
 import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CurrencyService } from '../currency/currency.service';
 
 export interface CalculatePriceOptions {
   skipCapacityCheck?: boolean;
@@ -29,6 +34,13 @@ export interface CalculatedPriceResponse {
   promoValid: boolean;
   promoMessage: string | null;
   discounts?: PriceDiscountItem[];
+  // Dual currency & authoritative pricing additions
+  authoritativeAmount?: string;
+  authoritativeCurrency?: string;
+  totalAmountEur?: string;
+  exchangeRate?: string;
+  exchangeRateDate?: string;
+  exchangeRateSource?: string;
 }
 
 export interface SeasonPricingItem {
@@ -78,6 +90,7 @@ export class PricingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    @Optional() private readonly currencyService?: CurrencyService,
   ) {}
 
   async calculatePrice(
@@ -148,7 +161,9 @@ export class PricingService {
       // Availability slots track volume for informational purposes; pricing does not block on remaining seats.
     }
 
-    const basePrice = new Prisma.Decimal(tour.basePriceUsd);
+    const basePrice = new Prisma.Decimal(
+      tour.originalPrice ?? tour.basePriceUsd,
+    );
     const adultCount = dto.adults;
     const childCount = dto.children || 0;
     const langKey = (dto.language || 'en').toLowerCase();
@@ -361,21 +376,83 @@ export class PricingService {
       );
     }
 
+    const tourCurrency = (tour.currency || 'USD').toUpperCase();
+    let totalUsd: Prisma.Decimal;
+    let totalEur: Prisma.Decimal;
+    let currentExchangeRate = new Prisma.Decimal('1.125300');
+    let rateDateStr = new Date().toISOString();
+    let rateSource = 'ECB';
+
+    if (this.currencyService) {
+      try {
+        const rates = await this.currencyService.getEurUsdRate();
+        if (rates?.ecbEurUsdRate) {
+          currentExchangeRate = new Prisma.Decimal(rates.ecbEurUsdRate);
+        }
+        if (rates?.rateDate) {
+          rateDateStr = rates.rateDate;
+        }
+        if (rates?.source) {
+          rateSource = rates.source;
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    if (tourCurrency === 'EUR') {
+      totalEur = finalTotal;
+      totalUsd = finalTotal
+        .mul(currentExchangeRate)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    } else {
+      totalUsd = finalTotal;
+      totalEur = finalTotal
+        .div(currentExchangeRate)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    }
+
     // Prices are final and all-inclusive; no separate tax surcharge or deduction.
     const response: CalculatedPriceResponse = {
-      basePriceUsd: basePrice.toFixed(2),
-      adultTotalUsd: adultTotal.toFixed(2),
-      childTotalUsd: childTotal.toFixed(2),
-      seasonalAdjustmentUsd: seasonalAdjustment.toFixed(2),
+      basePriceUsd: (tourCurrency === 'EUR'
+        ? basePrice.mul(currentExchangeRate)
+        : basePrice
+      ).toFixed(2),
+      adultTotalUsd: (tourCurrency === 'EUR'
+        ? adultTotal.mul(currentExchangeRate)
+        : adultTotal
+      ).toFixed(2),
+      childTotalUsd: (tourCurrency === 'EUR'
+        ? childTotal.mul(currentExchangeRate)
+        : childTotal
+      ).toFixed(2),
+      seasonalAdjustmentUsd: (tourCurrency === 'EUR'
+        ? seasonalAdjustment.mul(currentExchangeRate)
+        : seasonalAdjustment
+      ).toFixed(2),
       ...(accommodationSupplement.gt(0)
-        ? { accommodationSupplementUsd: accommodationSupplement.toFixed(2) }
+        ? {
+            accommodationSupplementUsd: (tourCurrency === 'EUR'
+              ? accommodationSupplement.mul(currentExchangeRate)
+              : accommodationSupplement
+            ).toFixed(2),
+          }
         : {}),
       ...(matchedSeasonName ? { seasonName: matchedSeasonName } : {}),
-      subtotalUsd: finalTotal.toFixed(2),
-      discountAmountUsd: discountAmount.toFixed(2),
+      subtotalUsd: totalUsd.toFixed(2),
+      discountAmountUsd: (tourCurrency === 'EUR'
+        ? discountAmount.mul(currentExchangeRate)
+        : discountAmount
+      ).toFixed(2),
       taxAmountUsd: '0.00',
-      totalAmountUsd: finalTotal.toFixed(2),
-      currency: tour.currency || 'USD',
+      totalAmountUsd: totalUsd.toFixed(2),
+      totalAmountEur: totalEur.toFixed(2),
+      authoritativeAmount: finalTotal.toFixed(2),
+      authoritativeCurrency: tourCurrency,
+      exchangeRate: currentExchangeRate.toFixed(6),
+      exchangeRateDate: rateDateStr,
+      exchangeRateSource: rateSource,
+      currency: tourCurrency,
       promoValid,
       promoMessage,
       discounts,

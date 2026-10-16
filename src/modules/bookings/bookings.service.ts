@@ -9,6 +9,7 @@ import {
   ConflictException,
   UnauthorizedException,
   Inject,
+  Optional,
 } from '@nestjs/common';
 
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -20,6 +21,7 @@ import {
   PricingService,
   CalculatedPriceResponse,
 } from '../pricing/pricing.service';
+import { CurrencyService } from '../currency/currency.service';
 import { CommissionsService } from '../commissions/commissions.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -66,6 +68,7 @@ export class BookingsService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     @InjectMetric('bookings_created_total')
     private readonly bookingsCounter: Counter<string>,
+    @Optional() private readonly currencyService?: CurrencyService,
   ) {
     const secret =
       this.configService.get<string>('GUEST_TOKEN_SECRET') ||
@@ -763,6 +766,41 @@ export class BookingsService {
               ? 'CONFIRMED'
               : 'PENDING';
 
+            const bookingCurrency = (
+              dto.currency ||
+              breakdownResult.currency ||
+              tour.currency ||
+              'USD'
+            ).toUpperCase();
+            const originalAmount = new Prisma.Decimal(
+              breakdownResult.authoritativeAmount || breakdownResult.totalAmountUsd,
+            );
+            const originalCurrency = (
+              breakdownResult.authoritativeCurrency || bookingCurrency
+            ).toUpperCase();
+            const exchangeRateDecimal = breakdownResult.exchangeRate
+              ? new Prisma.Decimal(breakdownResult.exchangeRate)
+              : new Prisma.Decimal(1);
+            const exchangeRateDateObj = breakdownResult.exchangeRateDate
+              ? new Date(breakdownResult.exchangeRateDate)
+              : new Date();
+            const exchangeRateSourceStr =
+              breakdownResult.exchangeRateSource || 'ECB';
+
+            let convertedAmount: Prisma.Decimal;
+            let convertedCurrency: string;
+            if (bookingCurrency === 'EUR') {
+              convertedAmount = finalTotalAmountUsd;
+              convertedCurrency = 'USD';
+            } else {
+              convertedAmount = breakdownResult.totalAmountEur
+                ? new Prisma.Decimal(breakdownResult.totalAmountEur)
+                : finalTotalAmountUsd
+                    .div(exchangeRateDecimal)
+                    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+              convertedCurrency = 'EUR';
+            }
+
             const booking = await tx.booking.create({
               data: {
                 id: bookingId,
@@ -780,6 +818,14 @@ export class BookingsService {
                 paidAmountUsd: isZeroAmount
                   ? finalTotalAmountUsd
                   : new Prisma.Decimal(0),
+                currency: bookingCurrency,
+                originalAmount,
+                originalCurrency,
+                exchangeRate: exchangeRateDecimal,
+                exchangeRateDate: exchangeRateDateObj.toISOString(),
+                exchangeRateSource: exchangeRateSourceStr,
+                convertedAmount,
+                convertedCurrency,
                 idempotencyKey: idempotencyKey || null,
                 requestHash,
                 guestTokenHash,
@@ -914,8 +960,13 @@ export class BookingsService {
                 status: isZeroAmount ? 'PAID' : 'SENT',
                 subtotal: new Prisma.Decimal(subtotalUsd),
                 tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
-                total: finalTotalAmountUsd,
-                currency: breakdownResult.currency || 'USD',
+                total:
+                  bookingCurrency === 'EUR'
+                    ? originalAmount
+                    : finalTotalAmountUsd,
+                currency: bookingCurrency,
+                exchangeRate: exchangeRateDecimal,
+                exchangeRateDate: exchangeRateDateObj.toISOString(),
                 snapshotJsonb:
                   invoiceSnapshot as unknown as Prisma.InputJsonValue,
               },
@@ -1130,6 +1181,20 @@ export class BookingsService {
       children: booking.children ?? 0,
       infants: booking.infants ?? 0,
       totalAmountUsd: (booking.totalAmountUsd || '0').toString(),
+      currency: (booking as any).currency || 'USD',
+      originalAmount:
+        (booking as any).originalAmount?.toString() ||
+        (booking.totalAmountUsd || '0').toString(),
+      originalCurrency:
+        (booking as any).originalCurrency || (booking as any).currency || 'USD',
+      convertedAmount: (booking as any).convertedAmount?.toString() || undefined,
+      convertedCurrency: (booking as any).convertedCurrency || undefined,
+      exchangeRate: (booking as any).exchangeRate?.toString() || undefined,
+      exchangeRateDate: (booking as any).exchangeRateDate
+        ? (booking as any).exchangeRateDate instanceof Date
+          ? (booking as any).exchangeRateDate.toISOString()
+          : String((booking as any).exchangeRateDate)
+        : undefined,
       paymentRequired: Number(booking.totalAmountUsd || 0) > 0,
       passengers: (passengers || []).map((p) => ({
         id: p.id,
@@ -1217,6 +1282,11 @@ export class BookingsService {
       children: booking.children,
       infants: booking.infants,
       totalAmountUsd: booking.totalAmountUsd.toString(),
+      currency: booking.currency || 'USD',
+      originalAmount: (
+        booking.originalAmount ?? booking.totalAmountUsd
+      ).toString(),
+      originalCurrency: booking.originalCurrency || booking.currency || 'USD',
       paymentStatus: (booking.payments ?? [])[0]?.status ?? null,
       paymentAttemptId: (booking.payments ?? [])[0]?.id ?? null,
       createdAt: booking.createdAt.toISOString(),
@@ -1448,6 +1518,9 @@ export class BookingsService {
       children: b.children,
       infants: b.infants,
       totalAmountUsd: b.totalAmountUsd.toString(),
+      currency: b.currency || 'USD',
+      originalAmount: (b.originalAmount ?? b.totalAmountUsd).toString(),
+      originalCurrency: b.originalCurrency || b.currency || 'USD',
       paymentStatus: (b.payments ?? [])[0]?.status ?? null,
       paymentAttemptId: (b.payments ?? [])[0]?.id ?? null,
       createdAt: b.createdAt.toISOString(),

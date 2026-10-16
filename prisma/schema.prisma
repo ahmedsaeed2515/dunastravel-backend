@@ -230,6 +230,11 @@ model Tour {
   city                    String?               @db.VarChar(100)
   country                 String?               @db.VarChar(100)
   currency                String                @default("USD") @db.VarChar(10)
+  originalPrice           Decimal?              @map("original_price") @db.Decimal(10, 2)
+  originalCurrency        String?               @map("original_currency") @db.VarChar(10)
+  exchangeRate            Decimal?              @map("exchange_rate") @db.Decimal(12, 6)
+  exchangeRateDate        DateTime?             @map("exchange_rate_date")
+  exchangeRateSource      String?               @map("exchange_rate_source") @db.VarChar(50)
   deletedAt               DateTime?             @map("deleted_at")
   departureTime           String?               @map("departure_time") @db.VarChar(50)
   difficultyLevel         String?               @map("difficulty_level") @db.VarChar(50)
@@ -383,6 +388,14 @@ model Booking {
   infants             Int                  @default(0)
   totalAmountUsd      Decimal              @map("total_amount_usd") @db.Decimal(10, 2)
   paidAmountUsd       Decimal              @default(0.00) @map("paid_amount_usd") @db.Decimal(10, 2)
+  currency            String               @default("USD") @db.VarChar(10)
+  originalAmount      Decimal?             @map("original_amount") @db.Decimal(10, 2)
+  originalCurrency    String?              @map("original_currency") @db.VarChar(10)
+  exchangeRate        Decimal?             @map("exchange_rate") @db.Decimal(10, 6)
+  exchangeRateDate    String?              @map("exchange_rate_date") @db.VarChar(20)
+  exchangeRateSource  String?              @map("exchange_rate_source") @db.VarChar(50)
+  convertedAmount     Decimal?             @map("converted_amount") @db.Decimal(10, 2)
+  convertedCurrency   String?              @map("converted_currency") @db.VarChar(10)
   notes               String?
   inquiryMessage      String?              @map("inquiry_message") @db.Text
   analyticsSessionId  String?              @map("analytics_session_id") @db.VarChar(100)
@@ -475,6 +488,8 @@ model Invoice {
   tax           Decimal       @default(0.00) @db.Decimal(10, 2)
   total         Decimal       @default(0.00) @db.Decimal(10, 2)
   currency      String        @default("USD") @db.VarChar(10)
+  exchangeRate  Decimal?      @map("exchange_rate") @db.Decimal(10, 6)
+  exchangeRateDate String?    @map("exchange_rate_date") @db.VarChar(20)
   snapshotJsonb Json?         @map("snapshot_jsonb")
   dueDate       DateTime?     @map("due_date")
   pdfUrl        String?       @map("pdf_url")
@@ -1376,6 +1391,22 @@ model CurrencyRate {
   provider    String?
 
   @@map("currency_rates")
+}
+
+model CurrencyRateHistory {
+  id          String   @id @default(uuid())
+  code        String   @db.VarChar(10)
+  base        String   @default("USD") @db.VarChar(10)
+  rateToBase  Decimal  @map("rate_to_base") @db.Decimal(65, 30)
+  inverseRate Decimal? @map("inverse_rate") @db.Decimal(65, 30)
+  rateDate    String   @map("rate_date") @db.VarChar(20)
+  provider    String?  @db.VarChar(50)
+  source      String?  @default("ECB") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([code, rateDate, provider], map: "idx_currency_rate_history_unique")
+  @@index([code, rateDate])
+  @@map("currency_rate_histories")
 }
 
 model JourneyRoute {

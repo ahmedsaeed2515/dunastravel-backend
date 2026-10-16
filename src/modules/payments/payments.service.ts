@@ -101,12 +101,26 @@ export class PaymentsService {
       );
     }
 
+    const bookingCurrency = (
+      booking.currency ||
+      booking.tour.currency ||
+      'USD'
+    ).toUpperCase();
+    const invoiceCurrency = (
+      booking.invoice?.currency || 'USD'
+    ).toUpperCase();
+    const isSupportedCurrency = ['USD', 'EUR'].includes(bookingCurrency);
+    const authoritativeTotal =
+      bookingCurrency === 'EUR' && booking.originalAmount
+        ? booking.originalAmount
+        : booking.totalAmountUsd;
+
     if (
       !booking.invoice ||
-      booking.tour.currency !== 'USD' ||
-      booking.invoice.currency !== 'USD' ||
-      !booking.invoice.total.equals(booking.totalAmountUsd) ||
-      booking.totalAmountUsd.lte(0)
+      !isSupportedCurrency ||
+      bookingCurrency !== invoiceCurrency ||
+      !booking.invoice.total.equals(authoritativeTotal) ||
+      authoritativeTotal.lte(0)
     ) {
       this.logger.error(
         `Payment blocked because the immutable financial snapshot is invalid for bookingId=${booking.id}`,
@@ -120,7 +134,7 @@ export class PaymentsService {
       (sum, payment) => sum.plus(payment.amount),
       new Prisma.Decimal(0),
     );
-    const amountDue = booking.totalAmountUsd.minus(totalCaptured);
+    const amountDue = authoritativeTotal.minus(totalCaptured);
     if (amountDue.lte(0)) {
       throw new ConflictException('Booking has no outstanding balance');
     }
@@ -135,7 +149,7 @@ export class PaymentsService {
       const isReusable =
         ageMs < PaymentsService.SESSION_TTL_MS &&
         Boolean(existingPendingPayment.sessionUrl) &&
-        existingPendingPayment.currency === 'USD' &&
+        existingPendingPayment.currency === bookingCurrency &&
         existingPendingPayment.amount.equals(amountDue);
 
       if (isReusable) {
@@ -179,7 +193,7 @@ export class PaymentsService {
     }
     // ─── End idempotency gate ─────────────────────────────────────────────────
 
-    const chargeCurrency = 'USD';
+    const chargeCurrency = bookingCurrency;
     const money = Money.fromDecimal(amountDue.toNumber(), chargeCurrency);
     if (!booking.billingInfo) {
       throw new UnprocessableEntityException(

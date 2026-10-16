@@ -486,7 +486,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -679,7 +679,7 @@
             "in": "query",
             "description": "Filter by payment status (e.g. PAID, PENDING, PARTIALLY_PAID)",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -2802,6 +2802,147 @@
         ]
       }
     },
+    "/api/admin/currency/rates": {
+      "get": {
+        "operationId": "CurrencyController_getRates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current global exchange rates from Redis Cache",
+        "tags": [
+          "Admin - Currency Engine"
+        ]
+      }
+    },
+    "/api/admin/currency/convert": {
+      "get": {
+        "operationId": "CurrencyController_convert",
+        "parameters": [
+          {
+            "name": "amount",
+            "required": true,
+            "in": "query",
+            "description": "Amount to convert",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Currency code to convert from (e.g., USD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Currency code to convert to (e.g., EUR)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Convert an amount between two currencies",
+        "tags": [
+          "Admin - Currency Engine"
+        ]
+      }
+    },
+    "/api/currency": {
+      "get": {
+        "operationId": "PublicCurrencyController_getRates[0]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current exchange rates"
+          }
+        },
+        "summary": "Get current global exchange rates",
+        "tags": [
+          "Currency Engine"
+        ]
+      }
+    },
+    "/api/currency/rates": {
+      "get": {
+        "operationId": "PublicCurrencyController_getRates[1]",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current exchange rates"
+          }
+        },
+        "summary": "Get current global exchange rates",
+        "tags": [
+          "Currency Engine"
+        ]
+      }
+    },
+    "/api/currency/convert": {
+      "get": {
+        "operationId": "PublicCurrencyController_convert",
+        "parameters": [
+          {
+            "name": "amount",
+            "required": true,
+            "in": "query",
+            "description": "Amount to convert",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Currency code to convert from (e.g., USD)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Currency code to convert to (e.g., EUR)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Convert an amount between two currencies",
+        "tags": [
+          "Currency Engine"
+        ]
+      }
+    },
     "/api/hotels": {
       "get": {
         "operationId": "HotelsController_findAll",
@@ -4370,14 +4511,6 @@
         "operationId": "WalletsController_getWallet",
         "parameters": [
           {
-            "name": "ownerType",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "ownerId",
             "required": true,
             "in": "path",
@@ -5528,6 +5661,26 @@
         ]
       }
     },
+    "/api/admin/currencies/sync": {
+      "post": {
+        "operationId": "AdminCurrenciesController_syncRates",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger on-demand rate synchronization from ECB/Frankfurter",
+        "tags": [
+          "Admin Currencies"
+        ]
+      }
+    },
     "/api/admin/currencies/rates": {
       "post": {
         "operationId": "AdminCurrenciesController_updateRates",
@@ -5552,150 +5705,9 @@
             "bearer": []
           }
         ],
-        "summary": "Ingest or update currency exchange rates",
+        "summary": "Ingest or update currency exchange rates manually",
         "tags": [
           "Admin Currencies"
-        ]
-      }
-    },
-    "/api/admin/currency/rates": {
-      "get": {
-        "operationId": "CurrencyController_getRates",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get current global exchange rates from Redis Cache",
-        "tags": [
-          "Admin - Currency Engine"
-        ]
-      }
-    },
-    "/api/admin/currency/convert": {
-      "get": {
-        "operationId": "CurrencyController_convert",
-        "parameters": [
-          {
-            "name": "amount",
-            "required": true,
-            "in": "query",
-            "description": "Amount to convert",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "from",
-            "required": true,
-            "in": "query",
-            "description": "Currency code to convert from (e.g., USD)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "required": true,
-            "in": "query",
-            "description": "Currency code to convert to (e.g., EUR)",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Convert an amount between two currencies",
-        "tags": [
-          "Admin - Currency Engine"
-        ]
-      }
-    },
-    "/api/currency": {
-      "get": {
-        "operationId": "PublicCurrencyController_getRates[0]",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Current exchange rates"
-          }
-        },
-        "summary": "Get current global exchange rates",
-        "tags": [
-          "Currency Engine"
-        ]
-      }
-    },
-    "/api/currency/rates": {
-      "get": {
-        "operationId": "PublicCurrencyController_getRates[1]",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Current exchange rates"
-          }
-        },
-        "summary": "Get current global exchange rates",
-        "tags": [
-          "Currency Engine"
-        ]
-      }
-    },
-    "/api/currency/convert": {
-      "get": {
-        "operationId": "PublicCurrencyController_convert",
-        "parameters": [
-          {
-            "name": "amount",
-            "required": true,
-            "in": "query",
-            "description": "Amount to convert",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "from",
-            "required": true,
-            "in": "query",
-            "description": "Currency code to convert from (e.g., USD)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "required": true,
-            "in": "query",
-            "description": "Currency code to convert to (e.g., EUR)",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Convert an amount between two currencies",
-        "tags": [
-          "Currency Engine"
         ]
       }
     },
@@ -8469,7 +8481,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -8477,7 +8489,7 @@
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
             }
           },
           {
@@ -17553,6 +17565,10 @@
       }
     },
     "schemas": {
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
       "AdminCreatePassengerDto": {
         "type": "object",
         "properties": {
@@ -17615,6 +17631,11 @@
             "type": "number",
             "description": "Number of infant passengers",
             "default": 0
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nationality of the lead traveler. Required to create a manual booking.",
+            "example": "Egyptian"
           },
           "departureDate": {
             "type": "string",
@@ -18057,7 +18078,11 @@
           },
           "basePriceUsd": {
             "type": "number",
-            "description": "Base price in USD"
+            "description": "Base price in USD (or base currency equivalent)"
+          },
+          "originalPrice": {
+            "type": "number",
+            "description": "Authoritative original price in specified currency"
           },
           "durationJsonb": {
             "type": "object",
@@ -18175,7 +18200,11 @@
           "currency": {
             "type": "string",
             "description": "Currency code",
-            "default": "USD"
+            "default": "USD",
+            "enum": [
+              "USD",
+              "EUR"
+            ]
           },
           "capacity": {
             "type": "number",
@@ -18212,6 +18241,24 @@
           "routeMapJsonb": {
             "type": "object",
             "description": "Interactive Journey Route Map JSONB"
+          },
+          "priceDisplayMode": {
+            "type": "string",
+            "description": "How the tour price is displayed on the public site",
+            "enum": [
+              "PRICE",
+              "HIDDEN",
+              "CUSTOM_LABEL"
+            ],
+            "default": "PRICE"
+          },
+          "priceLabelJsonb": {
+            "type": "object",
+            "description": "Multilingual custom price label (used when priceDisplayMode = CUSTOM_LABEL)"
+          },
+          "bookingRulesJsonb": {
+            "type": "object",
+            "description": "Recurring booking rules: daily cutoff time, blocked weekdays, blocked date ranges"
           },
           "market": {
             "type": "string",
@@ -18355,7 +18402,11 @@
           },
           "basePriceUsd": {
             "type": "number",
-            "description": "Base price in USD"
+            "description": "Base price in USD (or base currency equivalent)"
+          },
+          "originalPrice": {
+            "type": "number",
+            "description": "Authoritative original price in specified currency"
           },
           "durationJsonb": {
             "type": "object",
@@ -18473,7 +18524,11 @@
           "currency": {
             "type": "string",
             "description": "Currency code",
-            "default": "USD"
+            "default": "USD",
+            "enum": [
+              "USD",
+              "EUR"
+            ]
           },
           "capacity": {
             "type": "number",
@@ -18510,6 +18565,24 @@
           "routeMapJsonb": {
             "type": "object",
             "description": "Interactive Journey Route Map JSONB"
+          },
+          "priceDisplayMode": {
+            "type": "string",
+            "description": "How the tour price is displayed on the public site",
+            "enum": [
+              "PRICE",
+              "HIDDEN",
+              "CUSTOM_LABEL"
+            ],
+            "default": "PRICE"
+          },
+          "priceLabelJsonb": {
+            "type": "object",
+            "description": "Multilingual custom price label (used when priceDisplayMode = CUSTOM_LABEL)"
+          },
+          "bookingRulesJsonb": {
+            "type": "object",
+            "description": "Recurring booking rules: daily cutoff time, blocked weekdays, blocked date ranges"
           },
           "market": {
             "type": "string",
@@ -18757,6 +18830,11 @@
           "guestPhone": {
             "type": "string",
             "description": "Contact phone number with country code"
+          },
+          "guestNationality": {
+            "type": "string",
+            "description": "Nationality of the guest (required for booking requests)",
+            "example": "Egyptian"
           },
           "checkInDate": {
             "type": "string",
@@ -19009,7 +19087,7 @@
             "example": 30
           },
           "status": {
-            "type": "string",
+            "type": "object",
             "description": "Slot status",
             "example": "AVAILABLE"
           }
@@ -19074,7 +19152,7 @@
             "example": 25
           },
           "status": {
-            "type": "string",
+            "type": "object",
             "description": "Status override",
             "example": "AVAILABLE"
           }
@@ -19176,6 +19254,11 @@
           "passengerNames": {
             "type": "object",
             "description": "Passenger names object e.g. { adult_0: \"Name\" }"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nationality of the lead traveler. Required when type is \"booking\".",
+            "example": "Egyptian"
           },
           "fullName": {
             "type": "string",

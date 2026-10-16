@@ -23,6 +23,19 @@ export class CreateBookingDto {
   @IsIn(['booking', 'inquiry'])
   type!: 'booking' | 'inquiry';
 
+  @ApiPropertyOptional({
+    description: 'Booking currency (USD or EUR)',
+    example: 'EUR',
+    enum: ['USD', 'EUR'],
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase().trim() : value,
+  )
+  @IsIn(['USD', 'EUR'])
+  currency?: string;
+
   @ApiProperty({ description: 'Title of the tour to book (from frontend)' })
   @IsString()
   @IsOptional()

@@ -6,6 +6,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { AvailabilityModule } from '../availability/availability.module';
 import { CommissionsModule } from '../commissions/commissions.module';
+import { CurrencyModule } from '../currency/currency.module';
 import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 @Module({
@@ -15,6 +16,7 @@ import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
     PricingModule,
     AvailabilityModule,
     CommissionsModule,
+    CurrencyModule,
   ],
 
   controllers: [BookingsController],
