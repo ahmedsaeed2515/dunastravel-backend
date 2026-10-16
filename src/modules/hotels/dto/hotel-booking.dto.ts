@@ -51,6 +51,15 @@ export class CreateHotelBookingDto {
   @MaxLength(50)
   guestPhone!: string;
 
+  @ApiPropertyOptional({
+    description: 'Nationality of the guest (required for booking requests)',
+    example: 'Egyptian',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  guestNationality?: string;
+
   @ApiProperty({ description: 'Check-in date (YYYY-MM-DD)' })
   @IsString()
   @IsNotEmpty()

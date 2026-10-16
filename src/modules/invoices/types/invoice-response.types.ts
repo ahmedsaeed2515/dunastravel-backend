@@ -26,6 +26,7 @@ export interface InvoiceSnapshotPassenger {
   id?: string;
   passengerType: string;
   fullName: string;
+  nationality?: string | null;
 }
 
 export interface InvoiceSnapshot {

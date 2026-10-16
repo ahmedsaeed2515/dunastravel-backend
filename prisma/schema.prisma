@@ -251,6 +251,9 @@ model Tour {
   termsJsonb              Json?                 @map("terms_jsonb")
   transportationJsonb     Json?                 @map("transportation_jsonb")
   routeMapJsonb           Json?                 @map("route_map_jsonb")
+  priceDisplayMode        String                @default("PRICE") @map("price_display_mode") @db.VarChar(20)
+  priceLabelJsonb         Json?                 @map("price_label_jsonb")
+  bookingRulesJsonb       Json?                 @map("booking_rules_jsonb")
   bookings                Booking[]
   activityLogs            TourActivityLog[]
   images                  TourImage[]
@@ -1179,6 +1182,7 @@ model HotelBooking {
   guestName       String    @map("guest_name") @db.VarChar(150)
   guestEmail      String    @map("guest_email") @db.VarChar(255)
   guestPhone      String    @map("guest_phone") @db.VarChar(50)
+  guestNationality String?  @map("guest_nationality") @db.VarChar(100)
   checkInDate     DateTime  @map("check_in_date") @db.Date
   checkOutDate    DateTime  @map("check_out_date") @db.Date
   nights          Int       @default(1)

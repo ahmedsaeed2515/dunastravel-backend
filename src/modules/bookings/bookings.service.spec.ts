@@ -53,6 +53,7 @@ describe('BookingsService', () => {
       adult_1: 'Jane Doe',
       child_0: 'Jimmy Doe',
     },
+    nationality: 'American',
     invoiceType: 'PERSONAL',
   };
 
@@ -504,6 +505,116 @@ describe('BookingsService', () => {
       await expect(
         service.cancelBooking('BKG-ABC123', 'user-1'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('assertBookingScheduleOpen (recurring booking rules)', () => {
+    const invoke = (rules: unknown, arrivalDateStr: string) =>
+      (service as any).assertBookingScheduleOpen(
+        { bookingRulesJsonb: rules },
+        arrivalDateStr,
+      );
+
+    it('does nothing when rules are missing or disabled', () => {
+      expect(() => invoke(null, '2027-06-15')).not.toThrow();
+      expect(() =>
+        invoke(
+          {
+            enabled: false,
+            blockedRanges: [{ start: '2027-01-01', end: '2027-12-31' }],
+            blockedWeekdays: [0, 1, 2, 3, 4, 5, 6],
+          },
+          '2027-06-15',
+        ),
+      ).not.toThrow();
+    });
+
+    it('blocks bookings inside a fully blocked inclusive date range', () => {
+      const rules = {
+        enabled: true,
+        blockedRanges: [
+          { start: '2027-06-01', end: '2027-06-30', reason: 'Renovation' },
+        ],
+      };
+
+      expect(() => invoke(rules, '2027-06-15')).toThrow(
+        UnprocessableEntityException,
+      );
+      expect(() => invoke(rules, '2027-06-15')).toThrow(/BOOKINGS_CLOSED/);
+      expect(() => invoke(rules, '2027-07-01')).not.toThrow();
+    });
+
+    it('treats blocked range boundaries as inclusive', () => {
+      const rules = {
+        enabled: true,
+        blockedRanges: [{ start: '2027-06-10', end: '2027-06-20' }],
+      };
+
+      expect(() => invoke(rules, '2027-06-10')).toThrow(
+        UnprocessableEntityException,
+      );
+      expect(() => invoke(rules, '2027-06-20')).toThrow(
+        UnprocessableEntityException,
+      );
+      expect(() => invoke(rules, '2027-06-21')).not.toThrow();
+    });
+
+    it('blocks configured weekdays (evaluated in the tour timezone)', () => {
+      const arrivalDate = '2027-06-15';
+      const weekday = new Date(`${arrivalDate}T12:00:00Z`).getUTCDay();
+
+      expect(() =>
+        invoke(
+          { enabled: true, cutoffTimezone: 'Africa/Cairo', blockedWeekdays: [weekday] },
+          arrivalDate,
+        ),
+      ).toThrow(UnprocessableEntityException);
+
+      expect(() =>
+        invoke(
+          {
+            enabled: true,
+            cutoffTimezone: 'Africa/Cairo',
+            blockedWeekdays: [(weekday + 1) % 7],
+          },
+          arrivalDate,
+        ),
+      ).not.toThrow();
+    });
+
+    it('enforces the daily cutoff after the configured time in Africa/Cairo', () => {
+      // 2027-01-10T10:00:00Z === 12:00 in Cairo (UTC+2 during winter, no DST).
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2027-01-10T10:00:00Z'));
+      try {
+        const arrivalDate = '2027-01-10';
+
+        // 11:59 cutoff has already passed at 12:00 Cairo → blocked.
+        expect(() =>
+          invoke(
+            { enabled: true, dailyCutoffTime: '11:59', cutoffTimezone: 'Africa/Cairo' },
+            arrivalDate,
+          ),
+        ).toThrow(UnprocessableEntityException);
+
+        // 12:01 cutoff has not passed yet → allowed.
+        expect(() =>
+          invoke(
+            { enabled: true, dailyCutoffTime: '12:01', cutoffTimezone: 'Africa/Cairo' },
+            arrivalDate,
+          ),
+        ).not.toThrow();
+
+        // The cutoff only affects same-day departures.
+        expect(() =>
+          invoke(
+            { enabled: true, dailyCutoffTime: '11:59', cutoffTimezone: 'Africa/Cairo' },
+            '2027-01-11',
+          ),
+        ).not.toThrow();
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

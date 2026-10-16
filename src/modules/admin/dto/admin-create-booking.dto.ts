@@ -107,6 +107,19 @@ export class AdminCreateBookingDto {
   @Max(100)
   infants?: number;
 
+  @ApiPropertyOptional({
+    description:
+      'Nationality of the lead traveler. Required to create a manual booking.',
+    example: 'Egyptian',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  nationality?: string;
+
   @ApiPropertyOptional({ description: 'Departure date in YYYY-MM-DD format' })
   @IsOptional()
   @IsString()

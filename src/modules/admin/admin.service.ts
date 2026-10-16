@@ -3348,6 +3348,14 @@ export class AdminService {
         result[key] = sanitizePlainText(value);
       }
     }
+    if (typeof data.priceDisplayMode === 'string') {
+      const normalizedMode = data.priceDisplayMode.trim().toUpperCase();
+      result.priceDisplayMode = (
+        ['PRICE', 'HIDDEN', 'CUSTOM_LABEL'] as string[]
+      ).includes(normalizedMode)
+        ? normalizedMode
+        : 'PRICE';
+    }
     if (typeof data.slug === 'string') {
       result.slug = data.slug.toLowerCase();
     }
@@ -3370,6 +3378,8 @@ export class AdminService {
       'durationJsonb',
       'minPaxJsonb',
       'pickupLocationsJsonb',
+      'priceLabelJsonb',
+      'bookingRulesJsonb',
     ] as const;
     const richJsonFields = [
       'overviewJsonb',

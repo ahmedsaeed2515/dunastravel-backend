@@ -162,6 +162,19 @@ export class CreateBookingDto {
   @IsObject()
   passengerNames?: Record<string, string>;
 
+  @ApiPropertyOptional({
+    description:
+      'Nationality of the lead traveler. Required when type is "booking".',
+    example: 'Egyptian',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  nationality?: string;
+
   @ApiProperty({ description: 'Full Name' })
   @IsString()
   @IsNotEmpty()

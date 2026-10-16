@@ -1030,6 +1030,14 @@ export class HotelsService {
       );
     }
 
+    // Nationality is mandatory to submit a room booking request.
+    const guestNationality = (dto.guestNationality || '').trim();
+    if (!guestNationality) {
+      throw new BadRequestException(
+        'NATIONALITY_REQUIRED: Guest nationality is required to submit a booking request',
+      );
+    }
+
     // Calculate Rate (with Seasonal Pricing Resolution & Single Supplement)
     let roomRate = room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
     let singleSupplementPerNight = 0;
@@ -1062,6 +1070,7 @@ export class HotelsService {
         guestName: sanitizePlainText(dto.guestName),
         guestEmail: dto.guestEmail.trim().toLowerCase(),
         guestPhone: sanitizePlainText(dto.guestPhone),
+        guestNationality: sanitizePlainText(guestNationality),
         checkInDate: checkIn,
         checkOutDate: checkOut,
         nights,
@@ -1106,6 +1115,7 @@ export class HotelsService {
         nights,
         roomsCount,
         guestsCount,
+        guestNationality,
         ratePerNight: roomRate,
         totalAmountUsd: totalAmount,
         currency: 'USD',

@@ -149,6 +149,7 @@ export class BookingsService {
       country: dto.country?.trim() || null,
       transportChoice: dto.transportChoice?.trim() || null,
       notes: dto.notes?.trim() || null,
+      nationality: dto.nationality?.trim() || null,
     };
 
     return crypto
@@ -205,6 +206,178 @@ export class BookingsService {
     return false;
   }
 
+  /**
+   * Resolves the current calendar date and minutes-since-midnight in an IANA timezone.
+   * Falls back to UTC when the timezone identifier is unknown to the runtime.
+   */
+  private resolveNowInTimezone(timezone: string): {
+    dateStr: string;
+    minutes: number;
+  } {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(new Date());
+
+      const get = (type: Intl.DateTimeFormatPartTypes): string =>
+        parts.find((part) => part.type === type)?.value ?? '';
+
+      const year = get('year');
+      const month = get('month');
+      const day = get('day');
+      // Some runtimes report midnight as hour "24" with hour12:false — normalize it.
+      const hour = Number.parseInt(get('hour'), 10) % 24;
+      const minute = Number.parseInt(get('minute'), 10);
+
+      return {
+        dateStr: `${year}-${month}-${day}`,
+        minutes:
+          (Number.isFinite(hour) ? hour : 0) * 60 +
+          (Number.isFinite(minute) ? minute : 0),
+      };
+    } catch {
+      const now = new Date();
+      return {
+        dateStr: now.toISOString().split('T')[0],
+        minutes: now.getUTCHours() * 60 + now.getUTCMinutes(),
+      };
+    }
+  }
+
+  /**
+   * Returns 0=Sunday .. 6=Saturday for an ISO "YYYY-MM-DD" date interpreted in the
+   * given timezone. Uses a midday UTC anchor so the weekday cannot drift across
+   * midnight for any timezone offset.
+   */
+  private resolveWeekdayInTimezone(
+    dateStr: string,
+    timezone: string,
+  ): number | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return null;
+    try {
+      const weekday = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        weekday: 'short',
+      }).format(new Date(`${dateStr}T12:00:00Z`));
+
+      const weekdays: Record<string, number> = {
+        Sun: 0,
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
+      };
+      return weekdays[weekday] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Enforces the tour's recurring dashboard-configured booking rules.
+   *
+   * Rules shape (Tour.bookingRulesJsonb):
+   *   {
+   *     enabled: boolean,
+   *     dailyCutoffTime?: "HH:mm",       // same-day departures blocked after this time
+   *     cutoffTimezone?: "Africa/Cairo", // defaults to Africa/Cairo (server-evaluated)
+   *     blockedWeekdays?: number[],      // 0=Sunday .. 6=Saturday
+   *     blockedRanges?: { start, end, reason? }[]  // inclusive YYYY-MM-DD
+   *   }
+   *
+   * Throws UnprocessableEntityException when the tour cannot currently be booked.
+   */
+  private assertBookingScheduleOpen(
+    tour: { bookingRulesJsonb?: unknown } | null | undefined,
+    arrivalDateStr: string,
+  ): void {
+    const rules = (tour?.bookingRulesJsonb ?? null) as Record<
+      string,
+      any
+    > | null;
+
+    if (!rules || typeof rules !== 'object' || rules.enabled !== true) {
+      return;
+    }
+
+    const timezone =
+      typeof rules.cutoffTimezone === 'string' && rules.cutoffTimezone.trim()
+        ? rules.cutoffTimezone.trim()
+        : 'Africa/Cairo';
+
+    // 1. Explicit inclusive date ranges (checked first — most specific).
+    const blockedRanges = Array.isArray(rules.blockedRanges)
+      ? rules.blockedRanges
+      : [];
+    if (arrivalDateStr && blockedRanges.length > 0) {
+      for (const range of blockedRanges) {
+        const start =
+          typeof range?.start === 'string' ? range.start.trim() : '';
+        const end = typeof range?.end === 'string' ? range.end.trim() : '';
+        if (!start || !end) continue;
+
+        if (arrivalDateStr >= start && arrivalDateStr <= end) {
+          const reason =
+            typeof range?.reason === 'string' && range.reason.trim()
+              ? ` Reason: ${range.reason.trim()}`
+              : '';
+          throw new UnprocessableEntityException(
+            `BOOKINGS_CLOSED: Bookings for this tour are not available for the selected date.${reason}`,
+          );
+        }
+      }
+    }
+
+    // 2. Blocked weekdays (evaluated in the configured timezone).
+    const blockedWeekdays = Array.isArray(rules.blockedWeekdays)
+      ? rules.blockedWeekdays
+          .map((day: unknown) => Number(day))
+          .filter(
+            (day: number) =>
+              Number.isInteger(day) && day >= 0 && day <= 6,
+          )
+      : [];
+    if (blockedWeekdays.length > 0 && arrivalDateStr) {
+      const weekday = this.resolveWeekdayInTimezone(
+        arrivalDateStr,
+        timezone,
+      );
+      if (weekday !== null && blockedWeekdays.includes(weekday)) {
+        throw new UnprocessableEntityException(
+          'BOOKINGS_CLOSED: This tour does not operate on the selected day. Please pick another date.',
+        );
+      }
+    }
+
+    // 3. Daily cutoff time (blocks same-day departures after HH:mm in the configured timezone).
+    const cutoffTime =
+      typeof rules.dailyCutoffTime === 'string'
+        ? rules.dailyCutoffTime.trim()
+        : '';
+    if (cutoffTime && arrivalDateStr) {
+      const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(cutoffTime);
+      if (match) {
+        const cutoffMinutes =
+          Number.parseInt(match[1], 10) * 60 + Number.parseInt(match[2], 10);
+        const now = this.resolveNowInTimezone(timezone);
+
+        if (arrivalDateStr === now.dateStr && now.minutes > cutoffMinutes) {
+          throw new UnprocessableEntityException(
+            `BOOKINGS_CLOSED: Bookings for today close at ${cutoffTime} (${timezone}). Please select a later date.`,
+          );
+        }
+      }
+    }
+  }
+
   async createBooking(
     dto: CreateBookingDto,
     userId?: string,
@@ -214,6 +387,16 @@ export class BookingsService {
     this.logger.log(
       `Initiating booking creation | tourId=${dto.tourId} | user=${userId || 'GUEST'}`,
     );
+
+    // Nationality is mandatory for real bookings (not for inquiries).
+    if (dto.type === 'booking') {
+      const rawNationality = (dto.nationality || '').trim();
+      if (!rawNationality) {
+        throw new BadRequestException(
+          'NATIONALITY_REQUIRED: Nationality is required to complete the booking',
+        );
+      }
+    }
 
     if (!idempotencyKey) {
       idempotencyKey = `bkg_auto_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -412,6 +595,9 @@ export class BookingsService {
               );
             }
 
+            // 1b. Enforce recurring booking rules (daily cutoff / blocked weekdays / date ranges)
+            this.assertBookingScheduleOpen(tour, arrivalDateStr);
+
             // 2. Resolve & Validate Availability
             const availId = dto.availabilityId || dto.departureId;
             let availIdToStore: string;
@@ -600,10 +786,14 @@ export class BookingsService {
               },
             });
 
+            const passengerNationality =
+              (dto.nationality || '').trim() || null;
+
             const passengerData: Array<{
               bookingId: string;
               passengerType: string;
               fullName: string;
+              nationality: string | null;
             }> = [];
 
             if (dto.passengerNames && typeof dto.passengerNames === 'object') {
@@ -628,6 +818,7 @@ export class BookingsService {
                     bookingId: booking.id,
                     passengerType: type,
                     fullName: name.trim(),
+                    nationality: passengerNationality,
                   });
                 }
               }
@@ -648,6 +839,7 @@ export class BookingsService {
                 bookingId: booking.id,
                 passengerType: 'ADULT',
                 fullName: rawFullName,
+                nationality: passengerNationality,
               });
             }
 
@@ -710,6 +902,7 @@ export class BookingsService {
               passengers: passengerData.map((p) => ({
                 passengerType: p.passengerType,
                 fullName: p.fullName,
+                nationality: p.nationality,
               })),
             };
 

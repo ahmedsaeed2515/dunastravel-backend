@@ -526,6 +526,32 @@ export class CreateTourDto {
   @IsObject()
   routeMapJsonb?: Record<string, any>;
 
+  @ApiPropertyOptional({
+    description: 'How the tour price is displayed on the public site',
+    enum: ['PRICE', 'HIDDEN', 'CUSTOM_LABEL'],
+    default: 'PRICE',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['PRICE', 'HIDDEN', 'CUSTOM_LABEL'])
+  priceDisplayMode?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Multilingual custom price label (used when priceDisplayMode = CUSTOM_LABEL)',
+  })
+  @IsOptional()
+  @IsObject()
+  priceLabelJsonb?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description:
+      'Recurring booking rules: daily cutoff time, blocked weekdays, blocked date ranges',
+  })
+  @IsOptional()
+  @IsObject()
+  bookingRulesJsonb?: Record<string, any>;
+
   @ApiPropertyOptional({ description: 'Source market label' })
   @IsOptional()
   @IsString()

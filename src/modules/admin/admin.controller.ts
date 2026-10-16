@@ -165,6 +165,9 @@ export class AdminController {
         Object.keys(passengerNamesMap).length > 0
           ? passengerNamesMap
           : undefined,
+      nationality:
+        dto.nationality ||
+        dto.passengers?.find((p) => p.nationality)?.nationality,
       invoiceType: dto.invoiceType,
       companyName: dto.companyName,
       taxId: dto.taxId,

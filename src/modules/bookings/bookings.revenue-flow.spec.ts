@@ -262,6 +262,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         phone: '+123',
+        nationality: 'American',
       };
 
       const res = await bookingsService.createBooking(
@@ -294,6 +295,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         phone: '+123',
+        nationality: 'American',
       };
 
       const serviceWithPrivate = bookingsService as unknown as {
@@ -351,6 +353,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         phone: '+123',
+        nationality: 'American',
       };
 
       const envelope: IdempotencyCacheEnvelope = {
@@ -398,6 +401,7 @@ describe('Revenue Workflow & Concurrency Service Unit Tests', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         phone: '+123',
+        nationality: 'American',
       };
 
       const envelope: IdempotencyCacheEnvelope = {

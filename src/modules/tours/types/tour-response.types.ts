@@ -29,6 +29,9 @@ export interface TourSummaryResponse {
   category: string | null;
   basePriceUsd: string;
   currency: string;
+  priceDisplayMode?: string | null;
+  priceLabel?: string | null;
+  bookingRules?: unknown | null;
   duration: string;
   overview: string;
   highlights: string[];
@@ -112,6 +115,10 @@ export interface TourDetailResponse {
   category: string | null;
   basePriceUsd: string;
   currency: string;
+  priceDisplayMode?: string | null;
+  priceLabel?: string | null;
+  priceLabelJsonb?: unknown | null;
+  bookingRules?: unknown | null;
   duration: string;
   overview: string;
   highlights: string[];

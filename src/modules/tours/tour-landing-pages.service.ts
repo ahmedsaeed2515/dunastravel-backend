@@ -783,6 +783,8 @@ export class TourLandingPagesService {
                       overviewJsonb: true,
                       durationJsonb: true,
                       basePriceUsd: true,
+                      priceDisplayMode: true,
+                      priceLabelJsonb: true,
                       currency: true,
                       country: true,
                       city: true,
@@ -823,6 +825,10 @@ export class TourLandingPagesService {
             overview: extractI18n(t.tour.overviewJsonb, locale),
             duration: extractI18n(t.tour.durationJsonb, locale),
             basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
+            priceDisplayMode: (t.tour as any).priceDisplayMode ?? 'PRICE',
+            priceLabel: (t.tour as any).priceLabelJsonb
+              ? extractI18n((t.tour as any).priceLabelJsonb, locale) || null
+              : null,
             currency: t.tour.currency,
             country: t.tour.country,
             city: t.tour.city,
@@ -878,6 +884,8 @@ export class TourLandingPagesService {
                     overviewJsonb: true,
                     durationJsonb: true,
                     basePriceUsd: true,
+                    priceDisplayMode: true,
+                    priceLabelJsonb: true,
                     currency: true,
                     country: true,
                     city: true,
@@ -920,6 +928,10 @@ export class TourLandingPagesService {
             overview: extractI18n(t.tour.overviewJsonb, locale),
             duration: extractI18n(t.tour.durationJsonb, locale),
             basePriceUsd: new Prisma.Decimal(t.tour.basePriceUsd).toFixed(2),
+            priceDisplayMode: (t.tour as any).priceDisplayMode ?? 'PRICE',
+            priceLabel: (t.tour as any).priceLabelJsonb
+              ? extractI18n((t.tour as any).priceLabelJsonb, locale) || null
+              : null,
             currency: t.tour.currency,
             country: t.tour.country,
             city: t.tour.city,
