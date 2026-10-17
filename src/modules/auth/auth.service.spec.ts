@@ -288,9 +288,13 @@ describe('AuthService', () => {
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should create an unverified user and dispatch verification email by default', async () => {
+    it('should create an unverified user and dispatch verification email when requireEmailVerification is enabled', async () => {
       userService.findByEmail.mockResolvedValueOnce(null);
       (bcrypt.hash as jest.Mock).mockResolvedValueOnce('hashed-password');
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'auth.requireEmailVerification') return true;
+        return 'mock-secret-key-at-least-32-chars-long';
+      });
 
       await authService.register(registerDto);
 

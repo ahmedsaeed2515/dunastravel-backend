@@ -1,4 +1,9 @@
-import { Injectable, Logger, Optional, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Optional,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { decryptSensitiveField } from '../../../common/security/field-encryption.util';
 
@@ -10,9 +15,12 @@ import { decryptSensitiveField } from '../../../common/security/field-encryption
 // Last verified: 2026-08-31
 // ============================================================
 
-export type ProviderApiStyle = 'openai-compatible' | 'anthropic-sdk' | 'openai-native';
-export type ModelRecommendationTier = 'economy' | 'balanced' | 'premium' | 'fallback' | 'experimental';
-export type ModelVerificationStatus = 'AVAILABLE' | 'UNAVAILABLE' | 'DEPRECATED' | 'UNKNOWN';
+export type ProviderApiStyle =
+  'openai-compatible' | 'anthropic-sdk' | 'openai-native';
+export type ModelRecommendationTier =
+  'economy' | 'balanced' | 'premium' | 'fallback' | 'experimental';
+export type ModelVerificationStatus =
+  'AVAILABLE' | 'UNAVAILABLE' | 'DEPRECATED' | 'UNKNOWN';
 export type ProviderErrorCode =
   | 'SUCCESS'
   | 'INVALID_KEY'
@@ -38,7 +46,8 @@ export interface DiscoveredModelMetadata {
   status: 'AVAILABLE' | 'UNAVAILABLE' | 'DEPRECATED';
   source: 'LIVE_PROVIDER';
   isCuratedRecommended?: boolean;
-  curationBadge?: 'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced';
+  curationBadge?:
+    'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced';
 }
 
 export interface LiveModelDiscoveryResult {
@@ -59,19 +68,19 @@ export interface ProviderDefinition {
   displayName: string;
   logoSlug: string; // Used for logo lookup in frontend
   description: string;
-  officialBaseUrl: string;       // ENFORCED server-side — never overridden for official providers
+  officialBaseUrl: string; // ENFORCED server-side — never overridden for official providers
   apiStyle: ProviderApiStyle;
   documentationUrl: string;
-  apiKeyUrl: string;             // Direct link to key creation page
-  setupInstructions: string[];   // Step-by-step instructions shown in wizard
+  apiKeyUrl: string; // Direct link to key creation page
+  setupInstructions: string[]; // Step-by-step instructions shown in wizard
   supportsModelDiscovery: boolean;
   supportsStreaming: boolean;
   supportsToolCalling: boolean;
   isEnabled: boolean;
   isRecommended: boolean;
-  isLegacy: boolean;             // If true, not shown in primary wizard
-  allowCustomBaseUrl: boolean;   // Only true for 'custom' provider
-  primaryModels: string[];       // Ordered list of model IDs for this provider
+  isLegacy: boolean; // If true, not shown in primary wizard
+  allowCustomBaseUrl: boolean; // Only true for 'custom' provider
+  primaryModels: string[]; // Ordered list of model IDs for this provider
 }
 
 export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
@@ -79,7 +88,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     id: 'google',
     displayName: 'Google Gemini',
     logoSlug: 'google',
-    description: 'Fast, multilingual models with massive context windows. Optimal for travel conversations and RAG.',
+    description:
+      'Fast, multilingual models with massive context windows. Optimal for travel conversations and RAG.',
     officialBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', // trailing slash required for OpenAI-compat
     apiStyle: 'openai-compatible',
     documentationUrl: 'https://ai.google.dev/gemini-api/docs',
@@ -111,7 +121,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     id: 'openai',
     displayName: 'OpenAI',
     logoSlug: 'openai',
-    description: 'Industry-leading models for complex reasoning and high-quality conversations.',
+    description:
+      'Industry-leading models for complex reasoning and high-quality conversations.',
     officialBaseUrl: 'https://api.openai.com/v1',
     apiStyle: 'openai-native',
     documentationUrl: 'https://platform.openai.com/docs',
@@ -131,18 +142,15 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isRecommended: true,
     isLegacy: false,
     allowCustomBaseUrl: false,
-    primaryModels: [
-      'gpt-4o-mini',
-      'gpt-4o',
-      'o3-mini',
-    ],
+    primaryModels: ['gpt-4o-mini', 'gpt-4o', 'o3-mini'],
   },
 
   xai: {
     id: 'xai',
     displayName: 'xAI / Grok',
     logoSlug: 'xai',
-    description: 'xAI\'s Grok models. Optional provider for competitive cost/quality evaluation.',
+    description:
+      "xAI's Grok models. Optional provider for competitive cost/quality evaluation.",
     officialBaseUrl: 'https://api.x.ai/v1',
     apiStyle: 'openai-compatible',
     documentationUrl: 'https://docs.x.ai/docs',
@@ -161,18 +169,15 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isRecommended: false,
     isLegacy: false,
     allowCustomBaseUrl: false,
-    primaryModels: [
-      'grok-3-mini',
-      'grok-3',
-      'grok-3-fast',
-    ],
+    primaryModels: ['grok-3-mini', 'grok-3', 'grok-3-fast'],
   },
 
   openrouter: {
     id: 'openrouter',
     displayName: 'OpenRouter',
     logoSlug: 'openrouter',
-    description: 'Unified API for 200+ models. Strategic for cost comparison and fallback routing.',
+    description:
+      'Unified API for 200+ models. Strategic for cost comparison and fallback routing.',
     officialBaseUrl: 'https://openrouter.ai/api/v1',
     apiStyle: 'openai-compatible',
     documentationUrl: 'https://openrouter.ai/docs',
@@ -203,7 +208,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     id: 'deepseek',
     displayName: 'DeepSeek Direct',
     logoSlug: 'deepseek',
-    description: 'DeepSeek API directly. Compare against OpenRouter routing for cost optimization.',
+    description:
+      'DeepSeek API directly. Compare against OpenRouter routing for cost optimization.',
     officialBaseUrl: 'https://api.deepseek.com',
     apiStyle: 'openai-compatible',
     documentationUrl: 'https://platform.deepseek.com/docs',
@@ -222,17 +228,15 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     isRecommended: false,
     isLegacy: false,
     allowCustomBaseUrl: false,
-    primaryModels: [
-      'deepseek-chat',
-      'deepseek-reasoner',
-    ],
+    primaryModels: ['deepseek-chat', 'deepseek-reasoner'],
   },
 
   custom: {
     id: 'custom',
     displayName: 'Custom OpenAI-Compatible',
     logoSlug: 'custom',
-    description: 'Any OpenAI-compatible endpoint. You control the base URL and model ID.',
+    description:
+      'Any OpenAI-compatible endpoint. You control the base URL and model ID.',
     officialBaseUrl: '', // Empty — user provides custom URL
     apiStyle: 'openai-compatible',
     documentationUrl: '',
@@ -258,7 +262,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     id: 'anthropic',
     displayName: 'Anthropic (Legacy)',
     logoSlug: 'anthropic',
-    description: 'Claude models. Preserved for existing credentials but not part of primary strategy.',
+    description:
+      'Claude models. Preserved for existing credentials but not part of primary strategy.',
     officialBaseUrl: 'https://api.anthropic.com/v1',
     apiStyle: 'anthropic-sdk',
     documentationUrl: 'https://docs.anthropic.com',
@@ -275,7 +280,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     supportsToolCalling: true,
     isEnabled: true,
     isRecommended: false,
-    isLegacy: true,             // NOT shown in primary wizard
+    isLegacy: true, // NOT shown in primary wizard
     allowCustomBaseUrl: false,
     primaryModels: [
       'claude-3-5-sonnet-20241022',
@@ -292,15 +297,21 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
 // ============================================================
 
 export interface ModelDefinition {
-  id: string;                                    // Exact model ID as sent to the provider API
-  providerId: string;                            // Must match a key in PROVIDER_REGISTRY
+  id: string; // Exact model ID as sent to the provider API
+  providerId: string; // Must match a key in PROVIDER_REGISTRY
   displayName: string;
   displayNameAr: string;
   description: string;
   recommendation: ModelRecommendationTier;
-  badge: 'Economy' | 'Balanced' | 'Advanced' | 'Premium' | 'Fallback' | 'Experimental';
+  badge:
+    | 'Economy'
+    | 'Balanced'
+    | 'Advanced'
+    | 'Premium'
+    | 'Fallback'
+    | 'Experimental';
   status: ModelVerificationStatus;
-  lastVerifiedAt: string;                        // ISO date — update when verified
+  lastVerifiedAt: string; // ISO date — update when verified
   // Capabilities
   supportsStreaming: boolean;
   supportsToolCalling: boolean;
@@ -311,8 +322,8 @@ export interface ModelDefinition {
   inputPricePerMillion: number;
   outputPricePerMillion: number;
   cachedInputPricePerMillion?: number;
-  priceSource: string;                           // URL where pricing was verified
-  priceVerifiedAt: string;                       // ISO date
+  priceSource: string; // URL where pricing was verified
+  priceVerifiedAt: string; // ISO date
   // Limits
   contextWindow: number;
   maxOutputTokens: number;
@@ -322,7 +333,6 @@ export interface ModelDefinition {
 }
 
 export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
-
   // ── GOOGLE GEMINI ────────────────────────────────────────────────
 
   'gemini-3.6-flash': {
@@ -330,7 +340,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 3.6 Flash',
     displayNameAr: 'جيميناي 3.6 فلاش (الموصى به - الأحدث والأفضل أداءً)',
-    description: 'Official Google production flagship model: sub-second latency, multimodal, native tool calling, 1M context.',
+    description:
+      'Official Google production flagship model: sub-second latency, multimodal, native tool calling, 1M context.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
@@ -341,7 +352,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     cachedInputPricePerMillion: 0.0375,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-16',
@@ -356,7 +367,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 2.5 Flash (Deprecated)',
     displayNameAr: 'جيميناي 2.5 فلاش (موقوف - تم التحديث إلى 3.6)',
-    description: 'Deprecated by Google for new users. Automatically redirected to gemini-3.6-flash.',
+    description:
+      'Deprecated by Google for new users. Automatically redirected to gemini-3.6-flash.',
     recommendation: 'balanced',
     badge: 'Fallback',
     status: 'DEPRECATED',
@@ -367,7 +379,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     cachedInputPricePerMillion: 0.0375,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-16',
@@ -382,7 +394,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 3.5 Flash-Lite',
     displayNameAr: 'جيميناي 3.5 فلاش لايت (الأوفر تكلفة وسريع — الأحدث)',
-    description: 'Ultra-low latency, cost-efficient model ideal for high-throughput luxury travel chats.',
+    description:
+      'Ultra-low latency, cost-efficient model ideal for high-throughput luxury travel chats.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'AVAILABLE',
@@ -393,7 +406,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'VERY_GOOD',
     inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
+    outputPricePerMillion: 0.3,
     cachedInputPricePerMillion: 0.02,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-14',
@@ -408,7 +421,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 3.5 Flash',
     displayNameAr: 'جيميناي 3.5 فلاش (الجيل الأحدث السريع)',
-    description: 'Next-generation multimodal model with enhanced instruction following, native tool calling, and 1M context.',
+    description:
+      'Next-generation multimodal model with enhanced instruction following, native tool calling, and 1M context.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
@@ -419,7 +433,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     cachedInputPricePerMillion: 0.0375,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-14',
@@ -434,7 +448,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 2.5 Flash-Lite (Deprecated)',
     displayNameAr: 'جيميناي 2.5 فلاش لايت (موقوف - تم التحديث إلى 3.5)',
-    description: 'Deprecated by Google. Automatically redirected to gemini-3.5-flash-lite.',
+    description:
+      'Deprecated by Google. Automatically redirected to gemini-3.5-flash-lite.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'DEPRECATED',
@@ -445,7 +460,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'VERY_GOOD',
     inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
+    outputPricePerMillion: 0.3,
     cachedInputPricePerMillion: 0.02,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-14',
@@ -460,7 +475,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 2.5 Pro',
     displayNameAr: 'جيميناي 2.5 برو (أعلى جودة وتحليل عميق)',
-    description: 'Advanced reasoning model with 2M token context, superior for bespoke luxury itineraries and complex planning.',
+    description:
+      'Advanced reasoning model with 2M token context, superior for bespoke luxury itineraries and complex planning.',
     recommendation: 'premium',
     badge: 'Premium',
     status: 'AVAILABLE',
@@ -471,8 +487,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 1.25,
-    outputPricePerMillion: 5.00,
-    cachedInputPricePerMillion: 0.30,
+    outputPricePerMillion: 5.0,
+    cachedInputPricePerMillion: 0.3,
     priceSource: 'https://ai.google.dev/gemini-api/docs/pricing',
     priceVerifiedAt: '2026-09-13',
     contextWindow: 2_097_152,
@@ -486,7 +502,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 2.0 Flash',
     displayNameAr: 'جيميناي 2.0 فلاش (المستقر السريع)',
-    description: 'Fastest next-gen multimodal model with 1M context. Standard for luxury travel conversations.',
+    description:
+      'Fastest next-gen multimodal model with 1M context. Standard for luxury travel conversations.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
@@ -496,8 +513,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.40,
+    inputPricePerMillion: 0.1,
+    outputPricePerMillion: 0.4,
     cachedInputPricePerMillion: 0.025,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
     priceVerifiedAt: '2026-09-13',
@@ -512,7 +529,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 2.0 Flash Lite',
     displayNameAr: 'جيميناي 2.0 فلاش لايت (احتياطي سريع)',
-    description: 'Low-latency lightweight model for secondary fallback routing.',
+    description:
+      'Low-latency lightweight model for secondary fallback routing.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'AVAILABLE',
@@ -523,7 +541,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'GOOD',
     inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
+    outputPricePerMillion: 0.3,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
     priceVerifiedAt: '2026-09-13',
     contextWindow: 1_048_576,
@@ -537,7 +555,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 3.7 Flash',
     displayNameAr: 'جيمناي 3.7 فلاش',
-    description: 'Experimental Gemini Flash model for complex agentic workflows.',
+    description:
+      'Experimental Gemini Flash model for complex agentic workflows.',
     recommendation: 'premium',
     badge: 'Premium',
     status: 'AVAILABLE',
@@ -563,7 +582,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 1.5 Flash',
     displayNameAr: 'جيميناي 1.5 فلاش (المستقر السريع)',
-    description: 'Battle-tested high-speed model with 1M context. Ideal for live travel chat.',
+    description:
+      'Battle-tested high-speed model with 1M context. Ideal for live travel chat.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'DEPRECATED',
@@ -574,7 +594,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
+    outputPricePerMillion: 0.3,
     cachedInputPricePerMillion: 0.01875,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
     priceVerifiedAt: '2026-08-30',
@@ -589,7 +609,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 1.5 Pro',
     displayNameAr: 'جيميناي 1.5 برو (أعلى ذكاء وتحليل عميق)',
-    description: 'Premier complex reasoning model with 2M context window. Perfect for complex multi-day custom tours.',
+    description:
+      'Premier complex reasoning model with 2M context window. Perfect for complex multi-day custom tours.',
     recommendation: 'premium',
     badge: 'Premium',
     status: 'DEPRECATED',
@@ -600,7 +621,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 1.25,
-    outputPricePerMillion: 5.00,
+    outputPricePerMillion: 5.0,
     cachedInputPricePerMillion: 0.31,
     priceSource: 'https://ai.google.dev/gemini-api/docs/models',
     priceVerifiedAt: '2026-08-30',
@@ -615,7 +636,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'google',
     displayName: 'Gemini 1.5 Flash-8B',
     displayNameAr: 'جيميناي 1.5 فلاش 8B (خفيف للمهام السريعة)',
-    description: 'High-volume, small footprint model for quick categorization, translation, and simple answers.',
+    description:
+      'High-volume, small footprint model for quick categorization, translation, and simple answers.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'DEPRECATED',
@@ -643,7 +665,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openai',
     displayName: 'GPT-4o Mini',
     displayNameAr: 'جي بي تي 4 أومني ميني (اقتصادي وسريع)',
-    description: 'Cost-effective multimodal model. Good for volume FAQ handling.',
+    description:
+      'Cost-effective multimodal model. Good for volume FAQ handling.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'AVAILABLE',
@@ -654,7 +677,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: true,
     multilingualRating: 'VERY_GOOD',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     priceSource: 'https://openai.com/api/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 128_000,
@@ -668,7 +691,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openai',
     displayName: 'GPT-4o',
     displayNameAr: 'جي بي تي 4 أومني (المتوازن المتقدم)',
-    description: 'Flagship OpenAI multimodal model. Strong for complex travel conversations.',
+    description:
+      'Flagship OpenAI multimodal model. Strong for complex travel conversations.',
     recommendation: 'balanced',
     badge: 'Balanced',
     status: 'AVAILABLE',
@@ -678,8 +702,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 2.50,
-    outputPricePerMillion: 10.00,
+    inputPricePerMillion: 2.5,
+    outputPricePerMillion: 10.0,
     priceSource: 'https://openai.com/api/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 128_000,
@@ -703,8 +727,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: false,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 1.10,
-    outputPricePerMillion: 4.40,
+    inputPricePerMillion: 1.1,
+    outputPricePerMillion: 4.4,
     priceSource: 'https://openai.com/api/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 200_000,
@@ -730,8 +754,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: false,
     multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 0.30,
-    outputPricePerMillion: 0.50,
+    inputPricePerMillion: 0.3,
+    outputPricePerMillion: 0.5,
     priceSource: 'https://docs.x.ai/docs/models',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 131_072,
@@ -755,8 +779,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     priceSource: 'https://docs.x.ai/docs/models',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 131_072,
@@ -780,8 +804,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: false,
     multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 5.00,
-    outputPricePerMillion: 25.00,
+    inputPricePerMillion: 5.0,
+    outputPricePerMillion: 25.0,
     priceSource: 'https://docs.x.ai/docs/models',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 131_072,
@@ -797,7 +821,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openrouter',
     displayName: 'DeepSeek V3 Flash (via OpenRouter)',
     displayNameAr: 'ديب سيك V3 فلاش (عبر أوبن راوتر)',
-    description: 'Primary fallback model. Excellent cost/quality ratio for Arabic+English.',
+    description:
+      'Primary fallback model. Excellent cost/quality ratio for Arabic+English.',
     recommendation: 'fallback',
     badge: 'Fallback',
     status: 'AVAILABLE',
@@ -822,7 +847,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openrouter',
     displayName: 'DeepSeek R1 (via OpenRouter)',
     displayNameAr: 'ديب سيك R1 (عبر أوبن راوتر)',
-    description: 'Reasoning model via OpenRouter. For complex itinerary planning fallback.',
+    description:
+      'Reasoning model via OpenRouter. For complex itinerary planning fallback.',
     recommendation: 'experimental',
     badge: 'Experimental',
     status: 'AVAILABLE',
@@ -847,7 +873,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openrouter',
     displayName: 'Qwen 2.5 72B (via OpenRouter)',
     displayNameAr: 'كيوين 2.5 72B (عبر أوبن راوتر)',
-    description: 'Strong multilingual open-source model. Good for Arabic+English conversations.',
+    description:
+      'Strong multilingual open-source model. Good for Arabic+English conversations.',
     recommendation: 'economy',
     badge: 'Economy',
     status: 'AVAILABLE',
@@ -858,7 +885,7 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsVision: false,
     multilingualRating: 'EXCELLENT',
     inputPricePerMillion: 0.35,
-    outputPricePerMillion: 0.40,
+    outputPricePerMillion: 0.4,
     priceSource: 'https://openrouter.ai/models',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 128_000,
@@ -872,7 +899,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'openrouter',
     displayName: 'Gemini 2.0 Flash (via OpenRouter)',
     displayNameAr: 'جيميناي 2.0 فلاش (عبر أوبن راوتر)',
-    description: 'Gemini 2.0 Flash via OpenRouter — useful as a no-key fallback.',
+    description:
+      'Gemini 2.0 Flash via OpenRouter — useful as a no-key fallback.',
     recommendation: 'fallback',
     badge: 'Fallback',
     status: 'DEPRECATED',
@@ -882,8 +910,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.40,
+    inputPricePerMillion: 0.1,
+    outputPricePerMillion: 0.4,
     priceSource: 'https://openrouter.ai/models',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 1_048_576,
@@ -961,8 +989,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     priceSource: 'https://www.anthropic.com/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 200_000,
@@ -976,7 +1004,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'anthropic',
     displayName: 'Claude 3.5 Haiku (Legacy)',
     displayNameAr: 'كلود 3.5 هايكو (موروث)',
-    description: 'Fast legacy Anthropic model. Preserved for existing deployments.',
+    description:
+      'Fast legacy Anthropic model. Preserved for existing deployments.',
     recommendation: 'experimental',
     badge: 'Experimental',
     status: 'AVAILABLE',
@@ -986,8 +1015,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: false,
     multilingualRating: 'VERY_GOOD',
-    inputPricePerMillion: 0.80,
-    outputPricePerMillion: 4.00,
+    inputPricePerMillion: 0.8,
+    outputPricePerMillion: 4.0,
     priceSource: 'https://www.anthropic.com/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 200_000,
@@ -1001,7 +1030,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     providerId: 'anthropic',
     displayName: 'Claude 3.7 Sonnet (Legacy)',
     displayNameAr: 'كلود 3.7 سونيت (موروث)',
-    description: 'Latest legacy Anthropic model. Preserved for existing deployments.',
+    description:
+      'Latest legacy Anthropic model. Preserved for existing deployments.',
     recommendation: 'experimental',
     badge: 'Experimental',
     status: 'AVAILABLE',
@@ -1011,8 +1041,8 @@ export const MODEL_REGISTRY: Record<string, ModelDefinition> = {
     supportsStructuredOutput: true,
     supportsVision: true,
     multilingualRating: 'EXCELLENT',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     priceSource: 'https://www.anthropic.com/pricing',
     priceVerifiedAt: '2026-08-30',
     contextWindow: 200_000,
@@ -1042,14 +1072,20 @@ export function normalizeModelId(model: string): string {
   return MODEL_ALIASES[stripped] || stripped;
 }
 
-export function validateBaseUrl(url: string): { valid: boolean; reason?: string } {
+export function validateBaseUrl(url: string): {
+  valid: boolean;
+  reason?: string;
+} {
   if (!url || typeof url !== 'string' || !url.trim()) {
     return { valid: false, reason: 'Base URL cannot be empty' };
   }
   try {
     const parsed = new URL(url.trim());
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return { valid: false, reason: 'Base URL must start with http:// or https://' };
+      return {
+        valid: false,
+        reason: 'Base URL must start with http:// or https://',
+      };
     }
     return { valid: true };
   } catch {
@@ -1061,13 +1097,20 @@ export function sanitizeApiKey(apiKey: string): string {
   if (!apiKey || typeof apiKey !== 'string') return '';
   let cleaned = apiKey.trim();
   // Strip zero-width, non-printable control characters, and BOM
-  cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F-\x9F]/g, '').trim();
+  cleaned = cleaned
+    .replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F-\x9F]/g, '')
+    .trim();
 
   // Iteratively strip environment variable prefixes, outer quotes, backticks, and whitespace
   let prev = '';
   while (cleaned !== prev && cleaned.length > 0) {
     prev = cleaned;
-    cleaned = cleaned.replace(/^(Bearer|GEMINI_API_KEY=|OPENAI_API_KEY=|OPENROUTER_API_KEY=|ANTHROPIC_API_KEY=|DEEPSEEK_API_KEY=|XAI_API_KEY=|API_KEY=|apiKey=|api_key=)\s*/i, '').trim();
+    cleaned = cleaned
+      .replace(
+        /^(Bearer|GEMINI_API_KEY=|OPENAI_API_KEY=|OPENROUTER_API_KEY=|ANTHROPIC_API_KEY=|DEEPSEEK_API_KEY=|XAI_API_KEY=|API_KEY=|apiKey=|api_key=)\s*/i,
+        '',
+      )
+      .trim();
     cleaned = cleaned.replace(/^["'`]+|["'`]+$/g, '').trim();
   }
   return cleaned;
@@ -1077,21 +1120,34 @@ export function sanitizeApiKey(apiKey: string): string {
  * Validates API key syntax/format for known official providers.
  * Catches invalid strings (e.g. "Password123", raw tokens, truncated keys) BEFORE persisting or dispatching calls.
  */
-export function validateApiKeyFormat(provider: string, apiKey: string): { valid: boolean; reason?: string } {
+export function validateApiKeyFormat(
+  provider: string,
+  apiKey: string,
+): { valid: boolean; reason?: string } {
   const key = sanitizeApiKey(apiKey);
   if (!key || key.length < 5) {
-    return { valid: false, reason: 'API key is missing or too short (minimum 5 characters).' };
+    return {
+      valid: false,
+      reason: 'API key is missing or too short (minimum 5 characters).',
+    };
   }
 
   // Obvious placeholder detection
-  if (/^(your_api_key|your-api-key|placeholder|test123|example|password123)$/i.test(key)) {
-    return { valid: false, reason: 'The provided API key is a placeholder or dummy text, not a real key.' };
+  if (
+    /^(your_api_key|your-api-key|placeholder|test123|example|password123)$/i.test(
+      key,
+    )
+  ) {
+    return {
+      valid: false,
+      reason:
+        'The provided API key is a placeholder or dummy text, not a real key.',
+    };
   }
 
   // Accept any valid key or token format across all providers (AI Studio AIza..., Google Cloud AQ.../ya29..., OpenAI sk-..., OpenRouter sk-or-..., Anthropic sk-ant-..., DeepSeek, custom gateways, etc.)
   return { valid: true };
 }
-
 
 /**
  * Returns all valid model IDs for a given provider.
@@ -1107,14 +1163,18 @@ export function getValidModelIdsForProvider(providerId: string): string[] {
  * Validates that the model belongs to the provider.
  * Returns true if valid, false if mismatch.
  */
-export function isValidProviderModelPair(providerId: string, modelId: string): boolean {
+export function isValidProviderModelPair(
+  providerId: string,
+  modelId: string,
+): boolean {
   const resolvedModelId = normalizeModelId(modelId);
   if (isRetiredGoogleModel(resolvedModelId)) {
     return false;
   }
   const model = MODEL_REGISTRY[resolvedModelId];
   if (!model) return providerId === 'custom';
-  if (model.status === 'DEPRECATED' || model.status === 'UNAVAILABLE') return false;
+  if (model.status === 'DEPRECATED' || model.status === 'UNAVAILABLE')
+    return false;
   if (model.providerId === providerId) return true;
   if (providerId === 'custom') return true;
   return false;
@@ -1140,10 +1200,14 @@ export function isRetiredGoogleModel(modelId: string): boolean {
  * For official providers this is always the server-authoritative value.
  * Only 'custom' provider accepts an override.
  */
-export function getOfficialBaseUrl(providerId: string, customBaseUrl?: string): string {
+export function getOfficialBaseUrl(
+  providerId: string,
+  customBaseUrl?: string,
+): string {
   const provider = PROVIDER_REGISTRY[providerId];
   if (!provider) throw new Error(`Unknown provider: ${providerId}`);
-  if (provider.allowCustomBaseUrl && customBaseUrl) return customBaseUrl.replace(/\/+$/, '');
+  if (provider.allowCustomBaseUrl && customBaseUrl)
+    return customBaseUrl.replace(/\/+$/, '');
   return provider.officialBaseUrl.replace(/\/+$/, '');
 }
 
@@ -1154,11 +1218,12 @@ export function getOfficialBaseUrl(providerId: string, customBaseUrl?: string): 
 @Injectable()
 export class ModelRegistryService {
   private readonly logger = new Logger(ModelRegistryService.name);
-  private readonly discoveryCache = new Map<string, { models: DiscoveredModelMetadata[]; timestamp: number }>();
+  private readonly discoveryCache = new Map<
+    string,
+    { models: DiscoveredModelMetadata[]; timestamp: number }
+  >();
 
-  constructor(
-    @Optional() private readonly prisma?: PrismaService,
-  ) {}
+  constructor(@Optional() private readonly prisma?: PrismaService) {}
 
   invalidateDiscoveryCache(providerId?: string) {
     if (providerId) {
@@ -1184,20 +1249,29 @@ export class ModelRegistryService {
     const pId = providerId.toLowerCase();
     const provider = PROVIDER_REGISTRY[pId];
     if (!provider) {
-      throw new BadRequestException(`Unknown provider '${providerId}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+      throw new BadRequestException(
+        `Unknown provider '${providerId}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`,
+      );
     }
 
     if (options.baseUrl) {
       const urlCheck = validateBaseUrl(options.baseUrl);
       if (!urlCheck.valid) {
-        throw new BadRequestException(`Invalid base URL for provider '${providerId}': ${urlCheck.reason}`);
+        throw new BadRequestException(
+          `Invalid base URL for provider '${providerId}': ${urlCheck.reason}`,
+        );
       }
     }
 
     // Resolve API key
-    let apiKey = options.apiKey && !options.apiKey.includes('••') ? options.apiKey.trim() : '';
+    let apiKey =
+      options.apiKey && !options.apiKey.includes('••')
+        ? options.apiKey.trim()
+        : '';
     if (!apiKey && options.credentialId && this.prisma) {
-      const cred = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id: options.credentialId } });
+      const cred = await (this.prisma as any).aiProviderCredential.findUnique({
+        where: { id: options.credentialId },
+      });
       if (cred?.encryptedApiKey) {
         apiKey = decryptSensitiveField(cred.encryptedApiKey) || '';
       }
@@ -1213,14 +1287,22 @@ export class ModelRegistryService {
     }
 
     if (!apiKey || apiKey.length < 5) {
-      throw new BadRequestException(`An API key is required to query live models for provider '${providerId}'.`);
+      throw new BadRequestException(
+        `An API key is required to query live models for provider '${providerId}'.`,
+      );
     }
 
     // Cache check
     const cacheKey = `${pId}:${options.baseUrl || 'default'}:${options.integrationMode || 'default'}:${apiKey.slice(0, 8)}`;
     const cached = this.discoveryCache.get(cacheKey);
-    if (cached && !options.forceRefresh && Date.now() - cached.timestamp < 3600_000) {
-      const curated = cached.models.filter((m: any) => m.isCuratedRecommended).slice(0, 5);
+    if (
+      cached &&
+      !options.forceRefresh &&
+      Date.now() - cached.timestamp < 3600_000
+    ) {
+      const curated = cached.models
+        .filter((m: any) => m.isCuratedRecommended)
+        .slice(0, 5);
       return {
         providerId: pId,
         models: cached.models,
@@ -1253,13 +1335,17 @@ export class ModelRegistryService {
               const registered = MODEL_REGISTRY[rawId];
               discovered.push({
                 id: rawId,
-                displayName: item.displayName || registered?.displayName || rawId,
+                displayName:
+                  item.displayName || registered?.displayName || rawId,
                 provider: 'google',
                 supportsChat: true,
                 supportsStreaming: true,
                 supportsTools: true,
                 supportsStructuredOutput: true,
-                contextWindow: item.inputTokenLimit || registered?.contextWindow || 1_048_576,
+                contextWindow:
+                  item.inputTokenLimit ||
+                  registered?.contextWindow ||
+                  1_048_576,
                 inputPricePer1M: registered?.inputPricePerMillion,
                 outputPricePer1M: registered?.outputPricePerMillion,
                 status: 'AVAILABLE',
@@ -1268,17 +1354,20 @@ export class ModelRegistryService {
             }
           }
         } catch (err: any) {
-          this.logger.warn(`Google Native models API failed (${err.message}). Trying OpenAI-compatible...`);
+          this.logger.warn(
+            `Google Native models API failed (${err.message}). Trying OpenAI-compatible...`,
+          );
         }
 
         // If native didn't find models, try OpenAI-compatible endpoint
         if (discovered.length === 0) {
           try {
-            const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
+            const baseUrl =
+              'https://generativelanguage.googleapis.com/v1beta/openai';
             const url = `${baseUrl}/models`;
             const res = await fetch(url, {
               headers: {
-                'Authorization': `Bearer ${apiKey}`,
+                Authorization: `Bearer ${apiKey}`,
                 'x-goog-api-key': apiKey,
               },
               signal: abortController.signal,
@@ -1292,7 +1381,11 @@ export class ModelRegistryService {
                 const registered = MODEL_REGISTRY[rawId];
                 discovered.push({
                   id: rawId,
-                  displayName: registered?.displayName || rawId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+                  displayName:
+                    registered?.displayName ||
+                    rawId
+                      .replace(/-/g, ' ')
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase()),
                   provider: 'google',
                   supportsChat: true,
                   supportsStreaming: true,
@@ -1307,7 +1400,9 @@ export class ModelRegistryService {
               }
             }
           } catch (err: any) {
-            this.logger.warn(`Google OpenAI-compatible models API failed (${err.message}).`);
+            this.logger.warn(
+              `Google OpenAI-compatible models API failed (${err.message}).`,
+            );
           }
         }
 
@@ -1334,19 +1429,33 @@ export class ModelRegistryService {
       } else if (pId === 'openai') {
         const url = 'https://api.openai.com/v1/models';
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           signal: abortController.signal,
         });
         if (!res.ok) {
           const errBody = await res.text();
-          throw new Error(`OpenAI API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          throw new Error(
+            `OpenAI API returned ${res.status}: ${errBody.slice(0, 150)}`,
+          );
         }
         const json: any = await res.json();
         const list = json.data || [];
         for (const item of list) {
           const id = item.id || '';
-          if (!id.startsWith('gpt-') && !id.startsWith('o1') && !id.startsWith('o3') && !id.startsWith('chatgpt')) continue;
-          if (id.includes('audio') || id.includes('realtime') || id.includes('transcribe') || id.includes('tts')) continue;
+          if (
+            !id.startsWith('gpt-') &&
+            !id.startsWith('o1') &&
+            !id.startsWith('o3') &&
+            !id.startsWith('chatgpt')
+          )
+            continue;
+          if (
+            id.includes('audio') ||
+            id.includes('realtime') ||
+            id.includes('transcribe') ||
+            id.includes('tts')
+          )
+            continue;
 
           const registered = MODEL_REGISTRY[id];
           discovered.push({
@@ -1367,27 +1476,36 @@ export class ModelRegistryService {
       } else if (pId === 'openrouter') {
         const url = 'https://openrouter.ai/api/v1/models';
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           signal: abortController.signal,
         });
         if (!res.ok) {
           const errBody = await res.text();
-          throw new Error(`OpenRouter API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          throw new Error(
+            `OpenRouter API returned ${res.status}: ${errBody.slice(0, 150)}`,
+          );
         }
         const json: any = await res.json();
         const list = json.data || [];
         for (const item of list.slice(0, 150)) {
           const id = item.id || '';
           if (!id) continue;
-          const promptPrice = item.pricing?.prompt ? Number(item.pricing.prompt) * 1_000_000 : undefined;
-          const compPrice = item.pricing?.completion ? Number(item.pricing.completion) * 1_000_000 : undefined;
+          const promptPrice = item.pricing?.prompt
+            ? Number(item.pricing.prompt) * 1_000_000
+            : undefined;
+          const compPrice = item.pricing?.completion
+            ? Number(item.pricing.completion) * 1_000_000
+            : undefined;
           discovered.push({
             id,
             displayName: item.name || id,
             provider: 'openrouter',
             supportsChat: true,
             supportsStreaming: true,
-            supportsTools: Boolean(item.description?.includes('tool') || item.architecture?.instruct_type),
+            supportsTools: Boolean(
+              item.description?.includes('tool') ||
+              item.architecture?.instruct_type,
+            ),
             supportsStructuredOutput: true,
             contextWindow: item.context_length || 128_000,
             inputPricePer1M: promptPrice,
@@ -1399,12 +1517,14 @@ export class ModelRegistryService {
       } else if (pId === 'xai') {
         const url = 'https://api.x.ai/v1/models';
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           signal: abortController.signal,
         });
         if (!res.ok) {
           const errBody = await res.text();
-          throw new Error(`xAI API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          throw new Error(
+            `xAI API returned ${res.status}: ${errBody.slice(0, 150)}`,
+          );
         }
         const json: any = await res.json();
         const list = json.data || [];
@@ -1430,12 +1550,14 @@ export class ModelRegistryService {
       } else if (pId === 'deepseek') {
         const url = 'https://api.deepseek.com/models';
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           signal: abortController.signal,
         });
         if (!res.ok) {
           const errBody = await res.text();
-          throw new Error(`DeepSeek API returned ${res.status}: ${errBody.slice(0, 150)}`);
+          throw new Error(
+            `DeepSeek API returned ${res.status}: ${errBody.slice(0, 150)}`,
+          );
         }
         const json: any = await res.json();
         const list = json.data || [];
@@ -1461,16 +1583,20 @@ export class ModelRegistryService {
       } else if (pId === 'custom') {
         const base = (options.baseUrl || '').replace(/\/+$/, '');
         if (!base) {
-          throw new BadRequestException('Base URL is required for custom provider model discovery.');
+          throw new BadRequestException(
+            'Base URL is required for custom provider model discovery.',
+          );
         }
         const url = `${base}/models`;
         const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           signal: abortController.signal,
         });
         if (!res.ok) {
           const errBody = await res.text();
-          throw new Error(`Custom endpoint returned ${res.status}: ${errBody.slice(0, 150)}`);
+          throw new Error(
+            `Custom endpoint returned ${res.status}: ${errBody.slice(0, 150)}`,
+          );
         }
         const json: any = await res.json();
         const list = json.data || json.models || [];
@@ -1493,22 +1619,33 @@ export class ModelRegistryService {
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        throw new BadRequestException(`Model discovery timed out connecting to '${providerId}'.`);
+        throw new BadRequestException(
+          `Model discovery timed out connecting to '${providerId}'.`,
+        );
       }
-      this.logger.warn(`Model discovery failed for provider '${providerId}': ${err.message}`);
-      throw new BadRequestException(`Failed to discover live models from '${providerId}': ${err.message}`);
+      this.logger.warn(
+        `Model discovery failed for provider '${providerId}': ${err.message}`,
+      );
+      throw new BadRequestException(
+        `Failed to discover live models from '${providerId}': ${err.message}`,
+      );
     } finally {
       clearTimeout(timeout);
     }
 
     if (discovered.length === 0) {
-      throw new BadRequestException(`No active chat-compatible models were found for provider '${providerId}' with the provided API key.`);
+      throw new BadRequestException(
+        `No active chat-compatible models were found for provider '${providerId}' with the provided API key.`,
+      );
     }
 
     const providerDef = PROVIDER_REGISTRY[pId];
     const primaryIds = providerDef?.primaryModels || [];
 
-    const curationBadges: Record<string, 'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced'> = {
+    const curationBadges: Record<
+      string,
+      'Best Overall' | 'Best Value' | 'Fastest' | 'Highest Quality' | 'Advanced'
+    > = {
       // Google
       'gemini-3.6-flash': 'Best Overall',
       'gemini-2.5-flash': 'Best Overall',
@@ -1521,7 +1658,7 @@ export class ModelRegistryService {
       'gpt-4o-mini': 'Best Value',
       'o3-mini': 'Highest Quality',
       'gpt-4.5-preview': 'Advanced',
-      'o1': 'Advanced',
+      o1: 'Advanced',
       // OpenRouter
       'google/gemini-2.5-flash': 'Best Value',
       'anthropic/claude-3.5-sonnet': 'Best Overall',
@@ -1539,7 +1676,12 @@ export class ModelRegistryService {
 
     const curatedModels: DiscoveredModelMetadata[] = [];
     for (const pid of primaryIds) {
-      const match = discovered.find((m) => m.id === pid || m.id.endsWith(`/${pid}`) || m.id.replace(/^models\//, '') === pid);
+      const match = discovered.find(
+        (m) =>
+          m.id === pid ||
+          m.id.endsWith(`/${pid}`) ||
+          m.id.replace(/^models\//, '') === pid,
+      );
       if (match && curatedModels.length < 5) {
         match.isCuratedRecommended = true;
         match.curationBadge = curationBadges[pid] || 'Best Overall';
@@ -1555,7 +1697,10 @@ export class ModelRegistryService {
       }
     }
 
-    this.discoveryCache.set(cacheKey, { models: discovered, timestamp: Date.now() });
+    this.discoveryCache.set(cacheKey, {
+      models: discovered,
+      timestamp: Date.now(),
+    });
 
     return {
       providerId: pId,
@@ -1580,12 +1725,15 @@ export class ModelRegistryService {
   }
 
   getAllModels(): ModelDefinition[] {
-    return Object.values(MODEL_REGISTRY).filter((m) => m.status !== 'DEPRECATED');
+    return Object.values(MODEL_REGISTRY).filter(
+      (m) => m.status !== 'DEPRECATED',
+    );
   }
 
   getModelsByProvider(providerId: string): ModelDefinition[] {
     return Object.values(MODEL_REGISTRY).filter(
-      (m) => m.providerId === providerId.toLowerCase() && m.status !== 'DEPRECATED',
+      (m) =>
+        m.providerId === providerId.toLowerCase() && m.status !== 'DEPRECATED',
     );
   }
 
@@ -1602,11 +1750,17 @@ export class ModelRegistryService {
     return MODEL_REGISTRY[resolved];
   }
 
-  validateProviderModelPair(providerId: string, modelId: string): { valid: boolean; reason?: string } {
+  validateProviderModelPair(
+    providerId: string,
+    modelId: string,
+  ): { valid: boolean; reason?: string } {
     const pId = providerId.toLowerCase();
     const provider = PROVIDER_REGISTRY[pId];
     if (!provider) {
-      return { valid: false, reason: `Provider '${providerId}' is not in the registry.` };
+      return {
+        valid: false,
+        reason: `Provider '${providerId}' is not in the registry.`,
+      };
     }
     const resolvedModelId = normalizeModelId(modelId);
     if (isRetiredGoogleModel(resolvedModelId)) {
@@ -1632,8 +1786,9 @@ export class ModelRegistryService {
     if (model.providerId !== pId) {
       return {
         valid: false,
-        reason: `Model '${modelId}' belongs to provider '${model.providerId}', not '${providerId}'. ` +
-                `Valid models for '${providerId}': ${getValidModelIdsForProvider(providerId).join(', ')}`,
+        reason:
+          `Model '${modelId}' belongs to provider '${model.providerId}', not '${providerId}'. ` +
+          `Valid models for '${providerId}': ${getValidModelIdsForProvider(providerId).join(', ')}`,
       };
     }
     return { valid: true };
@@ -1643,12 +1798,18 @@ export class ModelRegistryService {
     return getOfficialBaseUrl(providerId, customBaseUrl);
   }
 
-  validateApiKeyFormat(providerId: string, apiKey: string): { valid: boolean; reason?: string } {
+  validateApiKeyFormat(
+    providerId: string,
+    apiKey: string,
+  ): { valid: boolean; reason?: string } {
     return validateApiKeyFormat(providerId, apiKey);
   }
 
-
-  calculateCostUsd(modelId: string, inputTokens: number, outputTokens: number): number {
+  calculateCostUsd(
+    modelId: string,
+    inputTokens: number,
+    outputTokens: number,
+  ): number {
     const resolved = normalizeModelId(modelId);
     const model = MODEL_REGISTRY[resolved];
     if (!model) return 0;
@@ -1684,8 +1845,8 @@ export class ModelRegistryService {
         nameAr: modelId,
         badge: 'Experimental' as const,
         contextWindow: 128_000,
-        inputCostPer1M: 2.00,
-        outputCostPer1M: 8.00,
+        inputCostPer1M: 2.0,
+        outputCostPer1M: 8.0,
         supportsToolCalling: true,
         supportsStructuredOutput: true,
         supportsVision: false,

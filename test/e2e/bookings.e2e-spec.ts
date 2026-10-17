@@ -101,21 +101,37 @@ describe('Bookings (e2e)', () => {
   afterAll(async () => {
     try {
       if (createdRefCode) {
-        const bkg = await prisma.booking.findFirst({ where: { referenceCode: createdRefCode } });
+        const bkg = await prisma.booking.findFirst({
+          where: { referenceCode: createdRefCode },
+        });
         if (bkg) {
-          await prisma.bookingActivityLog.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
-          await prisma.payment.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
-          await prisma.invoice.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
-          await prisma.billingInfo.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
-          await prisma.passenger.deleteMany({ where: { bookingId: bkg.id } }).catch(() => {});
-          await prisma.booking.deleteMany({ where: { id: bkg.id } }).catch(() => {});
+          await prisma.bookingActivityLog
+            .deleteMany({ where: { bookingId: bkg.id } })
+            .catch(() => {});
+          await prisma.payment
+            .deleteMany({ where: { bookingId: bkg.id } })
+            .catch(() => {});
+          await prisma.invoice
+            .deleteMany({ where: { bookingId: bkg.id } })
+            .catch(() => {});
+          await prisma.billingInfo
+            .deleteMany({ where: { bookingId: bkg.id } })
+            .catch(() => {});
+          await prisma.passenger
+            .deleteMany({ where: { bookingId: bkg.id } })
+            .catch(() => {});
+          await prisma.booking
+            .deleteMany({ where: { id: bkg.id } })
+            .catch(() => {});
         }
       }
       if (tourId) {
         await prisma.tour.deleteMany({ where: { id: tourId } }).catch(() => {});
       }
       if (adminUser.email) {
-        await prisma.user.deleteMany({ where: { email: adminUser.email } }).catch(() => {});
+        await prisma.user
+          .deleteMany({ where: { email: adminUser.email } })
+          .catch(() => {});
       }
     } finally {
       await app?.close();

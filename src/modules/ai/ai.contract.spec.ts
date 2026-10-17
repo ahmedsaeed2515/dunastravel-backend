@@ -128,7 +128,9 @@ describe('AI HTTP Contract Spec', () => {
       create: jest.fn().mockResolvedValue({ id: 'bill-1' }),
     },
     invoice: {
-      create: jest.fn().mockResolvedValue({ id: 'inv-1', invoiceNumber: 'INV-TEST-123' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'inv-1', invoiceNumber: 'INV-TEST-123' }),
     },
     aiKnowledgeChunk: {
       findMany: jest.fn().mockResolvedValue([]),
@@ -148,7 +150,9 @@ describe('AI HTTP Contract Spec', () => {
         ],
       }),
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue({ id: 'usr-1', email: 'test@example.com' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'usr-1', email: 'test@example.com' }),
     },
     notificationDeliveryLog: {
       create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
@@ -184,12 +188,22 @@ describe('AI HTTP Contract Spec', () => {
           title: 'Custom Luxury 8-Day Egypt Itinerary',
           durationDays: 8,
           destinations: ['Cairo', 'Luxor'],
-          days: [{ dayNumber: 1, location: 'Cairo', morning: 'Arrival', afternoon: 'Relax', evening: 'Dinner' }],
+          days: [
+            {
+              dayNumber: 1,
+              location: 'Cairo',
+              morning: 'Arrival',
+              afternoon: 'Relax',
+              evening: 'Dinner',
+            },
+          ],
         }),
         analyzeCustomer: jest.fn().mockResolvedValue({
-          summary: 'High-value repeat traveler with affinity for luxury Nile cruises.',
+          summary:
+            'High-value repeat traveler with affinity for luxury Nile cruises.',
           suggestedDestinations: ['Cairo', 'Luxor', 'Aswan'],
-          salesStrategy: 'Offer private dahabiya charter with exclusive Egyptologist.',
+          salesStrategy:
+            'Offer private dahabiya charter with exclusive Egyptologist.',
           churnRisk: 'Low',
         }),
       })
@@ -409,9 +423,13 @@ describe('AI HTTP Contract Spec', () => {
     expect(res.body.data.providerId).toBe('google');
     expect(Array.isArray(res.body.data.models)).toBe(true);
     expect(res.body.data.models.length).toBeGreaterThanOrEqual(2);
-    expect(res.body.data.models.find((m: any) => m.id === 'gemini-3.6-flash')).toBeDefined();
+    expect(
+      res.body.data.models.find((m: any) => m.id === 'gemini-3.6-flash'),
+    ).toBeDefined();
     // Deprecated model must NOT be in models
-    expect(res.body.data.models.find((m: any) => m.id === 'gemini-1.5-flash')).toBeUndefined();
+    expect(
+      res.body.data.models.find((m: any) => m.id === 'gemini-1.5-flash'),
+    ).toBeUndefined();
     // Raw secret key MUST NEVER appear in the response payload
     const bodyStr = JSON.stringify(res.body);
     expect(bodyStr).not.toContain('AIzaSySecretGoogleKeyForDiscoveryTest');

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface PromptTemplateSections {
@@ -46,25 +51,37 @@ export class PromptEngineService {
       parts.push(`=== 3. BUSINESS CONTEXT ===\n${sections.businessContext}`);
     }
     if (sections.toneAndPersonality) {
-      parts.push(`=== 4. TONE & COMMUNICATION STYLE ===\n${sections.toneAndPersonality}`);
+      parts.push(
+        `=== 4. TONE & COMMUNICATION STYLE ===\n${sections.toneAndPersonality}`,
+      );
     }
     if (sections.conversationRules) {
-      parts.push(`=== 5. CONVERSATION RULES ===\n${sections.conversationRules}`);
+      parts.push(
+        `=== 5. CONVERSATION RULES ===\n${sections.conversationRules}`,
+      );
     }
     if (sections.languageRules) {
-      parts.push(`=== 6. MULTILINGUAL INSTRUCTIONS ===\n${sections.languageRules}`);
+      parts.push(
+        `=== 6. MULTILINGUAL INSTRUCTIONS ===\n${sections.languageRules}`,
+      );
     }
     if (sections.knowledgeAndGroundingRules) {
-      parts.push(`=== 7. KNOWLEDGE & ZERO-HALLUCINATION POLICY ===\n${sections.knowledgeAndGroundingRules}`);
+      parts.push(
+        `=== 7. KNOWLEDGE & ZERO-HALLUCINATION POLICY ===\n${sections.knowledgeAndGroundingRules}`,
+      );
     }
     if (sections.bookingRules) {
-      parts.push(`=== 8. BOOKING & PRICING RULES ===\n${sections.bookingRules}`);
+      parts.push(
+        `=== 8. BOOKING & PRICING RULES ===\n${sections.bookingRules}`,
+      );
     }
     if (sections.salesRules) {
       parts.push(`=== 9. SALES & UP-SELLING RULES ===\n${sections.salesRules}`);
     }
     if (sections.safetyAndGuardrails) {
-      parts.push(`=== 10. SAFETY, SECURITY & PROMPT-INJECTION GUARD ===\n${sections.safetyAndGuardrails}`);
+      parts.push(
+        `=== 10. SAFETY, SECURITY & PROMPT-INJECTION GUARD ===\n${sections.safetyAndGuardrails}`,
+      );
     }
     if (sections.outputFormatting) {
       parts.push(`=== 11. OUTPUT FORMATTING ===\n${sections.outputFormatting}`);
@@ -80,13 +97,26 @@ export class PromptEngineService {
     if (!template) return '';
 
     let rendered = template;
-    const todayStr = options.currentDate || new Date().toISOString().split('T')[0];
+    const todayStr =
+      options.currentDate || new Date().toISOString().split('T')[0];
 
-    rendered = rendered.replace(/\{\{\s*agent_name\s*\}\}/gi, options.agentName || 'GuideR');
-    rendered = rendered.replace(/\{\{\s*visitor_language\s*\}\}/gi, options.visitorLanguage || 'en');
-    rendered = rendered.replace(/\{\{\s*business_name\s*\}\}/gi, options.businessName || 'Dunas Travel');
+    rendered = rendered.replace(
+      /\{\{\s*agent_name\s*\}\}/gi,
+      options.agentName || 'GuideR',
+    );
+    rendered = rendered.replace(
+      /\{\{\s*visitor_language\s*\}\}/gi,
+      options.visitorLanguage || 'en',
+    );
+    rendered = rendered.replace(
+      /\{\{\s*business_name\s*\}\}/gi,
+      options.businessName || 'Dunas Travel',
+    );
     rendered = rendered.replace(/\{\{\s*current_date\s*\}\}/gi, todayStr);
-    rendered = rendered.replace(/\{\{\s*grounded_knowledge\s*\}\}/gi, options.groundedKnowledge || 'No specific catalog items matched.');
+    rendered = rendered.replace(
+      /\{\{\s*grounded_knowledge\s*\}\}/gi,
+      options.groundedKnowledge || 'No specific catalog items matched.',
+    );
 
     if (options.customVariables) {
       for (const [key, val] of Object.entries(options.customVariables)) {
@@ -125,7 +155,9 @@ export class PromptEngineService {
     userId?: string;
   }) {
     if (!dto.name || !dto.systemPrompt) {
-      throw new BadRequestException('Prompt name and systemPrompt content are required.');
+      throw new BadRequestException(
+        'Prompt name and systemPrompt content are required.',
+      );
     }
 
     const latestVersion = await (this.prisma as any).aiPromptVersion.findFirst({
@@ -167,7 +199,9 @@ export class PromptEngineService {
     },
     userId?: string,
   ) {
-    const existing = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    const existing = await (this.prisma as any).aiPromptVersion.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException(`Prompt version '${id}' not found.`);
     }
@@ -190,7 +224,9 @@ export class PromptEngineService {
    * and sets previous published versions to ARCHIVED.
    */
   async publishPromptVersion(id: string, userId?: string) {
-    const target = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    const target = await (this.prisma as any).aiPromptVersion.findUnique({
+      where: { id },
+    });
     if (!target) {
       throw new NotFoundException(`Prompt version '${id}' not found.`);
     }
@@ -253,13 +289,17 @@ export class PromptEngineService {
    * Delete prompt version
    */
   async deletePromptVersion(id: string) {
-    const target = await (this.prisma as any).aiPromptVersion.findUnique({ where: { id } });
+    const target = await (this.prisma as any).aiPromptVersion.findUnique({
+      where: { id },
+    });
     if (!target) {
       throw new NotFoundException(`Prompt version '${id}' not found.`);
     }
 
     if (target.status === 'PUBLISHED') {
-      throw new BadRequestException('Cannot delete an actively published prompt version. Publish another version first.');
+      throw new BadRequestException(
+        'Cannot delete an actively published prompt version. Publish another version first.',
+      );
     }
 
     await (this.prisma as any).aiPromptVersion.delete({ where: { id } });

@@ -143,35 +143,53 @@ describe('Admin (e2e)', () => {
           where: { referenceCode: testBookingRef },
         });
         if (bkg) {
-          await prisma.bookingActivityLog.deleteMany({
-            where: { bookingId: bkg.id },
-          }).catch(() => {});
-          await prisma.payment.deleteMany({
-            where: { bookingId: bkg.id },
-          }).catch(() => {});
-          await prisma.invoice.deleteMany({
-            where: { bookingId: bkg.id },
-          }).catch(() => {});
-          await prisma.billingInfo.deleteMany({
-            where: { bookingId: bkg.id },
-          }).catch(() => {});
-          await prisma.passenger.deleteMany({
-            where: { bookingId: bkg.id },
-          }).catch(() => {});
-          await prisma.booking.deleteMany({
-            where: { id: bkg.id },
-          }).catch(() => {});
+          await prisma.bookingActivityLog
+            .deleteMany({
+              where: { bookingId: bkg.id },
+            })
+            .catch(() => {});
+          await prisma.payment
+            .deleteMany({
+              where: { bookingId: bkg.id },
+            })
+            .catch(() => {});
+          await prisma.invoice
+            .deleteMany({
+              where: { bookingId: bkg.id },
+            })
+            .catch(() => {});
+          await prisma.billingInfo
+            .deleteMany({
+              where: { bookingId: bkg.id },
+            })
+            .catch(() => {});
+          await prisma.passenger
+            .deleteMany({
+              where: { bookingId: bkg.id },
+            })
+            .catch(() => {});
+          await prisma.booking
+            .deleteMany({
+              where: { id: bkg.id },
+            })
+            .catch(() => {});
         }
       }
-      await prisma.tourAvailability.deleteMany({
-        where: { tourId: testTourId },
-      }).catch(() => {});
-      await prisma.tour.deleteMany({
-        where: { id: testTourId },
-      }).catch(() => {});
-      await prisma.user.deleteMany({
-        where: { email: { in: [adminCredentials.email, regularUser.email] } },
-      }).catch(() => {});
+      await prisma.tourAvailability
+        .deleteMany({
+          where: { tourId: testTourId },
+        })
+        .catch(() => {});
+      await prisma.tour
+        .deleteMany({
+          where: { id: testTourId },
+        })
+        .catch(() => {});
+      await prisma.user
+        .deleteMany({
+          where: { email: { in: [adminCredentials.email, regularUser.email] } },
+        })
+        .catch(() => {});
     } catch {
       // ignore
     }

@@ -1,6 +1,9 @@
 import { IsEnum, IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
-import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 
 export class ListInAppNotificationsQueryDto {
   @IsOptional()

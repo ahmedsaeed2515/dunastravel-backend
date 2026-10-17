@@ -34,7 +34,7 @@ export class EmailDeliveryService {
       ? await this.prisma.notificationDeliveryLog
           .create({
             data: {
-              notificationType: notificationType as unknown as PrismaNotificationType,
+              notificationType: notificationType,
               originReferenceCode,
               originEntityType,
               recipientEmail: payload.to,
@@ -42,7 +42,9 @@ export class EmailDeliveryService {
             },
           })
           .catch((err) => {
-            this.logger.warn(`Could not create delivery log record: ${err?.message || err}`);
+            this.logger.warn(
+              `Could not create delivery log record: ${err?.message || err}`,
+            );
             return null;
           })
       : null;
@@ -79,7 +81,8 @@ export class EmailDeliveryService {
       } catch (error: unknown) {
         const err = error as Error;
         const isNonTransient =
-          error instanceof EmailDeliveryException && error.isTransient === false;
+          error instanceof EmailDeliveryException &&
+          error.isTransient === false;
 
         this.logger.warn(
           `Failed to send ${notificationType} (attempt ${attempts}${isNonTransient ? ', non-transient' : ''}): ${err.message}`,

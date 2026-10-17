@@ -106,9 +106,7 @@ export class PaymentsService {
       booking.tour.currency ||
       'USD'
     ).toUpperCase();
-    const invoiceCurrency = (
-      booking.invoice?.currency || 'USD'
-    ).toUpperCase();
+    const invoiceCurrency = (booking.invoice?.currency || 'USD').toUpperCase();
     const isSupportedCurrency = ['USD', 'EUR'].includes(bookingCurrency);
     const authoritativeTotal =
       bookingCurrency === 'EUR' && booking.originalAmount
@@ -233,7 +231,9 @@ export class PaymentsService {
 
     const providerTxId = session.providerInvoiceId;
     if (!providerTxId) {
-      throw new ServiceUnavailableException('Payment gateway did not return a valid transaction ID');
+      throw new ServiceUnavailableException(
+        'Payment gateway did not return a valid transaction ID',
+      );
     }
 
     try {
@@ -286,21 +286,13 @@ export class PaymentsService {
         `Payment initiated for booking ${booking.id} with transactionId ${providerTxId}`,
       );
 
-      if (this.paymentGateway.getProviderName() === 'MOCK') {
-        await this.prisma.$transaction(async (tx) => {
-          await this.handleSuccessfulPaymentTx(
-            tx,
-            booking.id,
-            amountDue.toNumber(),
-            providerTxId,
-            chargeCurrency,
-          );
-        });
-      }
-
       // The customer must poll using the opaque payment record ID, never a
       // provider session/transaction reference whose format is provider-owned.
-      return { ...session, transactionId: providerTxId, paymentId: effectivePaymentId };
+      return {
+        ...session,
+        transactionId: providerTxId,
+        paymentId: effectivePaymentId,
+      };
     } catch (error: unknown) {
       const errObj = error as { code?: string; message?: string };
       // P2002 from partial unique index: clean up losing orphan session
@@ -444,7 +436,7 @@ export class PaymentsService {
       );
     }
 
-    const rawEvt = (payload.rawEvent || {}) as Record<string, unknown>;
+    const rawEvt = payload.rawEvent || {};
     const reportedRawAmount =
       rawEvt.order_amount ??
       rawEvt.paid_amount ??
@@ -476,20 +468,22 @@ export class PaymentsService {
           this.logger.error(
             `CRITICAL FINANCIAL ALERT: Webhook amount mismatch for booking ${matchedPayment.bookingId}! Gateway reported ${gatewayAmount.toFixed(2)}, expected ${matchedPayment.amount.toFixed(2)}`,
           );
-          await this.prisma.auditLog.create({
-            data: {
-              action: 'PAYMENT_AMOUNT_MISMATCH_ALERT',
-              entityType: 'Booking',
-              entityId: matchedPayment.bookingId,
-              metadata: {
-                paymentId: matchedPayment.id,
-                reportedAmount: gatewayAmount.toFixed(2),
-                expectedAmount: matchedPayment.amount.toFixed(2),
-                currency: matchedPayment.currency,
-                providerInvoiceId: payload.providerInvoiceId,
+          await this.prisma.auditLog
+            .create({
+              data: {
+                action: 'PAYMENT_AMOUNT_MISMATCH_ALERT',
+                entityType: 'Booking',
+                entityId: matchedPayment.bookingId,
+                metadata: {
+                  paymentId: matchedPayment.id,
+                  reportedAmount: gatewayAmount.toFixed(2),
+                  expectedAmount: matchedPayment.amount.toFixed(2),
+                  currency: matchedPayment.currency,
+                  providerInvoiceId: payload.providerInvoiceId,
+                },
               },
-            },
-          }).catch(() => {});
+            })
+            .catch(() => {});
           throw new UnprocessableEntityException(
             `Gateway reported amount (${gatewayAmount.toFixed(2)}) does not match expected payment amount (${matchedPayment.amount.toFixed(2)})`,
           );
@@ -499,19 +493,21 @@ export class PaymentsService {
           this.logger.error(
             `CRITICAL FINANCIAL ALERT: Webhook currency mismatch for booking ${matchedPayment.bookingId}! Gateway reported ${targetCurrency}, expected ${matchedPayment.currency}`,
           );
-          await this.prisma.auditLog.create({
-            data: {
-              action: 'PAYMENT_CURRENCY_MISMATCH_ALERT',
-              entityType: 'Booking',
-              entityId: matchedPayment.bookingId,
-              metadata: {
-                paymentId: matchedPayment.id,
-                reportedCurrency: targetCurrency,
-                expectedCurrency: matchedPayment.currency,
-                providerInvoiceId: payload.providerInvoiceId,
+          await this.prisma.auditLog
+            .create({
+              data: {
+                action: 'PAYMENT_CURRENCY_MISMATCH_ALERT',
+                entityType: 'Booking',
+                entityId: matchedPayment.bookingId,
+                metadata: {
+                  paymentId: matchedPayment.id,
+                  reportedCurrency: targetCurrency,
+                  expectedCurrency: matchedPayment.currency,
+                  providerInvoiceId: payload.providerInvoiceId,
+                },
               },
-            },
-          }).catch(() => {});
+            })
+            .catch(() => {});
           throw new UnprocessableEntityException(
             `Gateway reported currency (${targetCurrency}) does not match expected currency (${matchedPayment.currency})`,
           );
@@ -581,7 +577,9 @@ export class PaymentsService {
                 where: { id: targetPaymentId },
                 data: { providerStatus: 'PARTIALLY_REFUNDED' },
               });
-            } else if (['REFUNDED', 'VOIDED', 'REVERSED'].includes(payload.status)) {
+            } else if (
+              ['REFUNDED', 'VOIDED', 'REVERSED'].includes(payload.status)
+            ) {
               await this.handleProviderReversalTx(
                 tx,
                 targetPaymentId,
@@ -793,7 +791,11 @@ export class PaymentsService {
       );
     }
 
-    if (booking.status === 'REFUNDED' || booking.status === 'CANCELLED') {
+    if (
+      ['REFUNDED', 'CANCELLED', 'COMPLETED', 'ARCHIVED'].includes(
+        booking.status,
+      )
+    ) {
       throw new UnprocessableEntityException(
         `Cannot capture payment for booking in terminal status ${booking.status}`,
       );
@@ -807,7 +809,7 @@ export class PaymentsService {
           { transactionId },
           { providerPaymentId: transactionId },
         ],
-        status: { in: ['PENDING', 'EXPIRED'] },
+        status: { in: ['PENDING', 'AUTHORIZED'] },
         isRefund: false,
       },
     });
@@ -1214,9 +1216,8 @@ export class PaymentsService {
     if (!isAuthorized) {
       throw new NotFoundException('Payment not found');
     }
-    const outcome = await this.reconcilePaymentByProviderInvoiceId(
-      providerInvoiceId,
-    );
+    const outcome =
+      await this.reconcilePaymentByProviderInvoiceId(providerInvoiceId);
     if (outcome === 'DUPLICATE') {
       const p = await this.prisma.payment.findFirst({
         where: {

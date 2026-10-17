@@ -14,10 +14,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ToursService } from './tours.service';
-import {
-  GetToursQueryDto,
-  GetTourDetailQueryDto,
-} from './dto';
+import { GetToursQueryDto, GetTourDetailQueryDto } from './dto';
 import { Public } from '../../common/decorators';
 import { ParseUuidOrSlugPipe } from '../../common/pipes';
 
@@ -64,4 +61,3 @@ export class ToursController {
     return this.toursService.findBySlug(trimmedSlug, query.lang);
   }
 }
-

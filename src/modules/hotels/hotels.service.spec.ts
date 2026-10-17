@@ -30,12 +30,23 @@ describe('HotelsService', () => {
     const service = new HotelsService(prisma as never);
 
     await expect(service.findAllPublic('ar', 'luxor', 12)).resolves.toEqual([
-      expect.objectContaining({ slug: 'nile-palace-luxor', name: 'قصر النيل', rating: 4.7 }),
+      expect.objectContaining({
+        slug: 'nile-palace-luxor',
+        name: 'قصر النيل',
+        rating: 4.7,
+      }),
     ]);
-    expect(prisma.hotel.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ deletedAt: null, status: 'PUBLISHED', isActive: true, destinationSlug: 'luxor' }),
-      take: 12,
-    }));
+    expect(prisma.hotel.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'PUBLISHED',
+          isActive: true,
+          destinationSlug: 'luxor',
+        }),
+        take: 12,
+      }),
+    );
   });
 
   it('sanitizes localized admin input before creating a hotel', async () => {
@@ -53,12 +64,14 @@ describe('HotelsService', () => {
       currency: 'USD',
     });
 
-    expect(prisma.hotel.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        nameJsonb: { en: 'Nile Palace Luxor' },
-        city: 'Luxor',
+    expect(prisma.hotel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          nameJsonb: { en: 'Nile Palace Luxor' },
+          city: 'Luxor',
+        }),
       }),
-    }));
+    );
   });
 
   it('correctly resolves all 5 locales (en, ar, es, pt, it) and falls back to en if locale missing', async () => {
@@ -117,14 +130,21 @@ describe('HotelsService', () => {
       hotel: { findMany: jest.fn().mockResolvedValue([hotelWithMedia]) },
       mediaAsset: {
         findMany: jest.fn().mockResolvedValue([
-          { id: 'media-asset-uuid-1', secureUrl: 'https://res.cloudinary.com/demo/hotel.webp', url: 'http://demo/hotel.webp', altText: 'Luxury Facade' },
+          {
+            id: 'media-asset-uuid-1',
+            secureUrl: 'https://res.cloudinary.com/demo/hotel.webp',
+            url: 'http://demo/hotel.webp',
+            altText: 'Luxury Facade',
+          },
         ]),
       },
     };
     const service = new HotelsService(prisma as never);
 
     const res = await service.findAllPublic('en');
-    expect(res[0].heroImageUrl).toBe('https://res.cloudinary.com/demo/hotel.webp');
+    expect(res[0].heroImageUrl).toBe(
+      'https://res.cloudinary.com/demo/hotel.webp',
+    );
     expect(res[0].heroImageAlt).toBe('Luxury Facade');
   });
 
@@ -132,7 +152,9 @@ describe('HotelsService', () => {
     const prisma = {
       hotel: {
         findFirst: jest.fn().mockResolvedValue({ ...hotel, rooms: [] }),
-        update: jest.fn().mockResolvedValue({ id: hotel.id, status: 'ARCHIVED' }),
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: hotel.id, status: 'ARCHIVED' }),
       },
       hotelRoom: {
         updateMany: jest.fn().mockResolvedValue({ count: 2 }),
@@ -349,7 +371,11 @@ describe('HotelsService', () => {
           }),
         },
         hotelBooking: {
-          create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'hb-1', ...data })),
+          create: jest
+            .fn()
+            .mockImplementation(({ data }) =>
+              Promise.resolve({ id: 'hb-1', ...data }),
+            ),
         },
       };
       const service = new HotelsService(prisma as never);
@@ -377,7 +403,11 @@ describe('HotelsService', () => {
     it('preserves existing amenitiesJsonb flags when updating only heroImageUrl and deduplicates duplicate seasonIds', async () => {
       const existingHotel = {
         ...hotel,
-        amenitiesJsonb: { pool: true, spa: true, heroImageUrl: 'https://old.example/hero.jpg' },
+        amenitiesJsonb: {
+          pool: true,
+          spa: true,
+          heroImageUrl: 'https://old.example/hero.jpg',
+        },
         rooms: [
           {
             id: 'room-1',
@@ -399,7 +429,11 @@ describe('HotelsService', () => {
       const prisma = {
         hotel: {
           findFirst: jest.fn().mockResolvedValue(existingHotel),
-          update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...existingHotel, ...data })),
+          update: jest
+            .fn()
+            .mockImplementation(({ data }) =>
+              Promise.resolve({ ...existingHotel, ...data }),
+            ),
         },
         hotelRoom: {
           findMany: jest.fn().mockResolvedValue(existingHotel.rooms),
@@ -482,19 +516,30 @@ describe('HotelsService', () => {
       });
 
       it('upsertTripHotel creates dedicated hotel with isGlobal: false and tourId set', async () => {
-        const tourRecord = { id: 'tour-123', slug: 'luxury-nile-adventure', city: 'Aswan', country: 'Egypt' };
+        const tourRecord = {
+          id: 'tour-123',
+          slug: 'luxury-nile-adventure',
+          city: 'Aswan',
+          country: 'Egypt',
+        };
         const prisma = {
           tour: { findFirst: jest.fn().mockResolvedValue(tourRecord) },
           hotel: {
             findFirst: jest.fn().mockResolvedValue(null),
-            create: jest.fn().mockResolvedValue({ id: 'trip-hotel-1', slug: 'trip-luxury-nile-adventure-hotel' }),
+            create: jest.fn().mockResolvedValue({
+              id: 'trip-hotel-1',
+              slug: 'trip-luxury-nile-adventure-hotel',
+            }),
           },
         };
         const service = new HotelsService(prisma as never);
 
         await service.upsertTripHotel('luxury-nile-adventure', {
           slug: 'luxury-nile-adventure-hotel',
-          nameJsonb: { en: 'Luxury Nile Trip Hotel', ar: 'فندق رحلة النيل الفاخر' },
+          nameJsonb: {
+            en: 'Luxury Nile Trip Hotel',
+            ar: 'فندق رحلة النيل الفاخر',
+          },
           destinationSlug: 'aswan',
           city: 'Aswan',
           stars: 5,
@@ -545,4 +590,3 @@ describe('HotelsService', () => {
     });
   });
 });
-

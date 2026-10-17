@@ -128,9 +128,8 @@ export class CreateTourImageDto {
 
   @ApiPropertyOptional({ description: 'Video URL if isVideo is true' })
   @IsOptional()
-  @ValidateIf(
-    (dto: CreateTourImageDto) =>
-      Boolean(dto.videoUrl && String(dto.videoUrl).trim().length > 0),
+  @ValidateIf((dto: CreateTourImageDto) =>
+    Boolean(dto.videoUrl && String(dto.videoUrl).trim().length > 0),
   )
   @IsString()
   @MaxLength(2048)
@@ -214,7 +213,9 @@ export class TripAccommodationDto {
   @IsString()
   roomId?: string | null;
 
-  @ApiPropertyOptional({ description: 'Destination or city label (e.g. Cairo, Luxor)' })
+  @ApiPropertyOptional({
+    description: 'Destination or city label (e.g. Cairo, Luxor)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
@@ -226,13 +227,18 @@ export class TripAccommodationDto {
   @MaxLength(100)
   city?: string | null;
 
-  @ApiPropertyOptional({ description: 'Category tier (e.g. Standard, Deluxe, Luxury)' })
+  @ApiPropertyOptional({
+    description: 'Category tier (e.g. Standard, Deluxe, Luxury)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   categoryTier?: string | null;
 
-  @ApiPropertyOptional({ description: 'Number of nights at this hotel', default: 1 })
+  @ApiPropertyOptional({
+    description: 'Number of nights at this hotel',
+    default: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -264,12 +270,17 @@ export class TripAccommodationDto {
   @Max(999_999.99)
   priceSupplementUsd?: number;
 
-  @ApiPropertyOptional({ description: 'Is default hotel choice for this city/tier', default: true })
+  @ApiPropertyOptional({
+    description: 'Is default hotel choice for this city/tier',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
 
-  @ApiPropertyOptional({ description: 'Multilingual notes for this accommodation' })
+  @ApiPropertyOptional({
+    description: 'Multilingual notes for this accommodation',
+  })
   @IsOptional()
   @IsObject()
   notesJsonb?: Record<string, any>;
@@ -311,14 +322,18 @@ export class CreateTourDto {
   @MaxLength(100)
   category?: string;
 
-  @ApiProperty({ description: 'Base price in USD (or base currency equivalent)' })
+  @ApiProperty({
+    description: 'Base price in USD (or base currency equivalent)',
+  })
   @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
   @Max(99_999_999.99)
   @Type(() => Number)
   basePriceUsd!: number;
 
-  @ApiPropertyOptional({ description: 'Authoritative original price in specified currency' })
+  @ApiPropertyOptional({
+    description: 'Authoritative original price in specified currency',
+  })
   @IsOptional()
   @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
@@ -474,12 +489,17 @@ export class CreateTourDto {
   tags?: string[];
 
   @ApiPropertyOptional({
-    description: 'Seasonal pricing and price rules JSONB (array of rules or { rules: [...] })',
+    description:
+      'Seasonal pricing and price rules JSONB (array of rules or { rules: [...] })',
   })
   @IsOptional()
   seasonPricingJsonb?: SeasonPricingRuleDto[] | Record<string, any> | null;
 
-  @ApiPropertyOptional({ description: 'Currency code', default: 'USD', enum: ['USD', 'EUR'] })
+  @ApiPropertyOptional({
+    description: 'Currency code',
+    default: 'USD',
+    enum: ['USD', 'EUR'],
+  })
   @IsOptional()
   @IsString()
   @IsIn(['USD', 'EUR'])
@@ -623,7 +643,10 @@ export class CreateTourDto {
   @Type(() => Number)
   longitude?: number;
 
-  @ApiPropertyOptional({ description: 'Display priority order — lower value = appears first (0 = default)' })
+  @ApiPropertyOptional({
+    description:
+      'Display priority order — lower value = appears first (0 = default)',
+  })
   @IsOptional()
   @IsInt()
   @Min(0)

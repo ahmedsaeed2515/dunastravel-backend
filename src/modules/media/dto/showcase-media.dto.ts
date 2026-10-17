@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, ValidateNested, IsIn, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  IsIn,
+  IsUUID,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class ShowcasePhotoItemDto {
@@ -206,11 +215,15 @@ export class OptimizeAssetDto {
 }
 
 export class UploadVideoDto {
-  @ApiPropertyOptional({ description: 'Binary video file sent via multipart/form-data' })
+  @ApiPropertyOptional({
+    description: 'Binary video file sent via multipart/form-data',
+  })
   @IsOptional()
   file?: any;
 
-  @ApiPropertyOptional({ description: 'Binary poster image file sent via multipart/form-data' })
+  @ApiPropertyOptional({
+    description: 'Binary poster image file sent via multipart/form-data',
+  })
   @IsOptional()
   poster?: any;
 
@@ -236,11 +249,16 @@ export class UploadVideoDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true' || value === 1 || value === '1')
+  @Transform(
+    ({ value }) =>
+      value === true || value === 'true' || value === 1 || value === '1',
+  )
   @IsBoolean()
   addToShowcase?: boolean;
 
-  @ApiPropertyOptional({ description: 'Optional video URL if registering by link' })
+  @ApiPropertyOptional({
+    description: 'Optional video URL if registering by link',
+  })
   @IsOptional()
   @IsString()
   videoUrl?: string;
@@ -252,7 +270,9 @@ export class UploadVideoDto {
 }
 
 export class AddVideoUrlDto {
-  @ApiProperty({ description: 'Direct or embed video URL (MP4, YouTube, Vimeo, etc.)' })
+  @ApiProperty({
+    description: 'Direct or embed video URL (MP4, YouTube, Vimeo, etc.)',
+  })
   @IsString()
   videoUrl!: string;
 

@@ -117,7 +117,11 @@ export class CurrencyService {
       },
     ];
 
-    let eurRateDb: { rateToBase: Prisma.Decimal; lastUpdated: Date; provider: string | null } | null = null;
+    let eurRateDb: {
+      rateToBase: Prisma.Decimal;
+      lastUpdated: Date;
+      provider: string | null;
+    } | null = null;
 
     for (const r of dbRates) {
       const upperCode = r.code.toUpperCase();
@@ -146,13 +150,18 @@ export class CurrencyService {
     if (eurRateDb) {
       const usdToEur = new Prisma.Decimal(eurRateDb.rateToBase);
       const eurToUsd = new Prisma.Decimal(1).div(usdToEur);
-      const isStale = this.isDateStale(new Date(eurRateDb.lastUpdated).getTime(), now);
+      const isStale = this.isDateStale(
+        new Date(eurRateDb.lastUpdated).getTime(),
+        now,
+      );
 
       meta = {
         ecbEurUsdRate: eurToUsd.toFixed(6),
         ecbUsdEurRate: usdToEur.toFixed(6),
         source: 'ECB',
-        provider: eurRateDb.provider?.startsWith('ECB') ? 'Frankfurter' : (eurRateDb.provider || 'DB'),
+        provider: eurRateDb.provider?.startsWith('ECB')
+          ? 'Frankfurter'
+          : eurRateDb.provider || 'DB',
         rateDate: eurRateDb.lastUpdated.toISOString().slice(0, 10),
         isStale,
         status: isStale ? 'stale' : 'fresh',
@@ -286,7 +295,9 @@ export class CurrencyService {
     }
 
     try {
-      this.logger.log('[currency_sync_started] Initiating on-demand rate synchronization...');
+      this.logger.log(
+        '[currency_sync_started] Initiating on-demand rate synchronization...',
+      );
       const rateResult = await this.frankfurterProvider.fetchEurUsdRate();
 
       // In the USD base model, rateToBase for EUR is units of EUR per 1 USD
@@ -333,7 +344,9 @@ export class CurrencyService {
           },
         });
       } catch (histErr) {
-        this.logger.warn(`Failed to record CurrencyRateHistory: ${histErr instanceof Error ? histErr.message : histErr}`);
+        this.logger.warn(
+          `Failed to record CurrencyRateHistory: ${histErr instanceof Error ? histErr.message : histErr}`,
+        );
       }
 
       await this.cacheManager.del(this.CACHE_KEY);
@@ -353,7 +366,9 @@ export class CurrencyService {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`[currency_sync_failed] On-demand rate sync failed: ${msg}`);
+      this.logger.error(
+        `[currency_sync_failed] On-demand rate sync failed: ${msg}`,
+      );
       return { success: false, error: msg };
     }
   }

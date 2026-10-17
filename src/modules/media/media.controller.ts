@@ -32,7 +32,11 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  FileInterceptor,
+  FilesInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -44,7 +48,10 @@ import { UploadBulkMediaDto } from './dto/upload-bulk-media.dto';
 import { ImportMediaUrlsDto } from './dto/import-media-urls.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
-import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
+import {
+  CreateMediaCategoryDto,
+  UpdateMediaCategoryDto,
+} from './dto/media-category.dto';
 import { MediaAssetResponseDto } from './dto/media-asset-response.dto';
 import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { ListMediaDto } from './dto/list-media.dto';
@@ -142,7 +149,12 @@ export class MediaAdminController {
       fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) {
-          return cb(new BadRequestException(`Invalid file type for ${file.originalname}`), false);
+          return cb(
+            new BadRequestException(
+              `Invalid file type for ${file.originalname}`,
+            ),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -160,7 +172,11 @@ export class MediaAdminController {
     @Body() dto: UploadBulkMediaDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MediaAssetResponseDto[]> {
-    const assets = await this.mediaService.uploadBulkAssets(files, dto, user.id);
+    const assets = await this.mediaService.uploadBulkAssets(
+      files,
+      dto,
+      user.id,
+    );
     return assets.map((asset) => MediaAssetResponseDto.fromPrisma(asset));
   }
 
@@ -183,7 +199,9 @@ export class MediaAdminController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update media asset details, category, or alt text' })
+  @ApiOperation({
+    summary: 'Update media asset details, category, or alt text',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ type: MediaAssetResponseDto })
   async updateAsset(
@@ -196,7 +214,9 @@ export class MediaAdminController {
   }
 
   @Post('bulk-move')
-  @ApiOperation({ summary: 'Bulk move multiple media assets to a category or entity' })
+  @ApiOperation({
+    summary: 'Bulk move multiple media assets to a category or entity',
+  })
   @ApiOkResponse({ description: 'Assets moved successfully' })
   async bulkMove(
     @Body() dto: BulkMoveMediaDto,
@@ -232,7 +252,9 @@ export class MediaAdminController {
   }
 
   @Delete('categories/:slug')
-  @ApiOperation({ summary: 'Delete a custom media category and reassign assets' })
+  @ApiOperation({
+    summary: 'Delete a custom media category and reassign assets',
+  })
   @ApiParam({ name: 'slug', type: 'string' })
   async deleteCategory(
     @Param('slug') slug: string,
@@ -283,7 +305,9 @@ export class MediaAdminController {
   }
 
   @Get('showcase')
-  @ApiOperation({ summary: 'Get all showcase photos and videos for admin management' })
+  @ApiOperation({
+    summary: 'Get all showcase photos and videos for admin management',
+  })
   async getAdminShowcase() {
     const showcase = await this.mediaService.getAdminShowcase();
     return {
@@ -323,7 +347,9 @@ export class MediaAdminController {
   }
 
   @Patch('showcase/:id')
-  @ApiOperation({ summary: 'Update showcase item position, status, or details' })
+  @ApiOperation({
+    summary: 'Update showcase item position, status, or details',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   async updateShowcaseItem(
     @Param('id') id: string,
@@ -360,7 +386,9 @@ export class MediaAdminController {
       },
     ),
   )
-  @ApiOperation({ summary: 'Upload a video asset (up to 100MB) with optional poster image' })
+  @ApiOperation({
+    summary: 'Upload a video asset (up to 100MB) with optional poster image',
+  })
   @ApiConsumes('multipart/form-data')
   async uploadVideo(
     @UploadedFiles()
@@ -374,10 +402,14 @@ export class MediaAdminController {
     const videoFile =
       files?.file?.[0] ||
       (Array.isArray(files) ? files[0] : undefined) ||
-      (dto.file && typeof dto.file === 'object' && (dto.file as any).buffer ? (dto.file as any) : undefined);
+      (dto.file && typeof dto.file === 'object' && dto.file.buffer
+        ? dto.file
+        : undefined);
     const posterFile =
       files?.poster?.[0] ||
-      (dto.poster && typeof dto.poster === 'object' && (dto.poster as any).buffer ? (dto.poster as any) : undefined);
+      (dto.poster && typeof dto.poster === 'object' && dto.poster.buffer
+        ? dto.poster
+        : undefined);
 
     const addToShowcase = dto.addToShowcase !== false;
 
@@ -400,7 +432,9 @@ export class MediaAdminController {
 
   @Post('add-video-url')
   @Throttle({ default: { limit: 60, ttl: 3_600_000 } })
-  @ApiOperation({ summary: 'Register an external video URL with optional poster and details' })
+  @ApiOperation({
+    summary: 'Register an external video URL with optional poster and details',
+  })
   @ApiOkResponse({ type: MediaAssetResponseDto })
   async addVideoUrl(
     @Body() dto: AddVideoUrlDto,
@@ -423,7 +457,10 @@ export class MediaAdminController {
   }
 
   @Post('optimize/:id')
-  @ApiOperation({ summary: 'Generate and verify server-side WebP optimization for an existing asset' })
+  @ApiOperation({
+    summary:
+      'Generate and verify server-side WebP optimization for an existing asset',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ type: MediaAssetResponseDto })
   async optimizeAsset(
@@ -436,14 +473,19 @@ export class MediaAdminController {
   }
 
   @Get(':id/usage')
-  @ApiOperation({ summary: 'Check where a media asset is referenced before deletion' })
+  @ApiOperation({
+    summary: 'Check where a media asset is referenced before deletion',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   async checkUsage(@Param('id') id: string) {
     return this.mediaService.checkMediaUsage(id);
   }
 
   @Post('sync-entities')
-  @ApiOperation({ summary: 'Synchronize tour and hotel entity media into media_assets library' })
+  @ApiOperation({
+    summary:
+      'Synchronize tour and hotel entity media into media_assets library',
+  })
   async syncEntities(@CurrentUser() user: AuthenticatedUser) {
     return this.mediaService.syncEntityMedia(user);
   }
@@ -457,8 +499,13 @@ export class MediaPublicController {
 
   @Get('showcase')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
-  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
-  @ApiOperation({ summary: 'Get active public homepage media showcase (photos and videos)' })
+  @Header(
+    'Cache-Control',
+    'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+  )
+  @ApiOperation({
+    summary: 'Get active public homepage media showcase (photos and videos)',
+  })
   @ApiOkResponse({ type: HomepageMediaShowcaseResponseDto })
   async getPublicShowcase(): Promise<HomepageMediaShowcaseResponseDto> {
     return this.mediaService.getPublicShowcase();
@@ -466,7 +513,10 @@ export class MediaPublicController {
 
   @Get('showcase/photos')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
-  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
+  @Header(
+    'Cache-Control',
+    'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+  )
   @ApiOperation({ summary: 'Get active public homepage photo showcase slides' })
   @ApiOkResponse({ type: [ShowcasePhotoItemDto] })
   async getShowcasePhotos(): Promise<ShowcasePhotoItemDto[]> {
@@ -476,7 +526,10 @@ export class MediaPublicController {
 
   @Get('showcase/videos')
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
-  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
+  @Header(
+    'Cache-Control',
+    'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+  )
   @ApiOperation({ summary: 'Get active public homepage video showcase slides' })
   @ApiOkResponse({ type: [ShowcaseVideoItemDto] })
   async getShowcaseVideos(): Promise<ShowcaseVideoItemDto[]> {
@@ -486,8 +539,14 @@ export class MediaPublicController {
 
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
-  @ApiOperation({ summary: 'Get active public gallery assets with optional category filtering' })
+  @Header(
+    'Cache-Control',
+    'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+  )
+  @ApiOperation({
+    summary:
+      'Get active public gallery assets with optional category filtering',
+  })
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
@@ -504,7 +563,10 @@ export class MediaPublicController {
 
   @Get('category/:categorySlug')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @Header('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600')
+  @Header(
+    'Cache-Control',
+    'public, max-age=120, s-maxage=300, stale-while-revalidate=600',
+  )
   @ApiOperation({ summary: 'Get active public media assets for a category' })
   @ApiParam({ name: 'categorySlug', type: 'string' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -521,7 +583,10 @@ export class MediaPublicController {
   }
 
   @Get('tours/:tourId')
-  @Header('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=600')
+  @Header(
+    'Cache-Control',
+    'public, max-age=60, s-maxage=180, stale-while-revalidate=600',
+  )
   @ApiOperation({ summary: 'Get all active media assets for a tour' })
   @ApiParam({ name: 'tourId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })
@@ -534,7 +599,10 @@ export class MediaPublicController {
   }
 
   @Get('hotels/:hotelId')
-  @Header('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=600')
+  @Header(
+    'Cache-Control',
+    'public, max-age=60, s-maxage=180, stale-while-revalidate=600',
+  )
   @ApiOperation({ summary: 'Get all active media assets for a hotel' })
   @ApiParam({ name: 'hotelId', type: 'string' })
   @ApiOkResponse({ type: [PublicMediaAssetResponseDto] })

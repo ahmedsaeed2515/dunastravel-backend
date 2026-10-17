@@ -32,9 +32,6 @@ export class TourLandingPagesPublicController {
     @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Query() query: TourLandingPageDetailQueryDto,
   ) {
-    return this.landingPagesService.findOnePublic(
-      slug,
-      query.locale ?? 'en',
-    );
+    return this.landingPagesService.findOnePublic(slug, query.locale ?? 'en');
   }
 }

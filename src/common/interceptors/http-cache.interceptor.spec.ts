@@ -34,7 +34,11 @@ describe('HttpCacheInterceptor', () => {
     } as any;
 
     mockCallHandler = {
-      handle: jest.fn().mockReturnValue(of({ success: true, data: [{ id: '1', title: 'Tour 1' }] })),
+      handle: jest
+        .fn()
+        .mockReturnValue(
+          of({ success: true, data: [{ id: '1', title: 'Tour 1' }] }),
+        ),
     };
   });
 
@@ -44,9 +48,15 @@ describe('HttpCacheInterceptor', () => {
         'Cache-Control',
         'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
       );
-      expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.stringMatching(/^W\/"[a-f0-9]+"/));
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'ETag',
+        expect.stringMatching(/^W\/"[a-f0-9]+"/),
+      );
       expect(res.setHeader).toHaveBeenCalledWith('X-Cache', 'MISS-POPULATED');
-      expect(result).toEqual({ success: true, data: [{ id: '1', title: 'Tour 1' }] });
+      expect(result).toEqual({
+        success: true,
+        data: [{ id: '1', title: 'Tour 1' }],
+      });
       done();
     });
   });
@@ -80,7 +90,9 @@ describe('HttpCacheInterceptor', () => {
       };
       const res2: any = {
         headers: {},
-        setHeader: jest.fn((k, v) => { res2.headers[k] = v; }),
+        setHeader: jest.fn((k, v) => {
+          res2.headers[k] = v;
+        }),
         status: jest.fn().mockReturnThis(),
         end: jest.fn(),
       };

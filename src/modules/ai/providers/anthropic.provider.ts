@@ -1,6 +1,14 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
-import { IAiProvider, IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
+import {
+  IAiProvider,
+  IAiCompletionOptions,
+  IAiProviderResponse,
+} from '../interfaces/ai-provider.interface';
 
 @Injectable()
 export class AnthropicProvider implements IAiProvider {
@@ -13,7 +21,9 @@ export class AnthropicProvider implements IAiProvider {
     try {
       return new Anthropic({ apiKey: key });
     } catch (err) {
-      this.logger.error(`Failed to initialize Anthropic client: ${(err as Error).message}`);
+      this.logger.error(
+        `Failed to initialize Anthropic client: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -30,12 +40,19 @@ export class AnthropicProvider implements IAiProvider {
   ): Promise<IAiProviderResponse> {
     const client = this.createClient(customApiKey);
     if (!client) {
-      throw new ServiceUnavailableException('Anthropic provider is unconfigured or key is missing.');
+      throw new ServiceUnavailableException(
+        'Anthropic provider is unconfigured or key is missing.',
+      );
     }
 
-    const model = options.model || process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
-    const timeoutMs = options.timeoutMs || Number(process.env.AI_REQUEST_TIMEOUT_MS) || 15_000;
-    const maxTokens = options.maxTokens || Number(process.env.AI_MAX_OUTPUT_TOKENS) || 1_024;
+    const model =
+      options.model ||
+      process.env.ANTHROPIC_MODEL ||
+      'claude-3-5-sonnet-20241022';
+    const timeoutMs =
+      options.timeoutMs || Number(process.env.AI_REQUEST_TIMEOUT_MS) || 15_000;
+    const maxTokens =
+      options.maxTokens || Number(process.env.AI_MAX_OUTPUT_TOKENS) || 1_024;
     const temperature = options.temperature ?? 0.7;
 
     const startTime = Date.now();
@@ -55,7 +72,8 @@ export class AnthropicProvider implements IAiProvider {
       );
 
       const latencyMs = Date.now() - startTime;
-      const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+      const text =
+        response.content[0]?.type === 'text' ? response.content[0].text : '';
 
       return {
         text,
@@ -67,11 +85,15 @@ export class AnthropicProvider implements IAiProvider {
       };
     } catch (error: any) {
       const latencyMs = Date.now() - startTime;
-      this.logger.error(`Anthropic API error (${latencyMs}ms): ${error?.message || error}`);
+      this.logger.error(
+        `Anthropic API error (${latencyMs}ms): ${error?.message || error}`,
+      );
       if (error?.name === 'AbortError') {
         throw new ServiceUnavailableException('AI Provider request timed out.');
       }
-      throw new ServiceUnavailableException(error?.message || 'Failed to communicate with AI provider.');
+      throw new ServiceUnavailableException(
+        error?.message || 'Failed to communicate with AI provider.',
+      );
     } finally {
       clearTimeout(timer);
     }

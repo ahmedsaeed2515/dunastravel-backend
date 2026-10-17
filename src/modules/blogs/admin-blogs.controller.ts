@@ -37,9 +37,7 @@ export class AdminBlogsController {
 
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Get blog article detail for admin' })
-  async findOne(
-    @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
-  ) {
+  async findOne(@Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string) {
     return this.blogsService.findOneAdmin(idOrSlug);
   }
 
@@ -59,7 +57,11 @@ export class AdminBlogsController {
     @Body() dto: UpdateBlogArticleDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.blogsService.updateAdmin(idOrSlug, dto, user?.id || 'system-admin');
+    return this.blogsService.updateAdmin(
+      idOrSlug,
+      dto,
+      user?.id || 'system-admin',
+    );
   }
 
   @Delete(':idOrSlug')

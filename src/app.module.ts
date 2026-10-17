@@ -88,14 +88,8 @@ import { HttpCacheInterceptor } from './common/interceptors/http-cache.intercept
         ),
         throttlers: [
           {
-            ttl: parseInt(
-              config.get<string>('THROTTLE_TTL', '60000'),
-              10,
-            ),
-            limit: parseInt(
-              config.get<string>('THROTTLE_LIMIT', '100'),
-              10,
-            ),
+            ttl: parseInt(config.get<string>('THROTTLE_TTL', '60000'), 10),
+            limit: parseInt(config.get<string>('THROTTLE_LIMIT', '100'), 10),
           },
         ],
       }),

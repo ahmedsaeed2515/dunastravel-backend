@@ -137,7 +137,13 @@ export class AvailabilityService {
             : 'AVAILABLE';
     return this.prisma.$transaction(async (tx) => {
       const created = await tx.tourAvailability.create({
-        data: { tourId, date, totalCapacity, remainingSeats, status: normalizedStatus },
+        data: {
+          tourId,
+          date,
+          totalCapacity,
+          remainingSeats,
+          status: normalizedStatus,
+        },
       });
       if (actor) {
         await tx.auditLog.create({
@@ -147,7 +153,12 @@ export class AvailabilityService {
             action: 'TOUR_AVAILABILITY_CREATED',
             entityType: 'TOUR_AVAILABILITY',
             entityId: created.id,
-            metadata: { tourId, date: date.toISOString(), totalCapacity, status: normalizedStatus },
+            metadata: {
+              tourId,
+              date: date.toISOString(),
+              totalCapacity,
+              status: normalizedStatus,
+            },
           },
         });
       }
@@ -176,13 +187,24 @@ export class AvailabilityService {
     if (startDate > endDate) {
       throw new BadRequestException('Start date must be before end date');
     }
-    const calendarDays = Math.floor(
-      (Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()) -
-        Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate())) /
-        86_400_000,
-    ) + 1;
+    const calendarDays =
+      Math.floor(
+        (Date.UTC(
+          endDate.getUTCFullYear(),
+          endDate.getUTCMonth(),
+          endDate.getUTCDate(),
+        ) -
+          Date.UTC(
+            startDate.getUTCFullYear(),
+            startDate.getUTCMonth(),
+            startDate.getUTCDate(),
+          )) /
+          86_400_000,
+      ) + 1;
     if (calendarDays > 366) {
-      throw new BadRequestException('Availability batch cannot exceed 366 calendar days');
+      throw new BadRequestException(
+        'Availability batch cannot exceed 366 calendar days',
+      );
     }
 
     const slotDates: Date[] = [];
@@ -371,54 +393,57 @@ export class AvailabilityService {
     for (const booking of expiredBookings) {
       if (!booking.availabilityId) continue;
       try {
-        await this.prisma.$transaction(async (tx) => {
-          const totalPax = (booking.adults || 1) + (booking.children || 0);
-          const updateResult = await tx.booking.updateMany({
-            where: { id: booking.id, status: 'PENDING' },
-            data: { status: 'CANCELLED' },
-          });
+        await this.prisma.$transaction(
+          async (tx) => {
+            const totalPax = (booking.adults || 1) + (booking.children || 0);
+            const updateResult = await tx.booking.updateMany({
+              where: { id: booking.id, status: 'PENDING' },
+              data: { status: 'CANCELLED' },
+            });
 
-          if (updateResult.count > 0) {
-            await this.releaseCapacity(tx, booking.availabilityId!, totalPax);
+            if (updateResult.count > 0) {
+              await this.releaseCapacity(tx, booking.availabilityId!, totalPax);
 
-            // Void open invoices
-            if (tx.invoice) {
-              await tx.invoice.updateMany({
-                where: {
-                  bookingId: booking.id,
-                  status: { in: ['SENT', 'DRAFT'] },
-                },
-                data: { status: 'VOID' },
-              });
-            }
-
-            // Reverse promotion redemptions
-            if (tx.promotionRedemption) {
-              const redemptions = await tx.promotionRedemption.findMany({
-                where: {
-                  bookingId: booking.id,
-                  status: { in: ['APPLIED', 'ACTIVE'] },
-                },
-                select: { id: true, promotionId: true },
-              });
-
-              for (const redemption of redemptions) {
-                await tx.promotionRedemption.update({
-                  where: { id: redemption.id },
-                  data: { status: 'REVERSED', reversedAt: new Date() },
+              // Void open invoices
+              if (tx.invoice) {
+                await tx.invoice.updateMany({
+                  where: {
+                    bookingId: booking.id,
+                    status: { in: ['SENT', 'DRAFT'] },
+                  },
+                  data: { status: 'VOID' },
                 });
-                if (tx.promotion) {
-                  await tx.promotion.update({
-                    where: { id: redemption.promotionId },
-                    data: { currentUses: { decrement: 1 } },
+              }
+
+              // Reverse promotion redemptions
+              if (tx.promotionRedemption) {
+                const redemptions = await tx.promotionRedemption.findMany({
+                  where: {
+                    bookingId: booking.id,
+                    status: { in: ['APPLIED', 'ACTIVE'] },
+                  },
+                  select: { id: true, promotionId: true },
+                });
+
+                for (const redemption of redemptions) {
+                  await tx.promotionRedemption.update({
+                    where: { id: redemption.id },
+                    data: { status: 'REVERSED', reversedAt: new Date() },
                   });
+                  if (tx.promotion) {
+                    await tx.promotion.update({
+                      where: { id: redemption.promotionId },
+                      data: { currentUses: { decrement: 1 } },
+                    });
+                  }
                 }
               }
-            }
 
-            releasedCount++;
-          }
-        }, { maxWait: 5000, timeout: 10000 });
+              releasedCount++;
+            }
+          },
+          { maxWait: 5000, timeout: 10000 },
+        );
       } catch (err) {
         // Continue releasing remaining bookings if one encounters concurrency conflict
       }

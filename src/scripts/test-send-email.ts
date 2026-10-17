@@ -11,7 +11,11 @@ async function testEmail() {
 
   const service = moduleRef.get(NotificationsService);
   try {
-    await service.sendVerificationEmail('test@example.com', 'Test User', '123456');
+    await service.sendVerificationEmail(
+      'test@example.com',
+      'Test User',
+      '123456',
+    );
     console.log('Email sent successfully!');
   } catch (err: any) {
     console.error('Error sending email:', err.message, err.stack);

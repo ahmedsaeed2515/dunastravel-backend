@@ -74,7 +74,8 @@ export class CreateBatchAvailabilityDto {
 
 export class UpdateAvailabilityDto {
   @ApiPropertyOptional({
-    description: 'The slot updatedAt value from the latest admin read. Rejects a stale edit with HTTP 409.',
+    description:
+      'The slot updatedAt value from the latest admin read. Rejects a stale edit with HTTP 409.',
   })
   @IsOptional()
   @IsDateString()

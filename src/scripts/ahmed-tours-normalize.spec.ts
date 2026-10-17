@@ -80,8 +80,8 @@ describe('Ahmed tour normalization', () => {
       itineraries: [],
       images: [],
     };
-    expect(() => validateCatalog([tour, { ...tour, sourceId: 'source-2' }])).toThrow(
-      'Duplicate normalized slug',
-    );
+    expect(() =>
+      validateCatalog([tour, { ...tour, sourceId: 'source-2' }]),
+    ).toThrow('Duplicate normalized slug');
   });
 });

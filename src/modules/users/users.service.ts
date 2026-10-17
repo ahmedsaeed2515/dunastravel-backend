@@ -1080,12 +1080,10 @@ export class UserService {
           ...(dto.emergencyContact && {
             emergencyContact: encryptSensitiveJson(
               this.sanitizeEmergencyContact(dto.emergencyContact),
-            ) as Prisma.InputJsonValue,
+            ),
           }),
           ...(dto.address && {
-            address: encryptSensitiveJson(
-              this.sanitizeAddress(dto.address),
-            ) as Prisma.InputJsonValue,
+            address: encryptSensitiveJson(this.sanitizeAddress(dto.address)),
           }),
           ...(dto.preferredLanguage && {
             preferredLanguage: dto.preferredLanguage,
@@ -1108,14 +1106,14 @@ export class UserService {
               dto.familyMembers.map((person) =>
                 this.sanitizeRelatedPerson(person),
               ),
-            ) as Prisma.InputJsonValue,
+            ),
           }),
           ...(dto.travelCompanions && {
             travelCompanions: encryptSensitiveJson(
               dto.travelCompanions.map((person) =>
                 this.sanitizeRelatedPerson(person),
               ),
-            ) as Prisma.InputJsonValue,
+            ),
           }),
           ...(dto.marketingConsent !== undefined && {
             marketingConsent: dto.marketingConsent,

@@ -29,7 +29,8 @@ export class UpdateMediaDto {
   entityId?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Category slug or folder name (e.g. destinations, banners, blog)',
+    description:
+      'Category slug or folder name (e.g. destinations, banners, blog)',
     type: 'string',
   })
   @IsOptional()

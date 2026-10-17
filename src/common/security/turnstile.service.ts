@@ -162,7 +162,10 @@ export class TurnstileService {
         challengeTs: data.challenge_ts,
       };
     } catch (err: any) {
-      if (err instanceof BadRequestException || err instanceof InternalServerErrorException) {
+      if (
+        err instanceof BadRequestException ||
+        err instanceof InternalServerErrorException
+      ) {
         throw err;
       }
 
@@ -172,7 +175,12 @@ export class TurnstileService {
       );
 
       // In non-production, fail gracefully if network unreachable during offline dev
-      if (!isProd && (err.name === 'AbortError' || err.code === 'ENOTFOUND' || err.name === 'TypeError')) {
+      if (
+        !isProd &&
+        (err.name === 'AbortError' ||
+          err.code === 'ENOTFOUND' ||
+          err.name === 'TypeError')
+      ) {
         this.logger.warn(
           'Network error contacting Turnstile in non-production; allowing bypass.',
         );

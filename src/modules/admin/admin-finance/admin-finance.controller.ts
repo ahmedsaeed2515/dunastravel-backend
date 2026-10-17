@@ -16,7 +16,12 @@ import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { Request } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 @ApiTags('Admin - Finance')
 @ApiBearerAuth()
@@ -27,7 +32,9 @@ export class AdminFinanceController {
   constructor(private readonly adminFinanceService: AdminFinanceService) {}
 
   @Get('payments')
-  @ApiOperation({ summary: 'List payments using the canonical paginated envelope' })
+  @ApiOperation({
+    summary: 'List payments using the canonical paginated envelope',
+  })
   @ApiResponse({ status: 200, description: 'Paginated payment collection.' })
   async listPayments(@Query() query: AdminFinanceQueryDto) {
     return this.adminFinanceService.listPayments(query);
@@ -49,9 +56,15 @@ export class AdminFinanceController {
   @Post('refunds')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Issue an idempotent full payment refund' })
-  @ApiResponse({ status: 200, description: 'Refund processed or idempotent prior result returned.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Refund processed or idempotent prior result returned.',
+  })
   @ApiResponse({ status: 400, description: 'Invalid refund request.' })
-  @ApiResponse({ status: 409, description: 'Refund already in progress or idempotency conflict.' })
+  @ApiResponse({
+    status: 409,
+    description: 'Refund already in progress or idempotency conflict.',
+  })
   async processRefund(
     @Body() dto: AdminRefundDto,
     @Req() req: Request & { user: { id: string; role: string } },

@@ -36,8 +36,7 @@ export class AiService {
   ) {
     const provider = this.configService.get<string>('AI_PROVIDER');
     const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
-    this.model =
-      this.configService.get<string>('ANTHROPIC_MODEL') || '';
+    this.model = this.configService.get<string>('ANTHROPIC_MODEL') || '';
     this.requestTimeoutMs = Math.min(
       this.configService.get<number>('AI_REQUEST_TIMEOUT_MS') ?? 15_000,
       30_000,
@@ -46,8 +45,9 @@ export class AiService {
       this.configService.get<number>('AI_MAX_OUTPUT_TOKENS') ?? 1_024,
       2_000,
     );
-    const publicAiSetting =
-      this.configService.get<boolean | string>('AI_PUBLIC_ENABLED');
+    const publicAiSetting = this.configService.get<boolean | string>(
+      'AI_PUBLIC_ENABLED',
+    );
     this.publicAiEnabled =
       publicAiSetting === true || publicAiSetting === 'true';
 
@@ -333,9 +333,7 @@ Return ONLY valid JSON matching this structure:
         content.length > 100 ||
         !/^[\u{13000}-\u{1345F}\s]+$/u.test(content)
       ) {
-        throw new InternalServerErrorException(
-          'AI returned unexpected format',
-        );
+        throw new InternalServerErrorException('AI returned unexpected format');
       }
 
       return { translation: content };
@@ -409,9 +407,7 @@ Return ONLY valid JSON matching this structure:
       typeof parsed.salesStrategy !== 'string' ||
       !Array.isArray(parsed.suggestedDestinations) ||
       parsed.suggestedDestinations.length > 5 ||
-      parsed.suggestedDestinations.some(
-        (item) => typeof item !== 'string',
-      ) ||
+      parsed.suggestedDestinations.some((item) => typeof item !== 'string') ||
       !['Low', 'Medium', 'High'].includes(String(parsed.churnRisk))
     ) {
       throw new Error('Invalid customer analysis schema');
@@ -422,10 +418,7 @@ Return ONLY valid JSON matching this structure:
       suggestedDestinations: parsed.suggestedDestinations.map((item) =>
         sanitizePlainText(String(item)).slice(0, 100),
       ),
-      salesStrategy: sanitizePlainText(parsed.salesStrategy).slice(
-        0,
-        2_000,
-      ),
+      salesStrategy: sanitizePlainText(parsed.salesStrategy).slice(0, 2_000),
       churnRisk: parsed.churnRisk,
     };
   }

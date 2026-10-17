@@ -22,7 +22,8 @@ export class DashboardController {
 
   @Get('overview')
   @ApiOperation({
-    summary: 'Retrieve consolidated dashboard overview KPIs, trends, and feeds in a single request.',
+    summary:
+      'Retrieve consolidated dashboard overview KPIs, trends, and feeds in a single request.',
   })
   @ApiOkResponse({ description: 'Consolidated dashboard overview object' })
   async getOverview(@Query() query: DashboardQueryDto) {
@@ -60,7 +61,9 @@ export class DashboardController {
   }
 
   @Get('top-destinations')
-  @ApiOperation({ summary: 'Retrieve top destinations distribution and revenue.' })
+  @ApiOperation({
+    summary: 'Retrieve top destinations distribution and revenue.',
+  })
   @ApiOkResponse({ description: 'Top destinations array' })
   async getTopDestinations(@Query() query: DashboardQueryDto) {
     return this.dashboardService.getTopDestinations(query);

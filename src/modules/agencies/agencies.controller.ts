@@ -13,7 +13,9 @@ export class AgenciesController {
 
   @Get('verify-partner/:code')
   @Throttle({ default: { limit: 60, ttl: 60000 } })
-  @ApiOperation({ summary: 'Instant verification for 8-digit IATA / Partner Code' })
+  @ApiOperation({
+    summary: 'Instant verification for 8-digit IATA / Partner Code',
+  })
   async verifyPartner(@Param('code') code: string) {
     return this.agenciesService.verifyPartnerCode(code);
   }
@@ -39,4 +41,3 @@ export class AgenciesController {
     return this.agenciesService.registerAgency(dto);
   }
 }
-

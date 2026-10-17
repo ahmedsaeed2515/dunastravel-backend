@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChatOrchestratorService, AI_PERSONAS } from './services/chat-orchestrator.service';
+import {
+  ChatOrchestratorService,
+  AI_PERSONAS,
+} from './services/chat-orchestrator.service';
 import { TourCatalogToolService } from './services/tour-catalog-tool.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
@@ -126,7 +129,9 @@ describe('GuideR Intent Classification & Catalog Gating Unit Tests', () => {
     it('should explicitly instruct NEVER to use archaic honorifics across all personas', () => {
       for (const persona of AI_PERSONAS) {
         expect(persona.systemPromptAddendum).toContain('Zero Honorifics');
-        expect(persona.systemPromptAddendum).toContain('NEVER address the traveler with');
+        expect(persona.systemPromptAddendum).toContain(
+          'NEVER address the traveler with',
+        );
       }
     });
   });
@@ -180,7 +185,8 @@ describe('GuideR Intent Classification & Catalog Gating Unit Tests', () => {
     it('should classify custom itinerary request and generate structured proposal', async () => {
       const result = await orchestrator.processVisitorMessage({
         sessionId: 'sess-test-1',
-        message: 'صمم لي برنامج سياحي مخصص 7 أيام في القاهرة والأقصر مع نايل كروز',
+        message:
+          'صمم لي برنامج سياحي مخصص 7 أيام في القاهرة والأقصر مع نايل كروز',
         locale: 'ar',
       });
 

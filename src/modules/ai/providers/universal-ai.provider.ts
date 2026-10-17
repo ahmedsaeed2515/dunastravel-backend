@@ -1,7 +1,19 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
-import { IAiProvider, IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
-import { PROVIDER_REGISTRY, getOfficialBaseUrl, ProviderErrorCode } from '../services/model-registry.service';
+import {
+  IAiProvider,
+  IAiCompletionOptions,
+  IAiProviderResponse,
+} from '../interfaces/ai-provider.interface';
+import {
+  PROVIDER_REGISTRY,
+  getOfficialBaseUrl,
+  ProviderErrorCode,
+} from '../services/model-registry.service';
 
 // ============================================================
 // STRUCTURED PROVIDER ERROR
@@ -31,18 +43,24 @@ export const MODEL_ALIASES: Record<string, string> = {
   'gemini-3.1-flash-lite': 'gemini-3.5-flash-lite',
 };
 
-
 export function normalizeModelId(model: string): string {
   const clean = (model || '').replace(/^models\//, '');
   return MODEL_ALIASES[clean] || clean;
 }
 
-function classifyHttpError(status: number, body: string, provider: string, model: string): ProviderError {
+function classifyHttpError(
+  status: number,
+  body: string,
+  provider: string,
+  model: string,
+): ProviderError {
   let message = `Provider '${provider}' HTTP ${status}`;
   let isKeyInvalid = false;
   try {
     const parsed = JSON.parse(body);
-    const errObj = Array.isArray(parsed) ? (parsed[0]?.error || parsed[0]) : (parsed?.error || parsed);
+    const errObj = Array.isArray(parsed)
+      ? parsed[0]?.error || parsed[0]
+      : parsed?.error || parsed;
     message = errObj?.message || parsed?.message || message;
     const reason = errObj?.details?.[0]?.reason || errObj?.reason || '';
     if (
@@ -58,34 +76,76 @@ function classifyHttpError(status: number, body: string, provider: string, model
   }
 
   if (isKeyInvalid) {
-    return new ProviderError('INVALID_KEY', `API key rejected by provider '${provider}'. Key may be invalid or expired: ${message}`, status, provider, model);
+    return new ProviderError(
+      'INVALID_KEY',
+      `API key rejected by provider '${provider}'. Key may be invalid or expired: ${message}`,
+      status,
+      provider,
+      model,
+    );
   }
 
   switch (status) {
     case 400:
-      return new ProviderError('INVALID_CONFIGURATION', message, status, provider, model);
+      return new ProviderError(
+        'INVALID_CONFIGURATION',
+        message,
+        status,
+        provider,
+        model,
+      );
     case 401:
-      return new ProviderError('UNAUTHORIZED', `Authentication failed for provider '${provider}'. Check your API key.`, status, provider, model);
+      return new ProviderError(
+        'UNAUTHORIZED',
+        `Authentication failed for provider '${provider}'. Check your API key.`,
+        status,
+        provider,
+        model,
+      );
     case 403:
-      return new ProviderError('INVALID_KEY', `API key rejected by provider '${provider}'. Key may be invalid or expired.`, status, provider, model);
+      return new ProviderError(
+        'INVALID_KEY',
+        `API key rejected by provider '${provider}'. Key may be invalid or expired.`,
+        status,
+        provider,
+        model,
+      );
     case 404:
       // Critical: 404 means model or endpoint not found — MUST NOT be retried blindly
       return new ProviderError(
         'MODEL_NOT_FOUND',
         `Provider '${provider}' returned 404: model '${model}' or endpoint not found. ` +
-        `Verify the model ID is valid for this provider and the base URL is correct. ` +
-        `Original: ${message}`,
+          `Verify the model ID is valid for this provider and the base URL is correct. ` +
+          `Original: ${message}`,
         status,
         provider,
         model,
       );
     case 429:
-      return new ProviderError('RATE_LIMITED', `Provider '${provider}' rate limit exceeded. Will try next credential.`, status, provider, model);
+      return new ProviderError(
+        'RATE_LIMITED',
+        `Provider '${provider}' rate limit exceeded. Will try next credential.`,
+        status,
+        provider,
+        model,
+      );
     default:
       if (status >= 500) {
-        return new ProviderError('PROVIDER_DOWN', `Provider '${provider}' server error (${status}). Service may be degraded.`, status, provider, model);
+        return new ProviderError(
+          'PROVIDER_DOWN',
+          `Provider '${provider}' server error (${status}). Service may be degraded.`,
+          status,
+          provider,
+          model,
+        );
       }
-      return new ProviderError('UNKNOWN_ERROR', message, status, provider, model);
+      return new ProviderError(
+        'UNKNOWN_ERROR',
+        message,
+        status,
+        provider,
+        model,
+      );
   }
 }
 
@@ -112,17 +172,26 @@ export class UniversalAiProvider implements IAiProvider {
   ): Promise<IAiProviderResponse> {
     const provider = (options.provider || '').toLowerCase();
     if (!provider) {
-      throw new ProviderError('INVALID_CONFIGURATION', 'Provider must be specified. No default provider is assumed.');
+      throw new ProviderError(
+        'INVALID_CONFIGURATION',
+        'Provider must be specified. No default provider is assumed.',
+      );
     }
 
     const providerDef = PROVIDER_REGISTRY[provider];
     if (!providerDef) {
-      throw new ProviderError('INVALID_CONFIGURATION', `Unknown provider '${provider}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+      throw new ProviderError(
+        'INVALID_CONFIGURATION',
+        `Unknown provider '${provider}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`,
+      );
     }
 
     const apiKey = customApiKey;
     if (!apiKey || apiKey.length < 5) {
-      throw new ProviderError('INVALID_KEY', `API key is missing or too short for provider '${provider}'.`);
+      throw new ProviderError(
+        'INVALID_KEY',
+        `API key is missing or too short for provider '${provider}'.`,
+      );
     }
 
     // Route based on API style
@@ -131,10 +200,21 @@ export class UniversalAiProvider implements IAiProvider {
     }
 
     if (provider === 'google') {
-      return this.generateGoogleCompletionWithFallback(prompt, options, apiKey, providerDef);
+      return this.generateGoogleCompletionWithFallback(
+        prompt,
+        options,
+        apiKey,
+        providerDef,
+      );
     }
 
-    return this.generateOpenAiCompatibleCompletion(prompt, options, apiKey, provider, providerDef);
+    return this.generateOpenAiCompatibleCompletion(
+      prompt,
+      options,
+      apiKey,
+      provider,
+      providerDef,
+    );
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -151,13 +231,29 @@ export class UniversalAiProvider implements IAiProvider {
 
     // Try Google Native API first (fastest, direct, reliable)
     try {
-      return await this.generateGoogleNativeCompletion(prompt, { ...options, model }, apiKey, model);
+      return await this.generateGoogleNativeCompletion(
+        prompt,
+        { ...options, model },
+        apiKey,
+        model,
+      );
     } catch (err: any) {
-      if (err instanceof ProviderError && (err.code === 'UNAUTHORIZED' || err.code === 'INVALID_KEY')) {
+      if (
+        err instanceof ProviderError &&
+        (err.code === 'UNAUTHORIZED' || err.code === 'INVALID_KEY')
+      ) {
         throw err;
       }
-      this.logger.warn(`Google Native API failed (${err.message}). Trying OpenAI-compatible endpoint...`);
-      return this.generateOpenAiCompatibleCompletion(prompt, { ...options, model }, apiKey, 'google', providerDef);
+      this.logger.warn(
+        `Google Native API failed (${err.message}). Trying OpenAI-compatible endpoint...`,
+      );
+      return this.generateOpenAiCompatibleCompletion(
+        prompt,
+        { ...options, model },
+        apiKey,
+        'google',
+        providerDef,
+      );
     }
   }
 
@@ -224,7 +320,8 @@ export class UniversalAiProvider implements IAiProvider {
         // Graceful retry without thinkingConfig if the model rejects thinkingConfig
         if (
           payload.generationConfig?.thinkingConfig &&
-          (errorBody.includes('thinkingConfig') || errorBody.includes('thinking_config'))
+          (errorBody.includes('thinkingConfig') ||
+            errorBody.includes('thinking_config'))
         ) {
           delete payload.generationConfig.thinkingConfig;
           const retryRes = await fetch(url, {
@@ -236,9 +333,14 @@ export class UniversalAiProvider implements IAiProvider {
           if (retryRes.ok) {
             const retryJson = await retryRes.json();
             const retryParts = retryJson.candidates?.[0]?.content?.parts || [];
-            const retryText = retryParts.map((p: any) => p.text || '').filter(Boolean).join('\n') || '';
+            const retryText =
+              retryParts
+                .map((p: any) => p.text || '')
+                .filter(Boolean)
+                .join('\n') || '';
             const inTokens = retryJson.usageMetadata?.promptTokenCount || 0;
-            const outTokens = retryJson.usageMetadata?.candidatesTokenCount || 0;
+            const outTokens =
+              retryJson.usageMetadata?.candidatesTokenCount || 0;
             return {
               text: retryText,
               inputTokens: inTokens,
@@ -254,7 +356,11 @@ export class UniversalAiProvider implements IAiProvider {
 
       const json = await res.json();
       const parts = json.candidates?.[0]?.content?.parts || [];
-      const text = parts.map((p: any) => p.text || '').filter(Boolean).join('\n') || '';
+      const text =
+        parts
+          .map((p: any) => p.text || '')
+          .filter(Boolean)
+          .join('\n') || '';
       const inputTokens = json.usageMetadata?.promptTokenCount || 0;
       const outputTokens = json.usageMetadata?.candidatesTokenCount || 0;
 
@@ -262,7 +368,14 @@ export class UniversalAiProvider implements IAiProvider {
         `[google-native] SUCCESS (${latencyMs}ms) model=${cleanModel} in=${inputTokens} out=${outputTokens}`,
       );
 
-      return { text, inputTokens, outputTokens, latencyMs, provider: 'google', model: cleanModel };
+      return {
+        text,
+        inputTokens,
+        outputTokens,
+        latencyMs,
+        provider: 'google',
+        model: cleanModel,
+      };
     } catch (error: any) {
       const latencyMs = Date.now() - startTime;
       if (error instanceof ProviderError) throw error;
@@ -311,26 +424,52 @@ export class UniversalAiProvider implements IAiProvider {
           model,
           max_tokens: maxTokens,
           temperature,
-          system: options.systemPrompt || 'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
+          system:
+            options.systemPrompt ||
+            'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
           messages: [{ role: 'user', content: prompt }],
         },
         { signal: abortController.signal },
       );
 
       const latencyMs = Date.now() - startTime;
-      const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+      const text =
+        response.content[0]?.type === 'text' ? response.content[0].text : '';
 
-      return { text, inputTokens: response.usage?.input_tokens || 0, outputTokens: response.usage?.output_tokens || 0, latencyMs, provider: 'anthropic', model };
+      return {
+        text,
+        inputTokens: response.usage?.input_tokens || 0,
+        outputTokens: response.usage?.output_tokens || 0,
+        latencyMs,
+        provider: 'anthropic',
+        model,
+      };
     } catch (error: any) {
       const latencyMs = Date.now() - startTime;
-      this.logger.error(`Anthropic SDK error (${latencyMs}ms): ${error?.message}`);
+      this.logger.error(
+        `Anthropic SDK error (${latencyMs}ms): ${error?.message}`,
+      );
       if (error?.name === 'AbortError') {
-        throw new ProviderError('TIMEOUT', `Anthropic request timed out after ${timeoutMs}ms.`);
+        throw new ProviderError(
+          'TIMEOUT',
+          `Anthropic request timed out after ${timeoutMs}ms.`,
+        );
       }
       if (error?.status) {
-        throw classifyHttpError(error.status, error.message || '', 'anthropic', model);
+        throw classifyHttpError(
+          error.status,
+          error.message || '',
+          'anthropic',
+          model,
+        );
       }
-      throw new ProviderError('UNKNOWN_ERROR', error?.message || 'Anthropic API failed.', undefined, 'anthropic', model);
+      throw new ProviderError(
+        'UNKNOWN_ERROR',
+        error?.message || 'Anthropic API failed.',
+        undefined,
+        'anthropic',
+        model,
+      );
     } finally {
       clearTimeout(timer);
     }
@@ -358,7 +497,10 @@ export class UniversalAiProvider implements IAiProvider {
     // ── Base URL ───────────────────────────────────────────────────
     let baseUrl: string;
     try {
-      baseUrl = getOfficialBaseUrl(provider, providerDef.allowCustomBaseUrl ? options.baseUrl : undefined);
+      baseUrl = getOfficialBaseUrl(
+        provider,
+        providerDef.allowCustomBaseUrl ? options.baseUrl : undefined,
+      );
     } catch (err: any) {
       throw new ProviderError('INVALID_CONFIGURATION', err.message);
     }
@@ -374,7 +516,7 @@ export class UniversalAiProvider implements IAiProvider {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     };
 
     // Provider-specific headers
@@ -403,9 +545,7 @@ export class UniversalAiProvider implements IAiProvider {
     const abortController = new AbortController();
     const timer = setTimeout(() => abortController.abort(), timeoutMs);
 
-    this.logger.debug(
-      `[${provider}] POST ${endpoint} model=${model}`,
-    );
+    this.logger.debug(`[${provider}] POST ${endpoint} model=${model}`);
 
     try {
       const res = await fetch(endpoint, {
@@ -419,7 +559,12 @@ export class UniversalAiProvider implements IAiProvider {
 
       if (!res.ok) {
         const errorBody = await res.text().catch(() => '');
-        const providerError = classifyHttpError(res.status, errorBody, provider, model);
+        const providerError = classifyHttpError(
+          res.status,
+          errorBody,
+          provider,
+          model,
+        );
         this.logger.warn(
           `[${provider}] ${providerError.code} (${latencyMs}ms) model=${model}: ${providerError.message}`,
         );

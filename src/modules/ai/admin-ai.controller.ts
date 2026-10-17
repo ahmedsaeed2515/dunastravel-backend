@@ -1,4 +1,16 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -7,10 +19,20 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
-import { UniversalAiProvider, ProviderError } from './providers/universal-ai.provider';
+import {
+  UniversalAiProvider,
+  ProviderError,
+} from './providers/universal-ai.provider';
 import { AiKeyPoolService } from './services/ai-key-pool.service';
-import { AgentRegistryService, CreateAgentDto, UpdateAgentDto } from './services/agent-registry.service';
-import { ModelRegistryService, PROVIDER_REGISTRY } from './services/model-registry.service';
+import {
+  AgentRegistryService,
+  CreateAgentDto,
+  UpdateAgentDto,
+} from './services/agent-registry.service';
+import {
+  ModelRegistryService,
+  PROVIDER_REGISTRY,
+} from './services/model-registry.service';
 import { ModelRoutingService } from './services/model-routing.service';
 import { PromptEngineService } from './services/prompt-engine.service';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
@@ -66,9 +88,16 @@ export class AdminAiController {
       this.prisma.chatConversation.count(),
       this.prisma.chatConversation.count({ where: { status: 'ACTIVE' } }),
       this.prisma.chatConversation.count({ where: { status: 'HANDED_OFF' } }),
-      this.prisma.chatConversation.count({ where: { leadStatus: 'QUALIFIED' } }),
+      this.prisma.chatConversation.count({
+        where: { leadStatus: 'QUALIFIED' },
+      }),
       this.prisma.aiUsageLog.aggregate({
-        _sum: { inputTokens: true, outputTokens: true, latencyMs: true, estimatedCostUsd: true },
+        _sum: {
+          inputTokens: true,
+          outputTokens: true,
+          latencyMs: true,
+          estimatedCostUsd: true,
+        },
         _count: { id: true },
       }),
       this.prisma.knowledgeBaseItem.count({ where: { status: 'PUBLISHED' } }),
@@ -80,14 +109,26 @@ export class AdminAiController {
     ]);
 
     const totalLogs = totalUsageLogs._count.id || 1;
-    const avgLatencyMs = Math.round((totalUsageLogs._sum.latencyMs || 0) / totalLogs) || 550;
+    const avgLatencyMs =
+      Math.round((totalUsageLogs._sum.latencyMs || 0) / totalLogs) || 550;
     const totalInputTokens = totalUsageLogs._sum.inputTokens || 0;
     const totalOutputTokens = totalUsageLogs._sum.outputTokens || 0;
-    const estimatedCostUsd = Number(totalUsageLogs._sum.estimatedCostUsd || ((totalInputTokens * 0.3 + totalOutputTokens * 2.5) / 1_000_000).toFixed(4));
-    const activeProvider = (config.provider && config.provider !== 'anthropic') ? config.provider : 'google';
+    const estimatedCostUsd = Number(
+      totalUsageLogs._sum.estimatedCostUsd ||
+        (
+          (totalInputTokens * 0.3 + totalOutputTokens * 2.5) /
+          1_000_000
+        ).toFixed(4),
+    );
+    const activeProvider =
+      config.provider && config.provider !== 'anthropic'
+        ? config.provider
+        : 'google';
     const activeModel = config.model || 'gemini-3.6-flash';
 
-    const verifiedHealthyCount = keyPool.filter((k) => k.lastStatus === 'HEALTHY').length;
+    const verifiedHealthyCount = keyPool.filter(
+      (k) => k.lastStatus === 'HEALTHY',
+    ).length;
     // If any keys failed or were tested, healthy count should strictly reflect HEALTHY keys
     const healthyCount = verifiedHealthyCount;
 
@@ -98,7 +139,8 @@ export class AdminAiController {
         handedOffConversations,
         qualifiedLeads,
         publishedKnowledgeArticles: knowledgeCount,
-        catalogItemsCount: (knowledgeCount || 0) + (toursCount || 0) + (hotelsCount || 0),
+        catalogItemsCount:
+          (knowledgeCount || 0) + (toursCount || 0) + (hotelsCount || 0),
         totalTours: toursCount,
         totalHotels: hotelsCount,
         configuredApiKeysCount: keyPool.length,
@@ -118,7 +160,10 @@ export class AdminAiController {
   }
 
   @Get('analytics')
-  @ApiOperation({ summary: 'Get detailed AI analytics, conversion funnels, FinOps cost, and latency' })
+  @ApiOperation({
+    summary:
+      'Get detailed AI analytics, conversion funnels, FinOps cost, and latency',
+  })
   async getAnalytics() {
     return this.chatOrchestrator.getDetailedAnalytics();
   }
@@ -127,7 +172,7 @@ export class AdminAiController {
   @ApiOperation({ summary: 'Get AI chatbot configuration' })
   async getConfig() {
     const config = await this.chatOrchestrator.getOrCreateConfig();
-    const tourSettings = (config.tourSettings as any) || {};
+    const tourSettings = config.tourSettings || {};
     return {
       ...config,
       isInChatBookingEnabled: tourSettings.isInChatBookingEnabled !== false,
@@ -139,7 +184,7 @@ export class AdminAiController {
   @ApiOperation({ summary: 'Update AI chatbot configuration' })
   async updateConfig(@Body() dto: UpdateAiConfigDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
-    const tourSettings = { ...((currentConfig.tourSettings as any) || {}) };
+    const tourSettings = { ...(currentConfig.tourSettings || {}) };
 
     if (dto.isInChatBookingEnabled !== undefined) {
       tourSettings.isInChatBookingEnabled = dto.isInChatBookingEnabled;
@@ -153,17 +198,24 @@ export class AdminAiController {
       temperature: dto.temperature ?? currentConfig.temperature,
       maxTokens: dto.maxTokens ?? currentConfig.maxTokens,
       requestTimeoutMs: dto.requestTimeoutMs ?? currentConfig.requestTimeoutMs,
-      systemInstructions: dto.systemInstructions ?? currentConfig.systemInstructions,
+      systemInstructions:
+        dto.systemInstructions ?? currentConfig.systemInstructions,
       salesPersonality: dto.salesPersonality ?? currentConfig.salesPersonality,
       toneOfVoice: dto.toneOfVoice ?? currentConfig.toneOfVoice,
       fallbackMessage: dto.fallbackMessage ?? currentConfig.fallbackMessage,
-      escalationMessage: dto.escalationMessage ?? currentConfig.escalationMessage,
+      escalationMessage:
+        dto.escalationMessage ?? currentConfig.escalationMessage,
       welcomeMessages: dto.welcomeMessages ?? currentConfig.welcomeMessages,
-      suggestedQuestions: dto.suggestedQuestions ?? currentConfig.suggestedQuestions,
+      suggestedQuestions:
+        dto.suggestedQuestions ?? currentConfig.suggestedQuestions,
       tourSettings,
     };
 
-    if (dto.apiKey && dto.apiKey.trim().length > 0 && !dto.apiKey.includes('••')) {
+    if (
+      dto.apiKey &&
+      dto.apiKey.trim().length > 0 &&
+      !dto.apiKey.includes('••')
+    ) {
       dataToUpdate.encryptedApiKey = encryptSensitiveField(dto.apiKey.trim());
     }
 
@@ -174,13 +226,17 @@ export class AdminAiController {
 
     return {
       ...updated,
-      isInChatBookingEnabled: (updated.tourSettings as any)?.isInChatBookingEnabled !== false,
+      isInChatBookingEnabled:
+        (updated.tourSettings as any)?.isInChatBookingEnabled !== false,
       encryptedApiKey: updated.encryptedApiKey ? '••••••••••••••••' : null,
     };
   }
 
   @Post('status')
-  @ApiOperation({ summary: 'Update GuideR global operational status (ACTIVE / DISABLED / MAINTENANCE)' })
+  @ApiOperation({
+    summary:
+      'Update GuideR global operational status (ACTIVE / DISABLED / MAINTENANCE)',
+  })
   async updateStatus(
     @Body() dto: UpdateGuiderStatusDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -192,7 +248,9 @@ export class AdminAiController {
   // --- Prompt Version Management ---
 
   @Get('prompts')
-  @ApiOperation({ summary: 'Get all prompt versions (drafts, published, archived)' })
+  @ApiOperation({
+    summary: 'Get all prompt versions (drafts, published, archived)',
+  })
   async getPromptVersions() {
     return this.chatOrchestrator.getPromptVersions();
   }
@@ -217,10 +275,18 @@ export class AdminAiController {
   }
 
   @Put('prompts/:id')
-  @ApiOperation({ summary: 'Update an existing prompt version (name, content, notes, status)' })
+  @ApiOperation({
+    summary: 'Update an existing prompt version (name, content, notes, status)',
+  })
   async updatePromptVersion(
     @Param('id') id: string,
-    @Body() body: { name?: string; systemPrompt?: string; changeNote?: string; status?: string },
+    @Body()
+    body: {
+      name?: string;
+      systemPrompt?: string;
+      changeNote?: string;
+      status?: string;
+    },
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.chatOrchestrator.updatePromptVersion(id, body, user?.id);
@@ -233,27 +299,40 @@ export class AdminAiController {
   }
 
   @Post('prompts/:id/archive')
-  @ApiOperation({ summary: 'Archive a prompt version so it is disabled/inactive' })
+  @ApiOperation({
+    summary: 'Archive a prompt version so it is disabled/inactive',
+  })
   async archivePromptVersion(@Param('id') id: string) {
     return this.chatOrchestrator.archivePromptVersion(id);
   }
 
   @Post('prompts/:id/publish')
-  @ApiOperation({ summary: 'Publish prompt version, making it the active production system prompt' })
-  async publishPromptVersion(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  @ApiOperation({
+    summary:
+      'Publish prompt version, making it the active production system prompt',
+  })
+  async publishPromptVersion(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.chatOrchestrator.publishPromptVersion(id, user?.id);
   }
 
   @Post('prompts/:id/rollback')
   @ApiOperation({ summary: 'Rollback to a previous prompt version' })
-  async rollbackPromptVersion(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async rollbackPromptVersion(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.chatOrchestrator.rollbackPromptVersion(id);
   }
 
   // --- Message Feedback ---
 
   @Get('feedback')
-  @ApiOperation({ summary: 'Get traveler message ratings, satisfaction trends, and feedback' })
+  @ApiOperation({
+    summary: 'Get traveler message ratings, satisfaction trends, and feedback',
+  })
   async getFeedback(@Query('page') page = '1', @Query('limit') limit = '20') {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
@@ -263,7 +342,10 @@ export class AdminAiController {
   // --- Provider Registry Endpoints (NEW) ---
 
   @Get('providers')
-  @ApiOperation({ summary: 'Get the official provider registry with setup instructions and API key links' })
+  @ApiOperation({
+    summary:
+      'Get the official provider registry with setup instructions and API key links',
+  })
   async getProviderRegistry() {
     return {
       providers: this.modelRegistry.getAvailableProviders(),
@@ -292,7 +374,10 @@ export class AdminAiController {
   }
 
   @Post('providers/:providerId/models/refresh')
-  @ApiOperation({ summary: 'Discover and refresh live models available to a specific provider API key' })
+  @ApiOperation({
+    summary:
+      'Discover and refresh live models available to a specific provider API key',
+  })
   async refreshProviderModels(
     @Param('providerId') providerId: string,
     @Body() dto: RefreshProviderModelsDto,
@@ -301,7 +386,10 @@ export class AdminAiController {
   }
 
   @Get('routing')
-  @ApiOperation({ summary: 'Get the current GuideR model routing policy (Economy/Normal/Complex/Fallback)' })
+  @ApiOperation({
+    summary:
+      'Get the current GuideR model routing policy (Economy/Normal/Complex/Fallback)',
+  })
   async getRoutingPolicy() {
     return {
       table: this.modelRouting.getRoutingTable(),
@@ -312,13 +400,18 @@ export class AdminAiController {
   // --- API Key Pool Management Endpoints ---
 
   @Get('keys')
-  @ApiOperation({ summary: 'Get all configured provider credentials (keys masked)' })
+  @ApiOperation({
+    summary: 'Get all configured provider credentials (keys masked)',
+  })
   async getKeyPool() {
     return this.keyPoolService.getKeyPool();
   }
 
   @Post('keys')
-  @ApiOperation({ summary: 'Add a new provider credential. Provider/model pair is validated server-side.' })
+  @ApiOperation({
+    summary:
+      'Add a new provider credential. Provider/model pair is validated server-side.',
+  })
   async addKeyToPool(@Body() body: AddProviderCredentialDto) {
     return this.keyPoolService.addKey(body);
   }
@@ -330,8 +423,13 @@ export class AdminAiController {
   }
 
   @Put('keys/:id')
-  @ApiOperation({ summary: 'Update a credential. Leave apiKey blank to keep existing key.' })
-  async updateKeyInPool(@Param('id') id: string, @Body() body: UpdateProviderCredentialDto) {
+  @ApiOperation({
+    summary: 'Update a credential. Leave apiKey blank to keep existing key.',
+  })
+  async updateKeyInPool(
+    @Param('id') id: string,
+    @Body() body: UpdateProviderCredentialDto,
+  ) {
     return this.keyPoolService.updateKey(id, body);
   }
 
@@ -342,13 +440,19 @@ export class AdminAiController {
   }
 
   @Post('keys/:id/test')
-  @ApiOperation({ summary: 'Test a credential — returns structured error code, not just success/failed' })
+  @ApiOperation({
+    summary:
+      'Test a credential — returns structured error code, not just success/failed',
+  })
   async testSpecificKey(@Param('id') id: string) {
     return this.keyPoolService.testKey(id);
   }
 
   @Post('models/activate')
-  @ApiOperation({ summary: 'Transactionally activate GuideR model and provider with optional connectivity verification' })
+  @ApiOperation({
+    summary:
+      'Transactionally activate GuideR model and provider with optional connectivity verification',
+  })
   async activateModel(
     @Body()
     body: {
@@ -359,29 +463,44 @@ export class AdminAiController {
     },
   ) {
     if (!body.provider || !body.model) {
-      throw new BadRequestException('Provider and model are required for activation.');
+      throw new BadRequestException(
+        'Provider and model are required for activation.',
+      );
     }
     return this.keyPoolService.setActiveModel(body);
   }
 
   @Post('config/test')
-  @ApiOperation({ summary: 'Test a provider connection with a specific key. Validates provider/model pair first.' })
+  @ApiOperation({
+    summary:
+      'Test a provider connection with a specific key. Validates provider/model pair first.',
+  })
   async testConnection(@Body() dto: TestProviderConnectionDto) {
     const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
-    const providerName = (dto.provider || currentConfig.provider || 'google').toLowerCase();
+    const providerName = (
+      dto.provider ||
+      currentConfig.provider ||
+      'google'
+    ).toLowerCase();
     const defaultModelForProvider =
       providerName === 'google'
         ? 'gemini-3.6-flash'
         : providerName === 'openai'
-        ? 'gpt-4o-mini'
-        : providerName === 'xai'
-        ? 'grok-2-1212'
-        : 'deepseek-chat';
-    const model = (dto.model && dto.model.trim()) ? dto.model.trim() : defaultModelForProvider;
+          ? 'gpt-4o-mini'
+          : providerName === 'xai'
+            ? 'grok-2-1212'
+            : 'deepseek-chat';
+    const model =
+      dto.model && dto.model.trim()
+        ? dto.model.trim()
+        : defaultModelForProvider;
 
     // Validate provider/model pair BEFORE calling the provider
     if (model) {
-      const validation = this.modelRegistry.validateProviderModelPair(providerName, model);
+      const validation = this.modelRegistry.validateProviderModelPair(
+        providerName,
+        model,
+      );
       if (!validation.valid) {
         return {
           success: false,
@@ -397,7 +516,9 @@ export class AdminAiController {
     let key =
       dto.apiKey && !dto.apiKey.includes('••')
         ? dto.apiKey
-        : (providerName === currentConfig.provider ? decryptSensitiveField(currentConfig.encryptedApiKey) : undefined) || undefined;
+        : (providerName === currentConfig.provider
+            ? decryptSensitiveField(currentConfig.encryptedApiKey)
+            : undefined) || undefined;
 
     if (!key) {
       const row = await (this.prisma as any).aiProviderCredential?.findFirst?.({
@@ -426,7 +547,8 @@ export class AdminAiController {
         provider: providerName,
         model,
         error: `No API key provided for provider '${providerName}'.`,
-        diagnosis: 'Provide an API key or save a credential for this provider first.',
+        diagnosis:
+          'Provide an API key or save a credential for this provider first.',
       };
     }
 
@@ -452,9 +574,10 @@ export class AdminAiController {
         provider: providerName,
         model,
         error: err.message,
-        diagnosis: err instanceof ProviderError
-          ? `[${code}] ${err.message}`
-          : 'Unexpected error during connection test.',
+        diagnosis:
+          err instanceof ProviderError
+            ? `[${code}] ${err.message}`
+            : 'Unexpected error during connection test.',
       };
     }
   }
@@ -510,7 +633,9 @@ export class AdminAiController {
   }
 
   @Get('conversations/:id')
-  @ApiOperation({ summary: 'Get detailed conversation transcript & visitor details' })
+  @ApiOperation({
+    summary: 'Get detailed conversation transcript & visitor details',
+  })
   async getConversationDetail(@Param('id') id: string) {
     const conversation = await this.prisma.chatConversation.findUnique({
       where: { id },
@@ -525,8 +650,13 @@ export class AdminAiController {
   }
 
   @Post('conversations/:id/takeover')
-  @ApiOperation({ summary: 'Staff takes over conversation (pauses autonomous AI)' })
-  async takeoverConversation(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  @ApiOperation({
+    summary: 'Staff takes over conversation (pauses autonomous AI)',
+  })
+  async takeoverConversation(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.chatOrchestrator.takeoverConversation(id, user?.id || 'admin');
   }
 
@@ -537,7 +667,10 @@ export class AdminAiController {
     @Body() body: { text: string },
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.chatOrchestrator.staffReplyToConversation(id, body.text, { id: user?.id, name: user?.email });
+    return this.chatOrchestrator.staffReplyToConversation(id, body.text, {
+      id: user?.id,
+      name: user?.email,
+    });
   }
 
   @Post('conversations/:id/return-to-ai')
@@ -553,15 +686,22 @@ export class AdminAiController {
   }
 
   @Get('safety-events')
-  @ApiOperation({ summary: 'Get security and safety audit events (blocked attacks, errors)' })
-  async getSafetyEvents(@Query('page') page = '1', @Query('limit') limit = '20') {
+  @ApiOperation({
+    summary: 'Get security and safety audit events (blocked attacks, errors)',
+  })
+  async getSafetyEvents(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
     return this.chatOrchestrator.getSafetyEvents(pageNum, limitNum);
   }
 
   @Post('simulator')
-  @ApiOperation({ summary: 'Run live test message through the AI orchestrator' })
+  @ApiOperation({
+    summary: 'Run live test message through the AI orchestrator',
+  })
   async runSimulator(@Body() dto: SendChatMessageDto) {
     return this.chatOrchestrator.processVisitorMessage(dto);
   }
@@ -576,7 +716,10 @@ export class AdminAiController {
 
   @Get('agents/:slug')
   @ApiOperation({ summary: 'Get AI Agent detail by slug' })
-  async getAgentBySlug(@Param('slug') slug: string, @Query('locale') locale = 'en') {
+  async getAgentBySlug(
+    @Param('slug') slug: string,
+    @Query('locale') locale = 'en',
+  ) {
     return this.agentRegistry.getAgentBySlug(slug, locale);
   }
 
@@ -593,7 +736,10 @@ export class AdminAiController {
   }
 
   @Post('agents/:id/activate')
-  @ApiOperation({ summary: 'Set this agent persona as the single active AI assistant on the live website' })
+  @ApiOperation({
+    summary:
+      'Set this agent persona as the single active AI assistant on the live website',
+  })
   async activateAgent(@Param('id') id: string) {
     const activated = await this.agentRegistry.activateSingleAgent(id);
     return { success: true, agent: activated };
@@ -608,7 +754,10 @@ export class AdminAiController {
   // --- Model Registry ---
 
   @Get('models')
-  @ApiOperation({ summary: 'Get full model registry with capabilities, pricing, and provider info' })
+  @ApiOperation({
+    summary:
+      'Get full model registry with capabilities, pricing, and provider info',
+  })
   async getAllModels() {
     const rawModels = this.modelRegistry.getAllModels();
     const models = rawModels.map((m) => ({
@@ -629,7 +778,10 @@ export class AdminAiController {
   // --- Testing Lab Diagnostics Trace ---
 
   @Post('simulator/trace')
-  @ApiOperation({ summary: 'Run diagnostic test query returning full inspection trace (intent, agent, model, RAG chunks, live DB calls, cost)' })
+  @ApiOperation({
+    summary:
+      'Run diagnostic test query returning full inspection trace (intent, agent, model, RAG chunks, live DB calls, cost)',
+  })
   async runSimulatorTrace(
     @Body()
     body: {
@@ -649,7 +801,7 @@ export class AdminAiController {
     const agent = await this.agentRegistry.getAgentBySlug(agentSlug, locale);
 
     let modelId = body.model || agent.primaryModel || 'gemini-3.6-flash';
-    let providerName = body.provider || (agent as any).provider;
+    let providerName = body.provider || agent.provider;
 
     if (!providerName) {
       const modelDef = this.modelRegistry.getModelInfo(modelId);
@@ -659,7 +811,11 @@ export class AdminAiController {
         providerName = 'google';
       } else if (modelId.startsWith('claude')) {
         providerName = 'anthropic';
-      } else if (modelId.startsWith('gpt') || modelId.startsWith('o1') || modelId.startsWith('o3')) {
+      } else if (
+        modelId.startsWith('gpt') ||
+        modelId.startsWith('o1') ||
+        modelId.startsWith('o3')
+      ) {
         providerName = 'openai';
       } else if (modelId.startsWith('grok')) {
         providerName = 'xai';
@@ -678,34 +834,54 @@ export class AdminAiController {
       retrievalContext = await this.hybridRagEngine.retrieveGroundedKnowledge(
         body.message,
         locale,
-        agent.allowedSources || ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
+        agent.allowedSources || [
+          'tours',
+          'destinations',
+          'policies',
+          'hotels',
+          'transportation',
+        ],
         4,
       );
       retrievalLatency = Date.now() - ragStart;
     }
 
     // 2. Prompt Compilation
-    const systemPromptBase = agent.systemPrompt || 'You are GuideR, luxury AI concierge for Dunas Travel.';
-    const compiledSystemPrompt = this.promptEngine.renderTemplate(systemPromptBase, {
-      agentName: agent.displayName || agent.slug,
-      visitorLanguage: locale,
-      businessName: 'Dunas Travel',
-      groundedKnowledge: retrievalContext?.groundedSummaryText || 'No extra catalog items.',
-    });
+    const systemPromptBase =
+      agent.systemPrompt ||
+      'You are GuideR, luxury AI concierge for Dunas Travel.';
+    const compiledSystemPrompt = this.promptEngine.renderTemplate(
+      systemPromptBase,
+      {
+        agentName: agent.displayName || agent.slug,
+        visitorLanguage: locale,
+        businessName: 'Dunas Travel',
+        groundedKnowledge:
+          retrievalContext?.groundedSummaryText || 'No extra catalog items.',
+      },
+    );
 
     // 3. Execution via Decrypted API Key & Universal Provider
-    const credentialRow = await (this.prisma as any).aiProviderCredential?.findFirst?.({
+    const credentialRow = await (
+      this.prisma as any
+    ).aiProviderCredential?.findFirst?.({
       where: {
         isActive: true,
         provider: providerName,
       },
       orderBy: { priority: 'asc' },
     });
-    let decryptedKey = credentialRow ? decryptSensitiveField(credentialRow.encryptedApiKey) : undefined;
+    let decryptedKey = credentialRow
+      ? decryptSensitiveField(credentialRow.encryptedApiKey)
+      : undefined;
     if (!decryptedKey) {
       const currentConfig = await this.chatOrchestrator.getOrCreateConfig();
-      if (providerName === currentConfig.provider && currentConfig.encryptedApiKey) {
-        decryptedKey = decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
+      if (
+        providerName === currentConfig.provider &&
+        currentConfig.encryptedApiKey
+      ) {
+        decryptedKey =
+          decryptSensitiveField(currentConfig.encryptedApiKey) || undefined;
       }
     }
     if (!decryptedKey) {
@@ -723,12 +899,16 @@ export class AdminAiController {
     // Graceful automatic failover: If the requested provider has no active key,
     // seamlessly fall back to an active provider from the database key pool (such as Google Gemini)
     if (!decryptedKey) {
-      const fallbackCred = await (this.prisma as any).aiProviderCredential?.findFirst?.({
+      const fallbackCred = await (
+        this.prisma as any
+      ).aiProviderCredential?.findFirst?.({
         where: { isActive: true },
         orderBy: { priority: 'asc' },
       });
       if (fallbackCred) {
-        const candidateKey = decryptSensitiveField(fallbackCred.encryptedApiKey);
+        const candidateKey = decryptSensitiveField(
+          fallbackCred.encryptedApiKey,
+        );
         if (candidateKey && candidateKey.length > 10) {
           providerName = fallbackCred.provider;
           modelId = fallbackCred.model || 'gemini-3.6-flash';
@@ -741,7 +921,9 @@ export class AdminAiController {
     let providerError = null;
     try {
       if (!decryptedKey) {
-        throw new Error(`No active API key found for provider '${providerName}'.`);
+        throw new Error(
+          `No active API key found for provider '${providerName}'.`,
+        );
       }
       llmResponse = await this.universalProvider.generateCompletion(
         body.message,
@@ -762,7 +944,8 @@ export class AdminAiController {
       let fallbackText = '';
       if (isArabic) {
         if (topTour) {
-          const loc = [topTour.city, topTour.country].filter(Boolean).join('، ') || 'مصر';
+          const loc =
+            [topTour.city, topTour.country].filter(Boolean).join('، ') || 'مصر';
           const price = topTour.basePriceUsd || 1200;
           fallbackText = `أهلاً بك في دوناس ترافيل! يسعدنا جداً تقديم أرقى البرامج السياحية لك. بناءً على استفسارك، نقترح عليك رحلة "${topTour.title}" في (${loc})، بسعر يبدأ من $${price} ${topTour.currency || 'USD'} وتتضمن إقامة فاخرة، وجولات سياحية خاصة مع مرشد خبير، وانتقالات VIP خاصة.\n\nهل ترغب في تفاصيل البرنامج اليومي أو تخصيص تواريخ رحلتك؟`;
         } else {
@@ -770,7 +953,9 @@ export class AdminAiController {
         }
       } else {
         if (topTour) {
-          const loc = [topTour.city, topTour.country].filter(Boolean).join(', ') || 'Egypt';
+          const loc =
+            [topTour.city, topTour.country].filter(Boolean).join(', ') ||
+            'Egypt';
           const price = topTour.basePriceUsd || 1200;
           fallbackText = `Welcome to Dunas Travel! We are delighted to assist you with our signature luxury offerings. We recommend our "${topTour.title}" in ${loc}, starting from $${price} ${topTour.currency || 'USD'}, featuring 5-star deluxe accommodation, private transfers, and VIP guided heritage excursions.\n\nWould you like us to customize the itinerary dates for you?`;
         } else {
@@ -780,7 +965,9 @@ export class AdminAiController {
 
       llmResponse = {
         text: fallbackText,
-        inputTokens: Math.ceil(compiledSystemPrompt.length / 4) + Math.ceil(body.message.length / 4),
+        inputTokens:
+          Math.ceil(compiledSystemPrompt.length / 4) +
+          Math.ceil(body.message.length / 4),
         outputTokens: Math.ceil(fallbackText.length / 4),
         latencyMs: Date.now() - startTime - retrievalLatency,
         provider: providerName,
@@ -820,7 +1007,8 @@ export class AdminAiController {
       },
       prompt: {
         compiledSystemPrompt,
-        versionId: body.promptVersionId || agent.activePromptVersionId || 'active-v1',
+        versionId:
+          body.promptVersionId || agent.activePromptVersionId || 'active-v1',
       },
       telemetry: {
         inputTokens: llmResponse.inputTokens,

@@ -1,5 +1,6 @@
 export interface EmailDesignConfig {
-  presetId?: 'obsidian_gold' | 'royal_sapphire' | 'desert_amber' | 'minimalist_pearl';
+  presetId?:
+    'obsidian_gold' | 'royal_sapphire' | 'desert_amber' | 'minimalist_pearl';
   theme: {
     canvasBg: string;
     cardBg: string;
@@ -51,7 +52,10 @@ export interface EmailDesignConfig {
   };
 }
 
-export const EMAIL_PRESETS: Record<string, { name: string; nameAr: string; config: EmailDesignConfig }> = {
+export const EMAIL_PRESETS: Record<
+  string,
+  { name: string; nameAr: string; config: EmailDesignConfig }
+> = {
   obsidian_gold: {
     name: 'Obsidian & Gold Luxury',
     nameAr: 'الأسود والذهبي الفاخر (DUNAS Signature)',
@@ -91,7 +95,8 @@ export const EMAIL_PRESETS: Record<string, { name: string; nameAr: string; confi
         style: 'GRADIENT',
       },
       footer: {
-        address: 'Cairo Headquarters • Spain • Italy • Brazil • Mexico • Colombia',
+        address:
+          'Cairo Headquarters • Spain • Italy • Brazil • Mexico • Colombia',
         contactEmail: 'concierge@dunastravel.com',
         websiteUrl: 'https://www.dunastravel.com',
         securityNotice:
@@ -146,7 +151,8 @@ export const EMAIL_PRESETS: Record<string, { name: string; nameAr: string; confi
         address: 'Licensed Destination Management Company (DMC No. 1882)',
         contactEmail: 'sales@dunastravel.com',
         websiteUrl: 'https://www.dunastravel.com',
-        securityNotice: 'This communication is SSL encrypted and digitally signed by Dunas Travel Group.',
+        securityNotice:
+          'This communication is SSL encrypted and digitally signed by Dunas Travel Group.',
       },
     },
   },
@@ -363,7 +369,9 @@ export function compileTemplateHtml(config: EmailDesignConfig): string {
 </html>`;
 }
 
-export function extractDesignConfigFromHtml(bodyHtml: string): EmailDesignConfig | null {
+export function extractDesignConfigFromHtml(
+  bodyHtml: string,
+): EmailDesignConfig | null {
   if (!bodyHtml) return null;
   const match = bodyHtml.match(/<!-- DUNAS_BUILDER_CONFIG: ([\s\S]*?) -->/);
   if (match && match[1]) {

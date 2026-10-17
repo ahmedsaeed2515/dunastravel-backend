@@ -64,8 +64,19 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       },
       tourLandingPage: {
         findMany: jest.fn().mockResolvedValue([
-          { id: 'lp-1', slug: 'egypt', titleJsonb: { en: 'Egypt Luxury Tours', ar: 'رحلات مصر الفاخرة' } },
-          { id: 'lp-2', slug: 'nile-cruises', titleJsonb: { en: 'Signature Nile Cruises', ar: 'رحلات النايل كروز' } },
+          {
+            id: 'lp-1',
+            slug: 'egypt',
+            titleJsonb: { en: 'Egypt Luxury Tours', ar: 'رحلات مصر الفاخرة' },
+          },
+          {
+            id: 'lp-2',
+            slug: 'nile-cruises',
+            titleJsonb: {
+              en: 'Signature Nile Cruises',
+              ar: 'رحلات النايل كروز',
+            },
+          },
         ]),
       },
       chatConversation: {
@@ -74,7 +85,13 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
         update: jest.fn(),
       },
       chatMessage: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'msg-created-1', ...data, createdAt: new Date() })),
+        create: jest.fn().mockImplementation(({ data }) =>
+          Promise.resolve({
+            id: 'msg-created-1',
+            ...data,
+            createdAt: new Date(),
+          }),
+        ),
       },
       aiUsageLog: {
         create: jest.fn().mockResolvedValue({ id: 'log-1' }),
@@ -83,11 +100,15 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       },
       user: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: 'usr-1', email: 'test@traveler.com' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'usr-1', email: 'test@traveler.com' }),
       },
       tailorMadeInquiry: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: 'inq-1', referenceCode: 'TMI-12345' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'inq-1', referenceCode: 'TMI-12345' }),
       },
       notificationDeliveryLog: {
         create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
@@ -104,8 +125,10 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
         temperature: 0.7,
         maxTokens: 1000,
         requestTimeoutMs: 15000,
-        systemInstructions: 'You are GuideR, luxury AI concierge for Dunas Travel.',
-        fallbackMessage: 'Welcome to Dunas Travel! How may I assist your luxury journey?',
+        systemInstructions:
+          'You are GuideR, luxury AI concierge for Dunas Travel.',
+        fallbackMessage:
+          'Welcome to Dunas Travel! How may I assist your luxury journey?',
       }),
       executeWithFailover: jest.fn().mockResolvedValue({
         text: 'I recommend our 8-day Classic Egypt & Nile Cruise from Cairo to Luxor and Aswan!',
@@ -122,7 +145,8 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
         {
           id: 'src-1',
           title: '[Policy] Official Payment Methods & Deposit Terms',
-          content: '30% deposit required upon booking confirmation; remaining 70% balance due 30 days before departure.',
+          content:
+            '30% deposit required upon booking confirmation; remaining 70% balance due 30 days before departure.',
           locale: 'en',
           category: 'BOOKING_POLICY',
           priority: 20,
@@ -130,11 +154,11 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       ]),
     };
 
-    catalogTool = new TourCatalogToolService(mockPrisma as any);
+    catalogTool = new TourCatalogToolService(mockPrisma);
     chatOrchestrator = new ChatOrchestratorService(
-      mockPrisma as any,
-      mockKeyPool as any,
-      mockRag as any,
+      mockPrisma,
+      mockKeyPool,
+      mockRag,
       catalogTool,
       { reserveCapacity: jest.fn(), releaseCapacity: jest.fn() } as any,
       { emit: jest.fn() } as any,
@@ -143,7 +167,8 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
 
   describe('1. Canonical Grounded Catalog Tool & Constraint Extraction', () => {
     it('extracts travel constraints accurately from traveler requests', () => {
-      const msgEn = 'I want a 10 days luxury trip to Egypt with Nile cruise and Hurghada beach under $3000';
+      const msgEn =
+        'I want a 10 days luxury trip to Egypt with Nile cruise and Hurghada beach under $3000';
       const constraintsEn = catalogTool.extractTravelConstraints(msgEn);
       expect(constraintsEn.nileCruiseRequired).toBe(true);
       expect(constraintsEn.beachRequired).toBe(true);
@@ -152,7 +177,8 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       expect(constraintsEn.minDuration).toBe(9);
       expect(constraintsEn.maxDuration).toBe(11);
 
-      const msgAr = 'عايز رحلة نايل كروز فاخرة 8 أيام في مصر بميزانية 2500 دولار';
+      const msgAr =
+        'عايز رحلة نايل كروز فاخرة 8 أيام في مصر بميزانية 2500 دولار';
       const constraintsAr = catalogTool.extractTravelConstraints(msgAr);
       expect(constraintsAr.nileCruiseRequired).toBe(true);
       expect(constraintsAr.country).toBe('Egypt');
@@ -162,14 +188,22 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
     });
 
     it('matches and scores real tours with matchReasons and without hallucinations', async () => {
-      const constraints = catalogTool.extractTravelConstraints('nile cruise 8 days');
-      const results = await catalogTool.searchGroundedTours(['nile', 'cruise', '8'], 2, 'en', constraints);
+      const constraints =
+        catalogTool.extractTravelConstraints('nile cruise 8 days');
+      const results = await catalogTool.searchGroundedTours(
+        ['nile', 'cruise', '8'],
+        2,
+        'en',
+        constraints,
+      );
 
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].slug).toBe('egito-classico-8d');
       expect(results[0].price).toBe(2190);
       expect(results[0].currency).toBe('USD');
-      expect(results[0].matchReasons).toContain('Includes signature luxury Nile Cruise navigation');
+      expect(results[0].matchReasons).toContain(
+        'Includes signature luxury Nile Cruise navigation',
+      );
     });
   });
 
@@ -214,7 +248,8 @@ describe('GuideR AI Travel Concierge — Production Full-Stack Specification & S
       });
 
       const response = await chatOrchestrator.processVisitorMessage({
-        message: 'Can you design a 10 days custom luxury tour in Egypt with a Nile cruise?',
+        message:
+          'Can you design a 10 days custom luxury tour in Egypt with a Nile cruise?',
         sessionId: 'sess-custom-plan',
         locale: 'en',
       });

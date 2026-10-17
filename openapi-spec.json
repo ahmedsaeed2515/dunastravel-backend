@@ -7281,6 +7281,21 @@
         ]
       }
     },
+    "/api/auth/config": {
+      "get": {
+        "operationId": "AuthController_getAuthConfig",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get public auth configuration",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/auth/register": {
       "post": {
         "operationId": "AuthController_register",
@@ -19176,6 +19191,15 @@
           "type": {
             "type": "string",
             "description": "Type of request: booking or inquiry"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Booking currency (USD or EUR)",
+            "example": "EUR",
+            "enum": [
+              "USD",
+              "EUR"
+            ]
           },
           "tourTitle": {
             "type": "string",

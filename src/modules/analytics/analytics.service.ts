@@ -59,10 +59,7 @@ export class AnalyticsService {
       /email|phone|name|address|password|secret|token|cookie|authorization|passport|card|cvv/i;
 
     for (const [key, value] of Object.entries(properties).slice(0, 20)) {
-      if (
-        !/^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(key) ||
-        sensitiveKey.test(key)
-      ) {
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(key) || sensitiveKey.test(key)) {
         continue;
       }
       if (typeof value === 'string') {

@@ -42,8 +42,7 @@ export class InquiriesService {
     if (
       startDate &&
       endDate &&
-      endDate.getTime() - startDate.getTime() >
-        365 * 24 * 60 * 60 * 1_000
+      endDate.getTime() - startDate.getTime() > 365 * 24 * 60 * 60 * 1_000
     ) {
       throw new UnprocessableEntityException(
         'Travel duration exceeds the allowed maximum',
@@ -84,8 +83,15 @@ export class InquiriesService {
           status: 'ACTIVE',
           OR: [
             { taxId: { equals: cleanPartnerCode, mode: 'insensitive' } },
-            { referenceCode: { equals: cleanPartnerCode, mode: 'insensitive' } },
-            { referenceCode: { endsWith: cleanPartnerCode, mode: 'insensitive' } },
+            {
+              referenceCode: { equals: cleanPartnerCode, mode: 'insensitive' },
+            },
+            {
+              referenceCode: {
+                endsWith: cleanPartnerCode,
+                mode: 'insensitive',
+              },
+            },
           ],
         },
         select: { id: true, taxId: true, referenceCode: true },
@@ -160,7 +166,7 @@ export class InquiriesService {
     const where: Prisma.TailorMadeInquiryWhereInput = {};
 
     if (status) {
-      where.status = status as TailorMadeInquiryStatus;
+      where.status = status;
     }
 
     if (createdAtStart || createdAtEnd) {

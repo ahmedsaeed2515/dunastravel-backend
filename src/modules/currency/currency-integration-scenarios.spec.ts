@@ -33,6 +33,10 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
     promotion: {
       findFirst: jest.fn().mockResolvedValue(null),
     },
+    tour: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+    },
     promotionUsage: {
       count: jest.fn().mockResolvedValue(0),
     },
@@ -59,7 +63,11 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
       mockRedis as any,
       mockFrankfurter as any,
     );
-    pricingService = new PricingService(mockPrisma as any, currencyService);
+    pricingService = new PricingService(
+      mockPrisma as any,
+      { emit: jest.fn() } as any,
+      currencyService,
+    );
   });
 
   describe('Scenario A: Admin enters price in USD (600 USD)', () => {
@@ -74,11 +82,15 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
       expect(eurUsdRate.ecbEurUsdRate).toBe('1.125300');
 
       // 2. Conversion to EUR
-      const convertedToEur = await currencyService.convert(enteredPrice, 'USD', 'EUR');
+      const convertedToEur = await currencyService.convert(
+        enteredPrice,
+        'USD',
+        'EUR',
+      );
       expect(convertedToEur.from).toBe('USD');
       expect(convertedToEur.to).toBe('EUR');
       // 600 * 0.888652 = 533.1912 -> rounded half up = 533.19
-      expect(convertedToEur.convertedAmount).toBe(533.19);
+      expect(convertedToEur.convertedAmount).toBe('533.19');
 
       // 3. PricingService calculates dual-currency summary
       const mockTour = {
@@ -90,11 +102,15 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
         originalCurrency: 'USD',
         isFeatured: false,
         isActive: true,
+        status: 'PUBLISHED',
+        deletedAt: null,
         category: 'Classic',
       };
+      mockPrisma.tour.findUnique.mockResolvedValue(mockTour);
 
       const pricing = await pricingService.calculatePrice({
-        tour: mockTour as any,
+        tourId: mockTour.id,
+        date: '2026-10-20',
         adults: 1,
         children: 0,
         infants: 0,
@@ -115,11 +131,15 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
       const enteredCurrency = 'EUR';
 
       // 1. Convert 600 EUR to USD base: 600 * 1.1253 = 675.18 USD
-      const convertedToUsd = await currencyService.convert(enteredPrice, 'EUR', 'USD');
+      const convertedToUsd = await currencyService.convert(
+        enteredPrice,
+        'EUR',
+        'USD',
+      );
       expect(convertedToUsd.from).toBe('EUR');
       expect(convertedToUsd.to).toBe('USD');
       // 600 / 0.888652 = 675.1802 -> 675.18
-      expect(convertedToUsd.convertedAmount).toBe(675.18);
+      expect(convertedToUsd.convertedAmount).toBe('675.18');
 
       // 2. Mock Tour as saved in PostgreSQL with authoritative EUR and derived basePriceUsd
       const mockTour = {
@@ -131,12 +151,16 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
         originalCurrency: 'EUR',
         isFeatured: false,
         isActive: true,
+        status: 'PUBLISHED',
+        deletedAt: null,
         category: 'Classic',
       };
+      mockPrisma.tour.findUnique.mockResolvedValue(mockTour);
 
       // 3. PricingService calculation preserves 600 EUR authoritative amount
       const pricing = await pricingService.calculatePrice({
-        tour: mockTour as any,
+        tourId: mockTour.id,
+        date: '2026-10-20',
         adults: 1,
         children: 0,
         infants: 0,
@@ -227,7 +251,7 @@ describe('USD/EUR Dual-Currency Production Integration Scenarios', () => {
       const chargeAmount = booking.invoice.total.toNumber();
 
       expect(chargeCurrency).toBe('EUR');
-      expect(chargeAmount).toBe(600.00);
+      expect(chargeAmount).toBe(600.0);
 
       // Verify payment record shape
       const paymentRecord = {

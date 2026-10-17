@@ -4,7 +4,12 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { ChatOrchestratorService } from './services/chat-orchestrator.service';
-import { SendChatMessageDto, SubmitLeadDto, HandoffRequestDto, BookTourChatDto } from './dto/public-chat.dto';
+import {
+  SendChatMessageDto,
+  SubmitLeadDto,
+  HandoffRequestDto,
+  BookTourChatDto,
+} from './dto/public-chat.dto';
 import { Response } from 'express';
 import {
   IsInt,
@@ -56,27 +61,38 @@ export class PublicChatController {
   constructor(private readonly chatOrchestrator: ChatOrchestratorService) {}
 
   @Get('status')
-  @ApiOperation({ summary: 'Get GuideR global availability status (ACTIVE / DISABLED / MAINTENANCE)' })
+  @ApiOperation({
+    summary:
+      'Get GuideR global availability status (ACTIVE / DISABLED / MAINTENANCE)',
+  })
   async getStatus() {
     return this.chatOrchestrator.getPublicAvailabilityStatus();
   }
 
   @Get('personas')
-  @ApiOperation({ summary: 'Get available AI Concierge personas & conversational styles' })
+  @ApiOperation({
+    summary: 'Get available AI Concierge personas & conversational styles',
+  })
   async getPersonas(@Query('locale') locale?: string) {
     return this.chatOrchestrator.getActivePersonas(locale);
   }
 
   @Get('config')
-  @ApiOperation({ summary: 'Get public AI chatbot welcome configuration & suggestions' })
+  @ApiOperation({
+    summary: 'Get public AI chatbot welcome configuration & suggestions',
+  })
   async getChatConfig(@Query('locale') locale?: string) {
     const [config, availability] = await Promise.all([
       this.chatOrchestrator.getOrCreateConfig(),
       this.chatOrchestrator.getPublicAvailabilityStatus(),
     ]);
     const lang = (locale || 'en').toLowerCase().split('-')[0];
-    const welcome = (config.welcomeMessages as any)?.[lang] || (config.welcomeMessages as any)?.en || config.fallbackMessage;
-    const suggestions = (config.suggestedQuestions as any)?.[lang] || (config.suggestedQuestions as any)?.en || [];
+    const welcome =
+      config.welcomeMessages?.[lang] ||
+      config.welcomeMessages?.en ||
+      config.fallbackMessage;
+    const suggestions =
+      config.suggestedQuestions?.[lang] || config.suggestedQuestions?.en || [];
 
     return {
       welcomeMessage: welcome,
@@ -90,39 +106,57 @@ export class PublicChatController {
   }
 
   @Get('history')
-  @ApiOperation({ summary: 'Get past conversation message transcript for a visitor session' })
+  @ApiOperation({
+    summary: 'Get past conversation message transcript for a visitor session',
+  })
   async getChatHistory(@Query('sessionId') sessionId: string) {
     return this.chatOrchestrator.getConversationHistory(sessionId);
   }
 
   @Post('message')
   @ApiOperation({ summary: 'Send message to AI travel chatbot' })
-  @ApiOkResponse({ description: 'Structured AI assistant reply with grounded tour & destination recommendations' })
+  @ApiOkResponse({
+    description:
+      'Structured AI assistant reply with grounded tour & destination recommendations',
+  })
   async sendMessage(@Body() dto: SendChatMessageDto) {
     return this.chatOrchestrator.processVisitorMessage(dto);
   }
 
   @Post('book')
-  @ApiOperation({ summary: 'Deprecated: GuideR no longer initiates direct bookings. Redirects traveler to official tour page.' })
-  @ApiOkResponse({ description: 'Redirection advisory to the official website tour booking flow' })
+  @ApiOperation({
+    summary:
+      'Deprecated: GuideR no longer initiates direct bookings. Redirects traveler to official tour page.',
+  })
+  @ApiOkResponse({
+    description:
+      'Redirection advisory to the official website tour booking flow',
+  })
   async bookTour(@Body() dto: BookTourChatDto) {
     return this.chatOrchestrator.bookTourFromChat(dto);
   }
 
   @Post('stream')
-  @ApiOperation({ summary: 'Stream message from AI travel chatbot via Server-Sent Events (SSE)' })
+  @ApiOperation({
+    summary:
+      'Stream message from AI travel chatbot via Server-Sent Events (SSE)',
+  })
   async streamMessage(@Body() dto: SendChatMessageDto, @Res() res: Response) {
     return this.chatOrchestrator.streamVisitorMessage(dto, res);
   }
 
   @Post('feedback')
-  @ApiOperation({ summary: 'Record traveler message rating (+1 / -1) and feedback' })
+  @ApiOperation({
+    summary: 'Record traveler message rating (+1 / -1) and feedback',
+  })
   async recordFeedback(@Body() dto: RecordFeedbackRequestDto) {
     return this.chatOrchestrator.recordFeedback(dto);
   }
 
   @Post('lead')
-  @ApiOperation({ summary: 'Submit visitor contact info for CRM lead qualification' })
+  @ApiOperation({
+    summary: 'Submit visitor contact info for CRM lead qualification',
+  })
   async submitLead(@Body() dto: SubmitLeadDto) {
     return this.chatOrchestrator.submitLead(dto.sessionId, {
       name: dto.name,

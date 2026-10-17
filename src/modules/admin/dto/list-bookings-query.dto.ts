@@ -63,9 +63,7 @@ export class ListBookingsQueryDto {
     description: 'Search term for customer name, email, or reference code',
   })
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @MaxLength(100)
   search?: string;

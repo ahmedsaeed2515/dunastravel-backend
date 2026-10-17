@@ -36,7 +36,9 @@ export class ResendEmailProvider implements IEmailProvider {
       payload.idempotencyKey ||
       `dunas-${crypto
         .createHash('sha256')
-        .update(`${payload.to}:${payload.subject}:${(payload.text || '').slice(0, 100)}`)
+        .update(
+          `${payload.to}:${payload.subject}:${(payload.text || '').slice(0, 100)}`,
+        )
         .digest('hex')}`;
 
     const headers: Record<string, string> = {
@@ -108,7 +110,11 @@ export class ResendEmailProvider implements IEmailProvider {
       if (error instanceof EmailDeliveryException) {
         throw error;
       }
-      const isTransient = this.classifyTransient(undefined, error.name, error.message);
+      const isTransient = this.classifyTransient(
+        undefined,
+        error.name,
+        error.message,
+      );
       this.logger.error(
         `Failed to send email via Resend [domain=${this.extractDomain(payload.to)}, transient=${isTransient}]: ${error.message}`,
       );

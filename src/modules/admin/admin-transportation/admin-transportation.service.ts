@@ -38,20 +38,40 @@ export class AdminTransportationService {
     dto: CreateTransportationServiceDto | UpdateTransportationServiceDto,
   ): Prisma.TransportationServiceUncheckedCreateInput {
     const data: Record<string, unknown> = {};
-    if (dto.name !== undefined) data.name = sanitizePlainText(dto.name).slice(0, 255);
-    if (dto.serviceType !== undefined) data.serviceType = sanitizePlainText(dto.serviceType).slice(0, 50);
-    if (dto.description !== undefined) data.description = sanitizePlainText(dto.description).slice(0, 10_000) || null;
-    if (dto.vehicleCategory !== undefined) data.vehicleCategory = sanitizePlainText(dto.vehicleCategory).slice(0, 50) || null;
-    if (dto.vehicleType !== undefined) data.vehicleType = sanitizePlainText(dto.vehicleType).slice(0, 100) || null;
+    if (dto.name !== undefined)
+      data.name = sanitizePlainText(dto.name).slice(0, 255);
+    if (dto.serviceType !== undefined)
+      data.serviceType = sanitizePlainText(dto.serviceType).slice(0, 50);
+    if (dto.description !== undefined)
+      data.description =
+        sanitizePlainText(dto.description).slice(0, 10_000) || null;
+    if (dto.vehicleCategory !== undefined)
+      data.vehicleCategory =
+        sanitizePlainText(dto.vehicleCategory).slice(0, 50) || null;
+    if (dto.vehicleType !== undefined)
+      data.vehicleType =
+        sanitizePlainText(dto.vehicleType).slice(0, 100) || null;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
     if (dto.doors !== undefined) data.doors = dto.doors;
-    if (dto.transmission !== undefined) data.transmission = sanitizePlainText(dto.transmission).slice(0, 50) || null;
-    if (dto.heroImageUrl !== undefined) data.heroImageUrl = sanitizePlainText(dto.heroImageUrl).slice(0, 2_048) || null;
+    if (dto.transmission !== undefined)
+      data.transmission =
+        sanitizePlainText(dto.transmission).slice(0, 50) || null;
+    if (dto.heroImageUrl !== undefined)
+      data.heroImageUrl =
+        sanitizePlainText(dto.heroImageUrl).slice(0, 2_048) || null;
     if (dto.isPrivate !== undefined) data.isPrivate = dto.isPrivate;
-    if (dto.pickupInstructions !== undefined) data.pickupInstructions = sanitizePlainText(dto.pickupInstructions).slice(0, 10_000) || null;
-    if (dto.dropoffInstructions !== undefined) data.dropoffInstructions = sanitizePlainText(dto.dropoffInstructions).slice(0, 10_000) || null;
-    if (dto.features !== undefined) data.featuresJsonb = dto.features.map((value) => sanitizePlainText(value).slice(0, 100)).filter(Boolean) as Prisma.InputJsonValue;
-    if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId ? dto.heroMediaId.trim() : null;
+    if (dto.pickupInstructions !== undefined)
+      data.pickupInstructions =
+        sanitizePlainText(dto.pickupInstructions).slice(0, 10_000) || null;
+    if (dto.dropoffInstructions !== undefined)
+      data.dropoffInstructions =
+        sanitizePlainText(dto.dropoffInstructions).slice(0, 10_000) || null;
+    if (dto.features !== undefined)
+      data.featuresJsonb = dto.features
+        .map((value) => sanitizePlainText(value).slice(0, 100))
+        .filter(Boolean);
+    if (dto.heroMediaId !== undefined)
+      data.heroMediaId = dto.heroMediaId ? dto.heroMediaId.trim() : null;
     if (dto.basePriceUsd !== undefined) data.basePriceUsd = dto.basePriceUsd;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     return data as Prisma.TransportationServiceUncheckedCreateInput;
@@ -70,11 +90,16 @@ export class AdminTransportationService {
             orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
           });
         } catch (seedErr) {
-          this.logger.warn('Admin auto-seed transportation fleet failed', seedErr);
+          this.logger.warn(
+            'Admin auto-seed transportation fleet failed',
+            seedErr,
+          );
         }
       }
 
-      const mediaIds = services.flatMap((service) => service.heroMediaId ? [service.heroMediaId] : []);
+      const mediaIds = services.flatMap((service) =>
+        service.heroMediaId ? [service.heroMediaId] : [],
+      );
       const media = mediaIds.length
         ? await this.prisma.mediaAsset.findMany({
             where: { id: { in: mediaIds }, deletedAt: null },
@@ -83,14 +108,19 @@ export class AdminTransportationService {
         : [];
       const mediaById = new Map(media.map((asset) => [asset.id, asset]));
       return services.map((service) => {
-        const hero = service.heroMediaId ? mediaById.get(service.heroMediaId) : undefined;
+        const hero = service.heroMediaId
+          ? mediaById.get(service.heroMediaId)
+          : undefined;
         return {
           ...service,
           basePriceUsd: Number(service.basePriceUsd),
           features: Array.isArray(service.featuresJsonb)
-            ? service.featuresJsonb.filter((item): item is string => typeof item === 'string')
+            ? service.featuresJsonb.filter(
+                (item): item is string => typeof item === 'string',
+              )
             : [],
-          heroImageUrl: hero?.secureUrl || hero?.url || service.heroImageUrl || null,
+          heroImageUrl:
+            hero?.secureUrl || hero?.url || service.heroImageUrl || null,
           heroImageAlt: hero?.altText || null,
         };
       });
@@ -159,8 +189,8 @@ export class AdminTransportationService {
         basePriceUsd: 0,
         isActive: true,
         ...data,
-        name: (data.name as string) || 'Transportation Service',
-        serviceType: (data.serviceType as string) || 'AIRPORT',
+        name: data.name || 'Transportation Service',
+        serviceType: data.serviceType || 'AIRPORT',
         id,
       },
       update: data,
@@ -181,7 +211,8 @@ export class AdminTransportationService {
     const existing = await this.prisma.transportationService.findUnique({
       where: { id },
     });
-    if (!existing) throw new NotFoundException('Transportation service not found');
+    if (!existing)
+      throw new NotFoundException('Transportation service not found');
     const service = await this.prisma.transportationService.update({
       where: { id },
       data: { isActive: false },
@@ -380,7 +411,9 @@ export class AdminTransportationService {
             action: 'TRANSPORTATION_DRIVER_ASSIGNED',
             entityType: 'TRANSPORTATION_BOOKING',
             entityId: id,
-            metadata: { changedFields: ['driverName', 'vehicleType', 'status'] },
+            metadata: {
+              changedFields: ['driverName', 'vehicleType', 'status'],
+            },
           },
         });
         const updated = await tx.transportationBooking.findUniqueOrThrow({

@@ -25,7 +25,10 @@ export function generateBlindIndex(
   value: string | null | undefined,
 ): string | null {
   if (value === null || value === undefined || value.trim() === '') return null;
-  const normalized = value.trim().toLowerCase().replace(/[\s\-_]/g, '');
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\-_]/g, '');
   const key = getEncryptionKey();
   if (!key) return null;
   return createHmac('sha256', key).update(normalized).digest('hex');
@@ -64,19 +67,25 @@ export function decryptSensitiveField(value: string | null | undefined) {
   try {
     const parts = value.split(':');
     if (parts.length !== 5 || parts[0] !== 'enc' || parts[1] !== 'v1') {
-      console.warn('[PII_DECRYPTION_WARN] Reason=INVALID_FORMAT message="Payload prefixed with enc:v1: but invalid token structure"');
+      console.warn(
+        '[PII_DECRYPTION_WARN] Reason=INVALID_FORMAT message="Payload prefixed with enc:v1: but invalid token structure"',
+      );
       return '[REDACTED_INVALID_FORMAT]';
     }
     const key = getEncryptionKey();
     if (!key) {
-      console.warn('[PII_DECRYPTION_WARN] Reason=MISSING_KEY message="PII_ENCRYPTION_KEY not present in environment"');
+      console.warn(
+        '[PII_DECRYPTION_WARN] Reason=MISSING_KEY message="PII_ENCRYPTION_KEY not present in environment"',
+      );
       return '[REDACTED_MISSING_KEY]';
     }
     const iv = Buffer.from(parts[2], 'base64url');
     const authTag = Buffer.from(parts[3], 'base64url');
     const ciphertext = Buffer.from(parts[4], 'base64url');
     if (iv.length !== 12 || authTag.length !== 16 || ciphertext.length === 0) {
-      console.warn('[PII_DECRYPTION_WARN] Reason=CORRUPTED_BUFFERS message="Invalid IV or AuthTag length"');
+      console.warn(
+        '[PII_DECRYPTION_WARN] Reason=CORRUPTED_BUFFERS message="Invalid IV or AuthTag length"',
+      );
       return '[REDACTED_CORRUPTED_DATA]';
     }
 
@@ -87,19 +96,16 @@ export function decryptSensitiveField(value: string | null | undefined) {
       decipher.final(),
     ]).toString('utf8');
   } catch (error: any) {
-    console.warn(`[PII_DECRYPTION_WARN] Reason=DECRYPTION_FAILED message="GCM auth tag verification failed or key mismatch: ${error?.message}"`);
+    console.warn(
+      `[PII_DECRYPTION_WARN] Reason=DECRYPTION_FAILED message="GCM auth tag verification failed or key mismatch: ${error?.message}"`,
+    );
     return '[REDACTED_DECRYPTION_FAILED]';
   }
 }
 
-export function encryptSensitiveJson<T>(
-  value: T,
-): T | string {
+export function encryptSensitiveJson<T>(value: T): T | string {
   if (value === null || value === undefined) return value;
-  if (
-    typeof value === 'string' &&
-    value.startsWith(ENCRYPTED_PREFIX)
-  ) {
+  if (typeof value === 'string' && value.startsWith(ENCRYPTED_PREFIX)) {
     return value;
   }
   const serialized = JSON.stringify(value);
@@ -108,10 +114,7 @@ export function encryptSensitiveJson<T>(
 }
 
 export function decryptSensitiveJson<T>(value: T): T {
-  if (
-    typeof value !== 'string' ||
-    !value.startsWith(ENCRYPTED_PREFIX)
-  ) {
+  if (typeof value !== 'string' || !value.startsWith(ENCRYPTED_PREFIX)) {
     return value;
   }
   const plaintext = decryptSensitiveField(value);

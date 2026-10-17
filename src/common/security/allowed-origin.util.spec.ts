@@ -24,9 +24,9 @@ describe('isAllowedBrowserOrigin', () => {
 
   it('rejects external unapproved origins', () => {
     const production = config({ nodeEnv: 'production' });
-    expect(
-      isAllowedBrowserOrigin('https://attacker.example', production),
-    ).toBe(false);
+    expect(isAllowedBrowserOrigin('https://attacker.example', production)).toBe(
+      false,
+    );
   });
 
   it('allows exact configured origins and local development origins', () => {

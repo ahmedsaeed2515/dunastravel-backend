@@ -15,7 +15,10 @@ export class CacheService {
     private readonly stampedeService: CacheStampedeService,
   ) {}
 
-  private readonly localFallback = new Map<string, { val: any; expiresAt: number }>();
+  private readonly localFallback = new Map<
+    string,
+    { val: any; expiresAt: number }
+  >();
 
   async get<T>(key: string): Promise<T | null> {
     try {
@@ -47,11 +50,16 @@ export class CacheService {
 
   async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
     const ttl = ttlMs ?? 300_000;
-    this.localFallback.set(key, { val: value, expiresAt: Date.now() + Math.min(ttl, 60_000) });
+    this.localFallback.set(key, {
+      val: value,
+      expiresAt: Date.now() + Math.min(ttl, 60_000),
+    });
     try {
       await this.cacheManager.set(key, value, ttl);
     } catch (err) {
-      this.logger.warn(`Cache set failed for key ${key}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Cache set failed for key ${key}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -60,7 +68,9 @@ export class CacheService {
     try {
       await this.cacheManager.del(key);
     } catch (err) {
-      this.logger.warn(`Cache del failed for key ${key}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Cache del failed for key ${key}: ${(err as Error).message}`,
+      );
     }
   }
 

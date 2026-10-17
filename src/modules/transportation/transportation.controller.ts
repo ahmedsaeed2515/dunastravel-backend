@@ -30,8 +30,14 @@ export class TransportationController {
 
   @Get(['', 'services', 'search'])
   @Public()
-  @ApiOperation({ summary: 'Get available transportation services with optional localization' })
-  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ar', 'es', 'pt', 'it'] })
+  @ApiOperation({
+    summary: 'Get available transportation services with optional localization',
+  })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    enum: ['en', 'ar', 'es', 'pt', 'it'],
+  })
   @ApiOkResponse({ description: 'List of active services' })
   async getServices(@Query('locale') locale?: string) {
     return this.transportationService.findAllServices(locale || 'en');
@@ -39,8 +45,14 @@ export class TransportationController {
 
   @Get('services/:id')
   @Public()
-  @ApiOperation({ summary: 'Get public details for a single transportation service' })
-  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ar', 'es', 'pt', 'it'] })
+  @ApiOperation({
+    summary: 'Get public details for a single transportation service',
+  })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    enum: ['en', 'ar', 'es', 'pt', 'it'],
+  })
   @ApiOkResponse({ description: 'Detailed transportation service' })
   async getServiceById(
     @Param('id') id: string,
@@ -77,4 +89,3 @@ export class TransportationController {
     return this.transportationService.findUserBookings(user.id);
   }
 }
-

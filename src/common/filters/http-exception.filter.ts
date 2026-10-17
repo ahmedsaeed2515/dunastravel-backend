@@ -32,7 +32,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if ('error' in resObj) {
         error = resObj.error as string;
       }
-      if ('errors' in resObj && resObj.errors && typeof resObj.errors === 'object') {
+      if (
+        'errors' in resObj &&
+        resObj.errors &&
+        typeof resObj.errors === 'object'
+      ) {
         errors = resObj.errors as Record<string, string[] | string>;
       }
     }

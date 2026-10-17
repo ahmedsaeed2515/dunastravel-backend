@@ -48,9 +48,7 @@ export class TourLandingPagesAdminController {
 
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Get full details of a single tour landing page' })
-  async findOne(
-    @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
-  ) {
+  async findOne(@Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string) {
     return this.landingPagesService.findOneAdmin(idOrSlug);
   }
 
@@ -94,7 +92,12 @@ export class TourLandingPagesAdminController {
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.setStatusAdmin(idOrSlug, 'PUBLISHED', true, actor);
+    return this.landingPagesService.setStatusAdmin(
+      idOrSlug,
+      'PUBLISHED',
+      true,
+      actor,
+    );
   }
 
   @Patch(':idOrSlug/unpublish')
@@ -104,7 +107,12 @@ export class TourLandingPagesAdminController {
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.setStatusAdmin(idOrSlug, 'DRAFT', undefined, actor);
+    return this.landingPagesService.setStatusAdmin(
+      idOrSlug,
+      'DRAFT',
+      undefined,
+      actor,
+    );
   }
 
   @Patch(':idOrSlug/activate')
@@ -114,7 +122,12 @@ export class TourLandingPagesAdminController {
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.setStatusAdmin(idOrSlug, 'PUBLISHED', true, actor);
+    return this.landingPagesService.setStatusAdmin(
+      idOrSlug,
+      'PUBLISHED',
+      true,
+      actor,
+    );
   }
 
   @Patch(':idOrSlug/deactivate')
@@ -124,7 +137,12 @@ export class TourLandingPagesAdminController {
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.setStatusAdmin(idOrSlug, 'INACTIVE', false, actor);
+    return this.landingPagesService.setStatusAdmin(
+      idOrSlug,
+      'INACTIVE',
+      false,
+      actor,
+    );
   }
 
   @Patch(':idOrSlug/archive')
@@ -134,7 +152,12 @@ export class TourLandingPagesAdminController {
     @Param('idOrSlug', ParseUuidOrSlugPipe) idOrSlug: string,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.setStatusAdmin(idOrSlug, 'ARCHIVED', false, actor);
+    return this.landingPagesService.setStatusAdmin(
+      idOrSlug,
+      'ARCHIVED',
+      false,
+      actor,
+    );
   }
 
   @Delete(':idOrSlug')
@@ -168,7 +191,11 @@ export class TourLandingPagesAdminController {
     @Body() dto: ReorderToursDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.reorderToursInInterface(idOrSlug, dto, actor);
+    return this.landingPagesService.reorderToursInInterface(
+      idOrSlug,
+      dto,
+      actor,
+    );
   }
 
   @Patch(':idOrSlug/tours/:tourId')
@@ -183,7 +210,12 @@ export class TourLandingPagesAdminController {
     @Body() dto: UpdateTourRelationDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.landingPagesService.updateTourRelation(idOrSlug, tourId, dto, actor);
+    return this.landingPagesService.updateTourRelation(
+      idOrSlug,
+      tourId,
+      dto,
+      actor,
+    );
   }
 
   @Delete(':idOrSlug/tours/:tourId')

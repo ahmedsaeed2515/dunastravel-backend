@@ -164,8 +164,18 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
         leadStatus: 'QUALIFIED',
         locale: 'ar',
         messages: [
-          { id: 'm-1', role: 'user', content: 'أريد حجز كروز نيلي 8 أيام', createdAt: new Date() },
-          { id: 'm-2', role: 'assistant', content: 'أهلاً بك! لدينا أرقى برامج النايل كروز الفاخرة.', createdAt: new Date() },
+          {
+            id: 'm-1',
+            role: 'user',
+            content: 'أريد حجز كروز نيلي 8 أيام',
+            createdAt: new Date(),
+          },
+          {
+            id: 'm-2',
+            role: 'assistant',
+            content: 'أهلاً بك! لدينا أرقى برامج النايل كروز الفاخرة.',
+            createdAt: new Date(),
+          },
         ],
       }),
       create: jest.fn().mockResolvedValue({
@@ -181,7 +191,13 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
       }),
     },
     chatMessage: {
-      create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'msg-created', ...data, createdAt: new Date() })),
+      create: jest.fn().mockImplementation(({ data }) =>
+        Promise.resolve({
+          id: 'msg-created',
+          ...data,
+          createdAt: new Date(),
+        }),
+      ),
       findMany: jest.fn().mockResolvedValue([]),
     },
     chatFeedback: {
@@ -202,7 +218,12 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
     aiUsageLog: {
       count: jest.fn().mockResolvedValue(42),
       aggregate: jest.fn().mockResolvedValue({
-        _sum: { inputTokens: 12000, outputTokens: 8500, latencyMs: 25000, estimatedCostUsd: 0.045 },
+        _sum: {
+          inputTokens: 12000,
+          outputTokens: 8500,
+          latencyMs: 25000,
+          estimatedCostUsd: 0.045,
+        },
         _avg: { latencyMs: 550 },
         _count: { id: 42 },
       }),
@@ -286,7 +307,8 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
       findMany: jest.fn().mockResolvedValue([
         {
           id: 'chunk-1',
-          content: 'نقدم رحلات كروز نيلية فاخرة 5 نجوم ديلوكس بين الأقصر وأسوان.',
+          content:
+            'نقدم رحلات كروز نيلية فاخرة 5 نجوم ديلوكس بين الأقصر وأسوان.',
           locale: 'ar',
           entityType: 'TOUR',
         },
@@ -328,7 +350,10 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
         {
           id: 'dest-1',
           slug: 'egypt',
-          titleJsonb: { en: 'Luxury Egypt Destinations', ar: 'وجهات مصر الفاخرة' },
+          titleJsonb: {
+            en: 'Luxury Egypt Destinations',
+            ar: 'وجهات مصر الفاخرة',
+          },
           isActive: true,
           status: 'PUBLISHED',
           sortOrder: 1,
@@ -347,11 +372,15 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
         bookings: [],
       }),
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue({ id: 'usr-new-1', email: 'traveler@example.com' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'usr-new-1', email: 'traveler@example.com' }),
     },
     tailorMadeInquiry: {
       findFirst: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue({ id: 'inq-1', referenceCode: 'TMI-123' }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 'inq-1', referenceCode: 'TMI-123' }),
     },
     notificationDeliveryLog: {
       create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
@@ -367,7 +396,8 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
       .overrideProvider(ConfigService)
       .useValue({
         get: jest.fn((key: string) => {
-          if (key === 'GEMINI_API_KEY') return 'AIzaSyMockKeyForComprehensiveVerificationTest';
+          if (key === 'GEMINI_API_KEY')
+            return 'AIzaSyMockKeyForComprehensiveVerificationTest';
           if (key === 'REDIS_URL') return 'redis://localhost:6379';
           return null;
         }),
@@ -387,10 +417,19 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
           title: 'Custom Luxury 8-Day Egypt Itinerary',
           durationDays: 8,
           destinations: ['Cairo', 'Luxor', 'Aswan'],
-          days: [{ dayNumber: 1, location: 'Cairo', morning: 'Arrival', afternoon: 'Relax', evening: 'Dinner' }],
+          days: [
+            {
+              dayNumber: 1,
+              location: 'Cairo',
+              morning: 'Arrival',
+              afternoon: 'Relax',
+              evening: 'Dinner',
+            },
+          ],
         }),
         analyzeCustomer: jest.fn().mockResolvedValue({
-          summary: 'High-net-worth traveler with interest in private Nile cruises.',
+          summary:
+            'High-net-worth traveler with interest in private Nile cruises.',
           suggestedDestinations: ['Cairo', 'Luxor', 'Aswan'],
           salesStrategy: 'Offer private dahabiya charter with Egyptologist.',
           churnRisk: 'Low',
@@ -411,7 +450,9 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     app.useGlobalInterceptors(
       new ResponseTransformInterceptor(app.get(Reflector)),
     );
@@ -428,14 +469,18 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
 
   describe('1. Public Chatbot APIs', () => {
     it('GET /ai/chat/status should return availability status', async () => {
-      const res = await request(app.getHttpServer()).get('/ai/chat/status').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/ai/chat/status')
+        .expect(200);
       expect(res.body.data).toBeDefined();
       expect(res.body.data.enabled).toBe(true);
       expect(res.body.data.status).toBe('ACTIVE');
     });
 
     it('GET /ai/chat/config should return welcome message and suggested questions', async () => {
-      const res = await request(app.getHttpServer()).get('/ai/chat/config?locale=ar').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/ai/chat/config?locale=ar')
+        .expect(200);
       expect(res.body.data).toBeDefined();
       expect(res.body.data.welcomeMessage).toContain('دوناس ترافيل');
       expect(Array.isArray(res.body.data.suggestedQuestions)).toBe(true);
@@ -444,14 +489,18 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
     });
 
     it('GET /ai/chat/personas should return concierge personas in requested locale', async () => {
-      const res = await request(app.getHttpServer()).get('/ai/chat/personas?locale=ar').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/ai/chat/personas?locale=ar')
+        .expect(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
       expect(res.body.data[0].name).toBeDefined();
     });
 
     it('GET /ai/chat/history should return conversation messages for visitor session', async () => {
-      const res = await request(app.getHttpServer()).get('/ai/chat/history?sessionId=sess-audit-123').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/ai/chat/history?sessionId=sess-audit-123')
+        .expect(200);
       expect(res.body.data).toBeDefined();
       expect(res.body.data.conversationId).toBe('conv-audit-1');
     });
@@ -496,16 +545,24 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
 
   describe('2. Admin AI Command Center APIs', () => {
     it('GET /admin/ai/overview should return unified metrics & key pool stats', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/overview').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/overview')
+        .expect(200);
       expect(res.body.data.metrics).toBeDefined();
       expect(res.body.data.metrics.activeProvider).toBe('google');
       expect(res.body.data.metrics.guiderStatus).toBe('ACTIVE');
-      expect(res.body.data.metrics.totalConversations).toBeGreaterThanOrEqual(0);
-      expect(res.body.data.metrics.healthyApiKeysCount).toBeGreaterThanOrEqual(1);
+      expect(res.body.data.metrics.totalConversations).toBeGreaterThanOrEqual(
+        0,
+      );
+      expect(res.body.data.metrics.healthyApiKeysCount).toBeGreaterThanOrEqual(
+        1,
+      );
     });
 
     it('GET /admin/ai/analytics should return detailed telemetry & funnel data', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/analytics').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/analytics')
+        .expect(200);
       expect(res.body.data).toBeDefined();
       expect(res.body.data.summary).toBeDefined();
       expect(res.body.data.providerBreakdown).toBeDefined();
@@ -513,7 +570,9 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
     });
 
     it('GET /admin/ai/config should return masked AI settings', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/config').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/config')
+        .expect(200);
       expect(res.body.data.provider).toBe('google');
       expect(res.body.data.model).toBe('gemini-3.6-flash');
       expect(res.body.data.isInChatBookingEnabled).toBe(false);
@@ -532,60 +591,80 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
     });
 
     it('GET /admin/ai/providers should return full provider registry and routing table', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/providers').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/providers')
+        .expect(200);
       expect(Array.isArray(res.body.data.providers)).toBe(true);
       expect(res.body.data.routingTable).toBeDefined();
-      expect(res.body.data.providers.some((p: any) => p.id === 'google')).toBe(true);
+      expect(res.body.data.providers.some((p: any) => p.id === 'google')).toBe(
+        true,
+      );
     });
 
     it('GET /admin/ai/providers/google/models should return models for google provider', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/providers/google/models').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/providers/google/models')
+        .expect(200);
       expect(res.body.data.provider.id).toBe('google');
       expect(Array.isArray(res.body.data.models)).toBe(true);
       expect(res.body.data.models.length).toBeGreaterThan(0);
     });
 
     it('GET /admin/ai/routing should return current model routing policies', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/routing').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/routing')
+        .expect(200);
       expect(res.body.data.table).toBeDefined();
       expect(res.body.data.agentPolicies).toBeDefined();
     });
 
     it('GET /admin/ai/keys should return configured key pool with masked keys', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/keys').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/keys')
+        .expect(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
       expect(res.body.data[0].hasKey).toBe(true);
     });
 
     it('GET /admin/ai/prompts should return versioned prompt history', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/prompts').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/prompts')
+        .expect(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
     });
 
     it('GET /admin/ai/feedback should return paginated message ratings', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/feedback?page=1&limit=10').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/feedback?page=1&limit=10')
+        .expect(200);
       expect(res.body.data.page).toBe(1);
       expect(Array.isArray(res.body.data.items)).toBe(true);
     });
 
     it('GET /admin/ai/conversations should return paginated conversation logs', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/conversations?page=1&limit=10').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/conversations?page=1&limit=10')
+        .expect(200);
       expect(res.body.data.page).toBe(1);
       expect(Array.isArray(res.body.data.items)).toBe(true);
       expect(res.body.data.items.length).toBeGreaterThan(0);
     });
 
     it('GET /admin/ai/agents should return AI agent registry personas', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/agents?locale=ar').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/agents?locale=ar')
+        .expect(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
       expect(res.body.data.some((a: any) => a.slug === 'guider')).toBe(true);
     });
 
     it('GET /admin/ai/models should return full model capability matrix', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/models').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/models')
+        .expect(200);
       expect(Array.isArray(res.body.data.models)).toBe(true);
       expect(res.body.data.models.length).toBeGreaterThan(0);
     });
@@ -616,25 +695,33 @@ describe('Comprehensive AI & Chatbot API Verification Suite', () => {
 
   describe('3. Knowledge Center V5 APIs', () => {
     it('GET /admin/ai/knowledge/canonical-entities should return grouped canonical knowledge', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/knowledge/canonical-entities').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/knowledge/canonical-entities')
+        .expect(200);
       expect(res.body.data).toBeDefined();
       expect(Array.isArray(res.body.data.items)).toBe(true);
     });
 
     it('GET /admin/ai/knowledge/health should return RAG index health & chunk metrics', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/knowledge/health').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/knowledge/health')
+        .expect(200);
       expect(res.body.data.status).toBeDefined();
       expect(res.body.data.diagnostics).toBeDefined();
       expect(Array.isArray(res.body.data.byLocale)).toBe(true);
     });
 
     it('GET /admin/ai/knowledge/status should return sync freshness status', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/knowledge/status').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/knowledge/status')
+        .expect(200);
       expect(res.body.data.status).toBeDefined();
     });
 
     it('GET /admin/ai/knowledge/chunks should return indexed vector/RAG chunks', async () => {
-      const res = await request(app.getHttpServer()).get('/admin/ai/knowledge/chunks?page=1&limit=5').expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai/knowledge/chunks?page=1&limit=5')
+        .expect(200);
       expect(res.body.data.page).toBe(1);
       expect(Array.isArray(res.body.data.items)).toBe(true);
     });

@@ -7,8 +7,10 @@ import {
   MODEL_REGISTRY,
 } from './services/model-registry.service';
 import { ModelRoutingService } from './services/model-routing.service';
-import { UniversalAiProvider, ProviderError } from './providers/universal-ai.provider';
-
+import {
+  UniversalAiProvider,
+  ProviderError,
+} from './providers/universal-ai.provider';
 
 describe('AI Providers & Model Routing V3 — Architecture & Security Suite', () => {
   let modelRegistry: ModelRegistryService;
@@ -30,21 +32,36 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
     });
 
     it('MUST reject Google + GPT model', () => {
-      const validation = modelRegistry.validateProviderModelPair('google', 'gpt-4o');
+      const validation = modelRegistry.validateProviderModelPair(
+        'google',
+        'gpt-4o',
+      );
       expect(validation.valid).toBe(false);
     });
 
     it('MUST reject OpenAI + Gemini model', () => {
-      const validation = modelRegistry.validateProviderModelPair('openai', 'gemini-2.0-flash');
+      const validation = modelRegistry.validateProviderModelPair(
+        'openai',
+        'gemini-2.0-flash',
+      );
       expect(validation.valid).toBe(false);
     });
 
     it('MUST reject shutdown Gemini 1.5 models', () => {
-      const validation = modelRegistry.validateProviderModelPair('google', 'gemini-1.5-flash');
+      const validation = modelRegistry.validateProviderModelPair(
+        'google',
+        'gemini-1.5-flash',
+      );
       expect(validation.valid).toBe(false);
       expect(validation.reason).toContain('deprecated/shut down');
-      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.5-pro').valid).toBe(false);
-      expect(modelRegistry.validateProviderModelPair('google', 'gemini-1.0-pro').valid).toBe(false);
+      expect(
+        modelRegistry.validateProviderModelPair('google', 'gemini-1.5-pro')
+          .valid,
+      ).toBe(false);
+      expect(
+        modelRegistry.validateProviderModelPair('google', 'gemini-1.0-pro')
+          .valid,
+      ).toBe(false);
     });
 
     it('MUST accept Google + valid Gemini production models', () => {
@@ -82,7 +99,9 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
   describe('2. Authoritative Server-Side Base URL Registry & URL Validation', () => {
     it('MUST enforce Google OpenAI-compatible URL with trailing slash', () => {
       const url = getOfficialBaseUrl('google');
-      expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
+      expect(url).toBe(
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
     });
 
     it('MUST enforce OpenAI official base URL', () => {
@@ -108,7 +127,9 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
     it('MUST never allow custom base URL for official providers like Google', () => {
       const url = getOfficialBaseUrl('google', 'https://api.anthropic.com/v1');
       expect(url).not.toContain('anthropic');
-      expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
+      expect(url).toBe(
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
     });
 
     it('MUST allow custom base URL ONLY for custom provider', () => {
@@ -120,7 +141,9 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
   describe('3. Tiered Model Routing Engine (GuideR Routing V3)', () => {
     it('routes simple pricing/visa/FAQ questions to the economy model (gemini-3.1-flash-lite)', () => {
-      const result = modelRouting.route('What is the price of the Nile Cruise?');
+      const result = modelRouting.route(
+        'What is the price of the Nile Cruise?',
+      );
       expect(result.tier).toBe('economy');
       expect(result.provider).toBe('google');
       expect(result.model).toBe('gemini-3.1-flash-lite');
@@ -160,7 +183,11 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
 
   describe('4. Model Registry & FinOps Cost Calculation', () => {
     it('calculates accurate token cost in USD for Gemini 2.5 Flash', () => {
-      const cost = modelRegistry.calculateCostUsd('gemini-2.5-flash', 10_000, 2_000);
+      const cost = modelRegistry.calculateCostUsd(
+        'gemini-2.5-flash',
+        10_000,
+        2_000,
+      );
       expect(cost).toBeCloseTo(0.0027, 4);
     });
 
@@ -210,7 +237,9 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
       expect(result.models.map((m) => m.id)).toContain('gemini-3.6-flash');
       expect(result.models.map((m) => m.id)).toContain('gemini-2.0-flash');
       // Shutdown model must NOT be in available models
-      expect(result.models.find((m) => m.id === 'gemini-1.5-flash')).toBeUndefined();
+      expect(
+        result.models.find((m) => m.id === 'gemini-1.5-flash'),
+      ).toBeUndefined();
 
       // Ensure API key is NEVER exposed in the discovery result
       const serialized = JSON.stringify(result);
@@ -253,24 +282,35 @@ describe('AI Providers & Model Routing V3 — Architecture & Security Suite', ()
     });
 
     it('MUST accept valid Google AI Studio API key format', () => {
-      const result = validateApiKeyFormat('google', 'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q');
+      const result = validateApiKeyFormat(
+        'google',
+        'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q',
+      );
       expect(result.valid).toBe(true);
     });
 
     it('MUST accept Google Cloud AQ token format', () => {
-      const result = validateApiKeyFormat('google', 'AQ.Ab8RN6KWmbUiy2q4ttawqAQZ-gCBL3rHjrnG2ADO2htOi3ej0w');
+      const result = validateApiKeyFormat(
+        'google',
+        'AQ.Ab8RN6KWmbUiy2q4ttawqAQZ-gCBL3rHjrnG2ADO2htOi3ej0w',
+      );
       expect(result.valid).toBe(true);
     });
 
     it('MUST accept OpenAI API key format', () => {
-      const result = validateApiKeyFormat('openai', 'sk-proj-abc1234567890defghijklmnopqrstuvwxyz');
+      const result = validateApiKeyFormat(
+        'openai',
+        'sk-proj-abc1234567890defghijklmnopqrstuvwxyz',
+      );
       expect(result.valid).toBe(true);
     });
 
     it('MUST accept OpenRouter API key format', () => {
-      const result = validateApiKeyFormat('openrouter', 'sk-or-v1-abc1234567890defghijklmnopqrstuvwxyz');
+      const result = validateApiKeyFormat(
+        'openrouter',
+        'sk-or-v1-abc1234567890defghijklmnopqrstuvwxyz',
+      );
       expect(result.valid).toBe(true);
     });
   });
 });
-

@@ -34,7 +34,10 @@ describe('Common Utils', () => {
     it('returns the requested localized list without flattening commas', () => {
       expect(
         extractI18nList(
-          { en: ['Breakfast, taxes and transfers'], ar: ['الإفطار والانتقالات'] },
+          {
+            en: ['Breakfast, taxes and transfers'],
+            ar: ['الإفطار والانتقالات'],
+          },
           'en',
         ),
       ).toEqual(['Breakfast, taxes and transfers']);

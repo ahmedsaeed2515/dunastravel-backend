@@ -116,7 +116,9 @@ describe('Notifications HTTP Contract Spec', () => {
 
   it('POST /api/admin/communications/logs/:id/retry triggers manual retry', async () => {
     const res = await request(app.getHttpServer())
-      .post('/admin/communications/logs/11111111-1111-4111-8111-111111111111/retry')
+      .post(
+        '/admin/communications/logs/11111111-1111-4111-8111-111111111111/retry',
+      )
       .expect(201);
 
     const body = res.body.data || res.body;

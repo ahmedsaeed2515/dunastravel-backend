@@ -118,7 +118,8 @@ describe('AuthController (HTTP Contract)', () => {
         });
 
       expect(response.status).toBe(201);
-      const resBody = (response.body as { data?: { id: string } }).data || response.body;
+      const resBody =
+        (response.body as { data?: { id: string } }).data || response.body;
       expect(resBody.id).toBe('usr-new');
     });
   });

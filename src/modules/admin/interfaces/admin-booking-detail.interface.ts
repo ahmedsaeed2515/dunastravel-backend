@@ -70,5 +70,3 @@ export interface IAdminBookingDetail extends IAdminBookingSummary {
   readonly attachments?: ReadonlyArray<unknown>;
   readonly updatedAt: Date;
 }
-
-

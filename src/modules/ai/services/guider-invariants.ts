@@ -26,12 +26,25 @@ export class ResponseInvariantNormalizer {
     locale: string = 'en',
   ): GuiderOrchestratorResponse {
     const isArabic = (locale || '').startsWith('ar');
-    let { responseType, intent, message, recommendations, leadCapture, actions } = response;
+    let {
+      responseType,
+      intent,
+      message,
+      recommendations,
+      leadCapture,
+      actions,
+    } = response;
 
-    let tours = Array.isArray(recommendations?.tours) ? [...recommendations.tours] : [];
-    let proposal: StructuredTripProposal | null = recommendations?.proposal || null;
-    let comparison: StructuredTourComparison | null = recommendations?.comparison || null;
-    let destinations = Array.isArray(recommendations?.destinations) ? [...recommendations.destinations] : [];
+    let tours = Array.isArray(recommendations?.tours)
+      ? [...recommendations.tours]
+      : [];
+    let proposal: StructuredTripProposal | null =
+      recommendations?.proposal || null;
+    let comparison: StructuredTourComparison | null =
+      recommendations?.comparison || null;
+    const destinations = Array.isArray(recommendations?.destinations)
+      ? [...recommendations.destinations]
+      : [];
 
     // Deduplicate tours by ID or slug
     const seenTourIds = new Set<string>();
@@ -45,7 +58,12 @@ export class ResponseInvariantNormalizer {
     });
 
     // Invariant 1: Pure TEXT / Informational / Greeting Queries MUST NOT have tours, proposals, or comparisons
-    if (responseType === 'text' || intent === 'greeting' || intent === 'casual' || intent === 'informational') {
+    if (
+      responseType === 'text' ||
+      intent === 'greeting' ||
+      intent === 'casual' ||
+      intent === 'informational'
+    ) {
       responseType = 'text';
       tours = [];
       proposal = null;
@@ -61,7 +79,9 @@ export class ResponseInvariantNormalizer {
     // Invariant 2: RECOMMENDATION MUST contain at least 1 valid grounded tour
     else if (responseType === 'recommendation') {
       if (tours.length === 0) {
-        this.logger.warn(`Invariant violation: responseType is 'recommendation' but 0 tours matched. Auto-repairing to 'text'.`);
+        this.logger.warn(
+          `Invariant violation: responseType is 'recommendation' but 0 tours matched. Auto-repairing to 'text'.`,
+        );
         responseType = 'text';
         intent = 'no_catalog_matches';
 
@@ -70,7 +90,11 @@ export class ResponseInvariantNormalizer {
           ? '\n\n(ملاحظة: لم نجد حالياً باقة في الكتالوج تطابق هذه المعايير بدقة، ولكن يسعدنا تصميم برنامج مخصص لك بالكامل عبر خيار "تصميم رحلة مخصصة").'
           : '\n\n(Note: We currently have no catalog packages exactly matching these criteria. However, our concierge can curate a bespoke tailor-made itinerary for you).';
 
-        if (message && message.content && !message.content.includes(noMatchNotice.trim())) {
+        if (
+          message &&
+          message.content &&
+          !message.content.includes(noMatchNotice.trim())
+        ) {
           message.content += noMatchNotice;
         }
       }
@@ -81,8 +105,14 @@ export class ResponseInvariantNormalizer {
 
     // Invariant 3: ITINERARY MUST have a valid StructuredTripProposal with days
     else if (responseType === 'itinerary') {
-      if (!proposal || !Array.isArray(proposal.days) || proposal.days.length === 0) {
-        this.logger.warn(`Invariant violation: responseType is 'itinerary' but proposal is missing or empty. Auto-repairing.`);
+      if (
+        !proposal ||
+        !Array.isArray(proposal.days) ||
+        proposal.days.length === 0
+      ) {
+        this.logger.warn(
+          `Invariant violation: responseType is 'itinerary' but proposal is missing or empty. Auto-repairing.`,
+        );
         if (tours.length > 0) {
           responseType = 'recommendation';
           intent = 'tour_recommendation';
@@ -97,8 +127,14 @@ export class ResponseInvariantNormalizer {
 
     // Invariant 4: COMPARISON MUST have a valid StructuredTourComparison with at least 2 tours
     else if (responseType === 'comparison') {
-      if (!comparison || !Array.isArray(comparison.tours) || comparison.tours.length < 2) {
-        this.logger.warn(`Invariant violation: responseType is 'comparison' but fewer than 2 tours provided. Auto-repairing.`);
+      if (
+        !comparison ||
+        !Array.isArray(comparison.tours) ||
+        comparison.tours.length < 2
+      ) {
+        this.logger.warn(
+          `Invariant violation: responseType is 'comparison' but fewer than 2 tours provided. Auto-repairing.`,
+        );
         if (tours.length > 0) {
           responseType = 'recommendation';
           intent = 'tour_recommendation';
@@ -117,9 +153,12 @@ export class ResponseInvariantNormalizer {
       proposal = null;
       comparison = null;
       // Guarantee booking intent text directs to official tour page or concierge
-      const falseConfirmationRegex = /(تم\s+تأكيد\s+حجزك|تم\s+الحجز\s+بنجاح|your\s+booking\s+(is|has\s+been)\s+confirmed)/i;
+      const falseConfirmationRegex =
+        /(تم\s+تأكيد\s+حجزك|تم\s+الحجز\s+بنجاح|your\s+booking\s+(is|has\s+been)\s+confirmed)/i;
       if (message && falseConfirmationRegex.test(message.content)) {
-        this.logger.warn(`Invariant violation: GuideR claimed booking confirmed in booking_intent. Sanitizing.`);
+        this.logger.warn(
+          `Invariant violation: GuideR claimed booking confirmed in booking_intent. Sanitizing.`,
+        );
         message.content = isArabic
           ? 'يسعدنا اهتمامك بالحجز! يمكنك استعراض تفاصيل الرحلة وتحديد تواريخ السفر بدقة عبر صفحة الرحلة الرسمية أدناه، أو التواصل معنا لإتمام الترتيبات الخاصة.'
           : 'Thank you for your interest! You can review the itinerary and select your travel dates directly on the official tour page below, or connect with our concierge team.';
@@ -139,9 +178,12 @@ export class ResponseInvariantNormalizer {
     const structuredContent: any = {
       responseType,
       intent,
-      type: responseType === 'itinerary' && proposal
-        ? 'itinerary_proposal'
-        : (responseType === 'comparison' && comparison ? 'tour_comparison' : responseType),
+      type:
+        responseType === 'itinerary' && proposal
+          ? 'itinerary_proposal'
+          : responseType === 'comparison' && comparison
+            ? 'tour_comparison'
+            : responseType,
       tours,
       destinations,
     };
@@ -149,7 +191,8 @@ export class ResponseInvariantNormalizer {
     if (proposal) structuredContent.proposal = proposal;
     if (comparison) structuredContent.comparison = comparison;
     if (response.message?.structuredContent?.destinationSummary) {
-      structuredContent.destinationSummary = response.message.structuredContent.destinationSummary;
+      structuredContent.destinationSummary =
+        response.message.structuredContent.destinationSummary;
     }
 
     if (message) {

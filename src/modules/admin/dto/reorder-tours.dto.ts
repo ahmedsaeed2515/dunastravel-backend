@@ -16,7 +16,8 @@ export class TourOrderItem {
 export class ReorderToursDto {
   @ApiProperty({
     type: [TourOrderItem],
-    description: 'Array of { slug, displayOrder } pairs to bulk-update tour positions',
+    description:
+      'Array of { slug, displayOrder } pairs to bulk-update tour positions',
   })
   @IsArray()
   @ValidateNested({ each: true })

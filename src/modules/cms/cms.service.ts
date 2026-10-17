@@ -43,7 +43,12 @@ export class CmsService {
 
     // Cache for 30 minutes
     const content = this.localizePublicContent(block.content, locale);
-    const response = { ...block, content: content.content, locale: locale ?? null, translationStatus: content.translationStatus };
+    const response = {
+      ...block,
+      content: content.content,
+      locale: locale ?? null,
+      translationStatus: content.translationStatus,
+    };
     await this.cacheManager.set(cacheKey, response, 1800000);
     return response;
   }
@@ -78,7 +83,11 @@ export class CmsService {
     return block;
   }
 
-  async upsertAdmin(key: string, dto: UpsertCmsBlockDto, actor: AuthenticatedUser) {
+  async upsertAdmin(
+    key: string,
+    dto: UpsertCmsBlockDto,
+    actor: AuthenticatedUser,
+  ) {
     this.assertValidKey(key);
     const sanitizedKey = key.trim();
     const content = dto.content;
@@ -89,14 +98,33 @@ export class CmsService {
     const sanitizedContent = this.sanitizeContent(content, 0);
 
     const block = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.cmsBlock.findUnique({ where: { key: sanitizedKey } });
-      if (existing && dto.expectedVersion !== undefined && existing.version !== dto.expectedVersion) {
-        throw new ConflictException('CMS block has changed; reload before saving');
+      const existing = await tx.cmsBlock.findUnique({
+        where: { key: sanitizedKey },
+      });
+      if (
+        existing &&
+        dto.expectedVersion !== undefined &&
+        existing.version !== dto.expectedVersion
+      ) {
+        throw new ConflictException(
+          'CMS block has changed; reload before saving',
+        );
       }
       const saved = await tx.cmsBlock.upsert({
         where: { key: sanitizedKey },
-        create: { key: sanitizedKey, content: sanitizedContent as Prisma.InputJsonValue, status: dto.status ?? CmsBlockStatus.DRAFT, version: 1, lastUpdatedBy: actor?.id || 'system-admin' },
-        update: { content: sanitizedContent as Prisma.InputJsonValue, status: dto.status ?? existing!.status, version: { increment: 1 }, lastUpdatedBy: actor?.id || 'system-admin' },
+        create: {
+          key: sanitizedKey,
+          content: sanitizedContent as Prisma.InputJsonValue,
+          status: dto.status ?? CmsBlockStatus.DRAFT,
+          version: 1,
+          lastUpdatedBy: actor?.id || 'system-admin',
+        },
+        update: {
+          content: sanitizedContent as Prisma.InputJsonValue,
+          status: dto.status ?? existing!.status,
+          version: { increment: 1 },
+          lastUpdatedBy: actor?.id || 'system-admin',
+        },
       });
       await tx.auditLog.create({
         data: {
@@ -314,12 +342,25 @@ export class CmsService {
     throw new BadRequestException('CMS content contains an unsupported value');
   }
 
-  private localizePublicContent(content: unknown, locale?: CmsLocale): { content: unknown; translationStatus: 'NOT_LOCALIZED' | 'PRESENT' | 'MISSING' } {
-    if (!locale || !content || typeof content !== 'object' || Array.isArray(content)) {
+  private localizePublicContent(
+    content: unknown,
+    locale?: CmsLocale,
+  ): {
+    content: unknown;
+    translationStatus: 'NOT_LOCALIZED' | 'PRESENT' | 'MISSING';
+  } {
+    if (
+      !locale ||
+      !content ||
+      typeof content !== 'object' ||
+      Array.isArray(content)
+    ) {
       return { content, translationStatus: 'NOT_LOCALIZED' };
     }
     const object = content as Record<string, unknown>;
-    const hasLocaleShape = ['en', 'ar', 'es', 'pt', 'it'].some((candidate) => Object.prototype.hasOwnProperty.call(object, candidate));
+    const hasLocaleShape = ['en', 'ar', 'es', 'pt', 'it'].some((candidate) =>
+      Object.prototype.hasOwnProperty.call(object, candidate),
+    );
     if (!hasLocaleShape) return { content, translationStatus: 'NOT_LOCALIZED' };
     if (!Object.prototype.hasOwnProperty.call(object, locale)) {
       return { content: null, translationStatus: 'MISSING' };
@@ -331,35 +372,35 @@ export class CmsService {
     const defaults: Record<string, any> = {
       homepage_hero: {
         badge: {
-          en: "Exclusive Luxury Journeys",
-          ar: "رحلات سياحية فاخرة وحصرية",
-          es: "Viajes de Lujo Exclusivos",
-          pt: "Viagens de Luxo Exclusivas",
-          it: "Viaggi di Lusso Esclusivi",
+          en: 'Exclusive Luxury Journeys',
+          ar: 'رحلات سياحية فاخرة وحصرية',
+          es: 'Viajes de Lujo Exclusivos',
+          pt: 'Viagens de Luxo Exclusivas',
+          it: 'Viaggi di Lusso Esclusivi',
         },
         title: {
-          en: "Discover Egypt, Turkey & Beyond in Unmatched Luxury",
-          ar: "اكتشف مصر، وتركيا، وأروع الوجهات بفخامة لا تُضاهى",
-          es: "Descubra Egipto, Turquía y más con un Lujo Incomparable",
-          pt: "Descubra o Egito, a Turquia e Mais com Luxo Inigualável",
+          en: 'Discover Egypt, Turkey & Beyond in Unmatched Luxury',
+          ar: 'اكتشف مصر، وتركيا، وأروع الوجهات بفخامة لا تُضاهى',
+          es: 'Descubra Egipto, Turquía y más con un Lujo Incomparable',
+          pt: 'Descubra o Egito, a Turquia e Mais com Luxo Inigualável',
           it: "Scopri l'Egitto, la Turchia e Oltre con un Lusso Incomparabile",
         },
         subtitle: {
-          en: "Handcrafted bespoke itineraries, 5-star private VIP transport, and legendary Egyptian & Mediterranean hospitality.",
-          ar: "برامج سياحية مصممة خصيصاً، أسطول نقل خاص VIP 5 نجوم، والضيافة المصرية والمتوسطية العريقة.",
-          es: "Itinerarios personalizados, transporte VIP privado de 5 estrellas y legendaria hospitalidad.",
-          pt: "Roteiros personalizados, transporte VIP privado 5 estrelas e hospitalidade lendária.",
-          it: "Itinerari su misura, trasporto VIP privato a 5 stelle e ospitalità leggendaria.",
+          en: 'Handcrafted bespoke itineraries, 5-star private VIP transport, and legendary Egyptian & Mediterranean hospitality.',
+          ar: 'برامج سياحية مصممة خصيصاً، أسطول نقل خاص VIP 5 نجوم، والضيافة المصرية والمتوسطية العريقة.',
+          es: 'Itinerarios personalizados, transporte VIP privado de 5 estrellas y legendaria hospitalidad.',
+          pt: 'Roteiros personalizados, transporte VIP privado 5 estrelas e hospitalidade lendária.',
+          it: 'Itinerari su misura, trasporto VIP privato a 5 stelle e ospitalità leggendaria.',
         },
         ctaText: {
-          en: "Explore Luxury Tours",
-          ar: "استكشف البرامج الفاخرة",
-          es: "Explorar Tours",
-          pt: "Explorar Roteiros",
-          it: "Esplora Tour",
+          en: 'Explore Luxury Tours',
+          ar: 'استكشف البرامج الفاخرة',
+          es: 'Explorar Tours',
+          pt: 'Explorar Roteiros',
+          it: 'Esplora Tour',
         },
-        ctaLink: "/tours",
-        heroImageUrl: "/imgs/hero/pyramids-luxury.jpg",
+        ctaLink: '/tours',
+        heroImageUrl: '/imgs/hero/pyramids-luxury.jpg',
         stats: {
           experienceYears: 15,
           happyTravelers: 45000,
@@ -369,141 +410,142 @@ export class CmsService {
       },
       about_page: {
         title: {
-          en: "Crafting Legendary Travel Experiences Since 2011",
-          ar: "صناعة تجارب السفر الأسطورية الفاخرة منذ عام 2011",
-          es: "Creando Experiencias de Viaje Legendarias Desde 2011",
+          en: 'Crafting Legendary Travel Experiences Since 2011',
+          ar: 'صناعة تجارب السفر الأسطورية الفاخرة منذ عام 2011',
+          es: 'Creando Experiencias de Viaje Legendarias Desde 2011',
         },
         subtitle: {
-          en: "Dunas Travel is a premier destination management company specializing in high-end luxury expeditions across Egypt, Turkey, Jordan, and the Middle East.",
-          ar: "ديوناس ترافيل هي الشركة الرائدة في إدارة الوجهات السياحية المتخصصة في الرحلات الفاخرة عبر مصر، تركيا، الأردن، والشرق الأوسط.",
-          es: "Dunas Travel es la empresa líder en gestión de destinos de lujo en Egipto, Turquía y Medio Oriente.",
+          en: 'Dunas Travel is a premier destination management company specializing in high-end luxury expeditions across Egypt, Turkey, Jordan, and the Middle East.',
+          ar: 'ديوناس ترافيل هي الشركة الرائدة في إدارة الوجهات السياحية المتخصصة في الرحلات الفاخرة عبر مصر، تركيا، الأردن، والشرق الأوسط.',
+          es: 'Dunas Travel es la empresa líder en gestión de destinos de lujo en Egipto, Turquía y Medio Oriente.',
         },
         story: {
-          en: "Founded with a vision to redefine luxury travel, we blend deep cultural heritage with bespoke modern comfort. Our dedicated team of destination experts and multilingual guides ensure every moment is extraordinary.",
-          ar: "تأسست الشركة برؤية تهدف إلى إعادة تعريف السفر الفاخر من خلال الجمع بين التراث الحضاري العريق والراحة العصرية المطلقة مع فريق من نخبة الخبراء والمرشدين متعددي اللغات.",
-          es: "Fundada con la visión de redefinir los viajes de lujo combinando patrimonio cultural y confort moderno.",
+          en: 'Founded with a vision to redefine luxury travel, we blend deep cultural heritage with bespoke modern comfort. Our dedicated team of destination experts and multilingual guides ensure every moment is extraordinary.',
+          ar: 'تأسست الشركة برؤية تهدف إلى إعادة تعريف السفر الفاخر من خلال الجمع بين التراث الحضاري العريق والراحة العصرية المطلقة مع فريق من نخبة الخبراء والمرشدين متعددي اللغات.',
+          es: 'Fundada con la visión de redefinir los viajes de lujo combinando patrimonio cultural y confort moderno.',
         },
         vision: {
           en: "To be the world's most trusted luxury gateway to the historic wonders of the Middle East.",
-          ar: "أن نكون البوابة الأكثر موثوقية وفخامة في العالم لاكتشاف عجائب الشرق الأوسط وتاريخه الخالد.",
-          es: "Ser la puerta de entrada de lujo más confiable del mundo a las maravillas de Oriente Medio.",
+          ar: 'أن نكون البوابة الأكثر موثوقية وفخامة في العالم لاكتشاف عجائب الشرق الأوسط وتاريخه الخالد.',
+          es: 'Ser la puerta de entrada de lujo más confiable del mundo a las maravillas de Oriente Medio.',
         },
         stats: {
-          years: "15+",
-          travelers: "45,000+",
-          destinations: "12+",
-          partners: "350+",
+          years: '15+',
+          travelers: '45,000+',
+          destinations: '12+',
+          partners: '350+',
         },
       },
       about: {
         title: {
-          en: "Crafting Legendary Travel Experiences Since 2011",
-          ar: "صناعة تجارب السفر الأسطورية الفاخرة منذ عام 2011",
+          en: 'Crafting Legendary Travel Experiences Since 2011',
+          ar: 'صناعة تجارب السفر الأسطورية الفاخرة منذ عام 2011',
         },
         subtitle: {
-          en: "Dunas Travel Luxury Expeditions",
-          ar: "ديوناس ترافيل للرحلات الفاخرة",
+          en: 'Dunas Travel Luxury Expeditions',
+          ar: 'ديوناس ترافيل للرحلات الفاخرة',
         },
       },
       faq_page: {
         heading: {
-          en: "Frequently Asked Questions",
-          ar: "الأسئلة الشائعة والأكثر تكراراً",
-          es: "Preguntas Frecuentes",
-          pt: "Perguntas Frequentes",
-          it: "Domande Frequenti",
+          en: 'Frequently Asked Questions',
+          ar: 'الأسئلة الشائعة والأكثر تكراراً',
+          es: 'Preguntas Frecuentes',
+          pt: 'Perguntas Frequentes',
+          it: 'Domande Frequenti',
         },
         helpCenter: {
-          en: "DUNAS TRAVEL HELP CENTER",
-          ar: "مركز مساعدة ديوناس ترافيل",
-          es: "CENTRO DE AYUDA DUNAS TRAVEL",
-          pt: "CENTRO DE AJUDA DUNAS TRAVEL",
-          it: "CENTRO ASSISTENZA DUNAS TRAVEL",
+          en: 'DUNAS TRAVEL HELP CENTER',
+          ar: 'مركز مساعدة ديوناس ترافيل',
+          es: 'CENTRO DE AYUDA DUNAS TRAVEL',
+          pt: 'CENTRO DE AJUDA DUNAS TRAVEL',
+          it: 'CENTRO ASSISTENZA DUNAS TRAVEL',
         },
         items: [
           {
-            id: "faq-1",
-            category: "bookings",
+            id: 'faq-1',
+            category: 'bookings',
             question: {
-              en: "How do I book a private luxury tour with Dunas Travel?",
-              ar: "كيف يمكنني حجز رحلة خاصة فاخرة مع ديوناس ترافيل؟",
-              es: "¿Cómo reservo un tour de lujo privado con Dunas Travel?",
+              en: 'How do I book a private luxury tour with Dunas Travel?',
+              ar: 'كيف يمكنني حجز رحلة خاصة فاخرة مع ديوناس ترافيل؟',
+              es: '¿Cómo reservo un tour de lujo privado con Dunas Travel?',
             },
             answer: {
-              en: "You can easily select your desired tour package on our website, customize dates and travelers, or contact our 24/7 VIP Concierge via WhatsApp for a bespoke private itinerary.",
-              ar: "يمكنك اختيار باقتك المفضلة مباشرة عبر موقعنا، أو تخصيص التواريخ وعدد المسافرين، أو التواصل مع كونسيرج VIP المتاح 24/7 عبر الواتساب لتصميم برنامج خاص.",
-              es: "Puede seleccionar su paquete en nuestro sitio web o contactar a nuestro Concierge VIP 24/7 por WhatsApp.",
+              en: 'You can easily select your desired tour package on our website, customize dates and travelers, or contact our 24/7 VIP Concierge via WhatsApp for a bespoke private itinerary.',
+              ar: 'يمكنك اختيار باقتك المفضلة مباشرة عبر موقعنا، أو تخصيص التواريخ وعدد المسافرين، أو التواصل مع كونسيرج VIP المتاح 24/7 عبر الواتساب لتصميم برنامج خاص.',
+              es: 'Puede seleccionar su paquete en nuestro sitio web o contactar a nuestro Concierge VIP 24/7 por WhatsApp.',
             },
           },
           {
-            id: "faq-2",
-            category: "transport",
+            id: 'faq-2',
+            category: 'transport',
             question: {
-              en: "What types of transportation vehicles are provided?",
-              ar: "ما هي أنواع مركبات النقل المتوفرة في رحلاتكم؟",
-              es: "¿Qué tipo de vehículos de transporte se proporcionan?",
+              en: 'What types of transportation vehicles are provided?',
+              ar: 'ما هي أنواع مركبات النقل المتوفرة في رحلاتكم؟',
+              es: '¿Qué tipo de vehículos de transporte se proporcionan?',
             },
             answer: {
-              en: "Our modern fleet includes air-conditioned luxury sedans, VIP Mercedes Sprinters, 26-seat coasters, and 50-passenger executive coaches equipped with Wi-Fi, leather seats, and private chauffeurs.",
-              ar: "أسطولنا يضم سيارات سيدان فاخرة، مرسيدس سبرينتر VIP، حافلات كوستر 26 راكب، وأتوبيسات سياحية 50 راكب مجهزة بالواي فاي، مقاعد جلدية، وسائقين محترفين.",
-              es: "Nuestra flota incluye sedanes de lujo, Mercedes Sprinter VIP y autobuses ejecutivos con Wi-Fi y chófer privado.",
+              en: 'Our modern fleet includes air-conditioned luxury sedans, VIP Mercedes Sprinters, 26-seat coasters, and 50-passenger executive coaches equipped with Wi-Fi, leather seats, and private chauffeurs.',
+              ar: 'أسطولنا يضم سيارات سيدان فاخرة، مرسيدس سبرينتر VIP، حافلات كوستر 26 راكب، وأتوبيسات سياحية 50 راكب مجهزة بالواي فاي، مقاعد جلدية، وسائقين محترفين.',
+              es: 'Nuestra flota incluye sedanes de lujo, Mercedes Sprinter VIP y autobuses ejecutivos con Wi-Fi y chófer privado.',
             },
           },
           {
-            id: "faq-3",
-            category: "cancellations",
+            id: 'faq-3',
+            category: 'cancellations',
             question: {
-              en: "What is the cancellation and refund policy?",
-              ar: "ما هي سياسة الإلغاء واسترداد الأموال المتبعة؟",
-              es: "¿Cuál es la política de cancelación y reembolso?",
+              en: 'What is the cancellation and refund policy?',
+              ar: 'ما هي سياسة الإلغاء واسترداد الأموال المتبعة؟',
+              es: '¿Cuál es la política de cancelación y reembolso?',
             },
             answer: {
-              en: "We offer flexible cancellation terms. Free cancellations are available up to 14 days before departure for standard itineraries with 100% deposit protection.",
-              ar: "نوفر شروط إلغاء مرنة للغاية؛ حيث يمكنك الإلغاء مجاناً حتى 14 يوماً قبل موعد بدء الرحلة مع ضمان استرداد الدفعة المقدمة بالكامل.",
-              es: "Ofrecemos cancelación gratuita hasta 14 días antes de la salida con reembolso del 100% del depósito.",
+              en: 'We offer flexible cancellation terms. Free cancellations are available up to 14 days before departure for standard itineraries with 100% deposit protection.',
+              ar: 'نوفر شروط إلغاء مرنة للغاية؛ حيث يمكنك الإلغاء مجاناً حتى 14 يوماً قبل موعد بدء الرحلة مع ضمان استرداد الدفعة المقدمة بالكامل.',
+              es: 'Ofrecemos cancelación gratuita hasta 14 días antes de la salida con reembolso del 100% del depósito.',
             },
           },
         ],
       },
       global_seo: {
-        titleSuffix: " | Dunas Travel Luxury Expeditions",
+        titleSuffix: ' | Dunas Travel Luxury Expeditions',
         metaDescription: {
-          en: "Discover Egypt, Turkey, and beyond with Dunas Travel. Bespoke luxury tours, 5-star private VIP transport, and unforgettable cultural journeys.",
-          ar: "اكتشف مصر وتركيا وأروع الوجهات مع ديوناس ترافيل. برامج سياحية فاخرة، نقل خاص VIP 5 نجوم، وتجارب استثنائية لا تُنسى.",
-          es: "Descubra Egipto, Turquía y más con Dunas Travel. Tours de lujo personalizados y transporte VIP 5 estrellas.",
+          en: 'Discover Egypt, Turkey, and beyond with Dunas Travel. Bespoke luxury tours, 5-star private VIP transport, and unforgettable cultural journeys.',
+          ar: 'اكتشف مصر وتركيا وأروع الوجهات مع ديوناس ترافيل. برامج سياحية فاخرة، نقل خاص VIP 5 نجوم، وتجارب استثنائية لا تُنسى.',
+          es: 'Descubra Egipto, Turquía y más con Dunas Travel. Tours de lujo personalizados y transporte VIP 5 estrellas.',
         },
-        ogImageUrl: "/imgs/og-dunas-luxury.jpg",
-        keywords: "luxury travel, egypt tours, turkey luxury tours, private pyramids tour, nile cruise vip, dunas travel",
-        twitterHandle: "@DunasTravel",
+        ogImageUrl: '/imgs/og-dunas-luxury.jpg',
+        keywords:
+          'luxury travel, egypt tours, turkey luxury tours, private pyramids tour, nile cruise vip, dunas travel',
+        twitterHandle: '@DunasTravel',
       },
       footer_info: {
         copyright: {
-          en: "© 2026 Dunas Travel. All rights reserved. Registered Tourism License #1882.",
-          ar: "© 2026 ديوناس ترافيل. جميع الحقوق محفوظة. ترخيص وزارة السياحة رقم 1882.",
-          es: "© 2026 Dunas Travel. Todos los derechos reservados. Licencia de Turismo #1882.",
+          en: '© 2026 Dunas Travel. All rights reserved. Registered Tourism License #1882.',
+          ar: '© 2026 ديوناس ترافيل. جميع الحقوق محفوظة. ترخيص وزارة السياحة رقم 1882.',
+          es: '© 2026 Dunas Travel. Todos los derechos reservados. Licencia de Turismo #1882.',
         },
-        supportEmail: "concierge@dunastravel.com",
-        vipWhatsapp: "+20 100 000 0000",
-        phone: "+20 2 2700 0000",
+        supportEmail: 'concierge@dunastravel.com',
+        vipWhatsapp: '+20 100 000 0000',
+        phone: '+20 2 2700 0000',
         address: {
-          en: "Dunas Luxury Tower, El-Nile Corniche, Cairo, Egypt",
-          ar: "برج ديوناس الفاخر، كورنيش النيل، القاهرة، مصر",
-          es: "Torre Dunas Luxury, Corniche del Nilo, El Cairo, Egipto",
+          en: 'Dunas Luxury Tower, El-Nile Corniche, Cairo, Egypt',
+          ar: 'برج ديوناس الفاخر، كورنيش النيل، القاهرة، مصر',
+          es: 'Torre Dunas Luxury, Corniche del Nilo, El Cairo, Egipto',
         },
         socialLinks: {
-          instagram: "https://instagram.com/dunastravel",
-          facebook: "https://facebook.com/dunastravel",
-          youtube: "https://youtube.com/@dunastravel",
-          tripadvisor: "https://tripadvisor.com/dunastravel",
+          instagram: 'https://instagram.com/dunastravel',
+          facebook: 'https://facebook.com/dunastravel',
+          youtube: 'https://youtube.com/@dunastravel',
+          tripadvisor: 'https://tripadvisor.com/dunastravel',
         },
       },
       contact_info: {
         headquarters: {
-          en: "Cairo, Egypt",
-          ar: "القاهرة، مصر",
+          en: 'Cairo, Egypt',
+          ar: 'القاهرة، مصر',
         },
-        hotline: "+20 100 000 0000",
-        email: "info@dunastravel.com",
+        hotline: '+20 100 000 0000',
+        email: 'info@dunastravel.com',
       },
     };
 
@@ -540,6 +582,10 @@ export class CmsService {
   }
 
   private async clearPublicCache(key: string): Promise<void> {
-    await Promise.all([undefined, 'en', 'ar', 'es', 'pt', 'it'].map((locale) => this.cacheManager.del(`cms:${key}:${locale ?? 'raw'}`)));
+    await Promise.all(
+      [undefined, 'en', 'ar', 'es', 'pt', 'it'].map((locale) =>
+        this.cacheManager.del(`cms:${key}:${locale ?? 'raw'}`),
+      ),
+    );
   }
 }

@@ -38,7 +38,9 @@ export class HotelsService {
     required = false,
   ): Prisma.InputJsonValue {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      throw new BadRequestException('Localized hotel content must be an object');
+      throw new BadRequestException(
+        'Localized hotel content must be an object',
+      );
     }
 
     const entries = Object.entries(value);
@@ -63,17 +65,22 @@ export class HotelsService {
     if (required && !sanitized.en?.trim()) {
       throw new BadRequestException('English hotel content is required');
     }
-    return sanitized as Prisma.InputJsonValue;
+    return sanitized;
   }
 
-  private sanitizeObject(value: Record<string, unknown>): Prisma.InputJsonValue {
+  private sanitizeObject(
+    value: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new BadRequestException('Hotel metadata must be an object');
     }
     return value as Prisma.InputJsonValue;
   }
 
-  private mapRoomSeasonPricingInput(sp: RoomSeasonPricingDto, defaultCurrency: string) {
+  private mapRoomSeasonPricingInput(
+    sp: RoomSeasonPricingDto,
+    defaultCurrency: string,
+  ) {
     return {
       seasonId: sp.seasonId,
       ratePerNight: new Prisma.Decimal(sp.ratePerNight),
@@ -86,8 +93,11 @@ export class HotelsService {
     };
   }
 
-  private deduplicateSeasonPricings(seasonPricings?: RoomSeasonPricingDto[]): RoomSeasonPricingDto[] {
-    if (!Array.isArray(seasonPricings) || seasonPricings.length === 0) return [];
+  private deduplicateSeasonPricings(
+    seasonPricings?: RoomSeasonPricingDto[],
+  ): RoomSeasonPricingDto[] {
+    if (!Array.isArray(seasonPricings) || seasonPricings.length === 0)
+      return [];
     const bySeasonId = new Map<string, RoomSeasonPricingDto>();
     for (const sp of seasonPricings) {
       if (!sp?.seasonId) continue;
@@ -98,25 +108,36 @@ export class HotelsService {
 
   private roomData(room: HotelRoomDto, currency: string) {
     const resolvedCurrency = room.currency ?? currency;
-    const dedupedSeasonPricings = this.deduplicateSeasonPricings(room.seasonPricings);
+    const dedupedSeasonPricings = this.deduplicateSeasonPricings(
+      room.seasonPricings,
+    );
     return {
       slug: room.slug,
       nameJsonb: this.sanitizeLocalized(room.nameJsonb, 255, true),
       descriptionJsonb: room.descriptionJsonb
-        ? (typeof room.descriptionJsonb === 'object' && !Array.isArray(room.descriptionJsonb)
-            ? (Object.keys(room.descriptionJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
-                ? this.sanitizeObject(room.descriptionJsonb as Record<string, unknown>)
-                : this.sanitizeLocalized(room.descriptionJsonb as Record<string, string>, 5_000))
-            : undefined)
+        ? typeof room.descriptionJsonb === 'object' &&
+          !Array.isArray(room.descriptionJsonb)
+          ? Object.keys(room.descriptionJsonb).some(
+              (k) => !SUPPORTED_LOCALES.includes(k),
+            )
+            ? this.sanitizeObject(room.descriptionJsonb)
+            : this.sanitizeLocalized(
+                room.descriptionJsonb as Record<string, string>,
+                5_000,
+              )
+          : undefined
         : undefined,
       ratePerNight: room.ratePerNight,
       currency: resolvedCurrency,
       mealPlanJsonb: room.mealPlanJsonb
-        ? (typeof room.mealPlanJsonb === 'object' && !Array.isArray(room.mealPlanJsonb)
-            ? (Object.keys(room.mealPlanJsonb).some((k) => !SUPPORTED_LOCALES.includes(k))
-                ? this.sanitizeObject(room.mealPlanJsonb as Record<string, unknown>)
-                : this.sanitizeLocalized(room.mealPlanJsonb, 100))
-            : undefined)
+        ? typeof room.mealPlanJsonb === 'object' &&
+          !Array.isArray(room.mealPlanJsonb)
+          ? Object.keys(room.mealPlanJsonb).some(
+              (k) => !SUPPORTED_LOCALES.includes(k),
+            )
+            ? this.sanitizeObject(room.mealPlanJsonb)
+            : this.sanitizeLocalized(room.mealPlanJsonb, 100)
+          : undefined
         : undefined,
       maxOccupancy: room.maxOccupancy,
       inventory: room.inventory ?? 0,
@@ -134,30 +155,71 @@ export class HotelsService {
     };
   }
 
-  private getFallbackHotelImage(destinationSlug?: string, city?: string, slug?: string): string {
-    const key = `${slug || ''} ${city || ''} ${destinationSlug || ''}`.toLowerCase();
-    if (key.includes('atlantis') || key.includes('dubai') || key.includes('royal')) {
+  private getFallbackHotelImage(
+    destinationSlug?: string,
+    city?: string,
+    slug?: string,
+  ): string {
+    const key =
+      `${slug || ''} ${city || ''} ${destinationSlug || ''}`.toLowerCase();
+    if (
+      key.includes('atlantis') ||
+      key.includes('dubai') ||
+      key.includes('royal')
+    ) {
       return 'https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1200';
     }
-    if (key.includes('istanbul') || key.includes('ciragan') || key.includes('turkey') || key.includes('turquia')) {
+    if (
+      key.includes('istanbul') ||
+      key.includes('ciragan') ||
+      key.includes('turkey') ||
+      key.includes('turquia')
+    ) {
       return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200';
     }
-    if (key.includes('petra') || key.includes('movenpick') || key.includes('jordan') || key.includes('jordania')) {
+    if (
+      key.includes('petra') ||
+      key.includes('movenpick') ||
+      key.includes('jordan') ||
+      key.includes('jordania')
+    ) {
       return 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1200';
     }
-    if (key.includes('siwa') || key.includes('desert') || key.includes('oasis')) {
+    if (
+      key.includes('siwa') ||
+      key.includes('desert') ||
+      key.includes('oasis')
+    ) {
       return 'https://images.unsplash.com/photo-1544971587-b842c27f8c14?q=80&w=1200';
     }
-    if (key.includes('luxor') || key.includes('aswan') || key.includes('nile')) {
+    if (
+      key.includes('luxor') ||
+      key.includes('aswan') ||
+      key.includes('nile')
+    ) {
       return 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?q=80&w=1200';
     }
-    if (key.includes('marriott') || key.includes('cairo') || key.includes('mena') || key.includes('pyramid') || key.includes('egypt')) {
+    if (
+      key.includes('marriott') ||
+      key.includes('cairo') ||
+      key.includes('mena') ||
+      key.includes('pyramid') ||
+      key.includes('egypt')
+    ) {
       return 'https://images.unsplash.com/photo-1572252821143-035a0f6700c2?q=80&w=1200';
     }
-    if (key.includes('morocco') || key.includes('marruecos') || key.includes('marrakech')) {
+    if (
+      key.includes('morocco') ||
+      key.includes('marruecos') ||
+      key.includes('marrakech')
+    ) {
       return 'https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=1200';
     }
-    if (key.includes('greece') || key.includes('santorini') || key.includes('mykonos')) {
+    if (
+      key.includes('greece') ||
+      key.includes('santorini') ||
+      key.includes('mykonos')
+    ) {
       return 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200';
     }
     return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200';
@@ -169,29 +231,54 @@ export class HotelsService {
   ): Prisma.HotelUncheckedCreateInput {
     const data: Record<string, unknown> = {};
     if (dto.slug !== undefined) data.slug = dto.slug;
-    if (dto.nameJsonb !== undefined) data.nameJsonb = this.sanitizeLocalized(dto.nameJsonb, 255, true);
-    if (dto.descriptionJsonb !== undefined) data.descriptionJsonb = this.sanitizeLocalized(dto.descriptionJsonb, 10_000);
-    if (dto.destinationSlug !== undefined) data.destinationSlug = dto.destinationSlug;
-    if (dto.city !== undefined) data.city = sanitizePlainText(dto.city).slice(0, 100);
+    if (dto.nameJsonb !== undefined)
+      data.nameJsonb = this.sanitizeLocalized(dto.nameJsonb, 255, true);
+    if (dto.descriptionJsonb !== undefined)
+      data.descriptionJsonb = this.sanitizeLocalized(
+        dto.descriptionJsonb,
+        10_000,
+      );
+    if (dto.destinationSlug !== undefined)
+      data.destinationSlug = dto.destinationSlug;
+    if (dto.city !== undefined)
+      data.city = sanitizePlainText(dto.city).slice(0, 100);
     if (dto.stars !== undefined) data.stars = dto.stars;
     if (dto.rating !== undefined) data.rating = dto.rating;
     if (dto.currency !== undefined) data.currency = dto.currency;
-    if (dto.addressJsonb !== undefined) data.addressJsonb = this.sanitizeLocalized(dto.addressJsonb, 500);
-    if (dto.phone !== undefined) data.phone = sanitizePlainText(dto.phone).slice(0, 50) || null;
+    if (dto.addressJsonb !== undefined)
+      data.addressJsonb = this.sanitizeLocalized(dto.addressJsonb, 500);
+    if (dto.phone !== undefined)
+      data.phone = sanitizePlainText(dto.phone).slice(0, 50) || null;
     if (dto.email !== undefined) data.email = dto.email.toLowerCase();
     if (dto.website !== undefined) data.website = dto.website;
 
     const baseAmenities =
       dto.amenitiesJsonb !== undefined
-        ? (dto.amenitiesJsonb && typeof dto.amenitiesJsonb === 'object' ? { ...dto.amenitiesJsonb } : {})
-        : (existingAmenities && typeof existingAmenities === 'object' ? { ...existingAmenities } : {});
+        ? dto.amenitiesJsonb && typeof dto.amenitiesJsonb === 'object'
+          ? { ...dto.amenitiesJsonb }
+          : {}
+        : existingAmenities && typeof existingAmenities === 'object'
+          ? { ...existingAmenities }
+          : {};
     const amenities = { ...baseAmenities } as Record<string, unknown>;
 
-    if (dto.amenitiesJsonb !== undefined && existingAmenities && typeof existingAmenities === 'object') {
-      if (dto.heroImageUrl === undefined && existingAmenities.heroImageUrl !== undefined && amenities.heroImageUrl === undefined) {
+    if (
+      dto.amenitiesJsonb !== undefined &&
+      existingAmenities &&
+      typeof existingAmenities === 'object'
+    ) {
+      if (
+        dto.heroImageUrl === undefined &&
+        existingAmenities.heroImageUrl !== undefined &&
+        amenities.heroImageUrl === undefined
+      ) {
         amenities.heroImageUrl = existingAmenities.heroImageUrl;
       }
-      if (dto.images === undefined && existingAmenities.images !== undefined && amenities.images === undefined) {
+      if (
+        dto.images === undefined &&
+        existingAmenities.images !== undefined &&
+        amenities.images === undefined
+      ) {
         amenities.images = existingAmenities.images;
       }
     }
@@ -214,8 +301,10 @@ export class HotelsService {
       data.amenitiesJsonb = this.sanitizeObject(amenities);
     }
 
-    if (dto.policiesJsonb !== undefined) data.policiesJsonb = this.sanitizeObject(dto.policiesJsonb);
-    if (dto.heroMediaId !== undefined) data.heroMediaId = dto.heroMediaId || null;
+    if (dto.policiesJsonb !== undefined)
+      data.policiesJsonb = this.sanitizeObject(dto.policiesJsonb);
+    if (dto.heroMediaId !== undefined)
+      data.heroMediaId = dto.heroMediaId || null;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
@@ -229,7 +318,9 @@ export class HotelsService {
   }
 
   private async heroUrls(hotels: Array<any>) {
-    const ids = hotels.flatMap((hotel) => (hotel.heroMediaId ? [hotel.heroMediaId] : []));
+    const ids = hotels.flatMap((hotel) =>
+      hotel.heroMediaId ? [hotel.heroMediaId] : [],
+    );
     const hotelIds = hotels.map((h) => h.id).filter(Boolean);
 
     const [assetsById, assetsByHotel] = await Promise.all([
@@ -241,8 +332,18 @@ export class HotelsService {
         : [],
       hotelIds.length > 0
         ? this.prisma.mediaAsset.findMany({
-            where: { entityType: 'HOTEL', entityId: { in: hotelIds }, deletedAt: null },
-            select: { id: true, entityId: true, secureUrl: true, url: true, altText: true },
+            where: {
+              entityType: 'HOTEL',
+              entityId: { in: hotelIds },
+              deletedAt: null,
+            },
+            select: {
+              id: true,
+              entityId: true,
+              secureUrl: true,
+              url: true,
+              altText: true,
+            },
             orderBy: { createdAt: 'asc' },
           })
         : [],
@@ -250,14 +351,24 @@ export class HotelsService {
 
     const mediaMap = new Map<string, { url: string; altText: string | null }>();
     for (const asset of assetsById) {
-      mediaMap.set(asset.id, { url: asset.secureUrl || asset.url, altText: asset.altText });
+      mediaMap.set(asset.id, {
+        url: asset.secureUrl || asset.url,
+        altText: asset.altText,
+      });
     }
 
-    const galleryByHotelId = new Map<string, Array<{ id: string; url: string; altText: string | null }>>();
+    const galleryByHotelId = new Map<
+      string,
+      Array<{ id: string; url: string; altText: string | null }>
+    >();
     for (const asset of assetsByHotel) {
       if (!asset.entityId) continue;
       const list = galleryByHotelId.get(asset.entityId) || [];
-      list.push({ id: asset.id, url: asset.secureUrl || asset.url, altText: asset.altText });
+      list.push({
+        id: asset.id,
+        url: asset.secureUrl || asset.url,
+        altText: asset.altText,
+      });
       galleryByHotelId.set(asset.entityId, list);
     }
 
@@ -280,8 +391,12 @@ export class HotelsService {
     const desc = room.descriptionJsonb as Record<string, any> | null;
     const seasonPricings = Array.isArray(room.seasonPricings)
       ? room.seasonPricings.map((sp: any) => {
-          const ratePerNight = Number(sp.ratePerNight ?? sp.ratePerNightUsd ?? 0);
-          const singleSupplement = Number(sp.singleSupplement ?? sp.singleSupplementUsd ?? 0);
+          const ratePerNight = Number(
+            sp.ratePerNight ?? sp.ratePerNightUsd ?? 0,
+          );
+          const singleSupplement = Number(
+            sp.singleSupplement ?? sp.singleSupplementUsd ?? 0,
+          );
           const childRate = Number(sp.childRate ?? sp.childRateUsd ?? 0);
           const extraBedRate = Number(sp.extraBedRate ?? sp.extraBedUsd ?? 0);
           return {
@@ -343,9 +458,15 @@ export class HotelsService {
           name: extractI18nFallback(room.nameJsonb, locale),
           description: desc?.overview
             ? extractI18nFallback(desc.overview, locale)
-            : (room.descriptionJsonb ? extractI18nFallback(room.descriptionJsonb, locale) : null),
-          bedType: desc?.bedType ? extractI18nFallback(desc.bedType, locale) : null,
-          viewType: desc?.viewType ? extractI18nFallback(desc.viewType, locale) : null,
+            : room.descriptionJsonb
+              ? extractI18nFallback(room.descriptionJsonb, locale)
+              : null,
+          bedType: desc?.bedType
+            ? extractI18nFallback(desc.bedType, locale)
+            : null,
+          viewType: desc?.viewType
+            ? extractI18nFallback(desc.viewType, locale)
+            : null,
           mealPlan: room.mealPlanJsonb
             ? extractI18nFallback(room.mealPlanJsonb, locale)
             : null,
@@ -357,11 +478,24 @@ export class HotelsService {
           })),
         };
       });
-      const rates = rooms.map((room: { ratePerNight: number }) => room.ratePerNight);
-      const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
-      const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-      const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
-      const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+      const rates = rooms.map(
+        (room: { ratePerNight: number }) => room.ratePerNight,
+      );
+      const hero = hotel.heroMediaId
+        ? mediaMap.get(hotel.heroMediaId)
+        : undefined;
+      const directHeroUrl = hotel.amenitiesJsonb?.heroImageUrl || null;
+      const hotelGallery =
+        galleryByHotelId.get(hotel.id) || hotel.amenitiesJsonb?.images || [];
+      const resolvedHeroUrl =
+        hero?.url ||
+        directHeroUrl ||
+        hotelGallery[0]?.url ||
+        this.getFallbackHotelImage(
+          hotel.destinationSlug,
+          hotel.city,
+          hotel.slug,
+        );
 
       return {
         id: hotel.id,
@@ -448,7 +582,13 @@ export class HotelsService {
     return (await this.publicView([hotel], locale))[0];
   }
 
-  async findAllAdmin(pageVal = 1, limitVal = 20, search?: string, status?: string, destinationSlug?: string) {
+  async findAllAdmin(
+    pageVal = 1,
+    limitVal = 20,
+    search?: string,
+    status?: string,
+    destinationSlug?: string,
+  ) {
     const { page, limit, skip } = getPaginationParams(pageVal, limitVal);
     const where: Prisma.HotelWhereInput = {
       isGlobal: true,
@@ -495,10 +635,23 @@ export class HotelsService {
     ]);
     const { mediaMap, galleryByHotelId } = await this.heroUrls(hotels);
     const items = hotels.map((hotel) => {
-      const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+      const hero = hotel.heroMediaId
+        ? mediaMap.get(hotel.heroMediaId)
+        : undefined;
       const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-      const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
-      const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+      const hotelGallery =
+        galleryByHotelId.get(hotel.id) ||
+        (hotel.amenitiesJsonb as any)?.images ||
+        [];
+      const resolvedHeroUrl =
+        hero?.url ||
+        directHeroUrl ||
+        hotelGallery[0]?.url ||
+        this.getFallbackHotelImage(
+          hotel.destinationSlug,
+          hotel.city,
+          hotel.slug,
+        );
 
       return {
         ...hotel,
@@ -529,10 +682,19 @@ export class HotelsService {
     });
     if (!hotel) throw new NotFoundException(`Hotel '${id}' not found`);
     const { mediaMap, galleryByHotelId } = await this.heroUrls([hotel]);
-    const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+    const hero = hotel.heroMediaId
+      ? mediaMap.get(hotel.heroMediaId)
+      : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-    const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
-    const resolvedHeroUrl = hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+    const hotelGallery =
+      galleryByHotelId.get(hotel.id) ||
+      (hotel.amenitiesJsonb as any)?.images ||
+      [];
+    const resolvedHeroUrl =
+      hero?.url ||
+      directHeroUrl ||
+      hotelGallery[0]?.url ||
+      this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
     return {
       ...hotel,
@@ -550,7 +712,11 @@ export class HotelsService {
       data: {
         ...data,
         rooms: dto.rooms?.length
-          ? { create: dto.rooms.map((room) => this.roomData(room, dto.currency ?? 'USD')) }
+          ? {
+              create: dto.rooms.map((room) =>
+                this.roomData(room, dto.currency ?? 'USD'),
+              ),
+            }
           : undefined,
       },
       include: {
@@ -581,7 +747,8 @@ export class HotelsService {
 
           for (const roomDto of dto.rooms) {
             const matched = existingRooms.find(
-              (r) => (roomDto.id && r.id === roomDto.id) || r.slug === roomDto.slug,
+              (r) =>
+                (roomDto.id && r.id === roomDto.id) || r.slug === roomDto.slug,
             );
             const { seasonPricings: _sp, ...coreRoomData } = this.roomData(
               roomDto,
@@ -605,7 +772,9 @@ export class HotelsService {
                 await tx.roomSeasonPricing.deleteMany({
                   where: { roomId: matched.id },
                 });
-                const dedupedSeasonPricings = this.deduplicateSeasonPricings(roomDto.seasonPricings);
+                const dedupedSeasonPricings = this.deduplicateSeasonPricings(
+                  roomDto.seasonPricings,
+                );
                 if (dedupedSeasonPricings.length > 0) {
                   await tx.roomSeasonPricing.createMany({
                     data: dedupedSeasonPricings.map((sp) => ({
@@ -663,7 +832,13 @@ export class HotelsService {
         data: {
           ...data,
           ...(dto.rooms !== undefined
-            ? { rooms: { create: dto.rooms.map((room) => this.roomData(room, defaultCurrency)) } }
+            ? {
+                rooms: {
+                  create: dto.rooms.map((room) =>
+                    this.roomData(room, defaultCurrency),
+                  ),
+                },
+              }
             : {}),
         },
         include: {
@@ -684,7 +859,9 @@ export class HotelsService {
     const start = new Date(`${startDateStr}T00:00:00.000Z`);
     const end = new Date(`${endDateStr}T00:00:00.000Z`);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-      throw new BadRequestException('Season startDate must be on or before endDate');
+      throw new BadRequestException(
+        'Season startDate must be on or before endDate',
+      );
     }
     return { start, end };
   }
@@ -734,7 +911,9 @@ export class HotelsService {
     const code = dto.code.trim().toUpperCase();
     const existing = await this.prisma.season.findUnique({ where: { code } });
     if (existing) {
-      throw new BadRequestException(`Season with code '${code}' already exists`);
+      throw new BadRequestException(
+        `Season with code '${code}' already exists`,
+      );
     }
     return this.prisma.season.create({
       data: {
@@ -753,7 +932,8 @@ export class HotelsService {
     const existing = await this.prisma.season.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Season '${id}' not found`);
 
-    const startStr = dto.startDate ?? existing.startDate.toISOString().split('T')[0];
+    const startStr =
+      dto.startDate ?? existing.startDate.toISOString().split('T')[0];
     const endStr = dto.endDate ?? existing.endDate.toISOString().split('T')[0];
     const { start, end } = this.validateSeasonDates(startStr, endStr);
 
@@ -787,8 +967,14 @@ export class HotelsService {
   async softDeleteAdmin(id: string) {
     await this.findOneAdmin(id);
     await this.prisma.$transaction([
-      this.prisma.hotel.update({ where: { id }, data: { deletedAt: new Date(), isActive: false, status: 'ARCHIVED' } }),
-      this.prisma.hotelRoom.updateMany({ where: { hotelId: id, deletedAt: null }, data: { deletedAt: new Date(), isActive: false } }),
+      this.prisma.hotel.update({
+        where: { id },
+        data: { deletedAt: new Date(), isActive: false, status: 'ARCHIVED' },
+      }),
+      this.prisma.hotelRoom.updateMany({
+        where: { hotelId: id, deletedAt: null },
+        data: { deletedAt: new Date(), isActive: false },
+      }),
     ]);
     return { success: true, message: `Hotel '${id}' deleted.` };
   }
@@ -878,11 +1064,19 @@ export class HotelsService {
     if (!hotel) return null;
 
     const { mediaMap, galleryByHotelId } = await this.heroUrls([hotel]);
-    const hero = hotel.heroMediaId ? mediaMap.get(hotel.heroMediaId) : undefined;
+    const hero = hotel.heroMediaId
+      ? mediaMap.get(hotel.heroMediaId)
+      : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-    const hotelGallery = galleryByHotelId.get(hotel.id) || (hotel.amenitiesJsonb as any)?.images || [];
+    const hotelGallery =
+      galleryByHotelId.get(hotel.id) ||
+      (hotel.amenitiesJsonb as any)?.images ||
+      [];
     const resolvedHeroUrl =
-      hero?.url || directHeroUrl || hotelGallery[0]?.url || this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
+      hero?.url ||
+      directHeroUrl ||
+      hotelGallery[0]?.url ||
+      this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
     return {
       ...hotel,
@@ -894,7 +1088,10 @@ export class HotelsService {
     };
   }
 
-  async upsertTripHotel(tourSlugOrId: string, dto: UpsertTripHotelDto | CreateHotelDto) {
+  async upsertTripHotel(
+    tourSlugOrId: string,
+    dto: UpsertTripHotelDto | CreateHotelDto,
+  ) {
     const trimmed = tourSlugOrId?.trim();
     if (!trimmed) throw new NotFoundException('Tour slug or ID is required');
 
@@ -911,16 +1108,28 @@ export class HotelsService {
       where: { tourId: tour.id, deletedAt: null },
     });
 
-    const fallbackSlug = `trip-${tour.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-hotel`.slice(0, 95);
-    const resolvedSlug = dto.slug && dto.slug.trim()
-      ? (dto.slug.startsWith('trip-') ? dto.slug.trim() : `trip-${dto.slug.trim()}`).slice(0, 95)
-      : fallbackSlug;
+    const fallbackSlug =
+      `trip-${tour.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-hotel`.slice(
+        0,
+        95,
+      );
+    const resolvedSlug =
+      dto.slug && dto.slug.trim()
+        ? (dto.slug.startsWith('trip-')
+            ? dto.slug.trim()
+            : `trip-${dto.slug.trim()}`
+          ).slice(0, 95)
+        : fallbackSlug;
 
     if (existingHotel) {
       const updateData: UpdateHotelDto = {
         ...dto,
         slug: existingHotel.slug || resolvedSlug,
-        destinationSlug: dto.destinationSlug || existingHotel.destinationSlug || tour.city?.toLowerCase() || 'egypt',
+        destinationSlug:
+          dto.destinationSlug ||
+          existingHotel.destinationSlug ||
+          tour.city?.toLowerCase() ||
+          'egypt',
         city: dto.city || existingHotel.city || tour.city || 'Cairo',
         stars: dto.stars ?? existingHotel.stars ?? 5,
         isGlobal: false,
@@ -932,7 +1141,8 @@ export class HotelsService {
         ...dto,
         nameJsonb: dto.nameJsonb || { en: 'Trip Hotel', ar: 'فندق الرحلة' },
         slug: resolvedSlug,
-        destinationSlug: dto.destinationSlug || tour.city?.toLowerCase() || 'egypt',
+        destinationSlug:
+          dto.destinationSlug || tour.city?.toLowerCase() || 'egypt',
         city: dto.city || tour.city || 'Cairo',
         stars: dto.stars ?? 5,
         isGlobal: false,
@@ -995,16 +1205,22 @@ export class HotelsService {
     }
 
     if (!hotel) {
-      throw new NotFoundException('Selected hotel not found or currently unavailable');
+      throw new NotFoundException(
+        'Selected hotel not found or currently unavailable',
+      );
     }
 
     // Match Room
     let room: any = null;
     const targetRoom = dto.roomId || dto.roomSlug;
     if (targetRoom) {
-      room = hotel.rooms.find((r) => r.id === targetRoom || r.slug === targetRoom) || null;
+      room =
+        hotel.rooms.find((r) => r.id === targetRoom || r.slug === targetRoom) ||
+        null;
       if (!room) {
-        throw new NotFoundException('Selected room not found or currently unavailable');
+        throw new NotFoundException(
+          'Selected room not found or currently unavailable',
+        );
       }
     }
 
@@ -1012,19 +1228,27 @@ export class HotelsService {
     const checkIn = new Date(dto.checkInDate);
     const checkOut = new Date(dto.checkOutDate);
     if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
-      throw new BadRequestException('Valid check-in and check-out dates are required');
+      throw new BadRequestException(
+        'Valid check-in and check-out dates are required',
+      );
     }
 
     const diffTime = checkOut.getTime() - checkIn.getTime();
     const nights = Math.round(diffTime / (1000 * 60 * 60 * 24));
     if (nights <= 0) {
-      throw new BadRequestException('Check-out date must be after check-in date (minimum 1 night)');
+      throw new BadRequestException(
+        'Check-out date must be after check-in date (minimum 1 night)',
+      );
     }
 
     const roomsCount = Math.max(1, dto.roomsCount || 1);
     const guestsCount = Math.max(1, dto.guestsCount || 1);
 
-    if (room && room.maxOccupancy && guestsCount > Number(room.maxOccupancy) * roomsCount) {
+    if (
+      room &&
+      room.maxOccupancy &&
+      guestsCount > Number(room.maxOccupancy) * roomsCount
+    ) {
       throw new BadRequestException(
         `Guests count (${guestsCount}) exceeds maximum capacity (${Number(room.maxOccupancy) * roomsCount}) for ${roomsCount} room(s)`,
       );
@@ -1039,9 +1263,14 @@ export class HotelsService {
     }
 
     // Calculate Rate (with Seasonal Pricing Resolution & Single Supplement)
-    let roomRate = room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
+    let roomRate =
+      room && Number(room.ratePerNight) > 0 ? Number(room.ratePerNight) : 120;
     let singleSupplementPerNight = 0;
-    if (room && Array.isArray(room.seasonPricings) && room.seasonPricings.length > 0) {
+    if (
+      room &&
+      Array.isArray(room.seasonPricings) &&
+      room.seasonPricings.length > 0
+    ) {
       const checkInTime = checkIn.getTime();
       const matchedSeasonal = room.seasonPricings.find((sp: any) => {
         if (!sp.isActive || !sp.season?.isActive) return false;
@@ -1052,14 +1281,24 @@ export class HotelsService {
       if (matchedSeasonal && Number(matchedSeasonal.ratePerNight) > 0) {
         roomRate = Number(matchedSeasonal.ratePerNight);
       }
-      if (matchedSeasonal && guestsCount === 1 && roomsCount === 1 && Number(matchedSeasonal.singleSupplement) > 0) {
+      if (
+        matchedSeasonal &&
+        guestsCount === 1 &&
+        roomsCount === 1 &&
+        Number(matchedSeasonal.singleSupplement) > 0
+      ) {
         singleSupplementPerNight = Number(matchedSeasonal.singleSupplement);
       }
     }
-    const totalAmount = Number((nights * roomsCount * (roomRate + singleSupplementPerNight)).toFixed(2));
+    const totalAmount = Number(
+      (nights * roomsCount * (roomRate + singleSupplementPerNight)).toFixed(2),
+    );
 
     // Unique Reference Code
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const randomSuffix = Math.random()
+      .toString(36)
+      .substring(2, 6)
+      .toUpperCase();
     const referenceCode = `HTL-${Date.now().toString(36).toUpperCase().slice(-4)}-${randomSuffix}`;
 
     const booking = await this.prisma.hotelBooking.create({
@@ -1079,7 +1318,9 @@ export class HotelsService {
         ratePerNightUsd: new Prisma.Decimal(roomRate),
         totalAmountUsd: new Prisma.Decimal(totalAmount),
         currency: 'USD',
-        specialRequests: dto.specialRequests ? sanitizePlainText(dto.specialRequests) : null,
+        specialRequests: dto.specialRequests
+          ? sanitizePlainText(dto.specialRequests)
+          : null,
         status: 'PENDING',
       },
       include: {
@@ -1108,8 +1349,13 @@ export class HotelsService {
       booking,
       referenceCode: booking.referenceCode,
       summary: {
-        hotelName: (hotel.nameJsonb as any)?.en || (hotel.nameJsonb as any)?.ar || hotel.slug,
-        roomName: room ? (room.nameJsonb as any)?.en || (room.nameJsonb as any)?.ar || room.slug : 'Standard Room',
+        hotelName:
+          (hotel.nameJsonb as any)?.en ||
+          (hotel.nameJsonb as any)?.ar ||
+          hotel.slug,
+        roomName: room
+          ? room.nameJsonb?.en || room.nameJsonb?.ar || room.slug
+          : 'Standard Room',
         checkInDate: dto.checkInDate,
         checkOutDate: dto.checkOutDate,
         nights,
@@ -1150,7 +1396,9 @@ export class HotelsService {
     });
 
     if (!booking || booking.deletedAt) {
-      throw new NotFoundException(`Booking with reference '${referenceCode}' not found`);
+      throw new NotFoundException(
+        `Booking with reference '${referenceCode}' not found`,
+      );
     }
 
     return booking;
@@ -1232,7 +1480,8 @@ export class HotelsService {
       where: { id },
       data: {
         status: dto.status,
-        adminNotes: dto.adminNotes !== undefined ? dto.adminNotes : booking.adminNotes,
+        adminNotes:
+          dto.adminNotes !== undefined ? dto.adminNotes : booking.adminNotes,
       },
       include: {
         hotel: {

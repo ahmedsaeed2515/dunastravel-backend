@@ -10,7 +10,9 @@ import {
 import { MediaEntityType } from '@prisma/client';
 
 export class UploadMediaDto {
-  @ApiPropertyOptional({ description: 'Binary file sent via multipart/form-data' })
+  @ApiPropertyOptional({
+    description: 'Binary file sent via multipart/form-data',
+  })
   @IsOptional()
   file?: any;
 
@@ -23,7 +25,8 @@ export class UploadMediaDto {
   entityType!: MediaEntityType;
 
   @ApiPropertyOptional({
-    description: 'Required if entityType is TOUR or HOTEL, or category slug if GENERAL',
+    description:
+      'Required if entityType is TOUR or HOTEL, or category slug if GENERAL',
     type: 'string',
   })
   @ValidateIf(

@@ -66,17 +66,26 @@ Source Content:
 ${dto.content}`;
 
     try {
-      const response = await this.keyPoolService.executeWithFailover(userPrompt, {
-        systemPrompt,
-        maxTokens: 2000,
-        temperature: 0.3,
-      });
+      const response = await this.keyPoolService.executeWithFailover(
+        userPrompt,
+        {
+          systemPrompt,
+          maxTokens: 2000,
+          temperature: 0.3,
+        },
+      );
 
       let cleanJsonText = response.text.trim();
       if (cleanJsonText.startsWith('```json')) {
-        cleanJsonText = cleanJsonText.replace(/^```json/, '').replace(/```$/, '').trim();
+        cleanJsonText = cleanJsonText
+          .replace(/^```json/, '')
+          .replace(/```$/, '')
+          .trim();
       } else if (cleanJsonText.startsWith('```')) {
-        cleanJsonText = cleanJsonText.replace(/^```/, '').replace(/```$/, '').trim();
+        cleanJsonText = cleanJsonText
+          .replace(/^```/, '')
+          .replace(/```$/, '')
+          .trim();
       }
 
       const parsed: FiveLanguageTranslationResult = JSON.parse(cleanJsonText);
@@ -84,9 +93,13 @@ ${dto.content}`;
       if (parsed.ar && parsed.en && parsed.es && parsed.pt && parsed.it) {
         return parsed;
       }
-      throw new Error('AI translation response missing one or more language keys.');
+      throw new Error(
+        'AI translation response missing one or more language keys.',
+      );
     } catch (err: any) {
-      this.logger.warn(`AI translation call failed or unconfigured (${err.message}). Using intelligent template translation.`);
+      this.logger.warn(
+        `AI translation call failed or unconfigured (${err.message}). Using intelligent template translation.`,
+      );
 
       // Robust fallback translation template
       return {
@@ -117,14 +130,16 @@ ${dto.content}`;
   /**
    * Batch creates or updates all 5 localized versions of a knowledge base item.
    */
-  async saveBatchMultiLang(articles: Array<{
-    title: string;
-    content: string;
-    locale: string;
-    category?: string;
-    priority?: number;
-    tags?: string[];
-  }>): Promise<{ success: boolean; savedCount: number; items: any[] }> {
+  async saveBatchMultiLang(
+    articles: Array<{
+      title: string;
+      content: string;
+      locale: string;
+      category?: string;
+      priority?: number;
+      tags?: string[];
+    }>,
+  ): Promise<{ success: boolean; savedCount: number; items: any[] }> {
     const savedItems = [];
     const baseId = `kb-multi-${Date.now()}`;
 

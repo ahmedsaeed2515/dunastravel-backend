@@ -34,15 +34,18 @@ export class BatchUpdateReviewStatusDto {
   @IsOptional()
   reviewIds!: string[];
 
-  @ApiProperty({ description: 'Target review status (APPROVED, REJECTED, PENDING)' })
+  @ApiProperty({
+    description: 'Target review status (APPROVED, REJECTED, PENDING)',
+  })
   @IsString()
   @IsNotEmpty()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
   status!: string;
 
-  @ApiPropertyOptional({ description: 'Whether the reviews should be published' })
+  @ApiPropertyOptional({
+    description: 'Whether the reviews should be published',
+  })
   @IsOptional()
   @IsBoolean()
   isPublished?: boolean;
 }
-

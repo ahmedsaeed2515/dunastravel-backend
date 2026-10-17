@@ -25,22 +25,38 @@ describe('MediaService entity ownership', () => {
     await service.getAssetsByHotelId('hotel-1');
 
     expect(hotelFindFirst).toHaveBeenCalledWith({
-      where: { id: 'hotel-1', status: 'PUBLISHED', isActive: true, deletedAt: null },
+      where: {
+        id: 'hotel-1',
+        status: 'PUBLISHED',
+        isActive: true,
+        deletedAt: null,
+      },
       select: { id: true },
     });
     expect(findMany).toHaveBeenCalledWith({
-      where: { entityType: MediaEntityType.HOTEL, entityId: 'hotel-1', deletedAt: null },
+      where: {
+        entityType: MediaEntityType.HOTEL,
+        entityId: 'hotel-1',
+        deletedAt: null,
+      },
       orderBy: { createdAt: 'asc' },
     });
   });
 
   it('reports totals from persisted, non-deleted assets', async () => {
-    const aggregate = jest.fn().mockResolvedValue({ _count: { id: 4 }, _sum: { bytes: 1200 } });
+    const aggregate = jest
+      .fn()
+      .mockResolvedValue({ _count: { id: 4 }, _sum: { bytes: 1200 } });
     const groupBy = jest.fn().mockResolvedValue([
       { entityType: MediaEntityType.GENERAL, _count: { id: 2 } },
       { entityType: MediaEntityType.HOTEL, _count: { id: 2 } },
     ]);
-    const service = createService({ mediaAsset: { aggregate, groupBy } as unknown as PrismaService['mediaAsset'] });
+    const service = createService({
+      mediaAsset: {
+        aggregate,
+        groupBy,
+      } as unknown as PrismaService['mediaAsset'],
+    });
 
     await expect(service.getSummary()).resolves.toEqual({
       total: 4,

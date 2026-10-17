@@ -30,10 +30,7 @@ export class AgenciesService {
       const existing = await this.prisma.company.findFirst({
         where: {
           deletedAt: null,
-          OR: [
-            { taxId: demoIata },
-            { referenceCode: `AGN-2026-${demoIata}` },
-          ],
+          OR: [{ taxId: demoIata }, { referenceCode: `AGN-2026-${demoIata}` }],
         },
       });
 
@@ -117,7 +114,8 @@ export class AgenciesService {
         valid: false,
         code: cleanCode,
         reason: 'NOT_FOUND',
-        message: 'رقم الاعتماد غير مسجل في قاعدة بيانات الشركاء المتعاقدين مع دوناس ترافيل',
+        message:
+          'رقم الاعتماد غير مسجل في قاعدة بيانات الشركاء المتعاقدين مع دوناس ترافيل',
       };
     }
 
@@ -127,7 +125,8 @@ export class AgenciesService {
         code: cleanCode,
         reason: 'INACTIVE',
         companyName: company.name,
-        message: 'عقد الشريك غير مفعل أو قيد المراجعة، يرجى التواصل مع إدارة التعاقدات لتجديد الاعتماد',
+        message:
+          'عقد الشريك غير مفعل أو قيد المراجعة، يرجى التواصل مع إدارة التعاقدات لتجديد الاعتماد',
       };
     }
 

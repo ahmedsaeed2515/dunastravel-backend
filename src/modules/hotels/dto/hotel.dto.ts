@@ -73,7 +73,9 @@ export class CreateSeasonDto {
   @MaxLength(50)
   code!: string;
 
-  @ApiProperty({ example: { en: 'Winter Peak Season', ar: 'موسم ذروة الشتاء' } })
+  @ApiProperty({
+    example: { en: 'Winter Peak Season', ar: 'موسم ذروة الشتاء' },
+  })
   @IsObject()
   @IsNotEmpty()
   nameJsonb!: Record<string, string>;
@@ -262,7 +264,13 @@ export class CreateHotelDto {
 
   @IsOptional()
   @IsArray()
-  images?: Array<{ id?: string; url: string; altText?: string; isHero?: boolean; sortOrder?: number }>;
+  images?: Array<{
+    id?: string;
+    url: string;
+    altText?: string;
+    isHero?: boolean;
+    sortOrder?: number;
+  }>;
 
   @IsOptional()
   @IsIn(HOTEL_STATUSES)

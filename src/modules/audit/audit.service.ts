@@ -108,9 +108,7 @@ export class AuditService {
       if (
         from &&
         to &&
-        (from > to ||
-          to.getTime() - from.getTime() >
-            366 * 24 * 60 * 60 * 1000)
+        (from > to || to.getTime() - from.getTime() > 366 * 24 * 60 * 60 * 1000)
       ) {
         throw new BadRequestException(
           'Audit date range must be no longer than 366 days',

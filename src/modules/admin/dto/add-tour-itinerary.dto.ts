@@ -17,7 +17,9 @@ export class AddTourItineraryDto {
   @MaxLength(100)
   dayLabel!: string;
 
-  @ApiPropertyOptional({ description: 'I18n day title JSON (ar, en, es, pt, it)' })
+  @ApiPropertyOptional({
+    description: 'I18n day title JSON (ar, en, es, pt, it)',
+  })
   @IsOptional()
   @IsObject()
   titleJsonb?: Record<string, any>;

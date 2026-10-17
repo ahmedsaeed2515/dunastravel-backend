@@ -11,20 +11,26 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
   beforeAll(async () => {
     // Set default local disposable URL if not provided by runner
     if (!process.env.TEST_DATABASE_URL && !process.env.DATABASE_URL) {
-      process.env.TEST_DATABASE_URL = 'postgresql://postgres:password@localhost:5432/dunastravel_test?schema=public';
+      process.env.TEST_DATABASE_URL =
+        'postgresql://postgres:password@localhost:5432/dunastravel_test?schema=public';
     }
     process.env.DISPOSABLE_DB_CONFIRMED = 'true';
 
     // 1. Safety Guard Verification
     try {
       const dbTarget = verifyAndAssertDisposableDb();
-      pool = new Pool({ connectionString: dbTarget.connectionString, connectionTimeoutMillis: 2000 });
+      pool = new Pool({
+        connectionString: dbTarget.connectionString,
+        connectionTimeoutMillis: 2000,
+      });
       await pool.query('SELECT 1');
       const adapter = new PrismaPg(pool);
       prisma = new PrismaClient({ adapter });
       await prisma.$connect();
     } catch (err: any) {
-      console.warn(`[DISPOSABLE DB GUARD] ${err.message}. Skipping disposable database suite.`);
+      console.warn(
+        `[DISPOSABLE DB GUARD] ${err.message}. Skipping disposable database suite.`,
+      );
       prisma = undefined as any;
       if (pool) {
         await pool.end().catch(() => {});
@@ -73,7 +79,9 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
             paidAmountUsd: 0,
             status: 'PENDING',
             passengers: {
-              create: [{ fullName: 'Idempotent Passenger', passengerType: 'ADULT' }],
+              create: [
+                { fullName: 'Idempotent Passenger', passengerType: 'ADULT' },
+              ],
             },
             idempotencyKey: idempotencyKey,
             requestHash: 'hash-12345',
@@ -94,7 +102,9 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
     ]);
 
     const successes = results.filter((res) => res && res.id && !res.isError);
-    const duplicateErrors = results.filter((res) => res && res.isError && res.code === 'P2002');
+    const duplicateErrors = results.filter(
+      (res) => res && res.isError && res.code === 'P2002',
+    );
     expect(successes.length).toBe(1);
     expect(duplicateErrors.length).toBe(4);
 
@@ -130,19 +140,22 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
 
     // Worker that atomically attempts to reserve 1 seat if remainingSeats >= 1
     const reserveSeatWorker = async (): Promise<number> => {
-      return (await prisma.$executeRaw`
+      return await prisma.$executeRaw`
         UPDATE tour_availabilities
         SET remaining_seats = remaining_seats - 1,
             updated_at = NOW()
         WHERE id = ${avail.id} AND remaining_seats >= 1;
-      `) as number;
+      `;
     };
 
     // Concurrently launch 10 reservation attempts for 5 available seats
     const workers = Array.from({ length: 10 }, () => reserveSeatWorker());
     const workerResults = await Promise.all(workers);
 
-    const successfulDecrements = workerResults.reduce((acc: number, val: number) => acc + val, 0);
+    const successfulDecrements = workerResults.reduce(
+      (acc: number, val: number) => acc + val,
+      0,
+    );
     expect(successfulDecrements).toBe(5);
 
     const updatedAvail = await prisma.tourAvailability.findUnique({
@@ -152,7 +165,7 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
 
     // Test DB check constraint: attempting remaining_seats < 0 throws Error
     await expect(
-      prisma.$executeRaw`UPDATE tour_availabilities SET remaining_seats = -1 WHERE id = ${avail.id}`
+      prisma.$executeRaw`UPDATE tour_availabilities SET remaining_seats = -1 WHERE id = ${avail.id}`,
     ).rejects.toThrow();
   });
 
@@ -176,12 +189,12 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
 
     const redeemWorker = async (): Promise<number> => {
       // Atomic increment if current_uses < max_uses
-      const affected = (await prisma.$executeRaw`
+      const affected = await prisma.$executeRaw`
         UPDATE promotions
         SET current_uses = current_uses + 1,
             updated_at = NOW()
         WHERE id = ${promo.id} AND current_uses < max_uses;
-      `) as number;
+      `;
       return affected;
     };
 
@@ -193,10 +206,15 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
       redeemWorker(),
     ]);
 
-    const totalRedeemed = results.reduce((acc: number, val: number) => acc + val, 0);
+    const totalRedeemed = results.reduce(
+      (acc: number, val: number) => acc + val,
+      0,
+    );
     expect(totalRedeemed).toBe(2);
 
-    const finalPromo = await prisma.promotion.findUnique({ where: { id: promo.id } });
+    const finalPromo = await prisma.promotion.findUnique({
+      where: { id: promo.id },
+    });
     expect(finalPromo?.currentUses).toBe(2);
   });
 
@@ -258,7 +276,11 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
     if (!prisma) return;
     const eventId = `evt_test_${uuidv4()}`;
 
-    const processWebhook = async (): Promise<{ processed: boolean; id?: string; duplicate?: boolean }> => {
+    const processWebhook = async (): Promise<{
+      processed: boolean;
+      id?: string;
+      duplicate?: boolean;
+    }> => {
       try {
         return await prisma.$transaction(async (tx) => {
           // Record event idempotency
@@ -279,7 +301,11 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
       }
     };
 
-    const results = await Promise.all([processWebhook(), processWebhook(), processWebhook()]);
+    const results = await Promise.all([
+      processWebhook(),
+      processWebhook(),
+      processWebhook(),
+    ]);
     const processedCount = results.filter((r) => r.processed).length;
     const duplicateCount = results.filter((r) => r.duplicate).length;
 
@@ -316,7 +342,8 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
       });
 
       // Use PostgreSQL sequence invoice_seq
-      const seqResult: any[] = await prisma.$queryRaw`SELECT nextval('invoice_seq') as seq;`;
+      const seqResult: any[] =
+        await prisma.$queryRaw`SELECT nextval('invoice_seq') as seq;`;
       const seqNum = seqResult[0].seq.toString().padStart(5, '0');
       const invoiceNumber = `INV-2026-${seqNum}`;
 
@@ -362,12 +389,12 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
     });
 
     const debitWorker = async (amount: number): Promise<number> => {
-      return (await prisma.$executeRaw`
+      return await prisma.$executeRaw`
         UPDATE wallets
         SET balance = balance - ${amount},
             updated_at = NOW()
         WHERE id = ${wallet.id} AND (balance - ${amount}) >= 0.00;
-      `) as number;
+      `;
     };
 
     // Attempt 4 debits of 200.00 USD each (Total 800.00 > 500.00)
@@ -378,10 +405,15 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
       debitWorker(200),
     ]);
 
-    const successfulDebits = debitResults.reduce((acc: number, val: number) => acc + val, 0);
+    const successfulDebits = debitResults.reduce(
+      (acc: number, val: number) => acc + val,
+      0,
+    );
     expect(successfulDebits).toBe(2); // Only 2 debits of 200 (total 400) fit in 500
 
-    const updatedWallet = await prisma.wallet.findUnique({ where: { id: wallet.id } });
+    const updatedWallet = await prisma.wallet.findUnique({
+      where: { id: wallet.id },
+    });
     expect(Number(updatedWallet?.balance)).toBe(100.0);
   });
 
@@ -468,7 +500,7 @@ describe('Disposable Database Integration & Concurrency Invariants', () => {
             create: [{ fullName: 'Test User', passengerType: 'ADULT' }],
           },
         },
-      })
+      }),
     ).rejects.toThrow();
 
     // Soft delete behavior verification

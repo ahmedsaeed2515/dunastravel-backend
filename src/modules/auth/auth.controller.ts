@@ -58,6 +58,18 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
+  @Get('config')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get public auth configuration' })
+  getAuthConfig() {
+    return {
+      requireEmailVerification:
+        this.authService.shouldRequireEmailVerification(),
+    };
+  }
+
+  @Public()
+  @SkipCsrf()
   @UseGuards(TurnstileGuard)
   @RequireTurnstile('register')
   @Post('register')
@@ -81,10 +93,7 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const sessionUser = await this.authService.login(
-      dto,
-      req.ip || 'unknown',
-    );
+    const sessionUser = await this.authService.login(dto, req.ip || 'unknown');
     const token = this.authService.generateToken(sessionUser);
     const refreshToken = await this.authService.generateRefreshToken(
       sessionUser.id,

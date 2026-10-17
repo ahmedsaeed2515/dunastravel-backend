@@ -8,10 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  NotificationDeliveryStatus,
-  NotificationType,
-} from '@prisma/client';
+import { NotificationDeliveryStatus, NotificationType } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class NotificationDeliveryLogQueryFilters {

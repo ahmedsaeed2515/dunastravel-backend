@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -44,51 +48,58 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
 
   beforeAll(async () => {
     // Intercept outbound fetch calls from @getpayin/paylink SDK to pay.getpayin.com
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const body = JSON.parse(String(init?.body || '{}'));
+        if (urlStr.includes('/api/v2/integration/init')) {
+          const body = JSON.parse(String(init?.body || '{}'));
 
-        // Validate PayLink contract compliance
-        expect(body.first_name).toBe('Test');
-        expect(body.last_name).toBe('Traveler');
-        expect(body.currency).toBe('USD');
-        expect(body.order_amount).toBe('5.00');
-        expect(body.signature).toBeDefined();
+          // Validate PayLink contract compliance
+          expect(body.first_name).toBe('Test');
+          expect(body.last_name).toBe('Traveler');
+          expect(body.currency).toBe('USD');
+          expect(body.order_amount).toBe('5.00');
+          expect(body.signature).toBeDefined();
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${mockInvoiceId}`,
+                invoice_id: mockInvoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        if (urlStr.includes('/api/integration/check-status')) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                invoice_id: mockInvoiceId,
+                paid_status: 'PAID',
+                auth_code: 'AUTH-GETPAYIN-777',
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
 
         return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${mockInvoiceId}`,
-              invoice_id: mockInvoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
         );
-      }
-
-      if (urlStr.includes('/api/integration/check-status')) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              invoice_id: mockInvoiceId,
-              paid_status: 'PAID',
-              auth_code: 'AUTH-GETPAYIN-777',
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -112,11 +123,19 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     await app.init();
 
     const configService = app.get(ConfigService);
-    console.log('--- ConfigService GETPAYIN_HASH_TOKEN:', configService.get('GETPAYIN_HASH_TOKEN'));
-    console.log('--- ConfigService PAYMENT_PROVIDER:', configService.get('payments.provider'));
+    console.log(
+      '--- ConfigService GETPAYIN_HASH_TOKEN:',
+      configService.get('GETPAYIN_HASH_TOKEN'),
+    );
+    console.log(
+      '--- ConfigService PAYMENT_PROVIDER:',
+      configService.get('payments.provider'),
+    );
 
     // Lookup tour and upsert availability slot
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     testTourId = tour.id;
 
@@ -149,42 +168,62 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
 
     // Clean up created booking and payment records
     if (bookingId) {
-      const events = await prisma.processedWebhookEvent.findMany({
-        where: { payload: { path: ['bookingId'], equals: bookingId } },
-        select: { id: true },
-      }).catch(() => []);
+      const events = await prisma.processedWebhookEvent
+        .findMany({
+          where: { payload: { path: ['bookingId'], equals: bookingId } },
+          select: { id: true },
+        })
+        .catch(() => []);
       if (events && events.length > 0) {
-        await prisma.processedWebhookEvent.deleteMany({
-          where: { id: { in: events.map((e) => e.id) } },
-        }).catch(() => {});
+        await prisma.processedWebhookEvent
+          .deleteMany({
+            where: { id: { in: events.map((e) => e.id) } },
+          })
+          .catch(() => {});
       }
-      await prisma.processedWebhookEvent.deleteMany({
-        where: { id: { contains: String(mockInvoiceId) } },
-      }).catch(() => {});
-      await prisma.bookingActivityLog.deleteMany({
-        where: { bookingId },
-      }).catch(() => {});
-      await prisma.payment.deleteMany({
-        where: { bookingId },
-      }).catch(() => {});
-      await prisma.invoice.deleteMany({
-        where: { bookingId },
-      }).catch(() => {});
-      await prisma.billingInfo.deleteMany({
-        where: { bookingId },
-      }).catch(() => {});
-      await prisma.passenger.deleteMany({
-        where: { bookingId },
-      }).catch(() => {});
-      await prisma.booking.deleteMany({
-        where: { id: bookingId },
-      }).catch(() => {});
+      await prisma.processedWebhookEvent
+        .deleteMany({
+          where: { id: { contains: String(mockInvoiceId) } },
+        })
+        .catch(() => {});
+      await prisma.bookingActivityLog
+        .deleteMany({
+          where: { bookingId },
+        })
+        .catch(() => {});
+      await prisma.payment
+        .deleteMany({
+          where: { bookingId },
+        })
+        .catch(() => {});
+      await prisma.invoice
+        .deleteMany({
+          where: { bookingId },
+        })
+        .catch(() => {});
+      await prisma.billingInfo
+        .deleteMany({
+          where: { bookingId },
+        })
+        .catch(() => {});
+      await prisma.passenger
+        .deleteMany({
+          where: { bookingId },
+        })
+        .catch(() => {});
+      await prisma.booking
+        .deleteMany({
+          where: { id: bookingId },
+        })
+        .catch(() => {});
 
       // Restore seat
-      await prisma.tourAvailability.update({
-        where: { id: testSlotId },
-        data: { remainingSeats: initialSeats },
-      }).catch(() => {});
+      await prisma.tourAvailability
+        .update({
+          where: { id: testSlotId },
+          data: { remainingSeats: initialSeats },
+        })
+        .catch(() => {});
     }
 
     await app.close();
@@ -209,10 +248,13 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     expect(data).toHaveProperty('csrfToken');
 
     // Extract access token from cookies
-    const cookies = res.headers['set-cookie'] as unknown as string[] | undefined;
+    const cookies = res.headers['set-cookie'] as unknown as
+      string[] | undefined;
     expect(cookies).toBeDefined();
 
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     expect(accessTokenCookie).toBeDefined();
 
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
@@ -346,7 +388,10 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     };
 
     // Calculate official PayLink HMAC-SHA256 signature using PaylinkClient
-    payload.signature = (paylinkClient.webhooks as any).computeSignature(payload, hashToken);
+    payload.signature = (paylinkClient.webhooks as any).computeSignature(
+      payload,
+      hashToken,
+    );
 
     const res = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -369,7 +414,9 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     expect(updatedBooking?.paidAmountUsd.toString()).toBe('5');
     expect(updatedBooking?.invoice?.status).toBe('PAID');
 
-    const updatedPayment = updatedBooking?.payments.find((p) => p.id === paymentId);
+    const updatedPayment = updatedBooking?.payments.find(
+      (p) => p.id === paymentId,
+    );
     expect(updatedPayment?.status).toBe('CAPTURED');
     expect(updatedPayment?.providerStatus).toBe('PAID');
   });
@@ -422,7 +469,10 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
       success: 1,
       message: 'Payment received successfully',
     };
-    validPayload.signature = (paylinkClient.webhooks as any).computeSignature(validPayload, hashToken);
+    validPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      validPayload,
+      hashToken,
+    );
 
     const replayRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')

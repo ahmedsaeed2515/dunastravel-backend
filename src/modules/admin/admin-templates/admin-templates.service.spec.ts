@@ -19,7 +19,8 @@ describe('AdminTemplatesService', () => {
             id: 'tpl-1',
             name: 'user_verification',
             subject: 'Verify Account',
-            bodyHtml: '<h1>Welcome</h1><!-- DUNAS_BUILDER_CONFIG: {"presetId":"obsidian_gold"} -->',
+            bodyHtml:
+              '<h1>Welcome</h1><!-- DUNAS_BUILDER_CONFIG: {"presetId":"obsidian_gold"} -->',
             variables: ['name', 'otpCode'],
           },
         ]),
@@ -62,7 +63,12 @@ describe('AdminTemplatesService', () => {
     const presets = service.getPresets();
     expect(presets).toHaveLength(4);
     expect(presets.map((p) => p.id)).toEqual(
-      expect.arrayContaining(['obsidian_gold', 'royal_sapphire', 'desert_amber', 'minimalist_pearl']),
+      expect.arrayContaining([
+        'obsidian_gold',
+        'royal_sapphire',
+        'desert_amber',
+        'minimalist_pearl',
+      ]),
     );
   });
 

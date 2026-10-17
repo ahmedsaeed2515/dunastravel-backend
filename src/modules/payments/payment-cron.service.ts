@@ -134,14 +134,20 @@ export class PaymentCronService {
 
     if (pending.length === 0) return;
 
-    this.logger.log(`Reconciling ${pending.length} pending payments with PayLink...`);
+    this.logger.log(
+      `Reconciling ${pending.length} pending payments with PayLink...`,
+    );
     for (const p of pending) {
       if (!p.transactionId) continue;
       try {
-        await this.paymentsService.reconcilePaymentByProviderInvoiceId(p.transactionId);
+        await this.paymentsService.reconcilePaymentByProviderInvoiceId(
+          p.transactionId,
+        );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`Failed to reconcile payment ${p.id} (tx: ${p.transactionId}): ${msg}`);
+        this.logger.warn(
+          `Failed to reconcile payment ${p.id} (tx: ${p.transactionId}): ${msg}`,
+        );
       }
     }
   }
@@ -160,25 +166,33 @@ export class PaymentCronService {
 
     if (stuckRefunds.length === 0) return;
 
-    this.logger.log(`Reconciling ${stuckRefunds.length} stuck REFUND_PENDING payments with PayLink...`);
+    this.logger.log(
+      `Reconciling ${stuckRefunds.length} stuck REFUND_PENDING payments with PayLink...`,
+    );
     for (const p of stuckRefunds) {
       const transactionId = p.providerPaymentId || p.transactionId;
       if (!transactionId) continue;
       try {
-        const providerState = await this.paymentGateway.checkStatus(transactionId);
+        const providerState =
+          await this.paymentGateway.checkStatus(transactionId);
         const statusUpper = providerState.providerStatus.toUpperCase();
         if (['REFUNDED', 'VOIDED', 'REVERSED'].includes(statusUpper)) {
           this.logger.log(
             `Payment ${p.id} verified as ${statusUpper} on PayLink. Finalizing local refund state...`,
           );
-          await this.paymentsService.reconcilePaymentByProviderInvoiceId(transactionId, {
-            id: p.id,
-            bookingId: p.bookingId,
-          });
+          await this.paymentsService.reconcilePaymentByProviderInvoiceId(
+            transactionId,
+            {
+              id: p.id,
+              bookingId: p.bookingId,
+            },
+          );
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`Failed to reconcile stuck refund for payment ${p.id}: ${msg}`);
+        this.logger.warn(
+          `Failed to reconcile stuck refund for payment ${p.id}: ${msg}`,
+        );
       }
     }
   }

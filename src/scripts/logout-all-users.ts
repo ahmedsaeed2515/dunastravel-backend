@@ -14,7 +14,9 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function logoutAllUsers() {
-  console.log('Revoking all user sessions and refresh tokens across the database...');
+  console.log(
+    'Revoking all user sessions and refresh tokens across the database...',
+  );
 
   const result = await prisma.user.updateMany({
     where: {
@@ -27,7 +29,9 @@ async function logoutAllUsers() {
   });
 
   console.log(`Successfully logged out ${result.count} registered accounts.`);
-  console.log('All previous JWT access & refresh tokens have been invalidated.');
+  console.log(
+    'All previous JWT access & refresh tokens have been invalidated.',
+  );
 }
 
 logoutAllUsers()

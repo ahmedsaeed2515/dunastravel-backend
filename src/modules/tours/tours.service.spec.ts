@@ -100,9 +100,16 @@ describe('ToursService', () => {
 
     it('filters Dubai by its canonical destination relation, not its country label', async () => {
       jest.spyOn(prisma.tour, 'count').mockResolvedValue(0);
-      const findManySpy = jest.spyOn(prisma.tour, 'findMany').mockResolvedValue([] as any);
+      const findManySpy = jest
+        .spyOn(prisma.tour, 'findMany')
+        .mockResolvedValue([]);
 
-      await service.findAll({ lang: 'en', destination: 'United Arab Emirates', page: 1, limit: 10 });
+      await service.findAll({
+        lang: 'en',
+        destination: 'United Arab Emirates',
+        page: 1,
+        limit: 10,
+      });
 
       expect(findManySpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -110,7 +117,10 @@ describe('ToursService', () => {
             landingPages: {
               some: {
                 isVisible: true,
-                landingPage: expect.objectContaining({ slug: 'dubai', type: 'DESTINATION' }),
+                landingPage: expect.objectContaining({
+                  slug: 'dubai',
+                  type: 'DESTINATION',
+                }),
               },
             },
           }),
@@ -125,9 +135,16 @@ describe('ToursService', () => {
 
     it('keeps country filtering separate from canonical destination filtering', async () => {
       jest.spyOn(prisma.tour, 'count').mockResolvedValue(0);
-      const findManySpy = jest.spyOn(prisma.tour, 'findMany').mockResolvedValue([] as any);
+      const findManySpy = jest
+        .spyOn(prisma.tour, 'findMany')
+        .mockResolvedValue([]);
 
-      await service.findAll({ lang: 'en', country: 'United Arab Emirates', page: 1, limit: 10 });
+      await service.findAll({
+        lang: 'en',
+        country: 'United Arab Emirates',
+        page: 1,
+        limit: 10,
+      });
 
       expect(findManySpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -197,7 +214,9 @@ describe('ToursService', () => {
         preview: { status: 'DRAFT', isActive: true, isPublic: false },
       });
       expect(findFirstSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { slug: 'draft-tour', deletedAt: null } }),
+        expect.objectContaining({
+          where: { slug: 'draft-tour', deletedAt: null },
+        }),
       );
     });
 
@@ -216,14 +235,24 @@ describe('ToursService', () => {
         includedServicesJsonb: { en: ['Transfers'] },
         excludedServicesJsonb: { en: ['Flights'] },
         tags: ['luxury'],
-        itineraries: [{
-          id: 'day-1',
-          dayLabel: 'Arrival',
-          descriptionJsonb: { en: 'Meet the guide.' },
-          mealsJsonb: { en: 'Dinner' },
-          sortOrder: 0,
-        }],
-        images: [{ id: 'image-1', imageUrl: 'https://cdn.example.test/hero.jpg', isHero: true, altText: 'Hero', sortOrder: 0 }],
+        itineraries: [
+          {
+            id: 'day-1',
+            dayLabel: 'Arrival',
+            descriptionJsonb: { en: 'Meet the guide.' },
+            mealsJsonb: { en: 'Dinner' },
+            sortOrder: 0,
+          },
+        ],
+        images: [
+          {
+            id: 'image-1',
+            imageUrl: 'https://cdn.example.test/hero.jpg',
+            isHero: true,
+            altText: 'Hero',
+            sortOrder: 0,
+          },
+        ],
       } as any);
 
       const publicDetail = await service.findBySlug('published-tour', 'en');
@@ -297,8 +326,16 @@ describe('ToursService', () => {
         nights: 3,
         priceSupplementUsd: '150.00',
         priceSupplement: 150,
-        hotel: expect.objectContaining({ name: 'Four Seasons Cairo', starRating: 5, stars: 5 }),
-        room: expect.objectContaining({ name: 'Nile Suite', basePriceUsd: '450.00', ratePerNight: 450 }),
+        hotel: expect.objectContaining({
+          name: 'Four Seasons Cairo',
+          starRating: 5,
+          stars: 5,
+        }),
+        room: expect.objectContaining({
+          name: 'Nile Suite',
+          basePriceUsd: '450.00',
+          ratePerNight: 450,
+        }),
       });
       expect(detail.hotelInfo).toMatchObject({
         hotels: { Cairo: ['Four Seasons Cairo'] },

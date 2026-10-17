@@ -1,7 +1,10 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { of } from 'rxjs';
-import { isCanonicalPaginatedPayload, TransformInterceptor } from './transform.interceptor';
+import {
+  isCanonicalPaginatedPayload,
+  TransformInterceptor,
+} from './transform.interceptor';
 import {
   ResponseTransformInterceptor,
   IGNORE_TRANSFORM_KEY,
@@ -55,18 +58,31 @@ describe('TransformInterceptor', () => {
 
   it('preserves a collection payload and its server-supplied pagination metadata', (done) => {
     const context = {
-      switchToHttp: () => ({ getResponse: () => ({ statusCode: 200 }), getRequest: () => ({ url: '/api/tours' }) }),
+      switchToHttp: () => ({
+        getResponse: () => ({ statusCode: 200 }),
+        getRequest: () => ({ url: '/api/tours' }),
+      }),
     } as ExecutionContext;
-    const next: CallHandler = { handle: () => of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }) };
+    const next: CallHandler = {
+      handle: () =>
+        of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+    };
     interceptor.intercept(context, next).subscribe((result) => {
       expect(result.data).toEqual([]);
-      expect(result.meta).toEqual({ total: 0, page: 1, limit: 20, totalPages: 0 });
+      expect(result.meta).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+      });
       done();
     });
   });
 
   it('does not mistake an item with incomplete data/meta fields for pagination', () => {
-    expect(isCanonicalPaginatedPayload({ data: { id: 'item' }, meta: { total: 1 } })).toBe(false);
+    expect(
+      isCanonicalPaginatedPayload({ data: { id: 'item' }, meta: { total: 1 } }),
+    ).toBe(false);
   });
 });
 

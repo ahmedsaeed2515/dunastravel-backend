@@ -7,11 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CommissionsService } from '../../commissions/commissions.service';
-import {
-  TailorMadeInquiryStatus,
-  Prisma,
-  UserRole,
-} from '@prisma/client';
+import { TailorMadeInquiryStatus, Prisma, UserRole } from '@prisma/client';
 import { paginate, getPaginationParams } from '../../../common/utils';
 import {
   generateReferenceCode,
@@ -149,7 +145,10 @@ export class AdminTailorMadeService {
     if (assigneeId) where.assigneeId = assigneeId;
     if (query.partnerCode) where.partnerCode = query.partnerCode;
     if (query.referenceCode) {
-      where.referenceCode = { contains: query.referenceCode, mode: 'insensitive' };
+      where.referenceCode = {
+        contains: query.referenceCode,
+        mode: 'insensitive',
+      };
     }
     if (query.search) {
       where.OR = [
@@ -192,12 +191,24 @@ export class AdminTailorMadeService {
       activeInquiries,
     ] = await Promise.all([
       this.prisma.tailorMadeInquiry.count({ where }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'NEWLY_RECEIVED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'IN_PROGRESS' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'QUOTED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'APPROVED' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CONVERTED_TO_BOOKING' } }),
-      this.prisma.tailorMadeInquiry.count({ where: { ...where, status: 'CLOSED' } }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'NEWLY_RECEIVED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'IN_PROGRESS' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'QUOTED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'APPROVED' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'CONVERTED_TO_BOOKING' },
+      }),
+      this.prisma.tailorMadeInquiry.count({
+        where: { ...where, status: 'CLOSED' },
+      }),
       this.prisma.tailorMadeInquiry.findMany({
         where: { ...where, status: { notIn: ['CLOSED'] } },
         select: { quotedAmountUsd: true, budgetAmount: true },
@@ -207,7 +218,9 @@ export class AdminTailorMadeService {
     const pipelineValue = activeInquiries.reduce((acc, curr) => {
       const val = curr.quotedAmountUsd
         ? Number(curr.quotedAmountUsd)
-        : (curr.budgetAmount ? Number(curr.budgetAmount) : 0);
+        : curr.budgetAmount
+          ? Number(curr.budgetAmount)
+          : 0;
       return acc + val;
     }, 0);
 
@@ -226,10 +239,7 @@ export class AdminTailorMadeService {
   private async getInquiry(idOrRef: string) {
     const record = await this.prisma.tailorMadeInquiry.findFirst({
       where: {
-        OR: [
-          { id: idOrRef },
-          { referenceCode: idOrRef },
-        ],
+        OR: [{ id: idOrRef }, { referenceCode: idOrRef }],
       },
       select: this.inquirySelect,
     });
@@ -279,38 +289,15 @@ export class AdminTailorMadeService {
     }
 
     const validTransitions: Record<string, string[]> = {
-      NEWLY_RECEIVED: [
-        'IN_PROGRESS',
-        'QUOTED',
-        'APPROVED',
-        'CLOSED',
-      ],
-      IN_PROGRESS: [
-        'QUOTED',
-        'APPROVED',
-        'CLOSED',
-        'NEWLY_RECEIVED',
-      ],
-      QUOTED: [
-        'APPROVED',
-        'IN_PROGRESS',
-        'CLOSED',
-        'NEWLY_RECEIVED',
-      ],
-      APPROVED: [
-        'QUOTED',
-        'IN_PROGRESS',
-        'CLOSED',
-      ],
+      NEWLY_RECEIVED: ['IN_PROGRESS', 'QUOTED', 'APPROVED', 'CLOSED'],
+      IN_PROGRESS: ['QUOTED', 'APPROVED', 'CLOSED', 'NEWLY_RECEIVED'],
+      QUOTED: ['APPROVED', 'IN_PROGRESS', 'CLOSED', 'NEWLY_RECEIVED'],
+      APPROVED: ['QUOTED', 'IN_PROGRESS', 'CLOSED'],
       CONVERTED_TO_BOOKING: [
         'CLOSED',
         'APPROVED', // Admin can revert a mis-converted inquiry back to APPROVED
       ],
-      CLOSED: [
-        'IN_PROGRESS',
-        'NEWLY_RECEIVED',
-        'QUOTED',
-      ],
+      CLOSED: ['IN_PROGRESS', 'NEWLY_RECEIVED', 'QUOTED'],
     };
 
     const allowed = validTransitions[inquiry.status] || [];
@@ -387,7 +374,9 @@ export class AdminTailorMadeService {
       }),
     ]);
     if (!assignee) {
-      throw new BadRequestException('Assignee must be an active staff member or agent');
+      throw new BadRequestException(
+        'Assignee must be an active staff member or agent',
+      );
     }
 
     return this.prisma.$transaction(
@@ -507,14 +496,18 @@ export class AdminTailorMadeService {
         const assignee = await this.prisma.user.findFirst({
           where: {
             id: data.assigneeId,
-            role: { in: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+            role: {
+              in: [UserRole.AGENT, UserRole.ADMIN, UserRole.SUPER_ADMIN],
+            },
             status: 'ACTIVE',
             deletedAt: null,
           },
           select: { id: true },
         });
         if (!assignee) {
-          throw new BadRequestException('Assignee must be an active staff member or agent');
+          throw new BadRequestException(
+            'Assignee must be an active staff member or agent',
+          );
         }
       }
     }
@@ -527,33 +520,47 @@ export class AdminTailorMadeService {
       }
     }
 
-    const safeInternalNote = data.internalNote !== undefined
-      ? sanitizePlainText(data.internalNote).slice(0, 5_000)
-      : undefined;
+    const safeInternalNote =
+      data.internalNote !== undefined
+        ? sanitizePlainText(data.internalNote).slice(0, 5_000)
+        : undefined;
 
-    const safeNotes = data.notes !== undefined
-      ? sanitizePlainText(data.notes).slice(0, 5_000)
-      : undefined;
+    const safeNotes =
+      data.notes !== undefined
+        ? sanitizePlainText(data.notes).slice(0, 5_000)
+        : undefined;
 
-    const parsedFollowUpAt = data.followUpAt !== undefined
-      ? (data.followUpAt ? new Date(data.followUpAt) : null)
-      : undefined;
+    const parsedFollowUpAt =
+      data.followUpAt !== undefined
+        ? data.followUpAt
+          ? new Date(data.followUpAt)
+          : null
+        : undefined;
 
-    const quotedAmount = data.quotedAmountUsd !== undefined
-      ? new Prisma.Decimal(data.quotedAmountUsd)
-      : undefined;
+    const quotedAmount =
+      data.quotedAmountUsd !== undefined
+        ? new Prisma.Decimal(data.quotedAmountUsd)
+        : undefined;
 
     return this.prisma.$transaction(
       async (tx) => {
         const updated = await tx.tailorMadeInquiry.update({
           where: { id: inquiry.id },
           data: {
-            ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId || null }),
+            ...(data.assigneeId !== undefined && {
+              assigneeId: data.assigneeId || null,
+            }),
             ...(data.status !== undefined && { status: data.status }),
-            ...(quotedAmount !== undefined && { quotedAmountUsd: quotedAmount }),
-            ...(safeInternalNote !== undefined && { internalNote: safeInternalNote }),
+            ...(quotedAmount !== undefined && {
+              quotedAmountUsd: quotedAmount,
+            }),
+            ...(safeInternalNote !== undefined && {
+              internalNote: safeInternalNote,
+            }),
             ...(safeNotes !== undefined && { notes: safeNotes }),
-            ...(parsedFollowUpAt !== undefined && { followUpAt: parsedFollowUpAt }),
+            ...(parsedFollowUpAt !== undefined && {
+              followUpAt: parsedFollowUpAt,
+            }),
           },
           select: this.inquirySelect,
         });
@@ -608,233 +615,240 @@ export class AdminTailorMadeService {
       throw new BadRequestException('Inquiry has no quoted amount');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const updatedInquiryCount = await tx.tailorMadeInquiry.updateMany({
-        where: {
-          id,
-          status: TailorMadeInquiryStatus.APPROVED,
-          bookingId: null,
-        },
-        data: { status: TailorMadeInquiryStatus.CONVERTED_TO_BOOKING },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const updatedInquiryCount = await tx.tailorMadeInquiry.updateMany({
+          where: {
+            id,
+            status: TailorMadeInquiryStatus.APPROVED,
+            bookingId: null,
+          },
+          data: { status: TailorMadeInquiryStatus.CONVERTED_TO_BOOKING },
+        });
 
-      if (updatedInquiryCount.count === 0) {
-        const recheck = await tx.tailorMadeInquiry.findUnique({
+        if (updatedInquiryCount.count === 0) {
+          const recheck = await tx.tailorMadeInquiry.findUnique({
+            where: { id },
+            select: this.inquirySelect,
+          });
+          if (recheck?.bookingId) {
+            const existingBooking = await tx.booking.findUnique({
+              where: { id: recheck.bookingId },
+              select: this.bookingResultSelect,
+            });
+            return {
+              inquiry: recheck,
+              booking: existingBooking,
+              invoice: existingBooking?.invoice || null,
+            };
+          }
+          throw new BadRequestException(
+            'Inquiry must be APPROVED and not already converted',
+          );
+        }
+
+        const customSlug = `tailor-made-inquiry-${inquiry.id.slice(0, 8)}`;
+        let tour = await tx.tour.findFirst({
+          where: { slug: customSlug },
+        });
+        if (!tour) {
+          tour = await tx.tour.create({
+            data: {
+              slug: customSlug,
+              titleJsonb: {
+                en: `Tailor-Made Custom Tour (${inquiry.referenceCode})`,
+                ar: `جولة خاصة مخصصة (${inquiry.referenceCode})`,
+                es: `Tour Personalizado (${inquiry.referenceCode})`,
+                pt: `Tour Sob Medida (${inquiry.referenceCode})`,
+                it: `Tour Su Misura (${inquiry.referenceCode})`,
+              },
+              basePriceUsd: quotedAmount,
+              status: 'ARCHIVED',
+              isActive: false,
+            },
+          });
+        }
+
+        const arrivalDate = inquiry.startDate || new Date();
+        const adultsCount = inquiry.adults || 1;
+        const childrenCount = inquiry.children || 0;
+        const totalPassengers = Math.max(1, adultsCount + childrenCount);
+
+        let availability = await tx.tourAvailability.findUnique({
+          where: { tourId_date: { tourId: tour.id, date: arrivalDate } },
+        });
+        if (!availability) {
+          availability = await tx.tourAvailability.create({
+            data: {
+              tourId: tour.id,
+              date: arrivalDate,
+              totalCapacity: totalPassengers,
+              remainingSeats: 0,
+              status: 'SOLD_OUT',
+            },
+          });
+        }
+
+        const referenceCode = generateReferenceCode('TMB');
+
+        const passengersList: Array<{
+          passengerType: string;
+          fullName: string;
+        }> = [];
+        for (let i = 0; i < adultsCount; i++) {
+          passengersList.push({
+            passengerType: 'ADULT',
+            fullName:
+              i === 0
+                ? inquiry.fullName
+                : `${inquiry.fullName} (Adult ${i + 1})`,
+          });
+        }
+        for (let i = 0; i < childrenCount; i++) {
+          passengersList.push({
+            passengerType: 'CHILD',
+            fullName: `${inquiry.fullName} (Child ${i + 1})`,
+          });
+        }
+
+        const newBooking = await tx.booking.create({
+          data: {
+            referenceCode,
+            tourId: tour.id,
+            availabilityId: availability.id,
+            arrivalDate,
+            departureDate: inquiry.endDate || arrivalDate,
+            adults: adultsCount,
+            children: childrenCount,
+            totalAmountUsd: quotedAmount,
+            companyId: inquiry.companyId ?? null,
+            status: 'PENDING',
+            bookingType: 'TAILOR_MADE',
+            priority: 'HIGH',
+            inquiryMessage: inquiry.notes,
+            billingInfo: {
+              create: {
+                fullName: inquiry.fullName,
+                email: inquiry.email,
+                phone: inquiry.phone,
+                invoiceType: 'PERSONAL',
+              },
+            },
+            passengers: {
+              createMany: {
+                data: passengersList,
+              },
+            },
+          },
+          select: this.bookingResultSelect,
+        });
+
+        if (inquiry.companyId) {
+          try {
+            await this.commissionsService.calculateAndRecordCommission(
+              newBooking.id,
+              inquiry.companyId,
+              tx,
+            );
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.error(
+              `Commission calculation failed for booking ${newBooking.id}: ${msg}`,
+            );
+          }
+        }
+
+        const invoiceNumber = await generateInvoiceNumber(tx);
+
+        const snapshotJsonb: InvoiceSnapshot = {
+          version: 1,
+          tourId: tour.id,
+          tourTitle: `Tailor-Made Custom Tour (${inquiry.referenceCode})`,
+          tourSlug: customSlug,
+          arrivalDate: arrivalDate.toISOString().split('T')[0],
+          departureDate: inquiry.endDate
+            ? inquiry.endDate.toISOString().split('T')[0]
+            : arrivalDate.toISOString().split('T')[0],
+          adults: adultsCount,
+          children: childrenCount,
+          infants: 0,
+          baseSubtotal: quotedAmount.toNumber(),
+          discounts: [],
+          tax: 0,
+          total: quotedAmount.toNumber(),
+          currency: 'USD',
+          billingRecipient: {
+            fullName: inquiry.fullName,
+            email: inquiry.email,
+            phone: inquiry.phone,
+            invoiceType: 'PERSONAL',
+            companyName: null,
+            taxId: null,
+            address: null,
+            city: null,
+            country: null,
+          },
+          passengers: passengersList.map((p) => ({
+            passengerType: p.passengerType,
+            fullName: p.fullName,
+          })),
+        };
+
+        const newInvoice = await tx.invoice.create({
+          data: {
+            invoiceNumber,
+            bookingId: newBooking.id,
+            issuedAt: new Date(),
+            status: 'SENT',
+            subtotal: quotedAmount,
+            tax: new Prisma.Decimal(0),
+            total: quotedAmount,
+            currency: 'USD',
+            snapshotJsonb: snapshotJsonb as unknown as Prisma.InputJsonValue,
+          },
+          select: {
+            id: true,
+            invoiceNumber: true,
+            status: true,
+            subtotal: true,
+            tax: true,
+            total: true,
+            currency: true,
+            issuedAt: true,
+          },
+        });
+
+        await tx.tailorMadeInquiry.update({
+          where: { id },
+          data: { bookingId: newBooking.id },
+        });
+
+        const updatedInquiry = await tx.tailorMadeInquiry.findUnique({
           where: { id },
           select: this.inquirySelect,
         });
-        if (recheck?.bookingId) {
-          const existingBooking = await tx.booking.findUnique({
-            where: { id: recheck.bookingId },
-            select: this.bookingResultSelect,
-          });
-          return {
-            inquiry: recheck,
-            booking: existingBooking,
-            invoice: existingBooking?.invoice || null,
-          };
-        }
-        throw new BadRequestException(
-          'Inquiry must be APPROVED and not already converted',
-        );
-      }
 
-      const customSlug = `tailor-made-inquiry-${inquiry.id.slice(0, 8)}`;
-      let tour = await tx.tour.findFirst({
-        where: { slug: customSlug },
-      });
-      if (!tour) {
-        tour = await tx.tour.create({
+        await tx.auditLog.create({
           data: {
-            slug: customSlug,
-            titleJsonb: {
-              en: `Tailor-Made Custom Tour (${inquiry.referenceCode})`,
-              ar: `جولة خاصة مخصصة (${inquiry.referenceCode})`,
-              es: `Tour Personalizado (${inquiry.referenceCode})`,
-              pt: `Tour Sob Medida (${inquiry.referenceCode})`,
-              it: `Tour Su Misura (${inquiry.referenceCode})`,
-            },
-            basePriceUsd: quotedAmount,
-            status: 'ARCHIVED',
-            isActive: false,
-          },
-        });
-      }
-
-      const arrivalDate = inquiry.startDate || new Date();
-      const adultsCount = inquiry.adults || 1;
-      const childrenCount = inquiry.children || 0;
-      const totalPassengers = Math.max(1, adultsCount + childrenCount);
-
-      let availability = await tx.tourAvailability.findUnique({
-        where: { tourId_date: { tourId: tour.id, date: arrivalDate } },
-      });
-      if (!availability) {
-        availability = await tx.tourAvailability.create({
-          data: {
-            tourId: tour.id,
-            date: arrivalDate,
-            totalCapacity: totalPassengers,
-            remainingSeats: 0,
-            status: 'SOLD_OUT',
-          },
-        });
-      }
-
-      const referenceCode = generateReferenceCode('TMB');
-
-      const passengersList: Array<{ passengerType: string; fullName: string }> =
-        [];
-      for (let i = 0; i < adultsCount; i++) {
-        passengersList.push({
-          passengerType: 'ADULT',
-          fullName:
-            i === 0 ? inquiry.fullName : `${inquiry.fullName} (Adult ${i + 1})`,
-        });
-      }
-      for (let i = 0; i < childrenCount; i++) {
-        passengersList.push({
-          passengerType: 'CHILD',
-          fullName: `${inquiry.fullName} (Child ${i + 1})`,
-        });
-      }
-
-      const newBooking = await tx.booking.create({
-        data: {
-          referenceCode,
-          tourId: tour.id,
-          availabilityId: availability.id,
-          arrivalDate,
-          departureDate: inquiry.endDate || arrivalDate,
-          adults: adultsCount,
-          children: childrenCount,
-          totalAmountUsd: quotedAmount,
-          companyId: inquiry.companyId ?? null,
-          status: 'PENDING',
-          bookingType: 'TAILOR_MADE',
-          priority: 'HIGH',
-          inquiryMessage: inquiry.notes,
-          billingInfo: {
-            create: {
-              fullName: inquiry.fullName,
-              email: inquiry.email,
-              phone: inquiry.phone,
-              invoiceType: 'PERSONAL',
+            actorId: actor.id,
+            actorRole: actor.role,
+            action: 'TAILOR_MADE_INQUIRY_CONVERTED',
+            entityType: 'TAILOR_MADE_INQUIRY',
+            entityId: id,
+            metadata: {
+              bookingId: newBooking.id,
+              invoiceId: newInvoice.id,
             },
           },
-          passengers: {
-            createMany: {
-              data: passengersList,
-            },
-          },
-        },
-        select: this.bookingResultSelect,
-      });
+        });
 
-      if (inquiry.companyId) {
-        try {
-          await this.commissionsService.calculateAndRecordCommission(
-            newBooking.id,
-            inquiry.companyId,
-            tx,
-          );
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          this.logger.error(
-            `Commission calculation failed for booking ${newBooking.id}: ${msg}`,
-          );
-        }
-      }
-
-      const invoiceNumber = await generateInvoiceNumber(tx);
-
-      const snapshotJsonb: InvoiceSnapshot = {
-        version: 1,
-        tourId: tour.id,
-        tourTitle: `Tailor-Made Custom Tour (${inquiry.referenceCode})`,
-        tourSlug: customSlug,
-        arrivalDate: arrivalDate.toISOString().split('T')[0],
-        departureDate: inquiry.endDate
-          ? inquiry.endDate.toISOString().split('T')[0]
-          : arrivalDate.toISOString().split('T')[0],
-        adults: adultsCount,
-        children: childrenCount,
-        infants: 0,
-        baseSubtotal: quotedAmount.toNumber(),
-        discounts: [],
-        tax: 0,
-        total: quotedAmount.toNumber(),
-        currency: 'USD',
-        billingRecipient: {
-          fullName: inquiry.fullName,
-          email: inquiry.email,
-          phone: inquiry.phone,
-          invoiceType: 'PERSONAL',
-          companyName: null,
-          taxId: null,
-          address: null,
-          city: null,
-          country: null,
-        },
-        passengers: passengersList.map((p) => ({
-          passengerType: p.passengerType,
-          fullName: p.fullName,
-        })),
-      };
-
-      const newInvoice = await tx.invoice.create({
-        data: {
-          invoiceNumber,
-          bookingId: newBooking.id,
-          issuedAt: new Date(),
-          status: 'SENT',
-          subtotal: quotedAmount,
-          tax: new Prisma.Decimal(0),
-          total: quotedAmount,
-          currency: 'USD',
-          snapshotJsonb: snapshotJsonb as unknown as Prisma.InputJsonValue,
-        },
-        select: {
-          id: true,
-          invoiceNumber: true,
-          status: true,
-          subtotal: true,
-          tax: true,
-          total: true,
-          currency: true,
-          issuedAt: true,
-        },
-      });
-
-      await tx.tailorMadeInquiry.update({
-        where: { id },
-        data: { bookingId: newBooking.id },
-      });
-
-      const updatedInquiry = await tx.tailorMadeInquiry.findUnique({
-        where: { id },
-        select: this.inquirySelect,
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: actor.id,
-          actorRole: actor.role,
-          action: 'TAILOR_MADE_INQUIRY_CONVERTED',
-          entityType: 'TAILOR_MADE_INQUIRY',
-          entityId: id,
-          metadata: {
-            bookingId: newBooking.id,
-            invoiceId: newInvoice.id,
-          },
-        },
-      });
-
-      return {
-        inquiry: updatedInquiry,
-        booking: newBooking,
-        invoice: newInvoice,
-      };
-    }, { isolationLevel: 'Serializable' });
+        return {
+          inquiry: updatedInquiry,
+          booking: newBooking,
+          invoice: newInvoice,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 }

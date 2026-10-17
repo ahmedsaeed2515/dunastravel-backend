@@ -2,13 +2,19 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateMediaCategoryDto {
-  @ApiProperty({ description: 'Category name in English', example: 'Destinations & Landmarks' })
+  @ApiProperty({
+    description: 'Category name in English',
+    example: 'Destinations & Landmarks',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   nameEn!: string;
 
-  @ApiProperty({ description: 'Category name in Arabic', example: 'الوجهات والمعالم' })
+  @ApiProperty({
+    description: 'Category name in Arabic',
+    example: 'الوجهات والمعالم',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
@@ -30,7 +36,10 @@ export class CreateMediaCategoryDto {
   @IsString()
   icon?: string;
 
-  @ApiPropertyOptional({ description: 'Short description', example: 'Photos of pyramids, historical landmarks and destinations' })
+  @ApiPropertyOptional({
+    description: 'Short description',
+    example: 'Photos of pyramids, historical landmarks and destinations',
+  })
   @IsOptional()
   @IsString()
   description?: string;

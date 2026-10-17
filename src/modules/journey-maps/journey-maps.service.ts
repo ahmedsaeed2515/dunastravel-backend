@@ -154,6 +154,6 @@ export class JourneyMapsService {
         description: sanitizePlainText(point.description).slice(0, 2000),
       }),
       ...(point.order !== undefined && { order: point.order }),
-    })) as Prisma.InputJsonValue;
+    }));
   }
 }

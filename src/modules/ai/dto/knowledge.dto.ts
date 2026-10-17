@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsArray, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsArray,
+  Min,
+} from 'class-validator';
 
 export enum KnowledgeCategoryEnum {
   COMPANY = 'COMPANY',
@@ -30,7 +38,9 @@ export class CreateKnowledgeItemDto {
   @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ example: 'Full payment is required 14 days before arrival...' })
+  @ApiProperty({
+    example: 'Full payment is required 14 days before arrival...',
+  })
   @IsString()
   @IsNotEmpty()
   content!: string;
@@ -40,7 +50,10 @@ export class CreateKnowledgeItemDto {
   @IsOptional()
   locale?: string;
 
-  @ApiPropertyOptional({ enum: KnowledgeCategoryEnum, example: KnowledgeCategoryEnum.BOOKING_POLICY })
+  @ApiPropertyOptional({
+    enum: KnowledgeCategoryEnum,
+    example: KnowledgeCategoryEnum.BOOKING_POLICY,
+  })
   @IsEnum(KnowledgeCategoryEnum)
   @IsOptional()
   category?: KnowledgeCategoryEnum;
@@ -50,7 +63,10 @@ export class CreateKnowledgeItemDto {
   @IsOptional()
   tags?: string[];
 
-  @ApiPropertyOptional({ enum: KnowledgeStatusEnum, example: KnowledgeStatusEnum.PUBLISHED })
+  @ApiPropertyOptional({
+    enum: KnowledgeStatusEnum,
+    example: KnowledgeStatusEnum.PUBLISHED,
+  })
   @IsEnum(KnowledgeStatusEnum)
   @IsOptional()
   status?: KnowledgeStatusEnum;
@@ -136,7 +152,10 @@ export class CreateMultilingualKnowledgeDto {
   @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ example: 'تأسست شركة دوناس ترافيل كواحدة من رواد السياحة الفاخرة في مصر والشرق الأوسط...' })
+  @ApiProperty({
+    example:
+      'تأسست شركة دوناس ترافيل كواحدة من رواد السياحة الفاخرة في مصر والشرق الأوسط...',
+  })
   @IsString()
   @IsNotEmpty()
   content!: string;
@@ -146,7 +165,10 @@ export class CreateMultilingualKnowledgeDto {
   @IsOptional()
   sourceLocale?: string;
 
-  @ApiPropertyOptional({ enum: KnowledgeCategoryEnum, example: KnowledgeCategoryEnum.COMPANY })
+  @ApiPropertyOptional({
+    enum: KnowledgeCategoryEnum,
+    example: KnowledgeCategoryEnum.COMPANY,
+  })
   @IsEnum(KnowledgeCategoryEnum)
   @IsOptional()
   category?: KnowledgeCategoryEnum;
@@ -173,7 +195,10 @@ export class CreateResponseRuleDto {
   @IsNotEmpty()
   triggerQuestion!: string;
 
-  @ApiProperty({ example: 'مواعيد العمل اليومية من الساعة 9 صباحاً حتى 6 مساءً بتوقيت القاهرة.' })
+  @ApiProperty({
+    example:
+      'مواعيد العمل اليومية من الساعة 9 صباحاً حتى 6 مساءً بتوقيت القاهرة.',
+  })
   @IsString()
   @IsNotEmpty()
   prescribedAnswer!: string;
@@ -197,5 +222,3 @@ export class CreateResponseRuleDto {
   @IsOptional()
   priority?: number;
 }
-
-

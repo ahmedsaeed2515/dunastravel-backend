@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminWalletsService } from './admin-wallets.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Prisma, WalletTransactionType, WalletTransactionStatus } from '@prisma/client';
+import {
+  Prisma,
+  WalletTransactionType,
+  WalletTransactionStatus,
+} from '@prisma/client';
 
 describe('AdminWalletsService - reconcileLedger', () => {
   let service: AdminWalletsService;

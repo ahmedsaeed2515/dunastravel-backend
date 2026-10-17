@@ -97,7 +97,10 @@ describe('AuthService - Email Verification & Hardening', () => {
           },
         },
         { provide: NotificationsService, useValue: notificationsService },
-        { provide: SettingsService, useValue: { getSetting: jest.fn().mockResolvedValue(true) } },
+        {
+          provide: SettingsService,
+          useValue: { getSetting: jest.fn().mockResolvedValue(true) },
+        },
       ],
     }).compile();
 
@@ -144,7 +147,10 @@ describe('AuthService - Email Verification & Hardening', () => {
 
   describe('Email Verification (OTP Consumption)', () => {
     const validOtp = '654321';
-    const validHash = crypto.createHash('sha256').update(validOtp).digest('hex');
+    const validHash = crypto
+      .createHash('sha256')
+      .update(validOtp)
+      .digest('hex');
 
     it('should atomically verify user and record emailVerifiedAt with valid OTP', async () => {
       const mockUser = {
@@ -274,7 +280,9 @@ describe('AuthService - Email Verification & Hardening', () => {
 
       await expect(
         authService.resendVerification({ email: 'user@example.com' }),
-      ).rejects.toThrow(/Please wait 35 seconds before requesting another verification code/);
+      ).rejects.toThrow(
+        /Please wait 35 seconds before requesting another verification code/,
+      );
     });
 
     it('should allow resend after 60-second cooldown, resetting attempts to 0', async () => {
@@ -290,7 +298,9 @@ describe('AuthService - Email Verification & Hardening', () => {
       prisma.user.findFirst.mockResolvedValueOnce(mockUser);
       prisma.user.update.mockResolvedValueOnce({});
 
-      const response = await authService.resendVerification({ email: 'user@example.com' });
+      const response = await authService.resendVerification({
+        email: 'user@example.com',
+      });
 
       expect(response.message).toContain('verification code has been sent');
       expect(prisma.user.update).toHaveBeenCalledWith({

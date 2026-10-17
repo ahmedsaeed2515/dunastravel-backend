@@ -27,8 +27,12 @@ export class AdminTourPreviewController {
   constructor(private readonly toursService: ToursService) {}
 
   @Get(':slug/preview')
-  @ApiOperation({ summary: 'Preview a tour using the public presentation contract' })
-  @ApiOkResponse({ description: 'Canonical tour presentation with preview visibility context' })
+  @ApiOperation({
+    summary: 'Preview a tour using the public presentation contract',
+  })
+  @ApiOkResponse({
+    description: 'Canonical tour presentation with preview visibility context',
+  })
   @ApiNotFoundResponse({ description: 'Tour not found' })
   @ApiParam({ name: 'slug', type: String })
   async preview(

@@ -17,9 +17,15 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    this.logger.error(`Database operation failed with code ${exception.code}: ${exception.message}`, exception.stack);
+    this.logger.error(
+      `Database operation failed with code ${exception.code}: ${exception.message}`,
+      exception.stack,
+    );
 
-    const errorMap: Record<string, { status: number; message: string; code: string }> = {
+    const errorMap: Record<
+      string,
+      { status: number; message: string; code: string }
+    > = {
       P2000: {
         status: HttpStatus.BAD_REQUEST,
         message: 'The provided value is too long for the column.',
@@ -35,7 +41,11 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         message: 'A record with this value already exists.',
         code: 'CONFLICT',
       },
-      P2025: { status: HttpStatus.NOT_FOUND, message: 'Record not found.', code: 'NOT_FOUND' },
+      P2025: {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Record not found.',
+        code: 'NOT_FOUND',
+      },
       P2003: {
         status: HttpStatus.BAD_REQUEST,
         message: 'Related record not found.',
@@ -71,7 +81,9 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const isDev = process.env.NODE_ENV !== 'production';
     const mapped = errorMap[exception.code] ?? {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: isDev ? `Database error (${exception.code}): ${exception.message}` : 'An unexpected database error occurred.',
+      message: isDev
+        ? `Database error (${exception.code}): ${exception.message}`
+        : 'An unexpected database error occurred.',
       code: exception.code || 'INTERNAL_SERVER_ERROR',
     };
 

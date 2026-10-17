@@ -123,9 +123,19 @@ describe('TransportationService', () => {
       transportationService: {
         count: jest.fn().mockResolvedValue(1),
         findMany: jest.fn().mockResolvedValue([mockService]),
-        findUnique: jest.fn().mockResolvedValue({ ...mockService, bookings: [] }),
-        create: jest.fn().mockImplementation((args) => Promise.resolve({ ...mockService, ...args.data })),
-        update: jest.fn().mockImplementation((args) => Promise.resolve({ ...mockService, ...args.data })),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ ...mockService, bookings: [] }),
+        create: jest
+          .fn()
+          .mockImplementation((args) =>
+            Promise.resolve({ ...mockService, ...args.data }),
+          ),
+        update: jest
+          .fn()
+          .mockImplementation((args) =>
+            Promise.resolve({ ...mockService, ...args.data }),
+          ),
         delete: jest.fn().mockResolvedValue(mockService),
       },
       mediaAsset: {
@@ -160,4 +170,3 @@ describe('TransportationService', () => {
     expect(deleted.success).toBe(true);
   });
 });
-

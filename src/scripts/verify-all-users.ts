@@ -20,7 +20,9 @@ async function main() {
       isVerified: true,
     },
   });
-  console.log(`✅ Successfully updated ${result.count} user accounts to isVerified=true!`);
+  console.log(
+    `✅ Successfully updated ${result.count} user accounts to isVerified=true!`,
+  );
 }
 
 main()

@@ -11,7 +11,10 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
-  private readonly etagCache = new Map<string, { etag: string; expiresAt: number }>();
+  private readonly etagCache = new Map<
+    string,
+    { etag: string; expiresAt: number }
+  >();
   private readonly publicRoutes = [
     '/api/tours',
     '/api/destinations',
@@ -39,8 +42,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
     // Check if the route is private or authenticated
     const hasAuth = Boolean(
       req.headers.authorization ||
-        req.headers.cookie?.includes('token') ||
-        req.headers.cookie?.includes('session'),
+      req.headers.cookie?.includes('token') ||
+      req.headers.cookie?.includes('session'),
     );
 
     const isExplicitlyPrivate =
@@ -78,9 +81,17 @@ export class HttpCacheInterceptor implements NestInterceptor {
     // FAST 304 SHORT-CIRCUIT: If we have an active ETag and client sends matching If-None-Match,
     // respond 304 immediately without executing route handlers, services, or database queries!
     const activeCached = this.etagCache.get(cacheKey);
-    if (activeCached && activeCached.expiresAt > Date.now() && clientEtag && clientEtag === activeCached.etag) {
+    if (
+      activeCached &&
+      activeCached.expiresAt > Date.now() &&
+      clientEtag &&
+      clientEtag === activeCached.etag
+    ) {
       res.setHeader('ETag', activeCached.etag);
-      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+      res.setHeader(
+        'Cache-Control',
+        'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+      );
       res.setHeader('Vary', 'Origin, Accept-Encoding');
       res.setHeader('X-Cache', 'HIT-304');
       res.status(304).end();
@@ -109,7 +120,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
             // Compute deterministic ETag over authoritative business payload (ignoring volatile outer timestamps)
             const contentToHash =
               data && typeof data === 'object' && 'data' in data
-                ? { data: (data as any).data, meta: (data as any).meta }
+                ? { data: data.data, meta: data.meta }
                 : data;
             const bodyStr = JSON.stringify(contentToHash);
             etag = `W/"${crypto

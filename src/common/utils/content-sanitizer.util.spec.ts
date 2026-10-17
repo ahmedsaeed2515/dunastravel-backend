@@ -10,9 +10,12 @@ import {
 describe('content-sanitizer.util', () => {
   describe('sanitizeHtmlContent', () => {
     it('should allow valid safe HTML tags and attributes', () => {
-      const input = '<p>Hello <strong>World</strong> <a href="https://example.com" title="test">link</a></p>';
+      const input =
+        '<p>Hello <strong>World</strong> <a href="https://example.com" title="test">link</a></p>';
       const result = sanitizeHtmlContent(input);
-      expect(result).toBe('<p>Hello <strong>World</strong> <a href="https://example.com" title="test">link</a></p>');
+      expect(result).toBe(
+        '<p>Hello <strong>World</strong> <a href="https://example.com" title="test">link</a></p>',
+      );
     });
 
     it('should strip malicious script tags', () => {
@@ -41,7 +44,8 @@ describe('content-sanitizer.util', () => {
 
   describe('sanitizeEmailHtml', () => {
     it('should preserve email layout elements like tables and images', () => {
-      const input = '<table><tr><td><img src="https://img.com/a.jpg" alt="pic" />Text</td></tr></table>';
+      const input =
+        '<table><tr><td><img src="https://img.com/a.jpg" alt="pic" />Text</td></tr></table>';
       const result = sanitizeEmailHtml(input);
       expect(result).toContain('<table>');
       expect(result).toContain('<img');
@@ -50,9 +54,12 @@ describe('content-sanitizer.util', () => {
 
   describe('sanitizeEmailTemplateHtml', () => {
     it('should preserve {{var}} template tokens', () => {
-      const input = '<div>Hello {{guestName}}, your booking {{bookingId}} is confirmed!</div>';
+      const input =
+        '<div>Hello {{guestName}}, your booking {{bookingId}} is confirmed!</div>';
       const result = sanitizeEmailTemplateHtml(input);
-      expect(result).toBe('<div>Hello {{guestName}}, your booking {{bookingId}} is confirmed!</div>');
+      expect(result).toBe(
+        '<div>Hello {{guestName}}, your booking {{bookingId}} is confirmed!</div>',
+      );
     });
   });
 

@@ -114,9 +114,6 @@ export class AdminAnalyticsController {
   @ApiQuery({ name: 'startDate', required: false, type: String })
   @ApiQuery({ name: 'endDate', required: false, type: String })
   async getFunnel(@Query() query: AnalyticsDateRangeQueryDto) {
-    return this.analyticsService.getFunnelAdmin(
-      query.startDate,
-      query.endDate,
-    );
+    return this.analyticsService.getFunnelAdmin(query.startDate, query.endDate);
   }
 }

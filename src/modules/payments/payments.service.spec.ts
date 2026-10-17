@@ -55,7 +55,9 @@ describe('PaymentsService', () => {
             refundRecord: {
               findUnique: jest.fn(),
               findUniqueOrThrow: jest.fn(),
-              aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
+              aggregate: jest
+                .fn()
+                .mockResolvedValue({ _sum: { amount: null } }),
               create: jest.fn(),
               update: jest.fn(),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -177,13 +179,16 @@ describe('PaymentsService', () => {
         amount: new Prisma.Decimal(100),
         currency: 'USD',
         status: 'PENDING',
-        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        sessionUrl:
+          'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
         transactionId: '40506',
         providerPaymentId: '40506',
         expiresAt: new Date('2026-09-01T00:00:00Z'),
         createdAt: new Date(),
       };
-      jest.spyOn(prisma.payment, 'create').mockResolvedValue(paymentRow as never);
+      jest
+        .spyOn(prisma.payment, 'create')
+        .mockResolvedValue(paymentRow as never);
       jest
         .spyOn(prisma.payment, 'findUniqueOrThrow')
         .mockResolvedValue(paymentRow as never);
@@ -287,7 +292,8 @@ describe('PaymentsService', () => {
         amount: new Prisma.Decimal(100),
         currency: 'USD',
         status: 'PENDING',
-        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40507',
+        sessionUrl:
+          'https://pay.getpayin.com/integration/checkout?invoice_id=40507',
         transactionId: '40507',
         providerPaymentId: '40507',
         expiresAt: new Date('2026-09-01T00:00:00Z'),
@@ -330,7 +336,8 @@ describe('PaymentsService', () => {
         currency: 'USD',
         method: 'GETPAYIN',
         transactionId: '99999',
-        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=99999',
+        sessionUrl:
+          'https://pay.getpayin.com/integration/checkout?invoice_id=99999',
         status: 'PENDING',
         isRefund: false,
         createdAt: staleCreatedAt,
@@ -343,15 +350,29 @@ describe('PaymentsService', () => {
         userId: 'usr-123',
         guestTokenHash: null,
         tour: { currency: 'USD' },
-        invoice: { currency: 'USD', total: new Prisma.Decimal(100), status: 'DRAFT' },
-        billingInfo: { fullName: 'Stale Customer', email: 'stale@example.com', phone: '+201' },
+        invoice: {
+          currency: 'USD',
+          total: new Prisma.Decimal(100),
+          status: 'DRAFT',
+        },
+        billingInfo: {
+          fullName: 'Stale Customer',
+          email: 'stale@example.com',
+          phone: '+201',
+        },
         payments: [],
       };
 
-      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue(mockBooking as never);
+      jest
+        .spyOn(prisma.booking, 'findUnique')
+        .mockResolvedValue(mockBooking as never);
       // First findFirst returns the stale payment (triggers expiry path)
-      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(stalePayment as never);
-      jest.spyOn(prisma.payment, 'update').mockResolvedValue({ ...stalePayment, status: 'EXPIRED' } as never);
+      jest
+        .spyOn(prisma.payment, 'findFirst')
+        .mockResolvedValue(stalePayment as never);
+      jest
+        .spyOn(prisma.payment, 'update')
+        .mockResolvedValue({ ...stalePayment, status: 'EXPIRED' } as never);
       jest.spyOn(gatewayMock, 'expireSession').mockResolvedValue(undefined);
 
       const newPaymentRow = {
@@ -360,13 +381,16 @@ describe('PaymentsService', () => {
         amount: new Prisma.Decimal(100),
         currency: 'USD',
         status: 'PENDING',
-        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=88888',
+        sessionUrl:
+          'https://pay.getpayin.com/integration/checkout?invoice_id=88888',
         transactionId: '88888',
         providerPaymentId: '88888',
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
         createdAt: new Date(),
       };
-      jest.spyOn(prisma.payment, 'create').mockResolvedValue(newPaymentRow as never);
+      jest
+        .spyOn(prisma.payment, 'create')
+        .mockResolvedValue(newPaymentRow as never);
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
         providerInvoiceId: '88888',
         url: 'https://pay.getpayin.com/integration/checkout?invoice_id=88888',
@@ -377,9 +401,14 @@ describe('PaymentsService', () => {
 
       // The idempotency key passed to the gateway MUST use the new paymentId,
       // NOT stale-payment-id (BUG 1 regression guard).
-      const createSessionCall = (gatewayMock.createSession as jest.Mock).mock.calls[0][0];
-      expect(createSessionCall.idempotencyKey).not.toContain('stale-payment-id');
-      expect(createSessionCall.idempotencyKey).toMatch(/^checkout:[0-9a-f-]{36}$/);
+      const createSessionCall = (gatewayMock.createSession as jest.Mock).mock
+        .calls[0][0];
+      expect(createSessionCall.idempotencyKey).not.toContain(
+        'stale-payment-id',
+      );
+      expect(createSessionCall.idempotencyKey).toMatch(
+        /^checkout:[0-9a-f-]{36}$/,
+      );
     });
 
     it('BUG-2: PAYMENT_EVENTS.INITIATED carries the internal DB UUID not the GetPayIn invoice ID', async () => {
@@ -391,12 +420,22 @@ describe('PaymentsService', () => {
         userId: 'usr-event',
         guestTokenHash: null,
         tour: { currency: 'USD' },
-        invoice: { currency: 'USD', total: new Prisma.Decimal(100), status: 'DRAFT' },
-        billingInfo: { fullName: 'Event Customer', email: 'event@example.com', phone: '+201' },
+        invoice: {
+          currency: 'USD',
+          total: new Prisma.Decimal(100),
+          status: 'DRAFT',
+        },
+        billingInfo: {
+          fullName: 'Event Customer',
+          email: 'event@example.com',
+          phone: '+201',
+        },
         payments: [],
       };
 
-      jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue(mockBooking as never);
+      jest
+        .spyOn(prisma.booking, 'findUnique')
+        .mockResolvedValue(mockBooking as never);
       jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(null);
       jest.spyOn(gatewayMock, 'createSession').mockResolvedValue({
         providerInvoiceId: '40506',
@@ -411,7 +450,8 @@ describe('PaymentsService', () => {
         amount: new Prisma.Decimal(100),
         currency: 'USD',
         status: 'PENDING',
-        sessionUrl: 'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
+        sessionUrl:
+          'https://pay.getpayin.com/integration/checkout?invoice_id=40506',
         transactionId: '40506',
         providerPaymentId: '40506',
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
@@ -423,7 +463,9 @@ describe('PaymentsService', () => {
 
       await service.initiatePayment('bkg-event', 'usr-event');
 
-      const initiatedCall = emitSpy.mock.calls.find(([evt]) => evt === 'payment.initiated');
+      const initiatedCall = emitSpy.mock.calls.find(
+        ([evt]) => evt === 'payment.initiated',
+      );
       expect(initiatedCall).toBeDefined();
       // Must be the DB UUID, never the GetPayIn numeric invoice ID string
       expect(initiatedCall![1].paymentId).toBe(dbPaymentId);
@@ -436,7 +478,11 @@ describe('PaymentsService', () => {
       const reqMock = { headers: {} } as unknown as import('express').Request;
 
       await expect(
-        service.handleWebhook('UNSUPPORTED_PROVIDER', reqMock, Buffer.from('{}')),
+        service.handleWebhook(
+          'UNSUPPORTED_PROVIDER',
+          reqMock,
+          Buffer.from('{}'),
+        ),
       ).rejects.toThrow(NotFoundException);
       expect(gatewayMock.verifyAndParseWebhook).not.toHaveBeenCalled();
     });
@@ -507,8 +553,12 @@ describe('PaymentsService', () => {
         status: 'COMPLETED',
         rawEvent: {},
       });
-      jest.spyOn(prisma.processedWebhookEvent, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue(pendingPayment as never);
+      jest
+        .spyOn(prisma.processedWebhookEvent, 'findUnique')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.payment, 'findFirst')
+        .mockResolvedValue(pendingPayment as never);
       jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue({
         id: 'bkg-paid-1',
         totalAmountUsd: new Prisma.Decimal(100),
@@ -518,9 +568,9 @@ describe('PaymentsService', () => {
         ...pendingPayment,
         status: 'CAPTURED',
       } as never);
-      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
-        { amount: new Prisma.Decimal(100) },
-      ] as never);
+      jest
+        .spyOn(prisma.payment, 'findMany')
+        .mockResolvedValue([{ amount: new Prisma.Decimal(100) }] as never);
 
       await expect(
         service.handleWebhook(
@@ -532,11 +582,16 @@ describe('PaymentsService', () => {
       expect(prisma.payment.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'payment-paid-1' },
-          data: expect.objectContaining({ status: 'CAPTURED', providerStatus: 'PAID' }),
+          data: expect.objectContaining({
+            status: 'CAPTURED',
+            providerStatus: 'PAID',
+          }),
         }),
       );
       expect(prisma.booking.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: 'CONFIRMED' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'CONFIRMED' }),
+        }),
       );
     });
 
@@ -616,8 +671,12 @@ describe('PaymentsService', () => {
         } as never)
         .mockResolvedValueOnce(pendingPayment as never)
         .mockResolvedValueOnce(pendingPayment as never);
-      jest.spyOn(prisma.payment, 'findUniqueOrThrow').mockResolvedValue(pendingPayment as never);
-      jest.spyOn(prisma.processedWebhookEvent, 'findUnique').mockResolvedValue(null);
+      jest
+        .spyOn(prisma.payment, 'findUniqueOrThrow')
+        .mockResolvedValue(pendingPayment as never);
+      jest
+        .spyOn(prisma.processedWebhookEvent, 'findUnique')
+        .mockResolvedValue(null);
       jest.spyOn(prisma.booking, 'findUnique').mockResolvedValue({
         id: pendingPayment.bookingId,
         totalAmountUsd: new Prisma.Decimal(100),
@@ -627,9 +686,9 @@ describe('PaymentsService', () => {
         ...pendingPayment,
         status: 'CAPTURED',
       } as never);
-      jest.spyOn(prisma.payment, 'findMany').mockResolvedValue([
-        { amount: new Prisma.Decimal(100) },
-      ] as never);
+      jest
+        .spyOn(prisma.payment, 'findMany')
+        .mockResolvedValue([{ amount: new Prisma.Decimal(100) }] as never);
       jest.spyOn(prisma.payment, 'findUnique').mockResolvedValue({
         ...pendingPayment,
         status: 'CAPTURED',
@@ -664,7 +723,9 @@ describe('PaymentsService', () => {
         expect.objectContaining({ invoice_id: 40506 }),
       );
       expect(prisma.booking.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: 'CONFIRMED' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'CONFIRMED' }),
+        }),
       );
     });
   });

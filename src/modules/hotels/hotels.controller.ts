@@ -18,7 +18,11 @@ export class HotelsController {
   @ApiQuery({ name: 'locale', required: false, type: String })
   @ApiQuery({ name: 'destinationSlug', required: false, type: String })
   async findAll(@Query() query: PublicHotelsQueryDto) {
-    return this.hotelsService.findAllPublic(query.locale ?? 'en', query.destinationSlug, query.limit);
+    return this.hotelsService.findAllPublic(
+      query.locale ?? 'en',
+      query.destinationSlug,
+      query.limit,
+    );
   }
 
   @Post('bookings')
@@ -42,7 +46,10 @@ export class HotelsController {
 
   @Get(':slug')
   @ApiOperation({ summary: 'Get a published, active hotel by slug' })
-  async findOne(@Param('slug') slug: string, @Query() query: PublicHotelsQueryDto) {
+  async findOne(
+    @Param('slug') slug: string,
+    @Query() query: PublicHotelsQueryDto,
+  ) {
     return this.hotelsService.findOnePublic(slug, query.locale ?? 'en');
   }
 }

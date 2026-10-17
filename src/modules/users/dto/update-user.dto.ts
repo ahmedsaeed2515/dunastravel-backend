@@ -62,7 +62,9 @@ export class UpdateUserDto {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() === '' ? undefined : value,
   )
-  @ValidateIf((o) => o.password !== undefined && o.password !== null && o.password !== '')
+  @ValidateIf(
+    (o) => o.password !== undefined && o.password !== null && o.password !== '',
+  )
   @IsString()
   @MinLength(12)
   @MaxLength(128)

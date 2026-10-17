@@ -46,7 +46,9 @@ export class BookingsController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(201)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Create a tour booking (Authenticated and verified users only)' })
+  @ApiOperation({
+    summary: 'Create a tour booking (Authenticated and verified users only)',
+  })
   @ApiCreatedResponse({ description: 'Booking created successfully' })
   @ApiBadRequestResponse({ description: 'Validation failed or invalid tour' })
   @ApiUnprocessableEntityResponse({ description: 'Tour not available' })
@@ -57,10 +59,14 @@ export class BookingsController {
     @Headers('x-guest-token') guestToken?: string,
   ) {
     if (!user?.id) {
-      throw new UnauthorizedException('Authentication required: You must be logged in to book a tour');
+      throw new UnauthorizedException(
+        'Authentication required: You must be logged in to book a tour',
+      );
     }
     if (!idempotencyKey || !idempotencyKey.trim()) {
-      throw new BadRequestException('Idempotency-Key header is required for creating a booking');
+      throw new BadRequestException(
+        'Idempotency-Key header is required for creating a booking',
+      );
     }
     return this.bookingsService.createBooking(
       dto,

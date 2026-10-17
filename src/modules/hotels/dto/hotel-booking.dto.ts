@@ -123,7 +123,9 @@ export class AdminHotelBookingsQueryDto {
   @Max(100)
   limit?: number;
 
-  @ApiPropertyOptional({ description: 'Filter by status (PENDING, CONFIRMED, CANCELLED, COMPLETED)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (PENDING, CONFIRMED, CANCELLED, COMPLETED)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -133,7 +135,9 @@ export class AdminHotelBookingsQueryDto {
   @IsString()
   hotelId?: string;
 
-  @ApiPropertyOptional({ description: 'Search term by reference code, guest name, email or phone' })
+  @ApiPropertyOptional({
+    description: 'Search term by reference code, guest name, email or phone',
+  })
   @IsOptional()
   @IsString()
   search?: string;

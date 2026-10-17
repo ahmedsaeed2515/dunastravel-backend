@@ -20,10 +20,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import {
-  WalletOwnerType,
-  WalletTransactionStatus,
-} from '@prisma/client';
+import { WalletOwnerType, WalletTransactionStatus } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
@@ -48,14 +45,18 @@ export class WalletsController {
 
   @Get()
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'List all partner and agent wallets with directory search' })
+  @ApiOperation({
+    summary: 'List all partner and agent wallets with directory search',
+  })
   async listWallets(@Query() query: ListWalletsQueryDto) {
     return this.walletsService.listWallets(query);
   }
 
   @Post('reconcile')
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Reconcile wallet balances against transaction ledger' })
+  @ApiOperation({
+    summary: 'Reconcile wallet balances against transaction ledger',
+  })
   async reconcileWallets(@CurrentUser() actor: AuthenticatedUser) {
     const result = await this.walletsService.reconcileWallets();
     await this.auditService.log({

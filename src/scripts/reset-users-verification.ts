@@ -39,7 +39,9 @@ async function resetVerification() {
     },
   });
 
-  console.log(`Updated ${result.count} non-admin user accounts to unverified status (isVerified: false).`);
+  console.log(
+    `Updated ${result.count} non-admin user accounts to unverified status (isVerified: false).`,
+  );
 }
 
 resetVerification()

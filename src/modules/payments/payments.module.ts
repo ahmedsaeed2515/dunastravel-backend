@@ -32,12 +32,18 @@ import { ConfigService } from '@nestjs/config';
         disabled: DisabledPaymentGatewayAdapter,
         mock: MockPaymentGatewayAdapter,
       ) => {
+        const nodeEnv = config.get<string>('nodeEnv', 'development');
         const provider = config
           .get<string>('payments.provider', 'DISABLED')
           .trim()
           .toUpperCase();
         if (provider === 'GETPAYIN') return getPayIn;
-        if (provider === 'MOCK' || provider === 'SANDBOX') return mock;
+        if (
+          (provider === 'MOCK' || provider === 'SANDBOX') &&
+          nodeEnv !== 'production'
+        ) {
+          return mock;
+        }
         return disabled;
       },
     },

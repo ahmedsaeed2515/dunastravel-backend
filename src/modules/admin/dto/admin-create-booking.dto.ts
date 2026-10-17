@@ -196,5 +196,4 @@ export class AdminCreateBookingDto {
   @ValidateNested({ each: true })
   @Type(() => AdminCreatePassengerDto)
   passengers?: AdminCreatePassengerDto[];
-
 }

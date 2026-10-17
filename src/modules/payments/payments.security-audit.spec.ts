@@ -27,7 +27,9 @@ describe('Payments Security & Anti-Fraud Suite', () => {
         {
           provide: PrismaService,
           useValue: {
-            $transaction: jest.fn().mockImplementation(async (cb) => cb(prisma)),
+            $transaction: jest
+              .fn()
+              .mockImplementation(async (cb) => cb(prisma)),
             booking: {
               findUnique: jest.fn(),
               findUniqueOrThrow: jest.fn(),
@@ -50,7 +52,9 @@ describe('Payments Security & Anti-Fraud Suite', () => {
             refundRecord: {
               findUnique: jest.fn(),
               findUniqueOrThrow: jest.fn(),
-              aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
+              aggregate: jest
+                .fn()
+                .mockResolvedValue({ _sum: { amount: null } }),
               create: jest.fn(),
               update: jest.fn(),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -106,7 +110,9 @@ describe('Payments Security & Anti-Fraud Suite', () => {
           provide: CommissionsService,
           useValue: {
             reverseCommissionForBooking: jest.fn().mockResolvedValue(undefined),
-            adjustCommissionForPartialRefund: jest.fn().mockResolvedValue(undefined),
+            adjustCommissionForPartialRefund: jest
+              .fn()
+              .mockResolvedValue(undefined),
           },
         },
         {
@@ -120,13 +126,17 @@ describe('Payments Security & Anti-Fraud Suite', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((k: string) => {
-              if (k === 'GETPAYIN_REDIRECT_URL') return 'https://dunastravel.com/booking/success';
-              if (k === 'GETPAYIN_WEBHOOK_URL') return 'https://dunastravel.com/api/payments/webhook/getpayin';
+              if (k === 'GETPAYIN_REDIRECT_URL')
+                return 'https://dunastravel.com/booking/success';
+              if (k === 'GETPAYIN_WEBHOOK_URL')
+                return 'https://dunastravel.com/api/payments/webhook/getpayin';
               return null;
             }),
             getOrThrow: jest.fn((k: string) => {
-              if (k === 'GETPAYIN_REDIRECT_URL') return 'https://dunastravel.com/booking/success';
-              if (k === 'GETPAYIN_WEBHOOK_URL') return 'https://dunastravel.com/api/payments/webhook/getpayin';
+              if (k === 'GETPAYIN_REDIRECT_URL')
+                return 'https://dunastravel.com/booking/success';
+              if (k === 'GETPAYIN_WEBHOOK_URL')
+                return 'https://dunastravel.com/api/payments/webhook/getpayin';
               throw new Error(`Missing ${k}`);
             }),
           },
@@ -149,7 +159,9 @@ describe('Payments Security & Anti-Fraud Suite', () => {
         payments: [],
       });
 
-      await expect(service.initiatePayment('bkg-victim', 'user-attacker')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.initiatePayment('bkg-victim', 'user-attacker'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should reject payment status retrieval for payment owned by another user', async () => {
@@ -168,22 +180,33 @@ describe('Payments Security & Anti-Fraud Suite', () => {
         },
       });
 
-      await expect(service.getPaymentStatus('pay-victim', 'user-attacker')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getPaymentStatus('pay-victim', 'user-attacker'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('Refund Role & Privilege Escalation Protections', () => {
     it('should reject refund when requested by non-super-admin user', async () => {
       await expect(
-        service.refundPayment('pay-1', 100, 'Test', 'ref-1', { id: 'user-1', role: 'USER' }),
+        service.refundPayment('pay-1', 100, 'Test', 'ref-1', {
+          id: 'user-1',
+          role: 'USER',
+        }),
       ).rejects.toThrow(ForbiddenException);
 
       await expect(
-        service.refundPayment('pay-1', 100, 'Test', 'ref-1', { id: 'agent-1', role: 'AGENT' }),
+        service.refundPayment('pay-1', 100, 'Test', 'ref-1', {
+          id: 'agent-1',
+          role: 'AGENT',
+        }),
       ).rejects.toThrow(ForbiddenException);
 
       await expect(
-        service.refundPayment('pay-1', 100, 'Test', 'ref-1', { id: 'admin-1', role: 'ADMIN' }),
+        service.refundPayment('pay-1', 100, 'Test', 'ref-1', {
+          id: 'admin-1',
+          role: 'ADMIN',
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -202,7 +225,11 @@ describe('Payments Security & Anti-Fraud Suite', () => {
         id: 'paylink:event-hash-1',
       });
 
-      const res = await service.handleWebhook('GETPAYIN', {} as any, Buffer.from('{}'));
+      const res = await service.handleWebhook(
+        'GETPAYIN',
+        {} as any,
+        Buffer.from('{}'),
+      );
       expect(res).toEqual({ received: true });
       expect(prisma.payment.update).not.toHaveBeenCalled();
     });
@@ -217,11 +244,17 @@ describe('Payments Security & Anti-Fraud Suite', () => {
         totalAmountUsd: new Prisma.Decimal('500.00'),
         tour: { currency: 'USD' },
         invoice: { currency: 'USD', total: new Prisma.Decimal('1.00') }, // tampered invoice total
-        billingInfo: { fullName: 'Test', email: 'test@example.com', phone: '123456789' },
+        billingInfo: {
+          fullName: 'Test',
+          email: 'test@example.com',
+          phone: '123456789',
+        },
         payments: [],
       });
 
-      await expect(service.initiatePayment('bkg-1', 'user-1')).rejects.toThrow(UnprocessableEntityException);
+      await expect(service.initiatePayment('bkg-1', 'user-1')).rejects.toThrow(
+        UnprocessableEntityException,
+      );
     });
   });
 });

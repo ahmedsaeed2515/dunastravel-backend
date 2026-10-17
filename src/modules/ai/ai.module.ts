@@ -45,7 +45,7 @@ import { AvailabilityModule } from '../availability/availability.module';
     ChatOrchestratorService,
     TourKnowledgeIngestionService,
     ModelRegistryService,
-    ModelRoutingService,       // NEW: Model routing policy engine
+    ModelRoutingService, // NEW: Model routing policy engine
     AgentRegistryService,
     LiveCatalogRetrieverService,
     HybridRagEngineService,
@@ -61,7 +61,7 @@ import { AvailabilityModule } from '../availability/availability.module';
     TourCatalogToolService,
     TourKnowledgeIngestionService,
     ModelRegistryService,
-    ModelRoutingService,       // NEW: exported for use in other modules
+    ModelRoutingService, // NEW: exported for use in other modules
     AgentRegistryService,
     LiveCatalogRetrieverService,
     HybridRagEngineService,

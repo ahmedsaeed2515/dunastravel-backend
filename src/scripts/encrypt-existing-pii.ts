@@ -44,8 +44,7 @@ async function encryptUsers() {
     if (!rows.length) break;
     const plaintextRows = rows.filter((row) =>
       [
-        row.passportNumber &&
-          !row.passportNumber.startsWith('enc:v1:'),
+        row.passportNumber && !row.passportNumber.startsWith('enc:v1:'),
         requiresJsonEncryption(row.emergencyContact),
         requiresJsonEncryption(row.address),
         requiresJsonEncryption(row.familyMembers),

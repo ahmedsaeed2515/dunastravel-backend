@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ExecutionContext } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ExecutionContext,
+} from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import request from 'supertest';
 
@@ -42,7 +46,11 @@ describe('Reviews HTTP Contract Spec', () => {
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
     deletedAt: null,
-    tour: { id: mockTourId, slug: 'nile-cruise', titleJsonb: { en: 'Nile Cruise Adventure' } },
+    tour: {
+      id: mockTourId,
+      slug: 'nile-cruise',
+      titleJsonb: { en: 'Nile Cruise Adventure' },
+    },
     user: { id: mockUserId, name: 'Customer John', email: 'john@example.com' },
   };
 
@@ -100,16 +108,30 @@ describe('Reviews HTTP Contract Spec', () => {
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
-          const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();
-          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com', name: 'Customer John' };
+          const req = ctx
+            .switchToHttp()
+            .getRequest<{ user: Record<string, unknown> }>();
+          req.user = {
+            id: mockUserId,
+            role: 'USER',
+            email: 'john@example.com',
+            name: 'Customer John',
+          };
           return true;
         },
       })
       .overrideGuard(OptionalJwtAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
-          const req = ctx.switchToHttp().getRequest<{ user: Record<string, unknown> }>();
-          req.user = { id: mockUserId, role: 'USER', email: 'john@example.com', name: 'Customer John' };
+          const req = ctx
+            .switchToHttp()
+            .getRequest<{ user: Record<string, unknown> }>();
+          req.user = {
+            id: mockUserId,
+            role: 'USER',
+            email: 'john@example.com',
+            name: 'Customer John',
+          };
           return true;
         },
       })
@@ -120,8 +142,12 @@ describe('Reviews HTTP Contract Spec', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-    app.useGlobalInterceptors(new ResponseTransformInterceptor(new Reflector()));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
+    app.useGlobalInterceptors(
+      new ResponseTransformInterceptor(new Reflector()),
+    );
     await app.init();
   });
 

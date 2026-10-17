@@ -1680,7 +1680,7 @@ export class AdminService {
         data: {
           referenceCode: bookingRef,
           userId: customerUser ? customerUser.id : null,
-          tourId: tourId!,
+          tourId: tourId,
           companyId: inquiry.companyId || null,
           status: 'PENDING',
           totalAmountUsd: totalAmount,
@@ -1786,7 +1786,7 @@ export class AdminService {
           subtotal: totalAmount,
           total: totalAmount,
           currency: 'USD',
-          snapshotJsonb: snapshotJsonb as unknown as Prisma.InputJsonValue,
+          snapshotJsonb: snapshotJsonb,
         },
       });
 
@@ -2869,7 +2869,13 @@ export class AdminService {
     const tour = await this.prisma.tour.findUnique({ where: { slug } });
     if (!tour) throw new NotFoundException(`Tour with slug ${slug} not found`);
     this.assertValidSeasonPricing(dto.seasonPricingJsonb);
-    const { itineraries, images, accommodations, expectedUpdatedAt, ...tourData } = dto;
+    const {
+      itineraries,
+      images,
+      accommodations,
+      expectedUpdatedAt,
+      ...tourData
+    } = dto;
     this.assertTourImages(images);
 
     if (tourData.slug && tourData.slug.toLowerCase() !== slug.toLowerCase()) {
@@ -3149,12 +3155,19 @@ export class AdminService {
     if (Array.isArray(seasonPricing)) {
       rawRules = seasonPricing;
     } else if (typeof seasonPricing === 'object') {
-      if (seasonPricing.rules !== undefined && !Array.isArray(seasonPricing.rules)) {
-        throw new BadRequestException('Seasonal pricing rules must be an array');
+      if (
+        seasonPricing.rules !== undefined &&
+        !Array.isArray(seasonPricing.rules)
+      ) {
+        throw new BadRequestException(
+          'Seasonal pricing rules must be an array',
+        );
       }
       rawRules = Array.isArray(seasonPricing.rules) ? seasonPricing.rules : [];
     } else {
-      throw new BadRequestException('Seasonal pricing configuration is invalid');
+      throw new BadRequestException(
+        'Seasonal pricing configuration is invalid',
+      );
     }
 
     if (rawRules.length === 0) return;
@@ -3163,9 +3176,12 @@ export class AdminService {
       .map((rule) => {
         const start = new Date(rule?.startDate).getTime();
         const end = new Date(rule?.endDate).getTime();
-        const hasMultiplier = rule?.multiplier !== undefined && rule?.multiplier !== null;
-        const hasPrice = rule?.priceUsd !== undefined && rule?.priceUsd !== null;
-        const hasSupplement = rule?.supplementUsd !== undefined && rule?.supplementUsd !== null;
+        const hasMultiplier =
+          rule?.multiplier !== undefined && rule?.multiplier !== null;
+        const hasPrice =
+          rule?.priceUsd !== undefined && rule?.priceUsd !== null;
+        const hasSupplement =
+          rule?.supplementUsd !== undefined && rule?.supplementUsd !== null;
         const multiplier = hasMultiplier ? Number(rule.multiplier) : 1;
         const priceUsd = hasPrice ? Number(rule.priceUsd) : 0;
         const supplementUsd = hasSupplement ? Number(rule.supplementUsd) : 0;
@@ -3186,11 +3202,14 @@ export class AdminService {
       const rule = normalized[index];
       const invalidMultiplier =
         rule.hasMultiplier &&
-        (!Number.isFinite(rule.multiplier) || rule.multiplier < 0.5 || rule.multiplier > 5);
+        (!Number.isFinite(rule.multiplier) ||
+          rule.multiplier < 0.5 ||
+          rule.multiplier > 5);
       const invalidPrice =
         rule.hasPrice && (!Number.isFinite(rule.priceUsd) || rule.priceUsd < 0);
       const invalidSupplement =
-        rule.hasSupplement && (!Number.isFinite(rule.supplementUsd) || rule.supplementUsd < 0);
+        rule.hasSupplement &&
+        (!Number.isFinite(rule.supplementUsd) || rule.supplementUsd < 0);
 
       if (
         !Number.isFinite(rule.start) ||
@@ -3333,20 +3352,27 @@ export class AdminService {
 
   private async applyCurrencyPricingToTourData(
     data: Record<string, unknown>,
-    existingTour?: { currency?: string; basePriceUsd?: any; originalPrice?: any },
+    existingTour?: {
+      currency?: string;
+      basePriceUsd?: any;
+      originalPrice?: any;
+    },
   ): Promise<void> {
     const rawPrice =
       data.originalPrice !== undefined && data.originalPrice !== null
         ? data.originalPrice
         : data.basePriceUsd !== undefined && data.basePriceUsd !== null
           ? data.basePriceUsd
-          : existingTour?.originalPrice ?? existingTour?.basePriceUsd;
+          : (existingTour?.originalPrice ?? existingTour?.basePriceUsd);
 
-    const currency =
-      ((data.currency as string) || existingTour?.currency || 'USD').toUpperCase();
+    const currency = (
+      (data.currency as string) ||
+      existingTour?.currency ||
+      'USD'
+    ).toUpperCase();
 
     if (rawPrice !== undefined && rawPrice !== null) {
-      const enteredPrice = new Prisma.Decimal(rawPrice as any);
+      const enteredPrice = new Prisma.Decimal(rawPrice);
       data.currency = currency;
       data.originalCurrency = currency;
       data.originalPrice = enteredPrice;
@@ -3661,13 +3687,7 @@ export class AdminService {
     }));
   }
 
-  private static readonly TOUR_CONTENT_LOCALES = [
-    'ar',
-    'en',
-    'es',
-    'pt',
-    'it',
-  ];
+  private static readonly TOUR_CONTENT_LOCALES = ['ar', 'en', 'es', 'pt', 'it'];
 
   /**
    * Sanitizes a 5-locale map (or a plain string) into a clean `{ locale: text }`
@@ -4715,8 +4735,10 @@ export class AdminService {
 
     for (let index = 0; index < accommodations.length; index++) {
       const item = accommodations[index];
-      const cleanHotelId = item.hotelId && item.hotelId.trim() ? item.hotelId.trim() : null;
-      const cleanRoomId = item.roomId && item.roomId.trim() ? item.roomId.trim() : null;
+      const cleanHotelId =
+        item.hotelId && item.hotelId.trim() ? item.hotelId.trim() : null;
+      const cleanRoomId =
+        item.roomId && item.roomId.trim() ? item.roomId.trim() : null;
 
       if (cleanRoomId && cleanHotelId && roomsMap.has(cleanRoomId)) {
         const roomRecord = roomsMap.get(cleanRoomId)!;
@@ -4727,7 +4749,9 @@ export class AdminService {
         }
       }
 
-      const hotelRecord = cleanHotelId ? hotelsMap.get(cleanHotelId) : undefined;
+      const hotelRecord = cleanHotelId
+        ? hotelsMap.get(cleanHotelId)
+        : undefined;
       const effectiveCity =
         (item.destination && item.destination.trim()) ||
         (item.city && item.city.trim()) ||
@@ -4744,7 +4768,9 @@ export class AdminService {
           nights: item.nights ?? 1,
           priceSupplementUsd: new Prisma.Decimal(item.priceSupplementUsd ?? 0),
           isDefault: item.isDefault ?? true,
-          notesJsonb: item.notesJsonb ? (item.notesJsonb as Prisma.InputJsonValue) : Prisma.JsonNull,
+          notesJsonb: item.notesJsonb
+            ? (item.notesJsonb as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           sortOrder: item.sortOrder ?? index,
         },
       });
@@ -4770,7 +4796,8 @@ export class AdminService {
       }
 
       const heroImageUrl =
-        (hotelRecord?.amenitiesJsonb as Record<string, any> | null)?.heroImageUrl ?? null;
+        (hotelRecord?.amenitiesJsonb as Record<string, any> | null)
+          ?.heroImageUrl ?? null;
 
       summaryAccommodations.push({
         hotelId: cleanHotelId,
@@ -4807,7 +4834,7 @@ export class AdminService {
           ? {}
           : Object.keys(cityHotelsMap).length > 0
             ? cityHotelsMap
-            : baseHotelInfo.hotels ?? {},
+            : (baseHotelInfo.hotels ?? {}),
       accommodations: summaryAccommodations,
     };
 
@@ -4829,11 +4856,22 @@ export class AdminService {
       }
     }
     try {
-      const currentVersion = await this.cacheManager.get<number>('tours:catalog:version');
-      const nextVersion = typeof currentVersion === 'number' ? currentVersion + 1 : 2;
-      await this.cacheManager.set('tours:catalog:version', nextVersion, 86_400_000);
+      const currentVersion = await this.cacheManager.get<number>(
+        'tours:catalog:version',
+      );
+      const nextVersion =
+        typeof currentVersion === 'number' ? currentVersion + 1 : 2;
+      await this.cacheManager.set(
+        'tours:catalog:version',
+        nextVersion,
+        86_400_000,
+      );
       if (this.cacheService) {
-        await this.cacheService.set('tours:catalog:version', nextVersion, 86_400_000);
+        await this.cacheService.set(
+          'tours:catalog:version',
+          nextVersion,
+          86_400_000,
+        );
       }
     } catch {
       // Best-effort catalog version bump

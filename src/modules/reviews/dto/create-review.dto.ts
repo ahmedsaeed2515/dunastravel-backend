@@ -75,7 +75,9 @@ export class AdminCreateReviewDto {
   @MaxLength(2_000)
   adminReply?: string;
 
-  @ApiPropertyOptional({ description: 'Moderation status (APPROVED, PENDING, REJECTED)' })
+  @ApiPropertyOptional({
+    description: 'Moderation status (APPROVED, PENDING, REJECTED)',
+  })
   @IsOptional()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
   status?: string;
@@ -117,7 +119,9 @@ export class AdminUpdateReviewDto {
   @MaxLength(2_000)
   adminReply?: string;
 
-  @ApiPropertyOptional({ description: 'Moderation status (APPROVED, PENDING, REJECTED)' })
+  @ApiPropertyOptional({
+    description: 'Moderation status (APPROVED, PENDING, REJECTED)',
+  })
   @IsOptional()
   @IsIn(['PENDING', 'APPROVED', 'REJECTED'])
   status?: string;
@@ -127,4 +131,3 @@ export class AdminUpdateReviewDto {
   @IsBoolean()
   isPublished?: boolean;
 }
-

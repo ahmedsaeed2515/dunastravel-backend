@@ -101,13 +101,19 @@ export class TourCatalogToolService {
 
     // 1. Nile Cruise Negation vs Positive Detection
     const hasNileNegation =
-      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(نايل\s*كروز|كروز|نيل|دهبية|دهبيه|nile|cruise|dahabiya)/i.test(raw) ||
-      /(نايل\s*كروز|كروز|نيل|دهبية|دهبيه)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(raw);
+      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(نايل\s*كروز|كروز|نيل|دهبية|دهبيه|nile|cruise|dahabiya)/i.test(
+        raw,
+      ) ||
+      /(نايل\s*كروز|كروز|نيل|دهبية|دهبيه)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(
+        raw,
+      );
 
     if (hasNileNegation) {
       constraints.nileCruiseRequired = false;
     } else if (
-      /(nile|cruise|cruzeiro|crucero|crociera|دهبية|دهبيه|نايل\s*كروز|كروز|نيل)/i.test(text) ||
+      /(nile|cruise|cruzeiro|crucero|crociera|دهبية|دهبيه|نايل\s*كروز|كروز|نيل)/i.test(
+        text,
+      ) ||
       /(نايل|كروز|نيل|دهبية)/.test(raw)
     ) {
       constraints.nileCruiseRequired = true;
@@ -115,20 +121,24 @@ export class TourCatalogToolService {
 
     // 2. Beach / Red Sea Negation vs Positive Detection
     const hasBeachNegation =
-      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(شاطئ|شواطئ|بحر|الغردقة|شرم|beach|beaches|red\s*sea|hurghada|sharm)/i.test(raw) ||
-      /(شاطئ|شواطئ|الغردقة|شرم)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(raw);
+      /(بدون|من\s+غير|لا\s+اريد|لا\s+أريد|مش\s+عايز|مش\s+محتاج|احذف|ما\s+بدي|no|without|dont\s+want|do\s+not\s+want|exclude|remove)\s*(شاطئ|شواطئ|بحر|الغردقة|شرم|beach|beaches|red\s*sea|hurghada|sharm)/i.test(
+        raw,
+      ) || /(شاطئ|شواطئ|الغردقة|شرم)\s*(مش\s*لازم|مرفوض|ملغي|لا)/i.test(raw);
 
     if (hasBeachNegation) {
       constraints.beachRequired = false;
     } else if (
-      /(sharm|hurghada|red\s*sea|mar\s*vermelho|mar\s*rojo|بحر\s*احمر|شاطئ|شواطئ|شرم|الغردقة)/i.test(text) ||
+      /(sharm|hurghada|red\s*sea|mar\s*vermelho|mar\s*rojo|بحر\s*احمر|شاطئ|شواطئ|شرم|الغردقة)/i.test(
+        text,
+      ) ||
       /(الغردقة|شرم)/.test(raw)
     ) {
       constraints.beachRequired = true;
     }
 
     // 3. Duration Extraction with Negation Resistance (e.g. "مش 7 أيام، 10 أيام", "8-day")
-    const durationRegex = /(?:(\bnot|\bno|مش|بدون|لا|بدل)[\s-]+)?(\d{1,2})[\s-]*(day|days|dia|dias|giorni|ايام|أيام|يوم)/gi;
+    const durationRegex =
+      /(?:(\bnot|\bno|مش|بدون|لا|بدل)[\s-]+)?(\d{1,2})[\s-]*(day|days|dia|dias|giorni|ايام|أيام|يوم)/gi;
     let match: RegExpExecArray | null;
     let chosenDays: number | null = null;
 
@@ -150,7 +160,9 @@ export class TourCatalogToolService {
     }
 
     // 4. Budget Extraction with Currency Awareness (EGP vs USD)
-    const egpMatch = raw.match(/(\d{1,3}(?:[,\s]\d{3})*|\d+)\s*(?:(الف|ألف)\s*)?(?:egp|جنيه|جنية|eg)/i);
+    const egpMatch = raw.match(
+      /(\d{1,3}(?:[,\s]\d{3})*|\d+)\s*(?:(الف|ألف)\s*)?(?:egp|جنيه|جنية|eg)/i,
+    );
     if (egpMatch) {
       let rawVal = parseInt(egpMatch[1].replace(/[,\s]/g, ''), 10);
       if (egpMatch[2]) rawVal *= 1000;
@@ -174,15 +186,59 @@ export class TourCatalogToolService {
     }
 
     // 5. Destination Detection with Negation Filtering
-    const destinationRules: Array<{ name: string; positiveRegex: RegExp; negativeRegex: RegExp }> = [
-      { name: 'Cairo', positiveRegex: /(cairo|القاهرة|قاهرة)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:cairo|القاهرة|قاهرة)/i },
-      { name: 'Luxor', positiveRegex: /(luxor|الأقصر|الاقصر|أقصر|اقصر)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:luxor|الأقصر|الاقصر)/i },
-      { name: 'Aswan', positiveRegex: /(aswan|أسوان|اسوان)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:aswan|أسوان|اسوان)/i },
-      { name: 'Hurghada', positiveRegex: /(hurghada|الغردقة|غردقة)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:hurghada|الغردقة)/i },
-      { name: 'Sharm El Sheikh', positiveRegex: /(sharm|شرم)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:sharm|شرم)/i },
-      { name: 'Alexandria', positiveRegex: /(alexandria|الإسكندرية|الاسكندرية)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:alexandria|الإسكندرية|الاسكندرية)/i },
-      { name: 'Dubai', positiveRegex: /(dubai|دبي)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:dubai|دبي)/i },
-      { name: 'Istanbul', positiveRegex: /(istanbul|اسطنبول|إسطنبول)/i, negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:istanbul|اسطنبول)/i },
+    const destinationRules: Array<{
+      name: string;
+      positiveRegex: RegExp;
+      negativeRegex: RegExp;
+    }> = [
+      {
+        name: 'Cairo',
+        positiveRegex: /(cairo|القاهرة|قاهرة)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:cairo|القاهرة|قاهرة)/i,
+      },
+      {
+        name: 'Luxor',
+        positiveRegex: /(luxor|الأقصر|الاقصر|أقصر|اقصر)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:luxor|الأقصر|الاقصر)/i,
+      },
+      {
+        name: 'Aswan',
+        positiveRegex: /(aswan|أسوان|اسوان)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:aswan|أسوان|اسوان)/i,
+      },
+      {
+        name: 'Hurghada',
+        positiveRegex: /(hurghada|الغردقة|غردقة)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:hurghada|الغردقة)/i,
+      },
+      {
+        name: 'Sharm El Sheikh',
+        positiveRegex: /(sharm|شرم)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:sharm|شرم)/i,
+      },
+      {
+        name: 'Alexandria',
+        positiveRegex: /(alexandria|الإسكندرية|الاسكندرية)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:alexandria|الإسكندرية|الاسكندرية)/i,
+      },
+      {
+        name: 'Dubai',
+        positiveRegex: /(dubai|دبي)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:dubai|دبي)/i,
+      },
+      {
+        name: 'Istanbul',
+        positiveRegex: /(istanbul|اسطنبول|إسطنبول)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:عايز\s+|بدي\s+|اريد\s+|أريد\s+|محتاج\s+|need\s+|want\s+)?(?:istanbul|اسطنبول)/i,
+      },
     ];
 
     const detectedDests: string[] = [];
@@ -197,31 +253,44 @@ export class TourCatalogToolService {
     }
 
     // 6. Country Detection with Negation Filtering
-    const countryRules: Array<{ country: string; positiveRegex: RegExp; negativeRegex: RegExp }> = [
+    const countryRules: Array<{
+      country: string;
+      positiveRegex: RegExp;
+      negativeRegex: RegExp;
+    }> = [
       {
         country: 'Egypt',
-        positiveRegex: /(egypt|egito|egipto|egitto|مصر|القاهرة|الاقصر|الأقصر|اسوان|أسوان)/i,
+        positiveRegex:
+          /(egypt|egito|egipto|egitto|مصر|القاهرة|الاقصر|الأقصر|اسوان|أسوان)/i,
         negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:egypt|مصر|القاهرة)/i,
       },
       {
         country: 'Turkey',
-        positiveRegex: /(turkey|turquia|turchia|turquie|تركيا|اسطنبول|إسطنبول|كبادوكيا)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:turkey|تركيا|اسطنبول)/i,
+        positiveRegex:
+          /(turkey|turquia|turchia|turquie|تركيا|اسطنبول|إسطنبول|كبادوكيا)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:turkey|تركيا|اسطنبول)/i,
       },
       {
         country: 'Jordan',
-        positiveRegex: /(jordan|jordania|giordania|الاردن|الأردن|البتراء|عمان)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:jordan|الاردن|الأردن)/i,
+        positiveRegex:
+          /(jordan|jordania|giordania|الاردن|الأردن|البتراء|عمان)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:jordan|الاردن|الأردن)/i,
       },
       {
         country: 'Dubai',
-        positiveRegex: /(dubai|uae|emiratos|دبي|الامارات|الإمارات|ابوظبي|أبوظبي)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:dubai|uae|دبي|الامارات)/i,
+        positiveRegex:
+          /(dubai|uae|emiratos|دبي|الامارات|الإمارات|ابوظبي|أبوظبي)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:dubai|uae|دبي|الامارات)/i,
       },
       {
         country: 'Morocco',
-        positiveRegex: /(morocco|marruecos|marrocos|marocco|المغرب|مراكش|كازابلانكا|فاس)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:morocco|المغرب|مراكش)/i,
+        positiveRegex:
+          /(morocco|marruecos|marrocos|marocco|المغرب|مراكش|كازابلانكا|فاس)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:morocco|المغرب|مراكش)/i,
       },
       {
         country: 'Tunisia',
@@ -231,12 +300,15 @@ export class TourCatalogToolService {
       {
         country: 'Greece',
         positiveRegex: /(greece|grecia|اليونان|اثينا|أثينا|سانتوريني)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:greece|اليونان|اثينا)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:greece|اليونان|اثينا)/i,
       },
       {
         country: 'Holy Land',
-        positiveRegex: /(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة|القدس)/i,
-        negativeRegex: /(?:مش|بدون|لا|not|no|without)\s+(?:holy\s*land|الاراضي\s*المقدسة|القدس)/i,
+        positiveRegex:
+          /(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة|القدس)/i,
+        negativeRegex:
+          /(?:مش|بدون|لا|not|no|without)\s+(?:holy\s*land|الاراضي\s*المقدسة|القدس)/i,
       },
     ];
 
@@ -286,7 +358,11 @@ export class TourCatalogToolService {
     } else if (/(greece|grecia|اليونان)/i.test(norm)) {
       matchedCountry = 'Greece';
       matchedSlug = 'greece';
-    } else if (/(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة)/i.test(norm)) {
+    } else if (
+      /(holy land|tierra santa|terra santa|الاراضي المقدسة|الأراضي المقدسة)/i.test(
+        norm,
+      )
+    ) {
       matchedCountry = 'Holy Land';
       matchedSlug = 'holy-land';
     }
@@ -303,17 +379,84 @@ export class TourCatalogToolService {
     };
 
     const destinationKeywords: Record<string, string[]> = {
-      Egypt: ['egypt', 'cairo', 'luxor', 'aswan', 'hurghada', 'sharm', 'nile', 'مصر', 'القاهرة', 'الاقصر', 'اسوان', 'الغردقة', 'شرم'],
-      Turkey: ['turkey', 'turquia', 'istanbul', 'cappadocia', 'antalya', 'تركيا', 'اسطنبول', 'كبادوكيا'],
-      Dubai: ['dubai', 'uae', 'emirates', 'abu dhabi', 'دبي', 'الامارات', 'ابوظبي'],
-      Jordan: ['jordan', 'amman', 'petra', 'dead sea', 'الاردن', 'الأردن', 'البتراء', 'عمان'],
-      Morocco: ['morocco', 'marrakech', 'casablanca', 'fez', 'المغرب', 'مراكش', 'كازابلانكا'],
+      Egypt: [
+        'egypt',
+        'cairo',
+        'luxor',
+        'aswan',
+        'hurghada',
+        'sharm',
+        'nile',
+        'مصر',
+        'القاهرة',
+        'الاقصر',
+        'اسوان',
+        'الغردقة',
+        'شرم',
+      ],
+      Turkey: [
+        'turkey',
+        'turquia',
+        'istanbul',
+        'cappadocia',
+        'antalya',
+        'تركيا',
+        'اسطنبول',
+        'كبادوكيا',
+      ],
+      Dubai: [
+        'dubai',
+        'uae',
+        'emirates',
+        'abu dhabi',
+        'دبي',
+        'الامارات',
+        'ابوظبي',
+      ],
+      Jordan: [
+        'jordan',
+        'amman',
+        'petra',
+        'dead sea',
+        'الاردن',
+        'الأردن',
+        'البتراء',
+        'عمان',
+      ],
+      Morocco: [
+        'morocco',
+        'marrakech',
+        'casablanca',
+        'fez',
+        'المغرب',
+        'مراكش',
+        'كازابلانكا',
+      ],
       Tunisia: ['tunisia', 'carthage', 'tunis', 'تونس', 'قرطاج'],
-      Greece: ['greece', 'athens', 'santorini', 'mykonos', 'اليونان', 'اثينا', 'سانتوريني'],
-      'Holy Land': ['holy-land', 'holy land', 'jerusalem', 'bethlehem', 'الاراضي المقدسة', 'الأراضي المقدسة', 'القدس'],
+      Greece: [
+        'greece',
+        'athens',
+        'santorini',
+        'mykonos',
+        'اليونان',
+        'اثينا',
+        'سانتوريني',
+      ],
+      'Holy Land': [
+        'holy-land',
+        'holy land',
+        'jerusalem',
+        'bethlehem',
+        'الاراضي المقدسة',
+        'الأراضي المقدسة',
+        'القدس',
+      ],
     };
 
-    const searchTokens = destinationKeywords[matchedCountry] || [matchedSlug, matchedCountry.toLowerCase()];
+    const searchTokens = destinationKeywords[matchedCountry] || [
+      matchedSlug,
+      matchedCountry.toLowerCase(),
+    ];
 
     try {
       const orFilter = searchTokens.flatMap((tok) => [
@@ -424,11 +567,57 @@ export class TourCatalogToolService {
       if (!tours || tours.length === 0) return [];
 
       const COMMON_STOPWORDS = new Set([
-        'افضل', 'أفضل', 'احسن', 'أحسن', 'وقت', 'ميعاد', 'موعد', 'متى', 'ازاي', 'كيف',
-        'هل', 'ما', 'ماذا', 'عايز', 'اريد', 'أريد', 'ممكن', 'في', 'من', 'الى', 'إلى',
-        'على', 'عن', 'هو', 'هي', 'مع', 'ده', 'دي', 'مصر', 'egypt', 'best', 'good',
-        'time', 'when', 'how', 'what', 'where', 'can', 'should', 'would', 'is', 'the',
-        'in', 'to', 'for', 'about', 'visit', 'visiting', 'زيارة', 'سفر', 'سياحة',
+        'افضل',
+        'أفضل',
+        'احسن',
+        'أحسن',
+        'وقت',
+        'ميعاد',
+        'موعد',
+        'متى',
+        'ازاي',
+        'كيف',
+        'هل',
+        'ما',
+        'ماذا',
+        'عايز',
+        'اريد',
+        'أريد',
+        'ممكن',
+        'في',
+        'من',
+        'الى',
+        'إلى',
+        'على',
+        'عن',
+        'هو',
+        'هي',
+        'مع',
+        'ده',
+        'دي',
+        'مصر',
+        'egypt',
+        'best',
+        'good',
+        'time',
+        'when',
+        'how',
+        'what',
+        'where',
+        'can',
+        'should',
+        'would',
+        'is',
+        'the',
+        'in',
+        'to',
+        'for',
+        'about',
+        'visit',
+        'visiting',
+        'زيارة',
+        'سفر',
+        'سياحة',
       ]);
 
       const normalizedKeywords = (keywords || [])
@@ -441,7 +630,7 @@ export class TourCatalogToolService {
         constraints?.nileCruiseRequired ||
         constraints?.beachRequired ||
         constraints?.maxBudget ||
-        (normalizedKeywords.length > 0)
+        normalizedKeywords.length > 0,
       );
 
       if (!hasSpecificConstraints) {
@@ -457,14 +646,18 @@ export class TourCatalogToolService {
         // Multilingual titles
         const titles: string[] = [];
         if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
-          Object.values(tour.titleJsonb as Record<string, string>).forEach((v) => {
-            if (typeof v === 'string') titles.push(this.normalizeText(v));
-          });
+          Object.values(tour.titleJsonb as Record<string, string>).forEach(
+            (v) => {
+              if (typeof v === 'string') titles.push(this.normalizeText(v));
+            },
+          );
         }
         titles.push(this.normalizeText(tour.slug));
 
         // Destination & category
-        const dest = this.normalizeText([tour.city, tour.country, tour.region].filter(Boolean).join(' '));
+        const dest = this.normalizeText(
+          [tour.city, tour.country, tour.region].filter(Boolean).join(' '),
+        );
         const category = this.normalizeText(tour.category || '');
         const tags = (tour.tags || []).map((t) => this.normalizeText(t));
         const fullTourStr = `${titles.join(' ')} ${dest} ${category} ${tags.join(' ')}`;
@@ -488,7 +681,9 @@ export class TourCatalogToolService {
 
         // Constraint checking: Nile Cruise
         if (constraints?.nileCruiseRequired) {
-          if (/(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)) {
+          if (
+            /(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)
+          ) {
             score += 35;
             hasDirectConstraintMatch = true;
             matchReasons.push(
@@ -501,7 +696,11 @@ export class TourCatalogToolService {
 
         // Constraint checking: Beach / Red Sea
         if (constraints?.beachRequired) {
-          if (/(sharm|hurghada|red sea|mar vermelho|الغردقة|شرم)/i.test(fullTourStr)) {
+          if (
+            /(sharm|hurghada|red sea|mar vermelho|الغردقة|شرم)/i.test(
+              fullTourStr,
+            )
+          ) {
             score += 30;
             hasDirectConstraintMatch = true;
             matchReasons.push(
@@ -540,7 +739,11 @@ export class TourCatalogToolService {
         const price = Number(tour.basePriceUsd);
 
         // HARD CONSTRAINT: Budget violation (exceeding budget by > 20% strictly disqualifies tour)
-        if (constraints?.maxBudget && (!constraints.currency || constraints.currency === 'USD') && constraints.maxBudget > 0) {
+        if (
+          constraints?.maxBudget &&
+          (!constraints.currency || constraints.currency === 'USD') &&
+          constraints.maxBudget > 0
+        ) {
           if (price > constraints.maxBudget * 1.2) {
             return null; // Hard disqualified
           }
@@ -548,14 +751,19 @@ export class TourCatalogToolService {
 
         // HARD CONSTRAINT: Nile Cruise Negation (user explicitly said "no cruise" / "بدون كروز")
         if (constraints?.nileCruiseRequired === false) {
-          if (/(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)) {
+          if (
+            /(nile|cruzeiro|crucero|crociera|دهبية|كروز|نيل)/i.test(fullTourStr)
+          ) {
             return null; // Hard disqualified
           }
         }
 
         // HARD CONSTRAINT: Beach Negation (user explicitly said "no beach" / "بدون شواطئ")
         if (constraints?.beachRequired === false) {
-          if (/(sharm|hurghada|الغردقة|شرم)/i.test(fullTourStr) && !/(cairo|luxor|aswan|القاهرة|الأقصر|اسوان)/i.test(fullTourStr)) {
+          if (
+            /(sharm|hurghada|الغردقة|شرم)/i.test(fullTourStr) &&
+            !/(cairo|luxor|aswan|القاهرة|الأقصر|اسوان)/i.test(fullTourStr)
+          ) {
             return null; // Hard disqualified pure beach resort package
           }
         }
@@ -592,7 +800,10 @@ export class TourCatalogToolService {
 
       // Only consider tours that actually matched with high confidence (>= 20 points)
       const matched = scored
-        .filter((x): x is NonNullable<typeof x> => x !== null && x.hasDirectConstraintMatch && x.score >= 20)
+        .filter(
+          (x): x is NonNullable<typeof x> =>
+            x !== null && x.hasDirectConstraintMatch && x.score >= 20,
+        )
         .sort((a, b) => b.score - a.score);
 
       if (matched.length === 0) {
@@ -640,7 +851,9 @@ export class TourCatalogToolService {
         : [];
 
       if (!keywords || keywords.length === 0) {
-        return landingPages.slice(0, limit).map((lp: any) => this.mapDestinationToRecommendation(lp, locale));
+        return landingPages
+          .slice(0, limit)
+          .map((lp: any) => this.mapDestinationToRecommendation(lp, locale));
       }
 
       const normalizedKeywords = keywords
@@ -651,9 +864,11 @@ export class TourCatalogToolService {
         let score = 0;
         const titles: string[] = [];
         if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
-          Object.values(lp.titleJsonb as Record<string, string>).forEach((v) => {
-            if (typeof v === 'string') titles.push(this.normalizeText(v));
-          });
+          Object.values(lp.titleJsonb as Record<string, string>).forEach(
+            (v) => {
+              if (typeof v === 'string') titles.push(this.normalizeText(v));
+            },
+          );
         }
         titles.push(this.normalizeText(lp.slug));
 
@@ -669,8 +884,13 @@ export class TourCatalogToolService {
         .sort((a: any, b: any) => b.score - a.score)
         .map((x: any) => x.lp);
 
-      const finalPages = matched.length > 0 ? matched.slice(0, limit) : landingPages.slice(0, limit);
-      return finalPages.map((lp: any) => this.mapDestinationToRecommendation(lp, locale));
+      const finalPages =
+        matched.length > 0
+          ? matched.slice(0, limit)
+          : landingPages.slice(0, limit);
+      return finalPages.map((lp: any) =>
+        this.mapDestinationToRecommendation(lp, locale),
+      );
     } catch (err: any) {
       this.logger.error(`Failed to search destinations: ${err.message}`);
       return [];
@@ -680,18 +900,22 @@ export class TourCatalogToolService {
   /**
    * Deterministic Tour Comparison Engine
    */
-  async compareTwoTours(tourAIdOrSlug?: string, tourBIdOrSlug?: string, locale: string = 'en'): Promise<StructuredTourComparison | null> {
+  async compareTwoTours(
+    tourAIdOrSlug?: string,
+    tourBIdOrSlug?: string,
+    locale: string = 'en',
+  ): Promise<StructuredTourComparison | null> {
     try {
-      const idsOrSlugs = [tourAIdOrSlug, tourBIdOrSlug].filter((id): id is string => Boolean(id && typeof id === 'string' && id.trim()));
+      const idsOrSlugs = [tourAIdOrSlug, tourBIdOrSlug].filter(
+        (id): id is string =>
+          Boolean(id && typeof id === 'string' && id.trim()),
+      );
       let tours: any[] = [];
 
       if (idsOrSlugs.length > 0 && (this.prisma as any).tour?.findMany) {
         tours = await (this.prisma as any).tour.findMany({
           where: {
-            OR: [
-              { id: { in: idsOrSlugs } },
-              { slug: { in: idsOrSlugs } },
-            ],
+            OR: [{ id: { in: idsOrSlugs } }, { slug: { in: idsOrSlugs } }],
             isActive: true,
             status: 'PUBLISHED',
             deletedAt: null,
@@ -735,9 +959,13 @@ export class TourCatalogToolService {
           title = tMap[lang] || tMap.en || tMap.ar || title;
         }
 
-        const fullStr = `${title} ${t.city || ''} ${t.category || ''} ${(t.tags || []).join(' ')}`.toLowerCase();
-        const hasNileCruise = /(nile|cruise|cruzeiro|crociera|دهبية|كروز|نيل)/.test(fullStr);
-        const hasRedSeaBeach = /(sharm|hurghada|red sea|الغردقة|شرم)/.test(fullStr);
+        const fullStr =
+          `${title} ${t.city || ''} ${t.category || ''} ${(t.tags || []).join(' ')}`.toLowerCase();
+        const hasNileCruise =
+          /(nile|cruise|cruzeiro|crociera|دهبية|كروز|نيل)/.test(fullStr);
+        const hasRedSeaBeach = /(sharm|hurghada|red sea|الغردقة|شرم)/.test(
+          fullStr,
+        );
 
         const dDays = this.getTourDurationDays(t);
         return {
@@ -747,7 +975,8 @@ export class TourCatalogToolService {
           durationDays: dDays,
           price: 0,
           currency: t.currency || 'USD',
-          destination: [t.city, t.country].filter(Boolean).join(', ') || 'Egypt',
+          destination:
+            [t.city, t.country].filter(Boolean).join(', ') || 'Egypt',
           hasNileCruise,
           hasRedSeaBeach,
           category: t.category || 'Luxury',
@@ -761,9 +990,15 @@ export class TourCatalogToolService {
       const compB = formatTour(tourB);
 
       const sharedFeatures = [
-        isArabic ? 'إقامة 5 نجوم فاخرة مع استقبال وتوديع VIP بالمطار' : '5-Star luxury accommodations & VIP airport concierge',
-        isArabic ? 'مرشد سياحي خاص مرخص وخبير في الآثار المصرية' : 'Private licensed Egyptologist guide',
-        isArabic ? 'تنقلات بسيارات حديثة مكيفة ومريحة' : 'Private executive ground transportation',
+        isArabic
+          ? 'إقامة 5 نجوم فاخرة مع استقبال وتوديع VIP بالمطار'
+          : '5-Star luxury accommodations & VIP airport concierge',
+        isArabic
+          ? 'مرشد سياحي خاص مرخص وخبير في الآثار المصرية'
+          : 'Private licensed Egyptologist guide',
+        isArabic
+          ? 'تنقلات بسيارات حديثة مكيفة ومريحة'
+          : 'Private executive ground transportation',
       ];
 
       const differences = [
@@ -774,18 +1009,52 @@ export class TourCatalogToolService {
         },
         {
           aspect: isArabic ? 'سعر الباقة يبدأ من' : 'Starting Price per Person',
-          tourAValue: compA.price > 0 ? `$${compA.price} ${compA.currency}` : (isArabic ? 'عند الطلب (عرض مخصص)' : 'On Request (Private Quote)'),
-          tourBValue: compB.price > 0 ? `$${compB.price} ${compB.currency}` : (isArabic ? 'عند الطلب (عرض مخصص)' : 'On Request (Private Quote)'),
+          tourAValue:
+            compA.price > 0
+              ? `$${compA.price} ${compA.currency}`
+              : isArabic
+                ? 'عند الطلب (عرض مخصص)'
+                : 'On Request (Private Quote)',
+          tourBValue:
+            compB.price > 0
+              ? `$${compB.price} ${compB.currency}`
+              : isArabic
+                ? 'عند الطلب (عرض مخصص)'
+                : 'On Request (Private Quote)',
         },
         {
           aspect: isArabic ? 'الإبحار في النايل كروز' : 'Nile Cruise Included',
-          tourAValue: compA.hasNileCruise ? (isArabic ? 'نعم (نايل كروز فاخر)' : 'Yes (Luxury Nile Cruise)') : (isArabic ? 'غير مشمول' : 'Not Included'),
-          tourBValue: compB.hasNileCruise ? (isArabic ? 'نعم (نايل كروز فاخر)' : 'Yes (Luxury Nile Cruise)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+          tourAValue: compA.hasNileCruise
+            ? isArabic
+              ? 'نعم (نايل كروز فاخر)'
+              : 'Yes (Luxury Nile Cruise)'
+            : isArabic
+              ? 'غير مشمول'
+              : 'Not Included',
+          tourBValue: compB.hasNileCruise
+            ? isArabic
+              ? 'نعم (نايل كروز فاخر)'
+              : 'Yes (Luxury Nile Cruise)'
+            : isArabic
+              ? 'غير مشمول'
+              : 'Not Included',
         },
         {
           aspect: isArabic ? 'شواطئ البحر الأحمر' : 'Red Sea Beach Extension',
-          tourAValue: compA.hasRedSeaBeach ? (isArabic ? 'نعم (منتجع شاطئي)' : 'Yes (Red Sea Resort)') : (isArabic ? 'غير مشمول' : 'Not Included'),
-          tourBValue: compB.hasRedSeaBeach ? (isArabic ? 'نعم (منتجع شاطئي)' : 'Yes (Red Sea Resort)') : (isArabic ? 'غير مشمول' : 'Not Included'),
+          tourAValue: compA.hasRedSeaBeach
+            ? isArabic
+              ? 'نعم (منتجع شاطئي)'
+              : 'Yes (Red Sea Resort)'
+            : isArabic
+              ? 'غير مشمول'
+              : 'Not Included',
+          tourBValue: compB.hasRedSeaBeach
+            ? isArabic
+              ? 'نعم (منتجع شاطئي)'
+              : 'Yes (Red Sea Resort)'
+            : isArabic
+              ? 'غير مشمول'
+              : 'Not Included',
         },
       ];
 
@@ -805,7 +1074,10 @@ export class TourCatalogToolService {
     }
   }
 
-  async getToursByIds(tourIds: string[], locale: string = 'en'): Promise<GroundedTourRecommendation[]> {
+  async getToursByIds(
+    tourIds: string[],
+    locale: string = 'en',
+  ): Promise<GroundedTourRecommendation[]> {
     if (!tourIds || tourIds.length === 0) return [];
     try {
       const tours = await this.prisma.tour.findMany({
@@ -838,13 +1110,15 @@ export class TourCatalogToolService {
 
     if (tour.titleJsonb && typeof tour.titleJsonb === 'object') {
       const tMap = tour.titleJsonb as Record<string, string>;
-      title = tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
+      title =
+        tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
     }
 
     const image =
       tour.images?.[0]?.imageUrl ||
       'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80';
-    const dest = [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
+    const dest =
+      [tour.city, tour.country].filter(Boolean).join(', ') || 'Egypt';
     const dDays = this.getTourDurationDays(tour);
 
     const price = Number(tour.basePriceUsd) || 0;
@@ -869,14 +1143,18 @@ export class TourCatalogToolService {
     };
   }
 
-  private mapDestinationToRecommendation(lp: any, locale: string = 'en'): GroundedDestinationRecommendation {
+  private mapDestinationToRecommendation(
+    lp: any,
+    locale: string = 'en',
+  ): GroundedDestinationRecommendation {
     const lang = locale.split('-')[0].toLowerCase();
     const slug = lp?.slug || 'destination';
     let title = slug.toUpperCase();
 
     if (lp.titleJsonb && typeof lp.titleJsonb === 'object') {
       const tMap = lp.titleJsonb as Record<string, string>;
-      title = tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
+      title =
+        tMap[lang] || tMap.en || tMap.ar || Object.values(tMap)[0] || title;
     }
 
     return {
@@ -890,7 +1168,10 @@ export class TourCatalogToolService {
 
   private getTourDurationDays(tour: any): number {
     if (tour?.durationJsonb && typeof tour.durationJsonb === 'object') {
-      const val = (tour.durationJsonb as any).days || (tour.durationJsonb as any).en || (tour.durationJsonb as any).pt;
+      const val =
+        tour.durationJsonb.days ||
+        tour.durationJsonb.en ||
+        tour.durationJsonb.pt;
       if (typeof val === 'number') return val;
       if (typeof val === 'string') {
         const m = val.match(/(\d+)/);

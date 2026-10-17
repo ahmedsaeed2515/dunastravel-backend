@@ -25,14 +25,18 @@ export class AdminCurrenciesController {
 
   @Post('sync')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Trigger on-demand rate synchronization from ECB/Frankfurter' })
+  @ApiOperation({
+    summary: 'Trigger on-demand rate synchronization from ECB/Frankfurter',
+  })
   async syncRates(@CurrentUser() user: AuthenticatedUser) {
     return this.service.syncRates(user.id);
   }
 
   @Post('rates')
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Ingest or update currency exchange rates manually' })
+  @ApiOperation({
+    summary: 'Ingest or update currency exchange rates manually',
+  })
   async updateRates(
     @Body() body: UpdateAdminCurrencyRatesDto,
     @CurrentUser() user: AuthenticatedUser,

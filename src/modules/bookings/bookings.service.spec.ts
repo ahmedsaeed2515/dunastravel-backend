@@ -300,7 +300,11 @@ describe('BookingsService', () => {
 
   describe('createBooking', () => {
     it('should return valid booking structure', async () => {
-      const result = await service.createBooking(baseDto, 'user-1', 'test-idem-1');
+      const result = await service.createBooking(
+        baseDto,
+        'user-1',
+        'test-idem-1',
+      );
       expect(result.referenceCode).toBe('BKG-ABC123');
       expect(result.status).toBe('PENDING');
     });
@@ -327,7 +331,11 @@ describe('BookingsService', () => {
     });
 
     it('should allow guest booking creation with null userId and guestToken', async () => {
-      const result = await service.createBooking(baseDto, undefined, 'test-idem-unauth');
+      const result = await service.createBooking(
+        baseDto,
+        undefined,
+        'test-idem-unauth',
+      );
       expect(result.referenceCode).toBeDefined();
       expect(result.guestToken).toBeDefined();
       const firstCall = mockTx.booking.create.mock.calls[0] as Array<{
@@ -349,9 +357,9 @@ describe('BookingsService', () => {
     it('should throw UnprocessableEntityException when tour missing', async () => {
       mockTx.tour.findUnique.mockResolvedValue(null);
       mockTx.tour.findFirst.mockResolvedValue(null);
-      await expect(service.createBooking(baseDto, 'user-1', 'test-idem-missing')).rejects.toThrow(
-        UnprocessableEntityException,
-      );
+      await expect(
+        service.createBooking(baseDto, 'user-1', 'test-idem-missing'),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
     it('should handle COMPANY invoiceType', async () => {
@@ -361,7 +369,11 @@ describe('BookingsService', () => {
         companyName: 'Acme Corp',
         taxId: 'TAX-123',
       };
-      const result = await service.createBooking(dto, 'user-1', 'test-idem-company');
+      const result = await service.createBooking(
+        dto,
+        'user-1',
+        'test-idem-company',
+      );
       expect(result.status).toBe('PENDING');
     });
 
@@ -371,9 +383,9 @@ describe('BookingsService', () => {
         meta: { target: ['idempotency_key'] },
       });
       jest.spyOn(prisma, '$transaction').mockRejectedValue(p2002);
-      await expect(service.createBooking(baseDto, 'user-1', 'test-idem-p2002')).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      await expect(
+        service.createBooking(baseDto, 'user-1', 'test-idem-p2002'),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
@@ -565,7 +577,11 @@ describe('BookingsService', () => {
 
       expect(() =>
         invoke(
-          { enabled: true, cutoffTimezone: 'Africa/Cairo', blockedWeekdays: [weekday] },
+          {
+            enabled: true,
+            cutoffTimezone: 'Africa/Cairo',
+            blockedWeekdays: [weekday],
+          },
           arrivalDate,
         ),
       ).toThrow(UnprocessableEntityException);
@@ -592,7 +608,11 @@ describe('BookingsService', () => {
         // 11:59 cutoff has already passed at 12:00 Cairo → blocked.
         expect(() =>
           invoke(
-            { enabled: true, dailyCutoffTime: '11:59', cutoffTimezone: 'Africa/Cairo' },
+            {
+              enabled: true,
+              dailyCutoffTime: '11:59',
+              cutoffTimezone: 'Africa/Cairo',
+            },
             arrivalDate,
           ),
         ).toThrow(UnprocessableEntityException);
@@ -600,7 +620,11 @@ describe('BookingsService', () => {
         // 12:01 cutoff has not passed yet → allowed.
         expect(() =>
           invoke(
-            { enabled: true, dailyCutoffTime: '12:01', cutoffTimezone: 'Africa/Cairo' },
+            {
+              enabled: true,
+              dailyCutoffTime: '12:01',
+              cutoffTimezone: 'Africa/Cairo',
+            },
             arrivalDate,
           ),
         ).not.toThrow();
@@ -608,7 +632,11 @@ describe('BookingsService', () => {
         // The cutoff only affects same-day departures.
         expect(() =>
           invoke(
-            { enabled: true, dailyCutoffTime: '11:59', cutoffTimezone: 'Africa/Cairo' },
+            {
+              enabled: true,
+              dailyCutoffTime: '11:59',
+              cutoffTimezone: 'Africa/Cairo',
+            },
             '2027-01-11',
           ),
         ).not.toThrow();

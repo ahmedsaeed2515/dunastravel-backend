@@ -50,13 +50,17 @@ export class ListMediaDto {
   @Type(() => Boolean)
   includeDeleted?: boolean = false;
 
-  @ApiPropertyOptional({ description: 'Searches persisted alt text and provider asset ID' })
+  @ApiPropertyOptional({
+    description: 'Searches persisted alt text and provider asset ID',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by image format (e.g. webp, jpg, png)' })
+  @ApiPropertyOptional({
+    description: 'Filter by image format (e.g. webp, jpg, png)',
+  })
   @IsOptional()
   @IsString()
   format?: string;

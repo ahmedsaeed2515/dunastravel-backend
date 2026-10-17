@@ -55,7 +55,11 @@ export class LiveCatalogRetrieverService {
   /**
    * Resolve localized title and highlights from tour Jsonb fields
    */
-  private resolveLocalizedText(jsonbField: any, locale: string, fallback: string = ''): string {
+  private resolveLocalizedText(
+    jsonbField: any,
+    locale: string,
+    fallback: string = '',
+  ): string {
     if (!jsonbField) return fallback;
     if (typeof jsonbField === 'string') return jsonbField;
     if (typeof jsonbField === 'object') {
@@ -68,15 +72,15 @@ export class LiveCatalogRetrieverService {
   /**
    * Live Query: Fetch active published tours matching semantic candidate IDs or keyword filters
    */
-  async getLiveToursByIds(tourIds: string[], locale: string = 'en'): Promise<GroundedTourEntity[]> {
+  async getLiveToursByIds(
+    tourIds: string[],
+    locale: string = 'en',
+  ): Promise<GroundedTourEntity[]> {
     if (!tourIds || tourIds.length === 0) return [];
 
     const tours = await (this.prisma as any).tour.findMany({
       where: {
-        OR: [
-          { id: { in: tourIds } },
-          { slug: { in: tourIds } },
-        ],
+        OR: [{ id: { in: tourIds } }, { slug: { in: tourIds } }],
         isActive: true,
         deletedAt: null,
       },
@@ -95,14 +99,21 @@ export class LiveCatalogRetrieverService {
     });
 
     return tours.map((tour: any) => {
-      const title = this.resolveLocalizedText(tour.titleJsonb, locale, tour.slug);
+      const title = this.resolveLocalizedText(
+        tour.titleJsonb,
+        locale,
+        tour.slug,
+      );
       const highlightsRaw = tour.highlightsJsonb;
       let highlights: string[] = [];
       if (Array.isArray(highlightsRaw)) {
-        highlights = highlightsRaw.map((h: any) => typeof h === 'string' ? h : (h[locale] || h.en || ''));
+        highlights = highlightsRaw.map((h: any) =>
+          typeof h === 'string' ? h : h[locale] || h.en || '',
+        );
       }
 
-      const heroImage = tour.images?.[0]?.imageUrl || '/imgs/tours/classic.webp';
+      const heroImage =
+        tour.images?.[0]?.imageUrl || '/imgs/tours/classic.webp';
       const durationVal = tour.durationJsonb?.days || tour.durationDays || 8;
 
       return {
@@ -120,13 +131,16 @@ export class LiveCatalogRetrieverService {
         publicUrl: `/tours/${tour.slug}`,
         highlights: highlights.slice(0, 4),
         upcomingAvailabilities: (tour.availabilities || []).map((a: any) => ({
-          startDate: a.date ? (typeof a.date === 'string' ? a.date.split('T')[0] : a.date.toISOString().split('T')[0]) : '',
+          startDate: a.date
+            ? typeof a.date === 'string'
+              ? a.date.split('T')[0]
+              : a.date.toISOString().split('T')[0]
+            : '',
           availableSeats: a.remainingSeats ?? a.totalCapacity,
           priceOverrideUsd: undefined,
         })),
       };
     });
-
   }
 
   /**
@@ -194,7 +208,10 @@ export class LiveCatalogRetrieverService {
   /**
    * Live Query: Fetch luxury hotels
    */
-  async getLiveHotels(city?: string, limit = 4): Promise<GroundedHotelEntity[]> {
+  async getLiveHotels(
+    city?: string,
+    limit = 4,
+  ): Promise<GroundedHotelEntity[]> {
     const where: any = {
       isActive: true,
       deletedAt: null,
@@ -211,9 +228,17 @@ export class LiveCatalogRetrieverService {
       });
 
       return hotels.map((h: any) => {
-        const name = typeof h.nameJsonb === 'object' ? (h.nameJsonb?.en || h.nameJsonb?.ar || h.slug) : (h.name || h.slug);
-        const description = typeof h.descriptionJsonb === 'object' ? (h.descriptionJsonb?.en || h.descriptionJsonb?.ar || '') : '';
-        const amenities = Array.isArray(h.amenitiesJsonb) ? h.amenitiesJsonb : ['Swimming Pool', 'Spa', 'Nile View', 'Fine Dining'];
+        const name =
+          typeof h.nameJsonb === 'object'
+            ? h.nameJsonb?.en || h.nameJsonb?.ar || h.slug
+            : h.name || h.slug;
+        const description =
+          typeof h.descriptionJsonb === 'object'
+            ? h.descriptionJsonb?.en || h.descriptionJsonb?.ar || ''
+            : '';
+        const amenities = Array.isArray(h.amenitiesJsonb)
+          ? h.amenitiesJsonb
+          : ['Swimming Pool', 'Spa', 'Nile View', 'Fine Dining'];
 
         return {
           id: h.id,
@@ -237,9 +262,13 @@ export class LiveCatalogRetrieverService {
   /**
    * Live Query: Fetch transportation fleet & transfers
    */
-  async getLiveTransportation(type?: string): Promise<GroundedTransportEntity[]> {
+  async getLiveTransportation(
+    type?: string,
+  ): Promise<GroundedTransportEntity[]> {
     try {
-      const services = await (this.prisma as any).transportationService.findMany({
+      const services = await (
+        this.prisma as any
+      ).transportationService.findMany({
         where: { isActive: true },
         take: 6,
       });
@@ -250,11 +279,14 @@ export class LiveCatalogRetrieverService {
         vehicleType: s.vehicleType || 'Mercedes Luxury Sedan',
         capacity: s.capacity || 4,
         priceUsd:
-          s.basePriceUsd !== undefined && s.basePriceUsd !== null && !isNaN(Number(s.basePriceUsd))
+          s.basePriceUsd !== undefined &&
+          s.basePriceUsd !== null &&
+          !isNaN(Number(s.basePriceUsd))
             ? Number(s.basePriceUsd)
             : 75,
         origin: s.serviceType === 'AIRPORT' ? 'Cairo Airport' : 'Cairo City',
-        destination: s.serviceType === 'AIRPORT' ? 'Cairo Hotel' : 'Alexandria / Giza',
+        destination:
+          s.serviceType === 'AIRPORT' ? 'Cairo Hotel' : 'Alexandria / Giza',
         isAvailable: true,
       }));
     } catch (err: any) {
@@ -263,4 +295,3 @@ export class LiveCatalogRetrieverService {
     }
   }
 }
-

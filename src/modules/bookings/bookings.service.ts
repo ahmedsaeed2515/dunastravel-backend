@@ -344,15 +344,11 @@ export class BookingsService {
       ? rules.blockedWeekdays
           .map((day: unknown) => Number(day))
           .filter(
-            (day: number) =>
-              Number.isInteger(day) && day >= 0 && day <= 6,
+            (day: number) => Number.isInteger(day) && day >= 0 && day <= 6,
           )
       : [];
     if (blockedWeekdays.length > 0 && arrivalDateStr) {
-      const weekday = this.resolveWeekdayInTimezone(
-        arrivalDateStr,
-        timezone,
-      );
+      const weekday = this.resolveWeekdayInTimezone(arrivalDateStr, timezone);
       if (weekday !== null && blockedWeekdays.includes(weekday)) {
         throw new UnprocessableEntityException(
           'BOOKINGS_CLOSED: This tour does not operate on the selected day. Please pick another date.',
@@ -439,7 +435,18 @@ export class BookingsService {
             suspendedAt: true,
           },
         });
-        if (userRecord && userRecord.isVerified === false) {
+        const requireEmailVerification =
+          this.configService.get<string | boolean>(
+            'auth.requireEmailVerification',
+          ) === true ||
+          this.configService.get<string | boolean>(
+            'auth.requireEmailVerification',
+          ) === 'true';
+        if (
+          requireEmailVerification &&
+          userRecord &&
+          userRecord.isVerified === false
+        ) {
           throw new ForbiddenException(
             'EMAIL_VERIFICATION_REQUIRED: Please verify your email with the 6-digit OTP code before booking a tour',
           );
@@ -762,9 +769,7 @@ export class BookingsService {
               .digest('hex');
 
             const isZeroAmount = finalTotalAmountUsd.lte(0);
-            const initialStatus: BookingStatus = isZeroAmount
-              ? 'CONFIRMED'
-              : 'PENDING';
+            const initialStatus: BookingStatus = 'PENDING';
 
             const bookingCurrency = (
               dto.currency ||
@@ -773,7 +778,8 @@ export class BookingsService {
               'USD'
             ).toUpperCase();
             const originalAmount = new Prisma.Decimal(
-              breakdownResult.authoritativeAmount || breakdownResult.totalAmountUsd,
+              breakdownResult.authoritativeAmount ||
+                breakdownResult.totalAmountUsd,
             );
             const originalCurrency = (
               breakdownResult.authoritativeCurrency || bookingCurrency
@@ -832,8 +838,7 @@ export class BookingsService {
               },
             });
 
-            const passengerNationality =
-              (dto.nationality || '').trim() || null;
+            const passengerNationality = (dto.nationality || '').trim() || null;
 
             const passengerData: Array<{
               bookingId: string;
@@ -957,7 +962,7 @@ export class BookingsService {
                 invoiceNumber,
                 bookingId: booking.id,
                 issuedAt: new Date(),
-                status: isZeroAmount ? 'PAID' : 'SENT',
+                status: 'SENT',
                 subtotal: new Prisma.Decimal(subtotalUsd),
                 tax: new Prisma.Decimal(breakdownResult.taxAmountUsd || 0),
                 total:
@@ -976,10 +981,10 @@ export class BookingsService {
               await tx.bookingActivityLog.create({
                 data: {
                   bookingId: booking.id,
-                  action: 'BOOKING_CONFIRMED_ZERO_AMOUNT',
+                  action: 'BOOKING_CREATED_CUSTOM_QUOTE',
                   details: {
                     reason:
-                      'Zero-amount booking confirmed automatically without payment gateway',
+                      'Zero-amount / custom inquiry quote requested; awaiting pricing and payment confirmation',
                     totalAmountUsd: '0.00',
                   },
                 },
@@ -1187,7 +1192,8 @@ export class BookingsService {
         (booking.totalAmountUsd || '0').toString(),
       originalCurrency:
         (booking as any).originalCurrency || (booking as any).currency || 'USD',
-      convertedAmount: (booking as any).convertedAmount?.toString() || undefined,
+      convertedAmount:
+        (booking as any).convertedAmount?.toString() || undefined,
       convertedCurrency: (booking as any).convertedCurrency || undefined,
       exchangeRate: (booking as any).exchangeRate?.toString() || undefined,
       exchangeRateDate: (booking as any).exchangeRateDate
@@ -1397,7 +1403,7 @@ export class BookingsService {
           total: new Prisma.Decimal(totalAmount.toFixed(2)),
           currency: 'USD',
           paymentId: booking.payments[0]?.id || null,
-          snapshotJsonb: snap as unknown as Prisma.InputJsonValue,
+          snapshotJsonb: snap,
         },
       });
 
@@ -1430,7 +1436,7 @@ export class BookingsService {
       };
     }
 
-    const snap = (booking.invoice.snapshotJsonb as any) || {};
+    const snap = booking.invoice.snapshotJsonb || {};
 
     return {
       id: booking.invoice.id,

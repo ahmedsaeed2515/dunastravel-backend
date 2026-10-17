@@ -14,7 +14,10 @@ import { renderBookingInternalAlert } from '../templates/booking-alert.template'
 import { EmailPayload } from '../types/email-payload.type';
 
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
-import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 
 @Injectable()
 export class BookingCreatedListener {
@@ -72,7 +75,10 @@ export class BookingCreatedListener {
         entityType: 'BOOKING',
         entityId: payload.referenceCode,
         deepLink: '/admin/bookings',
-        metadata: { referenceCode: payload.referenceCode, totalAmount: payload.totalAmountUsd },
+        metadata: {
+          referenceCode: payload.referenceCode,
+          totalAmount: payload.totalAmountUsd,
+        },
       });
 
       if (payload.userId) {

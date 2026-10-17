@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { MediaEntityType } from '@prisma/client';
 
 export class BulkMoveMediaDto {
@@ -21,7 +27,8 @@ export class BulkMoveMediaDto {
   entityType!: MediaEntityType;
 
   @ApiPropertyOptional({
-    description: 'Target entity ID (e.g. tour ID, hotel ID, or custom category slug)',
+    description:
+      'Target entity ID (e.g. tour ID, hotel ID, or custom category slug)',
     type: 'string',
   })
   @IsOptional()

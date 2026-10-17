@@ -11,7 +11,8 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   @Matches(/^[0-9\s\-+]{6,50}$/, {
-    message: 'phone number can only contain digits, spaces, dashes, and plus signs',
+    message:
+      'phone number can only contain digits, spaces, dashes, and plus signs',
   })
   phone?: string;
 

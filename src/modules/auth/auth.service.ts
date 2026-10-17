@@ -12,11 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { CookieOptions } from 'express';
-import {
-  UserService,
-  SafeUser,
-  SessionUser,
-} from '../users/users.service';
+import { UserService, SafeUser, SessionUser } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -75,18 +71,20 @@ export class AuthService {
     @Inject(JwtService) private readonly jwtService: JwtService,
     @Inject(ConfigService) private readonly configService: ConfigService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(LoginSecurityStateService) private readonly loginSecurityState: LoginSecurityStateService,
-    @Inject(NotificationsService) private readonly notificationsService: NotificationsService,
+    @Inject(LoginSecurityStateService)
+    private readonly loginSecurityState: LoginSecurityStateService,
+    @Inject(NotificationsService)
+    private readonly notificationsService: NotificationsService,
     @Inject(SettingsService) private readonly settingsService: SettingsService,
   ) {}
 
-  private shouldRequireEmailVerification(): boolean {
+  shouldRequireEmailVerification(): boolean {
     const rawVal = this.configService.get<boolean | string>(
       'auth.requireEmailVerification',
     );
     if (rawVal === true || rawVal === 'true') return true;
     if (rawVal === false || rawVal === 'false') return false;
-    return true; // Default to true: real email verification is required
+    return false; // Default to false: email verification service is disabled
   }
 
   async register(dto: RegisterDto): Promise<SafeUser> {
@@ -117,6 +115,7 @@ export class AuthService {
         phone: dto.phone?.trim(),
         passwordHash,
         isVerified: !requireEmailVerification,
+        emailVerifiedAt: !requireEmailVerification ? new Date() : null,
         verifyToken: verifyTokenHash,
         verifyTokenExp,
         verifyAttempts: 0,
@@ -266,10 +265,7 @@ export class AuthService {
     const passwordHash = user
       ? user.passwordHash
       : await this.dummyPasswordHash;
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      passwordHash,
-    );
+    const isPasswordValid = await bcrypt.compare(dto.password, passwordHash);
     if (!user || !isPasswordValid) {
       await this.loginSecurityState.recordFailure(ip, dto.email);
       this.logger.warn('Failed login attempt: unknown account');
@@ -282,6 +278,19 @@ export class AuthService {
       throw new UnauthorizedException(
         'EMAIL_NOT_VERIFIED: Please verify your email before logging in',
       );
+    }
+
+    if (!requireEmailVerification && !user.isVerified) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isVerified: true,
+          emailVerifiedAt: new Date(),
+          verifyToken: null,
+          verifyTokenExp: null,
+        },
+      });
+      user.isVerified = true;
     }
 
     if (user.suspendedAt) {
@@ -542,7 +551,8 @@ export class AuthService {
 
       if (rotated.count !== 1) {
         // Double-check if another concurrent request just completed the rotation
-        const doubleCheckCached = this.rotatedTokensGraceCache.get(incomingTokenHash);
+        const doubleCheckCached =
+          this.rotatedTokensGraceCache.get(incomingTokenHash);
         if (doubleCheckCached && doubleCheckCached.expiresAt > Date.now()) {
           return {
             user: doubleCheckCached.user,

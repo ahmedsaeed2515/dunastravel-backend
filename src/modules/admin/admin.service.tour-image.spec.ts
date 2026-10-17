@@ -24,9 +24,14 @@ describe('AdminService hero image mutation', () => {
   it('sets one selected image as hero transactionally and records the action', async () => {
     prisma.tour.findUnique.mockResolvedValue({ id: 'tour-1' });
     prisma.tourImage.findFirst.mockResolvedValue({ id: 'image-2' });
-    prisma.tourImage.findUniqueOrThrow.mockResolvedValue({ id: 'image-2', isHero: true });
+    prisma.tourImage.findUniqueOrThrow.mockResolvedValue({
+      id: 'image-2',
+      isHero: true,
+    });
 
-    await expect(service.setTourHeroImage('nile-cruise', 'image-2', 'admin-1')).resolves.toEqual({ id: 'image-2', isHero: true });
+    await expect(
+      service.setTourHeroImage('nile-cruise', 'image-2', 'admin-1'),
+    ).resolves.toEqual({ id: 'image-2', isHero: true });
 
     expect(prisma.tourImage.updateMany).toHaveBeenCalledWith({
       where: { tourId: 'tour-1', isHero: true },
@@ -37,7 +42,10 @@ describe('AdminService hero image mutation', () => {
       data: { isHero: true },
     });
     expect(prisma.tourActivityLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: 'TOUR_HERO_IMAGE_UPDATED', userId: 'admin-1' }),
+      data: expect.objectContaining({
+        action: 'TOUR_HERO_IMAGE_UPDATED',
+        userId: 'admin-1',
+      }),
     });
   });
 
@@ -45,7 +53,9 @@ describe('AdminService hero image mutation', () => {
     prisma.tour.findUnique.mockResolvedValue({ id: 'tour-1' });
     prisma.tourImage.findFirst.mockResolvedValue(null);
 
-    await expect(service.setTourHeroImage('nile-cruise', 'other-tour-image', 'admin-1')).rejects.toThrow(NotFoundException);
+    await expect(
+      service.setTourHeroImage('nile-cruise', 'other-tour-image', 'admin-1'),
+    ).rejects.toThrow(NotFoundException);
     expect(prisma.tourImage.updateMany).not.toHaveBeenCalled();
   });
 });

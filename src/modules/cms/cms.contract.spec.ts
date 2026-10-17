@@ -66,7 +66,9 @@ describe('CMS HTTP Contract Spec', () => {
 
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
-    app.useGlobalInterceptors(new ResponseTransformInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ResponseTransformInterceptor(app.get(Reflector)),
+    );
     await app.init();
   });
 

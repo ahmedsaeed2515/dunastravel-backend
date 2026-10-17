@@ -153,9 +153,16 @@ describe('ResendEmailProvider & EmailDeliveryService Hardening', () => {
   describe('EmailDeliveryService Retry Behavior', () => {
     it('should immediately abort retry loop without sleeping on non-transient failure', async () => {
       const mockAdapter = {
-        send: jest.fn().mockRejectedValue(
-          new EmailDeliveryException('Invalid email format', 'validation_error', 422, false),
-        ),
+        send: jest
+          .fn()
+          .mockRejectedValue(
+            new EmailDeliveryException(
+              'Invalid email format',
+              'validation_error',
+              422,
+              false,
+            ),
+          ),
       };
 
       const mockPrisma = {
@@ -166,7 +173,7 @@ describe('ResendEmailProvider & EmailDeliveryService Hardening', () => {
       };
 
       const deliveryService = new EmailDeliveryService(
-        mockAdapter as any,
+        mockAdapter,
         mockPrisma as unknown as PrismaService,
       );
 

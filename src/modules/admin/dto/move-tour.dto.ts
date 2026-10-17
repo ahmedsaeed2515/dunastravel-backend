@@ -23,4 +23,3 @@ export class MoveTourDto {
   @MaxLength(100)
   category?: string;
 }
-

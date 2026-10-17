@@ -59,12 +59,16 @@ export class CreateBookingDto {
   @IsUUID()
   departureId?: string;
 
-  @ApiPropertyOptional({ description: 'Optional TripAccommodation ID for hotel/tier supplement' })
+  @ApiPropertyOptional({
+    description: 'Optional TripAccommodation ID for hotel/tier supplement',
+  })
   @IsOptional()
   @IsUUID()
   accommodationId?: string;
 
-  @ApiPropertyOptional({ description: 'Optional HotelRoom ID for room-specific supplement' })
+  @ApiPropertyOptional({
+    description: 'Optional HotelRoom ID for room-specific supplement',
+  })
   @IsOptional()
   @IsUUID()
   roomId?: string;
@@ -224,7 +228,9 @@ export class CreateBookingDto {
 
   @ApiPropertyOptional()
   @ValidateIf((o: CreateBookingDto) => o.invoiceType === 'COMPANY')
-  @IsNotEmpty({ message: 'companyName is required when invoiceType is COMPANY' })
+  @IsNotEmpty({
+    message: 'companyName is required when invoiceType is COMPANY',
+  })
   @IsString()
   @MaxLength(255)
   @Transform(({ value }: { value: unknown }) =>

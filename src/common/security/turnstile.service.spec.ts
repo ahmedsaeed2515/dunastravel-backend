@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { TurnstileService } from './turnstile.service';
 
 describe('TurnstileService', () => {
@@ -101,10 +104,7 @@ describe('TurnstileService', () => {
 
   it('should reject Cloudflare standard dummy fail token in non-production', async () => {
     await expect(
-      service.validateToken(
-        '2x0000000000000000000000000000000AA',
-        '127.0.0.1',
-      ),
+      service.validateToken('2x0000000000000000000000000000000AA', '127.0.0.1'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -157,7 +157,9 @@ describe('TurnstileService', () => {
 
     await expect(
       service.validateToken('cf-token-real', '1.2.3.4', 'register'),
-    ).rejects.toThrow('Security challenge validation mismatch for the requested action.');
+    ).rejects.toThrow(
+      'Security challenge validation mismatch for the requested action.',
+    );
   });
 
   it('should throw BadRequestException if Cloudflare returns success: false', async () => {

@@ -122,12 +122,8 @@ export const envValidationSchema = Joi.object({
     .default('true'),
   TURNSTILE_SECRET_KEY: Joi.string().optional().allow(''),
   TURNSTILE_SITE_KEY: Joi.string().optional().allow(''),
-  SKIP_TURNSTILE: Joi.string()
-    .valid('true', 'false')
-    .default('false'),
-  ENFORCE_TURNSTILE: Joi.string()
-    .valid('true', 'false')
-    .default('false'),
+  SKIP_TURNSTILE: Joi.string().valid('true', 'false').default('false'),
+  ENFORCE_TURNSTILE: Joi.string().valid('true', 'false').default('false'),
 
   MAIL_TRANSPORT: Joi.when('NODE_ENV', {
     is: 'production',
@@ -194,18 +190,29 @@ export const envValidationSchema = Joi.object({
   GETPAYIN_HASH_TOKEN: Joi.string().optional().allow(''),
   GETPAYIN_REDIRECT_URL: Joi.when('PAYMENT_PROVIDER', {
     is: 'GETPAYIN',
-    then: Joi.string().uri({ scheme: ['https'] }).required(),
+    then: Joi.string()
+      .uri({ scheme: ['https'] })
+      .required(),
     otherwise: Joi.string().optional().allow(''),
   }),
   GETPAYIN_WEBHOOK_URL: Joi.when('PAYMENT_PROVIDER', {
     is: 'GETPAYIN',
-    then: Joi.string().uri({ scheme: ['https'] }).required(),
+    then: Joi.string()
+      .uri({ scheme: ['https'] })
+      .required(),
     otherwise: Joi.string().optional().allow(''),
   }),
-  GETPAYIN_TIMEOUT_MS: Joi.number().integer().min(1000).max(60000).default(30000),
+  GETPAYIN_TIMEOUT_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .max(60000)
+    .default(30000),
   GETPAYIN_MAX_RETRIES: Joi.number().integer().min(0).max(5).default(2),
   // Deprecated semantic aliases retained temporarily for existing deployments.
-  GETPAYIN_API_BASE_URL: Joi.string().uri({ scheme: ['https'] }).optional().allow(''),
+  GETPAYIN_API_BASE_URL: Joi.string()
+    .uri({ scheme: ['https'] })
+    .optional()
+    .allow(''),
   GETPAYIN_API_KEY: Joi.string().optional().allow(''),
   GETPAYIN_WEBHOOK_SECRET: Joi.string().optional().allow(''),
 

@@ -38,8 +38,7 @@ export class JsonLoggerService implements LoggerService {
       if (value instanceof Error) {
         return {
           message: this.sanitizeString(value.message),
-          stack:
-            this.nodeEnv === 'production' ? undefined : value.stack,
+          stack: this.nodeEnv === 'production' ? undefined : value.stack,
           name: value.name,
         };
       }
@@ -59,14 +58,8 @@ export class JsonLoggerService implements LoggerService {
   private sanitizeString(value: string): string {
     return value
       .slice(0, 4_000)
-      .replace(
-        /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-        '[REDACTED_EMAIL]',
-      )
-      .replace(
-        /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi,
-        'Bearer [REDACTED]',
-      );
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
+      .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [REDACTED]');
   }
 
   private print(

@@ -103,9 +103,10 @@ export class PricingService {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         dto.tourId,
       );
-    let tour = isUUID && typeof db.tour.findUnique === 'function'
-      ? await db.tour.findUnique({ where: { id: dto.tourId } })
-      : null;
+    let tour =
+      isUUID && typeof db.tour.findUnique === 'function'
+        ? await db.tour.findUnique({ where: { id: dto.tourId } })
+        : null;
 
     if (!tour && typeof db.tour.findUnique === 'function') {
       tour = await db.tour.findUnique({ where: { id: dto.tourId } });
@@ -131,10 +132,7 @@ export class PricingService {
       const availability = await db.tourAvailability.findUnique({
         where: { id: availId },
       });
-      if (
-        !availability ||
-        availability.status === 'CLOSED'
-      ) {
+      if (!availability || availability.status === 'CLOSED') {
         throw new UnprocessableEntityException(
           'Selected departure date is closed for bookings',
         );
@@ -181,11 +179,11 @@ export class PricingService {
     let matchedSeasonName: string | null = null;
     const rulesArray: SeasonPricingItem[] | null = Array.isArray(seasonPricing)
       ? seasonPricing
-      : (Array.isArray(seasonPricing?.rules)
+      : Array.isArray(seasonPricing?.rules)
         ? seasonPricing.rules
-        : (Array.isArray(seasonPricing?.seasonalMultipliers)
+        : Array.isArray(seasonPricing?.seasonalMultipliers)
           ? seasonPricing.seasonalMultipliers
-          : null));
+          : null;
 
     if (rulesArray && rulesArray.length > 0 && dto.date) {
       const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
@@ -197,9 +195,14 @@ export class PricingService {
       }> = [];
       for (const season of rulesArray) {
         if (!season?.startDate || !season?.endDate) continue;
-        const hasMult = season.multiplier !== undefined && season.multiplier !== null;
-        const hasPrice = season.priceUsd !== undefined && season.priceUsd !== null && Number(season.priceUsd) > 0;
-        const hasSupp = season.supplementUsd !== undefined && season.supplementUsd !== null;
+        const hasMult =
+          season.multiplier !== undefined && season.multiplier !== null;
+        const hasPrice =
+          season.priceUsd !== undefined &&
+          season.priceUsd !== null &&
+          Number(season.priceUsd) > 0;
+        const hasSupp =
+          season.supplementUsd !== undefined && season.supplementUsd !== null;
         if (!hasMult && !hasPrice && !hasSupp) continue;
 
         const start = new Date(`${season.startDate}T00:00:00.000Z`);
@@ -228,7 +231,8 @@ export class PricingService {
           start > end ||
           !multiplier.isFinite() ||
           (hasMult && (multiplier.lt(0.5) || multiplier.gt(5))) ||
-          (priceOverride !== null && (!priceOverride.isFinite() || priceOverride.lt(0))) ||
+          (priceOverride !== null &&
+            (!priceOverride.isFinite() || priceOverride.lt(0))) ||
           !supplement.isFinite() ||
           supplement.lt(0)
         ) {
@@ -237,11 +241,21 @@ export class PricingService {
           );
         }
         if (start <= targetDate && end >= targetDate) {
-          const rawName = season.seasonName ?? (season as any).label ?? season.seasonCode ?? null;
+          const rawName =
+            season.seasonName ??
+            (season as any).label ??
+            season.seasonCode ??
+            null;
           const resolvedName =
             rawName && typeof rawName === 'object'
-              ? (rawName[langKey] || rawName.en || rawName.ar || Object.values(rawName)[0] || null)
-              : (typeof rawName === 'string' ? rawName : null);
+              ? rawName[langKey] ||
+                rawName.en ||
+                rawName.ar ||
+                Object.values(rawName)[0] ||
+                null
+              : typeof rawName === 'string'
+                ? rawName
+                : null;
           matchingRules.push({
             multiplier,
             priceOverride,
@@ -261,7 +275,10 @@ export class PricingService {
         seasonalSupplementPerAdult = matchingRules[0].supplement;
         matchedSeasonName = matchingRules[0].name;
       }
-    } else if (dto.date && typeof (db as any).season?.findFirst === 'function') {
+    } else if (
+      dto.date &&
+      typeof (db as any).season?.findFirst === 'function'
+    ) {
       const targetDate = new Date(`${dto.date}T00:00:00.000Z`);
       const dbSeason = await (db as any).season.findFirst({
         where: {
@@ -281,7 +298,11 @@ export class PricingService {
               ? (dbSeason.nameJsonb as Record<string, string>)
               : {};
           matchedSeasonName =
-            nameObj[langKey] || nameObj.en || dbSeason.code || dbSeason.slug || null;
+            nameObj[langKey] ||
+            nameObj.en ||
+            dbSeason.code ||
+            dbSeason.slug ||
+            null;
         }
       }
     }
@@ -303,7 +324,9 @@ export class PricingService {
       const accRecord = await (db as any).tripAccommodation.findFirst({
         where: {
           tourId: tour.id,
-          ...(dto.accommodationId ? { id: dto.accommodationId } : { roomId: dto.roomId }),
+          ...(dto.accommodationId
+            ? { id: dto.accommodationId }
+            : { roomId: dto.roomId }),
         },
       });
       if (accRecord && accRecord.priceSupplementUsd) {

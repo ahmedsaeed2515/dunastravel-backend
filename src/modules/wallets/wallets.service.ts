@@ -75,11 +75,7 @@ export class WalletsService {
       try {
         return await this.prisma.$transaction(
           async (tx) => {
-            await this.assertActiveOwner(
-              tx,
-              data.ownerType,
-              data.ownerId,
-            );
+            await this.assertActiveOwner(tx, data.ownerType, data.ownerId);
 
             const wallet = await tx.wallet.upsert({
               where: {
@@ -145,14 +141,14 @@ export class WalletsService {
                       where: { id: wallet.id, status: 'ACTIVE' },
                       data: { balance: { decrement: amount } },
                     })
-                : await tx.wallet.updateMany({
-                    where: {
-                      id: wallet.id,
-                      status: 'ACTIVE',
-                      balance: { gte: amount },
-                    },
-                    data: { balance: { decrement: amount } },
-                  });
+                  : await tx.wallet.updateMany({
+                      where: {
+                        id: wallet.id,
+                        status: 'ACTIVE',
+                        balance: { gte: amount },
+                      },
+                      data: { balance: { decrement: amount } },
+                    });
 
             if (updated.count !== 1) {
               throw new BadRequestException(
@@ -297,12 +293,13 @@ export class WalletsService {
   }
 
   async getMetrics() {
-    const [totalCompanyWallets, totalUserWallets, balanceAgg, totalTxCount] = await Promise.all([
-      this.prisma.wallet.count({ where: { ownerType: 'COMPANY' } }),
-      this.prisma.wallet.count({ where: { ownerType: 'USER' } }),
-      this.prisma.wallet.aggregate({ _sum: { balance: true } }),
-      this.prisma.walletTransaction.count(),
-    ]);
+    const [totalCompanyWallets, totalUserWallets, balanceAgg, totalTxCount] =
+      await Promise.all([
+        this.prisma.wallet.count({ where: { ownerType: 'COMPANY' } }),
+        this.prisma.wallet.count({ where: { ownerType: 'USER' } }),
+        this.prisma.wallet.aggregate({ _sum: { balance: true } }),
+        this.prisma.walletTransaction.count(),
+      ]);
 
     return {
       totalCompanyWallets,
@@ -358,10 +355,7 @@ export class WalletsService {
         ...matchedUsers.map((u) => u.id),
       ];
 
-      where.OR = [
-        { ownerId: { in: matchedOwnerIds } },
-        { id: searchValue },
-      ];
+      where.OR = [{ ownerId: { in: matchedOwnerIds } }, { id: searchValue }];
     }
 
     const [total, wallets] = await Promise.all([
@@ -370,9 +364,10 @@ export class WalletsService {
         where,
         skip,
         take: limit,
-        orderBy: query.sortBy === 'balance'
-          ? { balance: query.sortOrder === 'asc' ? 'asc' : 'desc' }
-          : { updatedAt: 'desc' },
+        orderBy:
+          query.sortBy === 'balance'
+            ? { balance: query.sortOrder === 'asc' ? 'asc' : 'desc' }
+            : { updatedAt: 'desc' },
         include: {
           _count: {
             select: { transactions: true },
@@ -382,8 +377,12 @@ export class WalletsService {
     ]);
 
     // Populate owner details (Company or User)
-    const companyIds = wallets.filter((w) => w.ownerType === WalletOwnerType.COMPANY).map((w) => w.ownerId);
-    const userIds = wallets.filter((w) => w.ownerType === WalletOwnerType.USER).map((w) => w.ownerId);
+    const companyIds = wallets
+      .filter((w) => w.ownerType === WalletOwnerType.COMPANY)
+      .map((w) => w.ownerId);
+    const userIds = wallets
+      .filter((w) => w.ownerType === WalletOwnerType.USER)
+      .map((w) => w.ownerId);
 
     const [companies, users] = await Promise.all([
       companyIds.length > 0
@@ -411,7 +410,9 @@ export class WalletsService {
               phone: true,
               role: true,
               status: true,
-              company: { select: { id: true, name: true, referenceCode: true } },
+              company: {
+                select: { id: true, name: true, referenceCode: true },
+              },
             },
           })
         : [],
@@ -420,9 +421,13 @@ export class WalletsService {
     const companyMap = new Map(companies.map((c) => [c.id, c]));
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    let data = wallets.map((w) => {
-      const company = w.ownerType === WalletOwnerType.COMPANY ? companyMap.get(w.ownerId) : null;
-      const user = w.ownerType === WalletOwnerType.USER ? userMap.get(w.ownerId) : null;
+    const data = wallets.map((w) => {
+      const company =
+        w.ownerType === WalletOwnerType.COMPANY
+          ? companyMap.get(w.ownerId)
+          : null;
+      const user =
+        w.ownerType === WalletOwnerType.USER ? userMap.get(w.ownerId) : null;
 
       return {
         id: w.id,
@@ -446,16 +451,16 @@ export class WalletsService {
               status: company.status,
             }
           : user
-          ? {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              phone: user.phone,
-              role: user.role,
-              status: user.status,
-              company: user.company,
-            }
-          : null,
+            ? {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                status: user.status,
+                company: user.company,
+              }
+            : null,
       };
     });
 
@@ -494,26 +499,35 @@ export class WalletsService {
 
       if (!calculated.equals(w.balance)) {
         driftCount++;
-        this.logger.warn(`Discrepancy found on wallet ${w.id} (DB: ${w.balance}, Calc: ${calculated}). Reconciling...`);
+        this.logger.warn(
+          `Discrepancy found on wallet ${w.id} (DB: ${w.balance}, Calc: ${calculated}). Reconciling...`,
+        );
         await this.prisma.wallet.update({
           where: { id: w.id },
           data: { balance: calculated },
         });
         if (w.ownerType === WalletOwnerType.COMPANY) {
-          await this.prisma.company.update({
-            where: { id: w.ownerId },
-            data: { currentBalance: calculated },
-          }).catch(() => {});
+          await this.prisma.company
+            .update({
+              where: { id: w.ownerId },
+              data: { currentBalance: calculated },
+            })
+            .catch(() => {});
         }
       }
     }
 
-    this.logger.log(`Reconciliation completed. Checked ${wallets.length} wallets. Fixed ${driftCount} discrepancies.`);
+    this.logger.log(
+      `Reconciliation completed. Checked ${wallets.length} wallets. Fixed ${driftCount} discrepancies.`,
+    );
     return {
       success: true,
       totalWalletsChecked: wallets.length,
       driftCount,
-      message: driftCount === 0 ? 'All wallet ledgers are perfectly balanced.' : `Reconciled and corrected ${driftCount} wallet balances.`,
+      message:
+        driftCount === 0
+          ? 'All wallet ledgers are perfectly balanced.'
+          : `Reconciled and corrected ${driftCount} wallet balances.`,
     };
   }
 }

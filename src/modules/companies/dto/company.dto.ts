@@ -319,7 +319,8 @@ export class CompanyQueryFilters {
   @ApiPropertyOptional()
   @IsOptional()
   @IsIn(['createdAt', 'updatedAt', 'name', 'referenceCode', 'currentBalance'])
-  sortBy?: 'createdAt' | 'updatedAt' | 'name' | 'referenceCode' | 'currentBalance';
+  sortBy?:
+    'createdAt' | 'updatedAt' | 'name' | 'referenceCode' | 'currentBalance';
 
   @ApiPropertyOptional()
   @IsOptional()

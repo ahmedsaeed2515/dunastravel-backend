@@ -39,7 +39,13 @@ describe('AvailabilityService - releaseExpiredHolds', () => {
 
   it('should release capacity and cancel expired pending bookings transactionally', async () => {
     prismaMock.booking.findMany.mockResolvedValue([
-      { id: 'b1', availabilityId: 'a1', adults: 2, children: 1, status: 'PENDING' },
+      {
+        id: 'b1',
+        availabilityId: 'a1',
+        adults: 2,
+        children: 1,
+        status: 'PENDING',
+      },
     ]);
     prismaMock.booking.updateMany.mockResolvedValue({ count: 1 });
 
@@ -56,7 +62,13 @@ describe('AvailabilityService - releaseExpiredHolds', () => {
 
   it('should not double-release if updateMany count is 0', async () => {
     prismaMock.booking.findMany.mockResolvedValue([
-      { id: 'b2', availabilityId: 'a2', adults: 1, children: 0, status: 'PENDING' },
+      {
+        id: 'b2',
+        availabilityId: 'a2',
+        adults: 1,
+        children: 0,
+        status: 'PENDING',
+      },
     ]);
     prismaMock.booking.updateMany.mockResolvedValue({ count: 0 });
 
@@ -68,7 +80,11 @@ describe('AvailabilityService - releaseExpiredHolds', () => {
 
   it('creates a slot with the explicitly requested capacity instead of a business default', async () => {
     const date = '2026-11-01';
-    const created = { id: 'availability-1', totalCapacity: 47, remainingSeats: 47 };
+    const created = {
+      id: 'availability-1',
+      totalCapacity: 47,
+      remainingSeats: 47,
+    };
     prismaMock.tour.findUnique.mockResolvedValue({ id: 'tour-1' });
     prismaMock.tourAvailability.findUnique.mockResolvedValue(null);
     prismaMock.tourAvailability.create.mockResolvedValue(created);
@@ -133,7 +149,9 @@ describe('AvailabilityService - releaseExpiredHolds', () => {
       status: 'LIMITED',
       updatedAt: new Date('2026-10-10T00:00:00.000Z'),
     });
-    prismaMock.tourAvailability.update.mockResolvedValue({ id: 'availability-1' });
+    prismaMock.tourAvailability.update.mockResolvedValue({
+      id: 'availability-1',
+    });
 
     await service.updateAvailability('availability-1', { totalCapacity: 30 });
 

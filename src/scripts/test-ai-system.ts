@@ -15,27 +15,67 @@ async function runVerification() {
     // 1. Test Ingestion
     console.log('[1/4] Running Catalog Ingestion...');
     const ingestRes = await ingestion.syncCatalogToKnowledgeBase();
-    console.log(`✓ Ingested: ${ingestRes.syncedTours} Tours, ${ingestRes.syncedDestinations} Destinations, ${ingestRes.syncedServices} Services/Guides.\n`);
+    console.log(
+      `✓ Ingested: ${ingestRes.syncedTours} Tours, ${ingestRes.syncedDestinations} Destinations, ${ingestRes.syncedServices} Services/Guides.\n`,
+    );
 
     // 2. Test Arabic Tour Catalog Grounding
     console.log('[2/4] Testing Tour Catalog Multilingual Search...');
-    const arabicTours = await tourCatalog.searchGroundedTours(['نيل', 'كروز'], 3, 'ar');
-    console.log(`✓ Found ${arabicTours.length} Arabic tours matching 'نيل / كروز':`);
-    arabicTours.forEach(t => console.log(`   - [${t.title}] in ${t.destination} -> ${t.publicUrl} ($${t.price} ${t.currency})`));
+    const arabicTours = await tourCatalog.searchGroundedTours(
+      ['نيل', 'كروز'],
+      3,
+      'ar',
+    );
+    console.log(
+      `✓ Found ${arabicTours.length} Arabic tours matching 'نيل / كروز':`,
+    );
+    arabicTours.forEach((t) =>
+      console.log(
+        `   - [${t.title}] in ${t.destination} -> ${t.publicUrl} ($${t.price} ${t.currency})`,
+      ),
+    );
 
-    const englishTours = await tourCatalog.searchGroundedTours(['Pyramids', 'Cairo'], 3, 'en');
-    console.log(`✓ Found ${englishTours.length} English tours matching 'Pyramids / Cairo':`);
-    englishTours.forEach(t => console.log(`   - [${t.title}] in ${t.destination} -> ${t.publicUrl} ($${t.price} ${t.currency})`));
+    const englishTours = await tourCatalog.searchGroundedTours(
+      ['Pyramids', 'Cairo'],
+      3,
+      'en',
+    );
+    console.log(
+      `✓ Found ${englishTours.length} English tours matching 'Pyramids / Cairo':`,
+    );
+    englishTours.forEach((t) =>
+      console.log(
+        `   - [${t.title}] in ${t.destination} -> ${t.publicUrl} ($${t.price} ${t.currency})`,
+      ),
+    );
 
     // 3. Test RAG Knowledge Retrieval in Arabic & English
     console.log('\n[3/4] Testing RAG Knowledge Retrieval...');
-    const arabicSources = await ragRetrieval.retrieveRelevantKnowledge('ما هي طرق الدفع المتاحة وسياسة الإلغاء؟', 'ar', 2);
+    const arabicSources = await ragRetrieval.retrieveRelevantKnowledge(
+      'ما هي طرق الدفع المتاحة وسياسة الإلغاء؟',
+      'ar',
+      2,
+    );
     console.log(`✓ Retrieved ${arabicSources.length} Arabic RAG sources:`);
-    arabicSources.forEach(s => console.log(`   - [${s.title}] (Score: ${s.score}): ${s.content.slice(0, 100)}...`));
+    arabicSources.forEach((s) =>
+      console.log(
+        `   - [${s.title}] (Score: ${s.score}): ${s.content.slice(0, 100)}...`,
+      ),
+    );
 
-    const customTourSources = await ragRetrieval.retrieveRelevantKnowledge('اريد تصميم رحلة عائلية خاصة vip', 'ar', 2);
-    console.log(`✓ Retrieved ${customTourSources.length} VIP/Tailor-made sources:`);
-    customTourSources.forEach(s => console.log(`   - [${s.title}] (Score: ${s.score}): ${s.content.slice(0, 100)}...`));
+    const customTourSources = await ragRetrieval.retrieveRelevantKnowledge(
+      'اريد تصميم رحلة عائلية خاصة vip',
+      'ar',
+      2,
+    );
+    console.log(
+      `✓ Retrieved ${customTourSources.length} VIP/Tailor-made sources:`,
+    );
+    customTourSources.forEach((s) =>
+      console.log(
+        `   - [${s.title}] (Score: ${s.score}): ${s.content.slice(0, 100)}...`,
+      ),
+    );
 
     // 4. Test Prompt Injection Patterns
     console.log('\n[4/4] Testing Security & Injection Patterns...');
@@ -65,7 +105,9 @@ async function runVerification() {
 
     testAttacks.forEach((text) => {
       const isBlocked = INJECTION_PATTERNS.some((p) => p.test(text));
-      console.log(`   - "${text}" -> ${isBlocked ? 'BLOCKED 🛡️' : 'ALLOWED ✓'}`);
+      console.log(
+        `   - "${text}" -> ${isBlocked ? 'BLOCKED 🛡️' : 'ALLOWED ✓'}`,
+      );
     });
 
     console.log('\n=== All Verification Tests Passed Successfully! ===');

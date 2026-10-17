@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -32,29 +36,36 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const freshInvoiceId = Math.floor(400000 + Math.random() * 500000);
+        if (urlStr.includes('/api/v2/integration/init')) {
+          const freshInvoiceId = Math.floor(400000 + Math.random() * 500000);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
+                invoice_id: freshInvoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
         return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
-              invoice_id: freshInvoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
         );
-      }
-
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -79,7 +90,9 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     await app.init();
 
     const configService = app.get(ConfigService);
-    hashToken = configService.get('GETPAYIN_HASH_TOKEN') || 'sandbox_hash_token_dunas_secret_2026';
+    hashToken =
+      configService.get('GETPAYIN_HASH_TOKEN') ||
+      'sandbox_hash_token_dunas_secret_2026';
 
     paylinkClient = new PaylinkClient({
       publicToken: 'dummy',
@@ -87,7 +100,9 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     });
 
     // Upsert availability slot for testDate
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -117,8 +132,11 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
   });
@@ -177,16 +195,21 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'USD',
     };
-    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(paidPayload, hashToken);
+    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      paidPayload,
+      hashToken,
+    );
 
     await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
       .send(paidPayload);
 
-    const confirmedBooking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const confirmedBooking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(confirmedBooking?.status).toBe('CONFIRMED');
 
     // 1b. Attempt to move CONFIRMED -> PENDING via admin/patch status is forbidden
@@ -198,13 +221,17 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     // Must be rejected (either 403 Forbidden or 409 Conflict)
     expect([400, 403, 404, 409]).toContain(patchRes.status);
 
-    const checkBooking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const checkBooking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(checkBooking?.status).toBe('CONFIRMED');
   });
 
   it('2. Expired Holds Sweep: releaseExpiredHolds cancels abandoned booking, voids invoice, releases seats, and blocks late webhook', async () => {
     // 2a. Record slot seats before booking
-    const slotBefore = await prisma.tourAvailability.findUnique({ where: { id: testSlotId } });
+    const slotBefore = await prisma.tourAvailability.findUnique({
+      where: { id: testSlotId },
+    });
     const seatsBefore = slotBefore!.remainingSeats;
 
     // 2b. Create a booking (reserves 2 seats)
@@ -229,7 +256,9 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
 
     // Verify seats decremented by 2
-    const slotAfterBook = await prisma.tourAvailability.findUnique({ where: { id: testSlotId } });
+    const slotAfterBook = await prisma.tourAvailability.findUnique({
+      where: { id: testSlotId },
+    });
     expect(slotAfterBook!.remainingSeats).toBe(seatsBefore - 2);
 
     // Backdate booking.createdAt to simulate expired hold (> 15 minutes old)
@@ -250,8 +279,12 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     expect(sweptBooking?.status).toBe('CANCELLED');
     expect(sweptBooking?.invoice?.status).toBe('VOID');
 
-    const slotAfterSweep = await prisma.tourAvailability.findUnique({ where: { id: testSlotId } });
-    expect(slotAfterSweep!.remainingSeats).toBeGreaterThanOrEqual(slotAfterBook!.remainingSeats + 2);
+    const slotAfterSweep = await prisma.tourAvailability.findUnique({
+      where: { id: testSlotId },
+    });
+    expect(slotAfterSweep!.remainingSeats).toBeGreaterThanOrEqual(
+      slotAfterBook!.remainingSeats + 2,
+    );
 
     // 2e. Late webhook arriving for this CANCELLED booking is strictly rejected
     const lateInvoiceId = Math.floor(900000 + Math.random() * 90000);
@@ -261,17 +294,19 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Late payment',
-      order_amount: 10.00,
+      order_amount: 10.0,
       order_currency: 'USD',
     };
-    latePaidPayload.signature = (paylinkClient.webhooks as any).computeSignature(latePaidPayload, hashToken);
+    latePaidPayload.signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(latePaidPayload, hashToken);
 
     // Associate a dummy payment with the cancelled booking to test payment capture barrier
     await prisma.payment.create({
       data: {
         id: crypto.randomUUID(),
         bookingId: bookingId,
-        amount: new Prisma.Decimal(10.00),
+        amount: new Prisma.Decimal(10.0),
         currency: 'USD',
         method: 'GETPAYIN',
         provider: 'GETPAYIN',
@@ -286,9 +321,13 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       .send(latePaidPayload);
 
     expect(lateWebhookRes.status).toBe(422);
-    expect(lateWebhookRes.body.message).toContain('Cannot capture payment for booking in terminal status CANCELLED');
+    expect(lateWebhookRes.body.message).toContain(
+      'Cannot capture payment for booking in terminal status CANCELLED',
+    );
 
-    const bookingFinal = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const bookingFinal = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(bookingFinal?.status).toBe('CANCELLED');
 
     // 2f. Active session protection: A booking older than 15m with an unexpired payment session (expiresAt > now) is NOT cancelled by the sweep
@@ -308,14 +347,16 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
         phone: '+201000001234',
         language: 'en',
       });
-    const activeBookingId = (activeSessionBookingRes.body?.data || activeSessionBookingRes.body).id;
+    const activeBookingId = (
+      activeSessionBookingRes.body?.data || activeSessionBookingRes.body
+    ).id;
 
     // Attach an in-flight payment session expiring 30 minutes in the future
     await prisma.payment.create({
       data: {
         id: crypto.randomUUID(),
         bookingId: activeBookingId,
-        amount: new Prisma.Decimal(5.00),
+        amount: new Prisma.Decimal(5.0),
         currency: 'USD',
         method: 'GETPAYIN',
         provider: 'GETPAYIN',
@@ -335,12 +376,16 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     await availabilityService.releaseExpiredHolds(15);
 
     // Active session booking MUST NOT be cancelled
-    const activeBookingCheck = await prisma.booking.findUnique({ where: { id: activeBookingId } });
+    const activeBookingCheck = await prisma.booking.findUnique({
+      where: { id: activeBookingId },
+    });
     expect(activeBookingCheck?.status).toBe('PENDING');
   });
 
   it('3. Full Refund: transitions Payment to REFUNDED, Booking to REFUNDED, and releases seats', async () => {
-    const slotBefore = await prisma.tourAvailability.findUnique({ where: { id: testSlotId } });
+    const slotBefore = await prisma.tourAvailability.findUnique({
+      where: { id: testSlotId },
+    });
     const seatsBefore = slotBefore!.remainingSeats;
 
     const idempotencyKey = `sm_refund_${Date.now()}`;
@@ -378,10 +423,13 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'USD',
     };
-    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(paidPayload, hashToken);
+    paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      paidPayload,
+      hashToken,
+    );
 
     await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -395,7 +443,10 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       success: 1,
       message: 'Refunded',
     };
-    refundPayload.signature = (paylinkClient.webhooks as any).computeSignature(refundPayload, hashToken);
+    refundPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      refundPayload,
+      hashToken,
+    );
 
     const refundRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -404,7 +455,9 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     expect(refundRes.status).toBe(200);
 
     // Verify DB states
-    const paymentAfter = await prisma.payment.findFirst({ where: { bookingId } });
+    const paymentAfter = await prisma.payment.findFirst({
+      where: { bookingId },
+    });
     const bookingAfter = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: { invoice: true },
@@ -417,7 +470,9 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
     expect(bookingAfter?.invoice?.status).toBe('CREDIT_NOTE');
 
     // Capacity must be released back
-    const slotAfterRefund = await prisma.tourAvailability.findUnique({ where: { id: testSlotId } });
+    const slotAfterRefund = await prisma.tourAvailability.findUnique({
+      where: { id: testSlotId },
+    });
     expect(slotAfterRefund!.remainingSeats).toBe(seatsBefore);
   });
 });

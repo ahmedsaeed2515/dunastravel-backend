@@ -31,7 +31,9 @@ export class AdminAvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
 
   @Get('tours/:tourId/availabilities')
-  @ApiOperation({ summary: 'List every availability slot for an admin tour editor' })
+  @ApiOperation({
+    summary: 'List every availability slot for an admin tour editor',
+  })
   async listAvailabilities(@Param('tourId') tourId: string) {
     return this.availabilityService.listAdminAvailability(tourId);
   }

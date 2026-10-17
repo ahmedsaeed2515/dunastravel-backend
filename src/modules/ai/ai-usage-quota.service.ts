@@ -43,9 +43,7 @@ export class AiUsageQuotaService implements OnApplicationShutdown {
       now.getUTCDate() + 1,
     );
     const ttlMs = Math.max(60_000, tomorrowUtc - now.getTime());
-    const principal = createHash('sha256')
-      .update(adminUserId)
-      .digest('hex');
+    const principal = createHash('sha256').update(adminUserId).digest('hex');
     const day = now.toISOString().slice(0, 10);
     const key = `security:ai-quota:${day}:${principal}`;
     const consumed = Number(

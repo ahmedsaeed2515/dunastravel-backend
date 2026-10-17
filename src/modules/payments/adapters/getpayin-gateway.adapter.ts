@@ -27,7 +27,10 @@ import {
 const PAYLINK_DEFAULT_BASE_URL = 'https://pay.getpayin.com';
 const PAYLINK_EVENTS = new Map<
   string,
-  { statuses: WebhookPayload['providerStatus'][]; mapped: WebhookPayload['status'] }
+  {
+    statuses: WebhookPayload['providerStatus'][];
+    mapped: WebhookPayload['status'];
+  }
 >([
   ['invoice.paid', { statuses: ['PAID'], mapped: 'COMPLETED' }],
   ['invoice.not_paid', { statuses: ['UNPAID'], mapped: 'FAILED' }],
@@ -130,7 +133,10 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
 
     const checkoutUrl = new URL(checkout.checkoutUrl);
     const expectedOrigin = new URL(this.baseUrl()).origin;
-    if (checkoutUrl.protocol !== 'https:' || checkoutUrl.origin !== expectedOrigin) {
+    if (
+      checkoutUrl.protocol !== 'https:' ||
+      checkoutUrl.origin !== expectedOrigin
+    ) {
       throw new ServiceUnavailableException(
         'PayLink returned an untrusted checkout URL',
       );
@@ -159,7 +165,9 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       verified = this.client().webhooks.verify(rawBody.toString('utf8'));
     } catch (error) {
       if (error instanceof PaylinkSignatureError) {
-        this.logger.error('CRITICAL SECURITY ALERT: PayLink webhook signature verification failed');
+        this.logger.error(
+          'CRITICAL SECURITY ALERT: PayLink webhook signature verification failed',
+        );
         throw new BadRequestException('Invalid PayLink webhook signature');
       }
       throw error;
@@ -167,8 +175,7 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
 
     const contract = PAYLINK_EVENTS.get(verified.event);
     const providerStatus = verified.invoiceStatus?.toUpperCase() as
-      | WebhookPayload['providerStatus']
-      | undefined;
+      WebhookPayload['providerStatus'] | undefined;
     if (
       !contract ||
       !verified.invoiceId ||
@@ -176,7 +183,9 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       !providerStatus ||
       !contract.statuses.includes(providerStatus)
     ) {
-      throw new BadRequestException('Unsupported or inconsistent PayLink event');
+      throw new BadRequestException(
+        'Unsupported or inconsistent PayLink event',
+      );
     }
 
     const rawSignature = String(verified.raw.signature || '');
@@ -237,7 +246,11 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
     const providerStatus = String(payload.invoice_status).toUpperCase();
 
     const rawSig = String(payload.signature || '').trim();
-    if (!rawSig || rawSig.length !== 44 || !/^[A-Za-z0-9+/]{43}=$/.test(rawSig)) {
+    if (
+      !rawSig ||
+      rawSig.length !== 44 ||
+      !/^[A-Za-z0-9+/]{43}=$/.test(rawSig)
+    ) {
       this.logger.error(
         `CRITICAL SECURITY ALERT: Malformed PayLink browser callback signature encoding for invoice_id=${providerInvoiceId}`,
       );
@@ -280,7 +293,8 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       publicToken: this.authToken(),
       hashToken: this.hashToken(),
       baseUrl: this.baseUrl(),
-      timeoutMs: this.configService.get<number>('GETPAYIN_TIMEOUT_MS') ?? 30_000,
+      timeoutMs:
+        this.configService.get<number>('GETPAYIN_TIMEOUT_MS') ?? 30_000,
       maxRetries: this.configService.get<number>('GETPAYIN_MAX_RETRIES') ?? 2,
     });
   }
@@ -300,8 +314,7 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
 
   private hashToken(): string {
     return (
-      this.value('GETPAYIN_HASH_TOKEN') ||
-      this.value('GETPAYIN_WEBHOOK_SECRET')
+      this.value('GETPAYIN_HASH_TOKEN') || this.value('GETPAYIN_WEBHOOK_SECRET')
     );
   }
 
@@ -356,8 +369,12 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       return await operation();
     } catch (error) {
       if (error instanceof PaylinkConnectionError) {
-        this.logger.error(`GATEWAY OUTAGE ALERT: PayLink connection failure or timeout: ${error.message}`);
-        throw new ServiceUnavailableException('PayLink is temporarily unavailable');
+        this.logger.error(
+          `GATEWAY OUTAGE ALERT: PayLink connection failure or timeout: ${error.message}`,
+        );
+        throw new ServiceUnavailableException(
+          'PayLink is temporarily unavailable',
+        );
       }
       if (error instanceof PaylinkApiError) {
         if (error.status === 401 || error.status === 403) {

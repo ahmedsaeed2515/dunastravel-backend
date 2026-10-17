@@ -55,7 +55,8 @@ describe('Blogs HTTP Contract Spec', () => {
           findUnique: jest
             .fn()
             .mockImplementation(({ where }: { where: { slug: string } }) => {
-              if (where?.slug === 'luxor-temples-guide') return Promise.resolve(null);
+              if (where?.slug === 'luxor-temples-guide')
+                return Promise.resolve(null);
               return Promise.resolve(mockArticle);
             }),
           count: jest.fn().mockResolvedValue(1),

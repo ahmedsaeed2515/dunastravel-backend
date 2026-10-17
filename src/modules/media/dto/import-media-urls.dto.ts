@@ -17,7 +17,9 @@ export class MediaUrlItemDto {
   @IsNotEmpty()
   url!: string;
 
-  @ApiPropertyOptional({ description: 'Accessibility alt text for this specific image' })
+  @ApiPropertyOptional({
+    description: 'Accessibility alt text for this specific image',
+  })
   @IsOptional()
   @IsString()
   altText?: string;
@@ -26,7 +28,8 @@ export class MediaUrlItemDto {
 export class ImportMediaUrlsDto {
   @ApiProperty({
     type: [MediaUrlItemDto],
-    description: 'Array of image URLs to import with optional individual alt text',
+    description:
+      'Array of image URLs to import with optional individual alt text',
   })
   @IsArray()
   @IsNotEmpty()
@@ -44,7 +47,8 @@ export class ImportMediaUrlsDto {
   entityType!: MediaEntityType;
 
   @ApiPropertyOptional({
-    description: 'Required if entityType is TOUR or HOTEL, or category slug if GENERAL',
+    description:
+      'Required if entityType is TOUR or HOTEL, or category slug if GENERAL',
     type: 'string',
   })
   @ValidateIf(
@@ -65,7 +69,8 @@ export class ImportMediaUrlsDto {
   categorySlug?: string;
 
   @ApiPropertyOptional({
-    description: 'Default alt text applied if individual altText is not provided',
+    description:
+      'Default alt text applied if individual altText is not provided',
     type: 'string',
   })
   @IsOptional()

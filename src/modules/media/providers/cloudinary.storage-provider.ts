@@ -68,7 +68,10 @@ export class CloudinaryStorageProvider implements StorageProvider {
         uploadOptions.eager_async = false;
       } else {
         uploadOptions.eager = [
-          { format: 'jpg', transformation: [{ width: 800, height: 480, crop: 'fill' }] },
+          {
+            format: 'jpg',
+            transformation: [{ width: 800, height: 480, crop: 'fill' }],
+          },
           { format: 'mp4', quality: 'auto' },
         ];
         uploadOptions.eager_async = true;
@@ -135,7 +138,8 @@ export class CloudinaryStorageProvider implements StorageProvider {
           bytes: result.bytes,
           width: result.width || null,
           height: result.height || null,
-          duration: typeof result.duration === 'number' ? result.duration : null,
+          duration:
+            typeof result.duration === 'number' ? result.duration : null,
           error: null,
         });
       };
@@ -164,10 +168,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
     });
   }
 
-  async uploadUrl(
-    url: string,
-    options: UploadOptions,
-  ): Promise<UploadResult> {
+  async uploadUrl(url: string, options: UploadOptions): Promise<UploadResult> {
     const start = Date.now();
     const folderPath = `${options.folder}/${options.entityType.toLowerCase()}/${options.entityId ?? 'general'}`;
     const tags = [
@@ -189,10 +190,7 @@ export class CloudinaryStorageProvider implements StorageProvider {
         unique_filename: true,
         overwrite: false,
         format: 'webp',
-        transformation: [
-          { quality: 'auto:good' },
-          { fetch_format: 'webp' },
-        ],
+        transformation: [{ quality: 'auto:good' }, { fetch_format: 'webp' }],
         eager: options.eager,
         eager_async: false,
         tags: tags,
@@ -262,7 +260,10 @@ export class CloudinaryStorageProvider implements StorageProvider {
     });
   }
 
-  async delete(publicId: string, resourceType: 'image' | 'video' = 'image'): Promise<void> {
+  async delete(
+    publicId: string,
+    resourceType: 'image' | 'video' = 'image',
+  ): Promise<void> {
     const start = Date.now();
     try {
       const result = await cloudinary.uploader.destroy(publicId, {

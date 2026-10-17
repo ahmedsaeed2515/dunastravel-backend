@@ -39,7 +39,12 @@ export function isCanonicalPaginatedPayload(
 ): value is CanonicalPaginatedPayload<unknown> {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Record<string, unknown>;
-  if (!Array.isArray(candidate.data) || !candidate.meta || typeof candidate.meta !== 'object') return false;
+  if (
+    !Array.isArray(candidate.data) ||
+    !candidate.meta ||
+    typeof candidate.meta !== 'object'
+  )
+    return false;
   const meta = candidate.meta as Record<string, unknown>;
   return ['total', 'page', 'limit', 'totalPages'].every(
     (key) => typeof meta[key] === 'number' && Number.isFinite(meta[key]),
@@ -82,7 +87,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
         }
 
         const timestamp =
-          (resData && typeof resData === 'object' && (resData as any).timestamp)
+          resData && typeof resData === 'object' && (resData as any).timestamp
             ? (resData as any).timestamp
             : new Date().toISOString();
 

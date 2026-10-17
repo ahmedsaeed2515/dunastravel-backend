@@ -5,7 +5,10 @@ import { PAYMENT_EVENTS } from '../../../common/events/payment-events';
 import { CommissionsService } from '../../commissions/commissions.service';
 
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
-import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 
 import { EmailCompositionService } from '../services/email-composition.service';
 import { EmailDeliveryService } from '../services/email-delivery.service';
@@ -54,9 +57,7 @@ export class PaymentEventsListener {
     if (booking) {
       const customerUserId = booking.userId;
       const customerEmail =
-        booking.user?.email ||
-        booking.billingInfo?.email ||
-        undefined;
+        booking.user?.email || booking.billingInfo?.email || undefined;
       const customerName =
         booking.user?.name ||
         booking.billingInfo?.fullName ||
@@ -120,14 +121,15 @@ export class PaymentEventsListener {
 
       if (customerEmail) {
         try {
-          const customerEmailPayload = await this.emailComposition.composePaymentConfirmedCustomer({
-            customerEmail,
-            customerName,
-            referenceCode: booking.referenceCode,
-            tourTitle,
-            amountUsd: paidAmountNumber,
-            paidAt,
-          });
+          const customerEmailPayload =
+            await this.emailComposition.composePaymentConfirmedCustomer({
+              customerEmail,
+              customerName,
+              referenceCode: booking.referenceCode,
+              tourTitle,
+              amountUsd: paidAmountNumber,
+              paidAt,
+            });
 
           await this.emailDelivery.deliver(
             NotificationType.CUSTOMER_ACKNOWLEDGMENT,
@@ -137,19 +139,22 @@ export class PaymentEventsListener {
           );
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          this.logger.error(`Failed to send customer payment confirmation email: ${msg}`);
+          this.logger.error(
+            `Failed to send customer payment confirmation email: ${msg}`,
+          );
         }
       }
 
       try {
-        const adminEmailPayload = await this.emailComposition.composePaymentConfirmedAdmin({
-          customerEmail: customerEmail || 'N/A',
-          customerName,
-          referenceCode: booking.referenceCode,
-          tourTitle,
-          amountUsd: paidAmountNumber,
-          paidAt,
-        });
+        const adminEmailPayload =
+          await this.emailComposition.composePaymentConfirmedAdmin({
+            customerEmail: customerEmail || 'N/A',
+            customerName,
+            referenceCode: booking.referenceCode,
+            tourTitle,
+            amountUsd: paidAmountNumber,
+            paidAt,
+          });
 
         await this.emailDelivery.deliver(
           NotificationType.INTERNAL_SALES_ALERT,
@@ -188,7 +193,8 @@ export class PaymentEventsListener {
           category: InAppNotificationCategory.PAYMENT,
           priority: InAppNotificationPriority.HIGH,
           title: `Payment Failed: #${booking.referenceCode}`,
-          message: 'Your payment could not be processed. Please try again or contact support.',
+          message:
+            'Your payment could not be processed. Please try again or contact support.',
           targetApp: 'CUSTOMER',
           entityType: 'BOOKING',
           entityId: booking.referenceCode,

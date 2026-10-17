@@ -28,9 +28,7 @@ describe('WalletsService', () => {
               update: jest.fn(),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
               findUnique: jest.fn(),
-              findUniqueOrThrow: jest
-                .fn()
-                .mockResolvedValue({ balance: 60 }),
+              findUniqueOrThrow: jest.fn().mockResolvedValue({ balance: 60 }),
               findFirst: jest.fn(),
               count: jest.fn(),
               aggregate: jest.fn(),
@@ -66,9 +64,7 @@ describe('WalletsService', () => {
       jest
         .spyOn(prisma.wallet, 'upsert')
         .mockResolvedValue({ id: 'wallet-1', balance: 50 } as any);
-      jest
-        .spyOn(prisma.wallet, 'updateMany')
-        .mockResolvedValue({ count: 0 });
+      jest.spyOn(prisma.wallet, 'updateMany').mockResolvedValue({ count: 0 });
 
       await expect(
         service.addTransaction({
@@ -190,7 +186,7 @@ describe('WalletsService', () => {
       const result = await service.getWalletTransactions('wallet-1', {
         page: 1,
         limit: 10,
-      } as any);
+      });
 
       expect(result).toBeDefined();
       // result is an array

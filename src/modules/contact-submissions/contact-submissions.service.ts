@@ -46,9 +46,7 @@ export class ContactSubmissionsService {
         },
       });
 
-      this.logger.log(
-        `Contact submission created: ref=${referenceCode}`,
-      );
+      this.logger.log(`Contact submission created: ref=${referenceCode}`);
 
       const payload = new ContactCreatedEvent({
         referenceCode: submission.referenceCode,
@@ -154,25 +152,16 @@ export class ContactSubmissionsService {
   ) {
     const submission = await this.findById(id);
     if (submission.status === status) return submission;
-    const allowedTransitions: Record<ContactSubmissionStatus, ContactSubmissionStatus[]> =
-      {
-        NEW: [
-          ContactSubmissionStatus.READ,
-          ContactSubmissionStatus.ARCHIVED,
-        ],
-        READ: [
-          ContactSubmissionStatus.NEW,
-          ContactSubmissionStatus.ARCHIVED,
-        ],
-        ARCHIVED: [
-          ContactSubmissionStatus.READ,
-          ContactSubmissionStatus.NEW,
-        ],
-      };
+    const allowedTransitions: Record<
+      ContactSubmissionStatus,
+      ContactSubmissionStatus[]
+    > = {
+      NEW: [ContactSubmissionStatus.READ, ContactSubmissionStatus.ARCHIVED],
+      READ: [ContactSubmissionStatus.NEW, ContactSubmissionStatus.ARCHIVED],
+      ARCHIVED: [ContactSubmissionStatus.READ, ContactSubmissionStatus.NEW],
+    };
     if (!allowedTransitions[submission.status].includes(status)) {
-      throw new BadRequestException(
-        'Contact submission status cannot change',
-      );
+      throw new BadRequestException('Contact submission status cannot change');
     }
 
     return this.prisma.$transaction(

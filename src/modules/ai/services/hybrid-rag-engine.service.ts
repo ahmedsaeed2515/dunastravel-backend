@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { LiveCatalogRetrieverService, GroundedTourEntity } from './live-catalog-retriever.service';
+import {
+  LiveCatalogRetrieverService,
+  GroundedTourEntity,
+} from './live-catalog-retriever.service';
 import { createHash } from 'crypto';
 
 export interface GroundedRetrievalContext {
@@ -23,9 +26,19 @@ export interface GroundedRetrievalContext {
 
 export interface IngestEntityDto {
   canonicalEntityId: string;
-  entityType: 'TOUR' | 'HOTEL' | 'DESTINATION' | 'TRANSPORT' | 'POLICY' | 'FAQ' | 'CUSTOM';
+  entityType:
+    | 'TOUR'
+    | 'HOTEL'
+    | 'DESTINATION'
+    | 'TRANSPORT'
+    | 'POLICY'
+    | 'FAQ'
+    | 'CUSTOM';
   entityId: string;
-  translations: Record<string, { title: string; content: string; tags?: string[] }>;
+  translations: Record<
+    string,
+    { title: string; content: string; tags?: string[] }
+  >;
   category: string;
   priority?: number;
 }
@@ -69,7 +82,8 @@ export class HybridRagEngineService {
     if (t.startsWith('ف') && t.length > 3) t = t.substring(1);
 
     if (/^(حجز|احجز|احجزلي|الحجز|حجوزات|يحجز|تحجز)$/.test(t)) return 'حجز';
-    if (/^(الغاء|إلغاء|الالغاء|يلغي|تلغي|استرداد|استرجاع)$/.test(t)) return 'الغاء';
+    if (/^(الغاء|إلغاء|الالغاء|يلغي|تلغي|استرداد|استرجاع)$/.test(t))
+      return 'الغاء';
     if (/^(دفع|الدفع|يدفع|مدفوعات|كاش|كارت|فيزا)$/.test(t)) return 'دفع';
     if (/^(سعر|اسعار|الاسعار|تكلفة|بكام|بكم)$/.test(t)) return 'سعر';
     if (/^(تاشيرة|تأشيرة|تاشيرات|فيزا)$/.test(t)) return 'فيزا';
@@ -104,7 +118,13 @@ export class HybridRagEngineService {
   async retrieveGroundedKnowledge(
     userMessage: string,
     locale: string = 'en',
-    allowedSources: string[] = ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
+    allowedSources: string[] = [
+      'tours',
+      'destinations',
+      'policies',
+      'hotels',
+      'transportation',
+    ],
     limit: number = 6,
   ): Promise<GroundedRetrievalContext> {
     const lang = locale.toLowerCase().split('-')[0];
@@ -126,7 +146,8 @@ export class HybridRagEngineService {
 
     try {
       // 1. Execute PostgreSQL pg_trgm similarity search on ai_knowledge_chunks
-      const rawTrgmResults: any[] = await (this.prisma as any).$queryRawUnsafe(`
+      const rawTrgmResults: any[] = await (this.prisma as any).$queryRawUnsafe(
+        `
         SELECT 
           id,
           canonical_entity_id AS "canonicalEntityId",
@@ -141,7 +162,10 @@ export class HybridRagEngineService {
         WHERE (locale = $2 OR locale = 'en' OR locale = 'ar')
         ORDER BY "trgmScore" DESC
         LIMIT 40;
-      `, cleanQuery, lang);
+      `,
+        cleanQuery,
+        lang,
+      );
 
       rawTrgmResults.forEach((row) => {
         let score = (parseFloat(row.trgmScore) || 0) * 100;
@@ -156,7 +180,8 @@ export class HybridRagEngineService {
 
         if (row.locale === lang) score += 15;
 
-        const category = (row.metadataJsonb && row.metadataJsonb.category) || 'GENERAL';
+        const category =
+          (row.metadataJsonb && row.metadataJsonb.category) || 'GENERAL';
 
         scoredChunks.push({
           id: row.id,
@@ -195,8 +220,14 @@ export class HybridRagEngineService {
 
         let matches = 0;
         tokens.forEach((tok) => {
-          if (normTitle.includes(tok)) { score += 15; matches++; }
-          if (normContent.includes(tok)) { score += 4; matches++; }
+          if (normTitle.includes(tok)) {
+            score += 15;
+            matches++;
+          }
+          if (normContent.includes(tok)) {
+            score += 4;
+            matches++;
+          }
         });
 
         if (matches > 0 || item.priority >= 20) {
@@ -230,7 +261,6 @@ export class HybridRagEngineService {
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
-
     // 2. Query Live Relational Database for dynamic structured values
     let groundedTours: GroundedTourEntity[] = [];
     if (allowedSources.includes('tours')) {
@@ -243,7 +273,20 @@ export class HybridRagEngineService {
       // If no candidate tours matched via chunks, do a smart keyword live search
       if (groundedTours.length === 0) {
         groundedTours = await this.liveCatalogRetriever.searchLiveTours({
-          destination: tokens.find((t) => ['cairo', 'luxor', 'aswan', 'hurghada', 'egypt', 'قاهرة', 'اقصر', 'اسوان', 'غردقة', 'مصر'].includes(t)),
+          destination: tokens.find((t) =>
+            [
+              'cairo',
+              'luxor',
+              'aswan',
+              'hurghada',
+              'egypt',
+              'قاهرة',
+              'اقصر',
+              'اسوان',
+              'غردقة',
+              'مصر',
+            ].includes(t),
+          ),
           locale,
           limit: 3,
         });
@@ -252,32 +295,58 @@ export class HybridRagEngineService {
 
     // 3. Query Live Hotels if relevant
     let groundedHotels: any[] = [];
-    if (allowedSources.includes('hotels') && tokens.some((t) => ['hotel', 'stay', 'suite', 'resort', 'فندق', 'منتجع', 'اقامة'].includes(t))) {
-      groundedHotels = await this.liveCatalogRetriever.getLiveHotels(undefined, 2);
+    if (
+      allowedSources.includes('hotels') &&
+      tokens.some((t) =>
+        ['hotel', 'stay', 'suite', 'resort', 'فندق', 'منتجع', 'اقامة'].includes(
+          t,
+        ),
+      )
+    ) {
+      groundedHotels = await this.liveCatalogRetriever.getLiveHotels(
+        undefined,
+        2,
+      );
     }
 
     // 4. Query Transportation if relevant
     let groundedTransportation: any[] = [];
-    if (allowedSources.includes('transportation') && tokens.some((t) => ['transfer', 'car', 'limousine', 'airport', 'سيارة', 'توصيل', 'مطار', 'ليموزين'].includes(t))) {
-      groundedTransportation = await this.liveCatalogRetriever.getLiveTransportation();
+    if (
+      allowedSources.includes('transportation') &&
+      tokens.some((t) =>
+        [
+          'transfer',
+          'car',
+          'limousine',
+          'airport',
+          'سيارة',
+          'توصيل',
+          'مطار',
+          'ليموزين',
+        ].includes(t),
+      )
+    ) {
+      groundedTransportation =
+        await this.liveCatalogRetriever.getLiveTransportation();
     }
 
     // 5. Query active AI Overrides for grounded entities
     const now = new Date();
     const entityIds = [
       ...groundedTours.map((t) => t.id),
-      ...topChunks.map((c) => c.canonicalEntityId.split(':')[1]).filter(Boolean),
+      ...topChunks
+        .map((c) => c.canonicalEntityId.split(':')[1])
+        .filter(Boolean),
     ];
 
-    const activeOverrides = await (this.prisma as any).knowledgeBaseItem.findMany({
+    const activeOverrides = await (
+      this.prisma as any
+    ).knowledgeBaseItem.findMany({
       where: {
         sourceEntityId: { in: entityIds },
         isManuallyOverridden: true,
         isExcludedFromAi: false,
-        OR: [
-          { validityEnd: null },
-          { validityEnd: { gte: now } },
-        ],
+        OR: [{ validityEnd: null }, { validityEnd: { gte: now } }],
       },
       select: {
         sourceEntityId: true,
@@ -286,7 +355,10 @@ export class HybridRagEngineService {
       },
     });
 
-    const overrideMap = new Map<string, { instructions?: string; isRecommendationAllowed: boolean }>();
+    const overrideMap = new Map<
+      string,
+      { instructions?: string; isRecommendationAllowed: boolean }
+    >();
     activeOverrides.forEach((ov: any) => {
       if (ov.sourceEntityId && !overrideMap.has(ov.sourceEntityId)) {
         overrideMap.set(ov.sourceEntityId, {
@@ -303,10 +375,11 @@ export class HybridRagEngineService {
       summaryLines.push(`[GROUNDED_LIVE_TOURS]`);
       groundedTours.forEach((t) => {
         const ov = overrideMap.get(t.id);
-        const availStr = (t.upcomingAvailabilities && t.upcomingAvailabilities.length > 0)
-          ? `Next Departures: ${t.upcomingAvailabilities.map((a) => `${a.startDate} (${a.availableSeats} seats left)`).join(', ')}`
-          : 'Departures: Available on request daily';
-        
+        const availStr =
+          t.upcomingAvailabilities && t.upcomingAvailabilities.length > 0
+            ? `Next Departures: ${t.upcomingAvailabilities.map((a) => `${a.startDate} (${a.availableSeats} seats left)`).join(', ')}`
+            : 'Departures: Available on request daily';
+
         let tourLine = `- Tour: "${t.title}" | Slug: ${t.slug} | Duration: ${t.durationDays} Days | Base Price: $${t.basePriceUsd} ${t.currency} | ${availStr} | URL: ${t.publicUrl}`;
         if (ov?.instructions) {
           tourLine += `\n  [GUIDER SPECIAL INSTRUCTION FOR THIS TOUR]: ${ov.instructions}`;
@@ -321,21 +394,27 @@ export class HybridRagEngineService {
     if (topChunks.length > 0) {
       summaryLines.push(`\n[GROUNDED_KNOWLEDGE_ARTICLES]`);
       topChunks.forEach((c) => {
-        summaryLines.push(`- [${c.sourceCategory}] ${c.title}:\n  ${c.content.slice(0, 2000)}`);
+        summaryLines.push(
+          `- [${c.sourceCategory}] ${c.title}:\n  ${c.content.slice(0, 2000)}`,
+        );
       });
     }
 
     if (groundedHotels.length > 0) {
       summaryLines.push(`\n[GROUNDED_HOTEL_PARTNERS]`);
       groundedHotels.forEach((h) => {
-        summaryLines.push(`- Hotel: ${h.name} (${h.city}) | ${h.starRating} Stars | From $${h.minPriceUsd}/night | Amenities: ${h.amenities.join(', ')}`);
+        summaryLines.push(
+          `- Hotel: ${h.name} (${h.city}) | ${h.starRating} Stars | From $${h.minPriceUsd}/night | Amenities: ${h.amenities.join(', ')}`,
+        );
       });
     }
 
     if (groundedTransportation.length > 0) {
       summaryLines.push(`\n[GROUNDED_TRANSPORTATION]`);
       groundedTransportation.forEach((tr) => {
-        summaryLines.push(`- Fleet: ${tr.name} (${tr.vehicleType}) | $${tr.priceUsd} USD | Route: ${tr.origin} -> ${tr.destination}`);
+        summaryLines.push(
+          `- Fleet: ${tr.name} (${tr.vehicleType}) | $${tr.priceUsd} USD | Route: ${tr.origin} -> ${tr.destination}`,
+        );
       });
     }
 
@@ -344,7 +423,9 @@ export class HybridRagEngineService {
       groundedTours,
       groundedHotels,
       groundedTransportation,
-      systemPolicies: topChunks.filter((c) => c.sourceCategory.includes('POLICY')).map((c) => c.content),
+      systemPolicies: topChunks
+        .filter((c) => c.sourceCategory.includes('POLICY'))
+        .map((c) => c.content),
       groundedSummaryText: summaryLines.join('\n'),
     };
   }
@@ -358,7 +439,9 @@ export class HybridRagEngineService {
 
     for (const loc of locales) {
       const trans = dto.translations[loc];
-      const contentHash = createHash('sha256').update(trans.content).digest('hex');
+      const contentHash = createHash('sha256')
+        .update(trans.content)
+        .digest('hex');
 
       // 1. Upsert KnowledgeBaseItem
       const item = await (this.prisma as any).knowledgeBaseItem.upsert({

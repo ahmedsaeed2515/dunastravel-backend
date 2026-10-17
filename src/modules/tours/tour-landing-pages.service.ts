@@ -49,12 +49,19 @@ export class TourLandingPagesService {
       const current = await this.getLandingPagesVersion();
       const next = current + 1;
       await this.cacheService.set('landing-pages:version', next, 86_400_000);
-      const tourVer = (await this.cacheService.get<number>('tours:catalog:version')) || 1;
-      await this.cacheService.set('tours:catalog:version', tourVer + 1, 86_400_000);
+      const tourVer =
+        (await this.cacheService.get<number>('tours:catalog:version')) || 1;
+      await this.cacheService.set(
+        'tours:catalog:version',
+        tourVer + 1,
+        86_400_000,
+      );
       this.logger.log(`Landing pages version bumped to v${next}`);
       return next;
     } catch (err) {
-      this.logger.warn(`Failed to bump landing pages version: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to bump landing pages version: ${(err as Error).message}`,
+      );
       return 1;
     }
   }
@@ -402,8 +409,7 @@ export class TourLandingPagesService {
         ...(dto.status && { status: dto.status }),
         ...(dto.status
           ? {
-              isActive:
-                dto.status === 'PUBLISHED' && dto.isActive === true,
+              isActive: dto.status === 'PUBLISHED' && dto.isActive === true,
             }
           : dto.isActive !== undefined && {
               isActive: existing.status === 'PUBLISHED' && dto.isActive,
@@ -482,7 +488,9 @@ export class TourLandingPagesService {
     actor: AuthenticatedUser,
   ) {
     if (items.length === 0) {
-      throw new BadRequestException('At least one interface is required to reorder');
+      throw new BadRequestException(
+        'At least one interface is required to reorder',
+      );
     }
     const ids = items.map((item) => item.id);
     if (new Set(ids).size !== ids.length) {
@@ -575,20 +583,21 @@ export class TourLandingPagesService {
       { isolationLevel: 'Serializable' },
     );
 
-    await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_ATTACHED', landingPage.id, {
-      tourIds,
-      isFeatured: dto.isFeatured ?? false,
-      isVisible: dto.isVisible ?? true,
-    });
+    await this.audit(
+      actor,
+      'TOUR_LANDING_PAGE_TOURS_ATTACHED',
+      landingPage.id,
+      {
+        tourIds,
+        isFeatured: dto.isFeatured ?? false,
+        isVisible: dto.isVisible ?? true,
+      },
+    );
     await this.bumpLandingPagesVersion();
     return this.findOneAdmin(landingPage.id);
   }
 
-  async detachTour(
-    idOrSlug: string,
-    tourId: string,
-    actor: AuthenticatedUser,
-  ) {
+  async detachTour(idOrSlug: string, tourId: string, actor: AuthenticatedUser) {
     const landingPage = await this.prisma.tourLandingPage.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], deletedAt: null },
     });
@@ -676,7 +685,8 @@ export class TourLandingPagesService {
     // Resolve all tour IDs (whether provided by tourId UUID or by tour slug)
     const itemsWithTourIds = await Promise.all(
       dto.items.map(async (item) => {
-        if (item.tourId) return { tourId: item.tourId, sortOrder: item.sortOrder };
+        if (item.tourId)
+          return { tourId: item.tourId, sortOrder: item.sortOrder };
         if (item.slug) {
           const tour = await this.prisma.tour.findUnique({
             where: { slug: item.slug },
@@ -688,9 +698,13 @@ export class TourLandingPagesService {
       }),
     );
 
-    const validItems = itemsWithTourIds.filter((it): it is { tourId: string; sortOrder: number } => it !== null);
+    const validItems = itemsWithTourIds.filter(
+      (it): it is { tourId: string; sortOrder: number } => it !== null,
+    );
     if (validItems.length === 0) {
-      throw new BadRequestException('No valid tours found in the reorder request');
+      throw new BadRequestException(
+        'No valid tours found in the reorder request',
+      );
     }
 
     await this.prisma.$transaction(
@@ -725,9 +739,14 @@ export class TourLandingPagesService {
       { isolationLevel: 'Serializable' },
     );
 
-    await this.audit(actor, 'TOUR_LANDING_PAGE_TOURS_REORDERED', landingPage.id, {
-      items: dto.items,
-    });
+    await this.audit(
+      actor,
+      'TOUR_LANDING_PAGE_TOURS_REORDERED',
+      landingPage.id,
+      {
+        items: dto.items,
+      },
+    );
     await this.bumpLandingPagesVersion();
 
     return this.findOneAdmin(landingPage.id);
@@ -768,7 +787,11 @@ export class TourLandingPagesService {
               tours: {
                 where: {
                   isVisible: true,
-                  tour: { isActive: true, status: 'PUBLISHED', deletedAt: null },
+                  tour: {
+                    isActive: true,
+                    status: 'PUBLISHED',
+                    deletedAt: null,
+                  },
                 },
                 orderBy: { sortOrder: 'asc' },
                 select: {
@@ -834,8 +857,13 @@ export class TourLandingPagesService {
             city: t.tour.city,
             category: t.tour.category,
             isFeatured: t.isFeatured || t.tour.isFeatured,
-            customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
-            heroImage: t.tour.images.find((img) => img.isHero)?.imageUrl || t.tour.images[0]?.imageUrl || null,
+            customBadge: t.customBadge
+              ? extractI18n(t.customBadge, locale)
+              : null,
+            heroImage:
+              t.tour.images.find((img) => img.isHero)?.imageUrl ||
+              t.tour.images[0]?.imageUrl ||
+              null,
             images: t.tour.images.map((img) => img.imageUrl),
             sortOrder: t.sortOrder,
           })),
@@ -937,7 +965,9 @@ export class TourLandingPagesService {
             city: t.tour.city,
             category: t.tour.category,
             isFeatured: t.isFeatured || t.tour.isFeatured,
-            customBadge: t.customBadge ? extractI18n(t.customBadge, locale) : null,
+            customBadge: t.customBadge
+              ? extractI18n(t.customBadge, locale)
+              : null,
             heroImage:
               t.tour.images.find((img) => img.isHero)?.imageUrl ||
               t.tour.images[0]?.imageUrl ||
@@ -1027,9 +1057,7 @@ export class TourLandingPagesService {
       if (value.length > 100) {
         throw new BadRequestException('sectionsJsonb array is too large');
       }
-      return value.map((item) =>
-        this.sanitizeSectionValue(item, depth + 1),
-      );
+      return value.map((item) => this.sanitizeSectionValue(item, depth + 1));
     }
     if (typeof value === 'object') {
       const entries = Object.entries(value as Record<string, unknown>);

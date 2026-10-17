@@ -61,10 +61,7 @@ export class AdminJourneyMapsController {
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({ description: 'Journey route updated' })
   @ApiNotFoundResponse()
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateJourneyRouteDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateJourneyRouteDto) {
     return this.journeyMapsService.updateAdmin(id, dto);
   }
 

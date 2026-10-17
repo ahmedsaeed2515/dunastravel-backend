@@ -247,7 +247,9 @@ export const CANONICAL_FLEET = [
   },
 ];
 
-export async function seedTransportationServices(prisma: PrismaClient): Promise<void> {
+export async function seedTransportationServices(
+  prisma: PrismaClient,
+): Promise<void> {
   console.log('Seeding canonical Transportation Fleet...');
   let created = 0;
   let updated = 0;
@@ -277,7 +279,13 @@ export async function seedTransportationServices(prisma: PrismaClient): Promise<
         },
       });
       created++;
-      console.log('  + Created transportation service: ' + vehicle.id + ' (' + vehicle.name + ')');
+      console.log(
+        '  + Created transportation service: ' +
+          vehicle.id +
+          ' (' +
+          vehicle.name +
+          ')',
+      );
     } else {
       await prisma.transportationService.update({
         where: { id: vehicle.id },
@@ -298,9 +306,21 @@ export async function seedTransportationServices(prisma: PrismaClient): Promise<
         },
       });
       updated++;
-      console.log('  * Updated transportation service: ' + vehicle.id + ' (' + vehicle.name + ')');
+      console.log(
+        '  * Updated transportation service: ' +
+          vehicle.id +
+          ' (' +
+          vehicle.name +
+          ')',
+      );
     }
   }
 
-  console.log('  Transportation fleet seed complete: ' + created + ' created, ' + updated + ' updated.');
+  console.log(
+    '  Transportation fleet seed complete: ' +
+      created +
+      ' created, ' +
+      updated +
+      ' updated.',
+  );
 }

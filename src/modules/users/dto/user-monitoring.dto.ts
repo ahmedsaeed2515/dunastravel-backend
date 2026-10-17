@@ -13,7 +13,10 @@ import {
 import { Type } from 'class-transformer';
 
 export class SuspendUserDto {
-  @ApiProperty({ description: 'Reason for suspending the user', example: 'Suspicious activity detected' })
+  @ApiProperty({
+    description: 'Reason for suspending the user',
+    example: 'Suspicious activity detected',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
@@ -22,20 +25,30 @@ export class SuspendUserDto {
 }
 
 export class AddUserMonitoringNoteDto {
-  @ApiProperty({ description: 'Note content', example: 'Customer called regarding VIP custom tour.' })
+  @ApiProperty({
+    description: 'Note content',
+    example: 'Customer called regarding VIP custom tour.',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(2000)
   content!: string;
 
-  @ApiPropertyOptional({ description: 'Note type', default: 'MONITORING', example: 'MONITORING' })
+  @ApiPropertyOptional({
+    description: 'Note type',
+    default: 'MONITORING',
+    example: 'MONITORING',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)
   noteType?: string = 'MONITORING';
 
-  @ApiPropertyOptional({ description: 'Whether the note is pinned', default: false })
+  @ApiPropertyOptional({
+    description: 'Whether the note is pinned',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isPinned?: boolean = false;
@@ -57,7 +70,10 @@ export class ListActivityStreamQueryDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ description: 'Filter by category (AUTH, BOOKING, INQUIRY, REVIEW, ADMIN, ALL)' })
+  @ApiPropertyOptional({
+    description:
+      'Filter by category (AUTH, BOOKING, INQUIRY, REVIEW, ADMIN, ALL)',
+  })
   @IsOptional()
   @IsString()
   category?: string;

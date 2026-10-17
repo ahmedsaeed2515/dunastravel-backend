@@ -77,4 +77,3 @@ export class ReorderToursDto {
   @Type(() => ReorderTourItemDto)
   items!: ReorderTourItemDto[];
 }
-

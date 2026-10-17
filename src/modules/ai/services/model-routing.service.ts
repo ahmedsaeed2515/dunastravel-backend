@@ -29,7 +29,10 @@ export interface AgentModelPolicy {
 // Edit here when models change — no code changes elsewhere needed.
 // ============================================================
 
-export const DEFAULT_ROUTING_TABLE: Record<RoutingTier, { provider: string; model: string }> = {
+export const DEFAULT_ROUTING_TABLE: Record<
+  RoutingTier,
+  { provider: string; model: string }
+> = {
   economy: {
     provider: 'google',
     model: 'gemini-3.1-flash-lite',
@@ -83,17 +86,53 @@ export const AGENT_ROUTING_POLICIES: AgentModelPolicy[] = [
 
 // Keywords that indicate a simple FAQ / policy question → economy
 const ECONOMY_SIGNALS = [
-  'what is', 'how much', 'price', 'cost', 'when', 'where', 'visa', 'policy',
-  'refund', 'cancel', 'payment', 'hours', 'open', 'close', 'available',
-  'hello', 'hi', 'مرحبا', 'كم', 'متى', 'أين', 'سعر', 'تأشيرة',
+  'what is',
+  'how much',
+  'price',
+  'cost',
+  'when',
+  'where',
+  'visa',
+  'policy',
+  'refund',
+  'cancel',
+  'payment',
+  'hours',
+  'open',
+  'close',
+  'available',
+  'hello',
+  'hi',
+  'مرحبا',
+  'كم',
+  'متى',
+  'أين',
+  'سعر',
+  'تأشيرة',
 ];
 
 // Keywords that indicate a complex itinerary / multi-step task → complex
 const COMPLEX_SIGNALS = [
-  'itinerary', 'plan my', 'multi-day', 'customize', 'combine', 'route',
-  'compare', 'budget for', 'book multiple', 'family of', 'group of',
-  'private tour', 'honeymoon', 'anniversary', 'special occasion',
-  'خطة رحلة', 'برنامج سياحي', 'رحلة مخصصة', 'مجموعة', 'عائلة',
+  'itinerary',
+  'plan my',
+  'multi-day',
+  'customize',
+  'combine',
+  'route',
+  'compare',
+  'budget for',
+  'book multiple',
+  'family of',
+  'group of',
+  'private tour',
+  'honeymoon',
+  'anniversary',
+  'special occasion',
+  'خطة رحلة',
+  'برنامج سياحي',
+  'رحلة مخصصة',
+  'مجموعة',
+  'عائلة',
 ];
 
 // Structural signals: long messages, many sentences, tool requests → complex
@@ -122,7 +161,10 @@ export class ModelRoutingService {
     if (message.length > COMPLEX_STRUCTURAL_THRESHOLD) {
       const sentences = message.split(/[.!?،؟]/).filter(Boolean).length;
       if (sentences >= COMPLEX_SENTENCE_THRESHOLD) {
-        return { tier: 'complex', reason: `Long message with ${sentences} sentences and ${message.length} chars` };
+        return {
+          tier: 'complex',
+          reason: `Long message with ${sentences} sentences and ${message.length} chars`,
+        };
       }
     }
 
@@ -135,7 +177,10 @@ export class ModelRoutingService {
 
     // Tool requirements force complex
     if (context?.toolsRequired && context.toolsRequired.length > 2) {
-      return { tier: 'complex', reason: `Requires ${context.toolsRequired.length} tools` };
+      return {
+        tier: 'complex',
+        reason: `Requires ${context.toolsRequired.length} tools`,
+      };
     }
 
     // Economy keyword signals
@@ -147,7 +192,10 @@ export class ModelRoutingService {
 
     // Short messages default to economy
     if (message.length < 60) {
-      return { tier: 'economy', reason: `Short message (${message.length} chars)` };
+      return {
+        tier: 'economy',
+        reason: `Short message (${message.length} chars)`,
+      };
     }
 
     // Default: normal tier
@@ -162,16 +210,22 @@ export class ModelRoutingService {
     agentSlug?: string,
   ): { provider: string; model: string; tier: RoutingTier } {
     if (agentSlug) {
-      const policy = AGENT_ROUTING_POLICIES.find((p) => p.agentSlug === agentSlug);
+      const policy = AGENT_ROUTING_POLICIES.find(
+        (p) => p.agentSlug === agentSlug,
+      );
       if (policy) {
         const assignment = policy[tier];
-        this.logger.debug(`Routing [${agentSlug}/${tier}] → ${assignment.provider}/${assignment.model}`);
+        this.logger.debug(
+          `Routing [${agentSlug}/${tier}] → ${assignment.provider}/${assignment.model}`,
+        );
         return { ...assignment, tier };
       }
     }
 
     const assignment = DEFAULT_ROUTING_TABLE[tier];
-    this.logger.debug(`Routing [default/${tier}] → ${assignment.provider}/${assignment.model}`);
+    this.logger.debug(
+      `Routing [default/${tier}] → ${assignment.provider}/${assignment.model}`,
+    );
     return { ...assignment, tier };
   }
 
@@ -183,7 +237,10 @@ export class ModelRoutingService {
     agentSlug?: string,
     context?: { toolsRequired?: string[]; conversationLength?: number },
   ): RoutingPolicy {
-    const { tier, reason } = this.classifyRequest(message, { ...context, agentSlug });
+    const { tier, reason } = this.classifyRequest(message, {
+      ...context,
+      agentSlug,
+    });
     const { provider, model } = this.resolveModel(tier, agentSlug);
     return { tier, provider, model, reason };
   }
@@ -191,7 +248,10 @@ export class ModelRoutingService {
   /**
    * Get the full routing table for display in the UI.
    */
-  getRoutingTable(): Record<RoutingTier, { provider: string; model: string; displayName?: string }> {
+  getRoutingTable(): Record<
+    RoutingTier,
+    { provider: string; model: string; displayName?: string }
+  > {
     const result: any = {};
     for (const [tier, config] of Object.entries(DEFAULT_ROUTING_TABLE)) {
       const modelDef = MODEL_REGISTRY[config.model];

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminFinanceQueryDto } from './dto/admin-finance-query.dto';
 import { AdminRefundDto } from './dto/admin-refund.dto';
@@ -111,11 +116,20 @@ export class AdminFinanceService {
 
       const formattedItems = items.map((item) => {
         const bkg = item.booking;
-        const amountStr = item.amount != null ? Number(item.amount).toFixed(2) : '0.00';
-        const bkgTotalStr = bkg?.totalAmountUsd != null ? Number(bkg.totalAmountUsd).toFixed(2) : '0.00';
-        const bkgPaidStr = bkg?.paidAmountUsd != null ? Number(bkg.paidAmountUsd).toFixed(2) : '0.00';
+        const amountStr =
+          item.amount != null ? Number(item.amount).toFixed(2) : '0.00';
+        const bkgTotalStr =
+          bkg?.totalAmountUsd != null
+            ? Number(bkg.totalAmountUsd).toFixed(2)
+            : '0.00';
+        const bkgPaidStr =
+          bkg?.paidAmountUsd != null
+            ? Number(bkg.paidAmountUsd).toFixed(2)
+            : '0.00';
 
-        const completedRefunds = (item.refunds || []).filter((r) => r.status === 'COMPLETED');
+        const completedRefunds = (item.refunds || []).filter(
+          (r) => r.status === 'COMPLETED',
+        );
         const refundedAmountStr = completedRefunds
           .reduce((acc, r) => acc.plus(r.amount || 0), new Prisma.Decimal(0))
           .toFixed(2);
@@ -150,7 +164,10 @@ export class AdminFinanceService {
           bookingStatus: bkg?.status ?? 'UNKNOWN',
           customerName: bkg?.billingInfo?.fullName ?? null,
           customerEmail: bkg?.billingInfo?.email ?? null,
-          invoiceNumber: item.invoices?.[0]?.invoiceNumber ?? bkg?.invoice?.invoiceNumber ?? null,
+          invoiceNumber:
+            item.invoices?.[0]?.invoiceNumber ??
+            bkg?.invoice?.invoiceNumber ??
+            null,
           refundedAmount: refundedAmountStr,
           bookingTotalAmountUsd: bkgTotalStr,
           bookingPaidAmountUsd: bkgPaidStr,
@@ -194,7 +211,8 @@ export class AdminFinanceService {
     return {
       id: payment.id,
       bookingId: payment.bookingId,
-      amount: payment.amount != null ? Number(payment.amount).toFixed(2) : '0.00',
+      amount:
+        payment.amount != null ? Number(payment.amount).toFixed(2) : '0.00',
       currency: payment.currency || 'USD',
       provider: payment.provider ?? payment.method ?? 'GetPayIn',
       providerEnvironment: payment.providerEnvironment,
@@ -218,8 +236,14 @@ export class AdminFinanceService {
             id: bkg.id,
             referenceCode: bkg.referenceCode,
             status: bkg.status,
-            totalAmountUsd: bkg.totalAmountUsd != null ? Number(bkg.totalAmountUsd).toFixed(2) : '0.00',
-            paidAmountUsd: bkg.paidAmountUsd != null ? Number(bkg.paidAmountUsd).toFixed(2) : '0.00',
+            totalAmountUsd:
+              bkg.totalAmountUsd != null
+                ? Number(bkg.totalAmountUsd).toFixed(2)
+                : '0.00',
+            paidAmountUsd:
+              bkg.paidAmountUsd != null
+                ? Number(bkg.paidAmountUsd).toFixed(2)
+                : '0.00',
             arrivalDate: bkg.arrivalDate,
             billingInfo: bkg.billingInfo,
             passengersCount: bkg.passengers?.length ?? 0,
@@ -229,7 +253,8 @@ export class AdminFinanceService {
         id: inv.id,
         invoiceNumber: inv.invoiceNumber,
         status: inv.status,
-        subtotal: inv.subtotal != null ? Number(inv.subtotal).toFixed(2) : '0.00',
+        subtotal:
+          inv.subtotal != null ? Number(inv.subtotal).toFixed(2) : '0.00',
         total: inv.total != null ? Number(inv.total).toFixed(2) : '0.00',
         currency: inv.currency,
       })),
@@ -248,33 +273,37 @@ export class AdminFinanceService {
 
   async getReconciliationSummary() {
     const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
-    const [statusGroups, stalePendingCount, pendingRefundCount, missingReferenceCount] =
-      await Promise.all([
-        this.prisma.payment.groupBy({
-          by: ['status'],
-          where: { isRefund: false },
-          _count: { _all: true },
-        }),
-        this.prisma.payment.count({
-          where: {
-            isRefund: false,
-            status: { in: ['PENDING', 'AUTHORIZED'] },
-            createdAt: { lt: staleBefore },
-          },
-        }),
-        this.prisma.refundRecord.count({ where: { status: 'PENDING' } }),
-        this.prisma.payment.count({
-          where: {
-            isRefund: false,
-            provider: 'GETPAYIN',
-            OR: [
-              { merchantReference: null },
-              { providerPaymentId: null },
-              { transactionId: null },
-            ],
-          },
-        }),
-      ]);
+    const [
+      statusGroups,
+      stalePendingCount,
+      pendingRefundCount,
+      missingReferenceCount,
+    ] = await Promise.all([
+      this.prisma.payment.groupBy({
+        by: ['status'],
+        where: { isRefund: false },
+        _count: { _all: true },
+      }),
+      this.prisma.payment.count({
+        where: {
+          isRefund: false,
+          status: { in: ['PENDING', 'AUTHORIZED'] },
+          createdAt: { lt: staleBefore },
+        },
+      }),
+      this.prisma.refundRecord.count({ where: { status: 'PENDING' } }),
+      this.prisma.payment.count({
+        where: {
+          isRefund: false,
+          provider: 'GETPAYIN',
+          OR: [
+            { merchantReference: null },
+            { providerPaymentId: null },
+            { transactionId: null },
+          ],
+        },
+      }),
+    ]);
 
     return {
       statusCounts: Object.fromEntries(

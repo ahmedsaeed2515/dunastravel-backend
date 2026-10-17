@@ -140,10 +140,15 @@ describe('AdminService', () => {
         },
       ]);
 
-      const result = await service.listBookings({ page: 1, limit: 20 }, 'admin-1');
+      const result = await service.listBookings(
+        { page: 1, limit: 20 },
+        'admin-1',
+      );
 
       expect(result).toEqual({
-        data: [expect.objectContaining({ totalAmount: '0.00', passengerCount: 0 })],
+        data: [
+          expect.objectContaining({ totalAmount: '0.00', passengerCount: 0 }),
+        ],
         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
       });
       expect('total' in result).toBe(false);
@@ -361,16 +366,11 @@ describe('AdminService', () => {
         },
       };
 
-      await (service as any).syncTourAccommodationsInTx(
-        txMock,
-        'tour-1',
-        [],
-        {
-          hotelCategory: '5 Stars',
-          hotels: { Cairo: ['Old Stale Hotel'] },
-          accommodation: [{ destination: 'Cairo', nights: 2 }],
-        },
-      );
+      await (service as any).syncTourAccommodationsInTx(txMock, 'tour-1', [], {
+        hotelCategory: '5 Stars',
+        hotels: { Cairo: ['Old Stale Hotel'] },
+        accommodation: [{ destination: 'Cairo', nights: 2 }],
+      });
 
       expect(txMock.tripAccommodation.deleteMany).toHaveBeenCalledWith({
         where: { tourId: 'tour-1' },
@@ -389,10 +389,16 @@ describe('AdminService', () => {
     it('rejects non-existent hotelId or cross-hotel roomId with BadRequestException (BUG-03)', async () => {
       const txMock = {
         hotel: {
-          findMany: jest.fn().mockResolvedValue([{ id: 'hotel-1', city: 'Cairo', nameJsonb: { en: 'Mena House' } }]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([
+              { id: 'hotel-1', city: 'Cairo', nameJsonb: { en: 'Mena House' } },
+            ]),
         },
         hotelRoom: {
-          findMany: jest.fn().mockResolvedValue([{ id: 'room-other', hotelId: 'hotel-2' }]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([{ id: 'room-other', hotelId: 'hotel-2' }]),
         },
         tripAccommodation: {
           deleteMany: jest.fn(),
@@ -407,13 +413,22 @@ describe('AdminService', () => {
           [{ hotelId: 'missing-hotel', destination: 'Cairo', nights: 2 }],
           {},
         ),
-      ).rejects.toThrow("Assigned hotel 'missing-hotel' does not exist or has been deleted");
+      ).rejects.toThrow(
+        "Assigned hotel 'missing-hotel' does not exist or has been deleted",
+      );
 
       await expect(
         (service as any).syncTourAccommodationsInTx(
           txMock,
           'tour-1',
-          [{ hotelId: 'hotel-1', roomId: 'room-other', destination: 'Cairo', nights: 2 }],
+          [
+            {
+              hotelId: 'hotel-1',
+              roomId: 'room-other',
+              destination: 'Cairo',
+              nights: 2,
+            },
+          ],
           {},
         ),
       ).rejects.toThrow("Room 'room-other' does not belong to hotel 'hotel-1'");
@@ -428,9 +443,17 @@ describe('AdminService', () => {
       await (service as any).invalidateTourCache('luxury-nile');
 
       expect(cacheManager.del).toHaveBeenCalledWith('tour:luxury-nile:en');
-      expect(cacheManager.del).toHaveBeenCalledWith('tour:detail:luxury-nile:en');
-      expect(cacheManager.del).toHaveBeenCalledWith('tour:detail:luxury-nile:ar');
-      expect(cacheManager.set).toHaveBeenCalledWith('tours:catalog:version', 4, 86_400_000);
+      expect(cacheManager.del).toHaveBeenCalledWith(
+        'tour:detail:luxury-nile:en',
+      );
+      expect(cacheManager.del).toHaveBeenCalledWith(
+        'tour:detail:luxury-nile:ar',
+      );
+      expect(cacheManager.set).toHaveBeenCalledWith(
+        'tours:catalog:version',
+        4,
+        86_400_000,
+      );
     });
   });
 
@@ -457,10 +480,13 @@ describe('AdminService', () => {
             nights: 3,
           },
         ],
-      }) as any;
+      });
 
       expect(result.hotelCategory).toBe('5 Stars Deluxe');
-      expect(result.notes).toEqual({ ar: 'ملاحظات', en: 'Guests get Nile view' });
+      expect(result.notes).toEqual({
+        ar: 'ملاحظات',
+        en: 'Guests get Nile view',
+      });
       const row = result.accommodation[0];
       expect(row).toMatchObject({
         hotelId: 'hotel-1',
@@ -484,7 +510,7 @@ describe('AdminService', () => {
           { nights: 3 },
           { nameJsonb: { en: 'Real Hotel' }, nights: 2 },
         ],
-      }) as any;
+      });
 
       expect(result.accommodation).toHaveLength(1);
       expect(result.accommodation[0].nameJsonb).toEqual({ en: 'Real Hotel' });
@@ -499,7 +525,7 @@ describe('AdminService', () => {
             nameJsonb: { en: 'Palm Inn', fr: 'Auberge du Palmier' },
           },
         ],
-      }) as any;
+      });
 
       const row = result.accommodation[0];
       expect(row.seasonSupplementUsd).toBe(90);
@@ -512,7 +538,7 @@ describe('AdminService', () => {
         accommodations: [
           { destination: 'Aswan', doubleRoomPriceUsd: 120, nights: 2 },
         ],
-      }) as any;
+      });
 
       expect(result.accommodation).toHaveLength(1);
       expect(result.accommodation[0].doubleRoomPriceUsd).toBe(120);
@@ -535,9 +561,7 @@ describe('AdminService', () => {
     it('merges non-empty top-level accommodations into hotelInfoJsonb and strips the raw key', () => {
       const result = prepare(
         {
-          accommodations: [
-            { destination: 'Cairo', doubleRoomPriceUsd: 200 },
-          ],
+          accommodations: [{ destination: 'Cairo', doubleRoomPriceUsd: 200 }],
         },
         false,
       );

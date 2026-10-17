@@ -12,7 +12,7 @@ import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export function IsFutureDateString(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isFutureDateString',
       target: object.constructor,
@@ -39,7 +39,7 @@ export function IsFutureDateString(validationOptions?: ValidationOptions) {
 }
 
 export function IsPastDateString(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isPastDateString',
       target: object.constructor,
@@ -91,7 +91,8 @@ export class PassengerDto {
   @IsOptional()
   @IsString()
   @IsFutureDateString({
-    message: 'passportExpiry must be a valid calendar date in the future (YYYY-MM-DD)',
+    message:
+      'passportExpiry must be a valid calendar date in the future (YYYY-MM-DD)',
   })
   passportExpiry?: string;
 
@@ -102,7 +103,8 @@ export class PassengerDto {
   @IsOptional()
   @IsString()
   @IsPastDateString({
-    message: 'dateOfBirth must be a valid calendar date in the past (YYYY-MM-DD)',
+    message:
+      'dateOfBirth must be a valid calendar date in the past (YYYY-MM-DD)',
   })
   dateOfBirth?: string;
 

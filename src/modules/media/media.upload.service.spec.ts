@@ -29,7 +29,9 @@ describe('MediaService upload integrity', () => {
     new MediaService(
       prisma as PrismaService,
       storage as StorageProvider,
-      { get: jest.fn().mockReturnValue(10 * 1024 * 1024) } as unknown as ConfigService,
+      {
+        get: jest.fn().mockReturnValue(10 * 1024 * 1024),
+      } as unknown as ConfigService,
       { emit: jest.fn() } as unknown as EventEmitter2,
     );
 
@@ -48,23 +50,54 @@ describe('MediaService upload integrity', () => {
       providerName: 'cloudinary',
       mimeType: 'image/webp',
     });
-    const transaction = jest.fn(async (callback) => callback({ mediaAsset: { create }, auditLog: { create: jest.fn() } }));
+    const transaction = jest.fn(async (callback) =>
+      callback({ mediaAsset: { create }, auditLog: { create: jest.fn() } }),
+    );
     const service = createService(
-      { mediaAsset: { findUnique: jest.fn().mockResolvedValue(null) }, $transaction: transaction },
+      {
+        mediaAsset: { findUnique: jest.fn().mockResolvedValue(null) },
+        $transaction: transaction,
+      },
       { upload: jest.fn().mockResolvedValue(uploadedAsset), delete: jest.fn() },
     );
 
-    const result = await service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: 'Alt' }, 'admin-1');
+    const result = await service.uploadAsset(
+      imageFile,
+      { entityType: MediaEntityType.GENERAL, entityId: null, altText: 'Alt' },
+      'admin-1',
+    );
 
     expect(result.id).toBe('media-1');
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ entityId: null, entityType: MediaEntityType.GENERAL }) }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          entityId: null,
+          entityType: MediaEntityType.GENERAL,
+        }),
+      }),
+    );
   });
 
   it('does not persist when the provider fails after its retry budget', async () => {
-    const upload = jest.fn().mockResolvedValue({ success: false, error: 'timeout' });
-    const service = createService({ mediaAsset: { findUnique: jest.fn() } }, { upload, delete: jest.fn() });
+    const upload = jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'timeout' });
+    const service = createService(
+      { mediaAsset: { findUnique: jest.fn() } },
+      { upload, delete: jest.fn() },
+    );
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(HttpException);
+    await expect(
+      service.uploadAsset(
+        imageFile,
+        {
+          entityType: MediaEntityType.GENERAL,
+          entityId: null,
+          altText: undefined,
+        },
+        'admin-1',
+      ),
+    ).rejects.toBeInstanceOf(HttpException);
     expect(upload).toHaveBeenCalledTimes(3);
   });
 
@@ -72,21 +105,51 @@ describe('MediaService upload integrity', () => {
     const transaction = jest.fn();
     const service = createService(
       { mediaAsset: { findUnique: jest.fn() }, $transaction: transaction },
-      { upload: jest.fn().mockResolvedValue({ ...uploadedAsset, secureUrl: '' }), delete: jest.fn() },
+      {
+        upload: jest
+          .fn()
+          .mockResolvedValue({ ...uploadedAsset, secureUrl: '' }),
+        delete: jest.fn(),
+      },
     );
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.uploadAsset(
+        imageFile,
+        {
+          entityType: MediaEntityType.GENERAL,
+          entityId: null,
+          altText: undefined,
+        },
+        'admin-1',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(transaction).not.toHaveBeenCalled();
   });
 
   it('rejects a duplicate provider ID before it can create a second MediaAsset', async () => {
     const transaction = jest.fn();
     const service = createService(
-      { mediaAsset: { findUnique: jest.fn().mockResolvedValue({ id: 'existing-asset' }) }, $transaction: transaction },
+      {
+        mediaAsset: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'existing-asset' }),
+        },
+        $transaction: transaction,
+      },
       { upload: jest.fn().mockResolvedValue(uploadedAsset), delete: jest.fn() },
     );
 
-    await expect(service.uploadAsset(imageFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.uploadAsset(
+        imageFile,
+        {
+          entityType: MediaEntityType.GENERAL,
+          entityId: null,
+          altText: undefined,
+        },
+        'admin-1',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(transaction).not.toHaveBeenCalled();
   });
 
@@ -95,7 +158,17 @@ describe('MediaService upload integrity', () => {
     const service = createService({}, { upload, delete: jest.fn() });
     const tooLargeFile = { ...imageFile, size: 10 * 1024 * 1024 + 1 };
 
-    await expect(service.uploadAsset(tooLargeFile, { entityType: MediaEntityType.GENERAL, entityId: null, altText: undefined }, 'admin-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.uploadAsset(
+        tooLargeFile,
+        {
+          entityType: MediaEntityType.GENERAL,
+          entityId: null,
+          altText: undefined,
+        },
+        'admin-1',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(upload).not.toHaveBeenCalled();
   });
 });

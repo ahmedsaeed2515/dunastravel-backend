@@ -30,7 +30,9 @@ export class InAppNotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get current user in-app notifications' })
-  @ApiOkResponse({ description: 'Paginated notifications list with unreadCount' })
+  @ApiOkResponse({
+    description: 'Paginated notifications list with unreadCount',
+  })
   async getMyNotifications(
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListInAppNotificationsQueryDto,

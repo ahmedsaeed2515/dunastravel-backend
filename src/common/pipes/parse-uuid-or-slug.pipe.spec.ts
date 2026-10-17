@@ -16,10 +16,18 @@ describe('ParseUuidOrSlugPipe', () => {
   it('accepts valid slugs with hyphens and underscores', () => {
     expect(pipe.transform('classic-program')).toBe('classic-program');
     expect(pipe.transform('classic_program')).toBe('classic_program');
-    expect(pipe.transform('reg-01-legendary-turkey')).toBe('reg-01-legendary-turkey');
-    expect(pipe.transform('hm001-honeymoon-in-dubai')).toBe('hm001-honeymoon-in-dubai');
-    expect(pipe.transform('reg-21-jordan-extension---4-days')).toBe('reg-21-jordan-extension---4-days');
-    expect(pipe.transform('reg-20-jordan-extension---5-days')).toBe('reg-20-jordan-extension---5-days');
+    expect(pipe.transform('reg-01-legendary-turkey')).toBe(
+      'reg-01-legendary-turkey',
+    );
+    expect(pipe.transform('hm001-honeymoon-in-dubai')).toBe(
+      'hm001-honeymoon-in-dubai',
+    );
+    expect(pipe.transform('reg-21-jordan-extension---4-days')).toBe(
+      'reg-21-jordan-extension---4-days',
+    );
+    expect(pipe.transform('reg-20-jordan-extension---5-days')).toBe(
+      'reg-20-jordan-extension---5-days',
+    );
   });
 
   it('trims leading and trailing slashes and spaces', () => {

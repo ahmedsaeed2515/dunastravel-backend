@@ -48,7 +48,9 @@ describe('Auth & Authorization Security Contract (AUTH-SEC, BFLA, MASS)', () => 
       clearRefreshToken: jest.fn(),
       getMe: jest.fn(),
       generateToken: jest.fn().mockReturnValue('mock-jwt-access-token'),
-      generateRefreshToken: jest.fn().mockResolvedValue('mock-jwt-refresh-token'),
+      generateRefreshToken: jest
+        .fn()
+        .mockResolvedValue('mock-jwt-refresh-token'),
     };
 
     walletsServiceMock = {

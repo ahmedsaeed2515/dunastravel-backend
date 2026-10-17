@@ -2,7 +2,9 @@ import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class FilesValidationPipe implements PipeTransform<Express.Multer.File[]> {
+export class FilesValidationPipe implements PipeTransform<
+  Express.Multer.File[]
+> {
   private allowedMimeTypes: string[];
 
   constructor(private configService: ConfigService) {
@@ -17,13 +19,17 @@ export class FilesValidationPipe implements PipeTransform<Express.Multer.File[]>
     }
 
     if (files.length > 25) {
-      throw new BadRequestException('Maximum 25 files can be uploaded in a single batch.');
+      throw new BadRequestException(
+        'Maximum 25 files can be uploaded in a single batch.',
+      );
     }
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!file || !file.buffer || file.buffer.length === 0) {
-        throw new BadRequestException(`File #${i + 1} (${file?.originalname || 'unknown'}) is empty or corrupted.`);
+        throw new BadRequestException(
+          `File #${i + 1} (${file?.originalname || 'unknown'}) is empty or corrupted.`,
+        );
       }
 
       if (!this.allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
@@ -102,6 +108,8 @@ export class FilesValidationPipe implements PipeTransform<Express.Multer.File[]>
       'image/png': ['png'],
       'image/webp': ['webp'],
     };
-    return Boolean(extension && expectedExtensions[mimetype]?.includes(extension));
+    return Boolean(
+      extension && expectedExtensions[mimetype]?.includes(extension),
+    );
   }
 }

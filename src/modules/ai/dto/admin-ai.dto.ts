@@ -1,20 +1,40 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber,
-  Min, Max, MaxLength, IsArray, IsObject, IsIn, ValidateIf,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
+  MaxLength,
+  IsArray,
+  IsObject,
+  IsIn,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 // ============================================================
 // VALID PROVIDER IDS (server-side enumeration)
 // ============================================================
-const VALID_PROVIDER_IDS = ['google', 'openai', 'xai', 'openrouter', 'deepseek', 'custom', 'anthropic'];
+const VALID_PROVIDER_IDS = [
+  'google',
+  'openai',
+  'xai',
+  'openrouter',
+  'deepseek',
+  'custom',
+  'anthropic',
+];
 
 export class UpdateAiConfigDto {
   @ApiPropertyOptional({ example: 'google', enum: VALID_PROVIDER_IDS })
   @IsString()
   @IsOptional()
-  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
+  @IsIn(VALID_PROVIDER_IDS, {
+    message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}`,
+  })
   provider?: string;
 
   @ApiPropertyOptional({ example: 'gemini-3.6-flash' })
@@ -37,7 +57,9 @@ export class UpdateAiConfigDto {
   @IsOptional()
   isInChatBookingEnabled?: boolean;
 
-  @ApiPropertyOptional({ description: 'Write-only API key — only stored encrypted, never returned' })
+  @ApiPropertyOptional({
+    description: 'Write-only API key — only stored encrypted, never returned',
+  })
   @IsString()
   @IsOptional()
   apiKey?: string;
@@ -107,8 +129,12 @@ export class AddProviderCredentialDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
-  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
+  @IsIn(VALID_PROVIDER_IDS, {
+    message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}`,
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase().trim() : value,
+  )
   provider!: string;
 
   @ApiProperty({
@@ -121,7 +147,8 @@ export class AddProviderCredentialDto {
 
   @ApiPropertyOptional({
     example: 'gemini-3.6-flash',
-    description: 'Default model for this credential. Must belong to the selected provider.',
+    description:
+      'Default model for this credential. Must belong to the selected provider.',
   })
   @IsString()
   @IsOptional()
@@ -161,8 +188,12 @@ export class UpdateProviderCredentialDto {
   @ApiPropertyOptional({ enum: VALID_PROVIDER_IDS })
   @IsString()
   @IsOptional()
-  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
-  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
+  @IsIn(VALID_PROVIDER_IDS, {
+    message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}`,
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase().trim() : value,
+  )
   provider?: string;
 
   @ApiPropertyOptional({
@@ -207,11 +238,14 @@ export class TestProviderConnectionDto {
   @ApiPropertyOptional({
     example: 'google',
     enum: VALID_PROVIDER_IDS,
-    description: 'Provider to test. If omitted, uses the configured primary provider.',
+    description:
+      'Provider to test. If omitted, uses the configured primary provider.',
   })
   @IsString()
   @IsOptional()
-  @IsIn(VALID_PROVIDER_IDS, { message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}` })
+  @IsIn(VALID_PROVIDER_IDS, {
+    message: `provider must be one of: ${VALID_PROVIDER_IDS.join(', ')}`,
+  })
   provider?: string;
 
   @ApiPropertyOptional({
@@ -223,7 +257,8 @@ export class TestProviderConnectionDto {
   model?: string;
 
   @ApiPropertyOptional({
-    description: 'API key to test. If omitted, uses the stored key for this provider.',
+    description:
+      'API key to test. If omitted, uses the stored key for this provider.',
   })
   @IsString()
   @IsOptional()
@@ -281,28 +316,40 @@ export class GenerateAiItineraryDto {
 // ============================================================
 
 export class RefreshProviderModelsDto {
-  @ApiPropertyOptional({ description: 'Credential ID from database to use stored key' })
+  @ApiPropertyOptional({
+    description: 'Credential ID from database to use stored key',
+  })
   @IsString()
   @IsOptional()
   credentialId?: string;
 
-  @ApiPropertyOptional({ description: 'In-flight API key for discovering models before saving' })
+  @ApiPropertyOptional({
+    description: 'In-flight API key for discovering models before saving',
+  })
   @IsString()
   @IsOptional()
   apiKey?: string;
 
-  @ApiPropertyOptional({ description: 'Custom base URL if testing custom provider or custom endpoint' })
+  @ApiPropertyOptional({
+    description:
+      'Custom base URL if testing custom provider or custom endpoint',
+  })
   @IsString()
   @IsOptional()
   baseUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Integration mode for Google provider', enum: ['openai-compatible', 'google-native'] })
+  @ApiPropertyOptional({
+    description: 'Integration mode for Google provider',
+    enum: ['openai-compatible', 'google-native'],
+  })
   @IsString()
   @IsOptional()
   @IsIn(['openai-compatible', 'google-native'])
   integrationMode?: 'openai-compatible' | 'google-native';
 
-  @ApiPropertyOptional({ description: 'Force refresh live models bypass cache' })
+  @ApiPropertyOptional({
+    description: 'Force refresh live models bypass cache',
+  })
   @IsBoolean()
   @IsOptional()
   forceRefresh?: boolean;
@@ -325,8 +372,10 @@ export class UpdateGuiderStatusDto {
   status!: 'ACTIVE' | 'DISABLED' | 'MAINTENANCE';
 
   @ApiPropertyOptional({
-    description: 'Optional custom message shown to visitors when GuideR is disabled or under maintenance',
-    example: 'GuideR is currently undergoing scheduled maintenance. Please contact our team at info@dunastravel.com.',
+    description:
+      'Optional custom message shown to visitors when GuideR is disabled or under maintenance',
+    example:
+      'GuideR is currently undergoing scheduled maintenance. Please contact our team at info@dunastravel.com.',
   })
   @IsString()
   @IsOptional()
@@ -342,4 +391,3 @@ export class UpdateGuiderStatusDto {
   @MaxLength(500)
   reason?: string;
 }
-

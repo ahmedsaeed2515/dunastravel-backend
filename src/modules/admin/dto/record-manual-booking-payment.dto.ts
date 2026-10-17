@@ -1,8 +1,17 @@
-import { IsNumber, IsPositive, IsString, IsOptional, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RecordManualBookingPaymentDto {
-  @ApiProperty({ example: 450.00, description: 'Payment amount in USD (positive, max 2 decimal places)' })
+  @ApiProperty({
+    example: 450.0,
+    description: 'Payment amount in USD (positive, max 2 decimal places)',
+  })
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   @Min(0.01)

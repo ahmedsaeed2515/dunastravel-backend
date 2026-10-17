@@ -10,9 +10,7 @@ export class Money {
       _amount < 0 ||
       _amount > 9_999_999_999
     ) {
-      throw new BadRequestException(
-        'Invalid money amount',
-      );
+      throw new BadRequestException('Invalid money amount');
     }
     this._currency = _currency.toUpperCase();
     if (!/^[A-Z]{3}$/.test(this._currency)) {

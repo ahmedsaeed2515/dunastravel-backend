@@ -35,7 +35,9 @@ export class SendTestEmailDto {
   @MaxLength(100_000)
   bodyHtml!: string;
 
-  @ApiPropertyOptional({ description: 'Sample variables to replace during preview' })
+  @ApiPropertyOptional({
+    description: 'Sample variables to replace during preview',
+  })
   @IsOptional()
   sampleVariables?: Record<string, string>;
 }
@@ -62,7 +64,8 @@ export class BroadcastCampaignDto {
   recipientGroup!: BroadcastAudience;
 
   @ApiPropertyOptional({
-    description: 'List of specific email addresses if recipientGroup is CUSTOM_LIST',
+    description:
+      'List of specific email addresses if recipientGroup is CUSTOM_LIST',
   })
   @IsOptional()
   @IsArray()

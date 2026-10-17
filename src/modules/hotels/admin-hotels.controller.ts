@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -8,8 +19,16 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { HotelsService } from './hotels.service';
 import { AdminHotelsQueryDto } from './dto/hotel-query.dto';
-import { CreateHotelDto, UpdateHotelDto, CreateSeasonDto, UpdateSeasonDto } from './dto/hotel.dto';
-import { AdminHotelBookingsQueryDto, UpdateHotelBookingStatusDto } from './dto/hotel-booking.dto';
+import {
+  CreateHotelDto,
+  UpdateHotelDto,
+  CreateSeasonDto,
+  UpdateSeasonDto,
+} from './dto/hotel.dto';
+import {
+  AdminHotelBookingsQueryDto,
+  UpdateHotelBookingStatusDto,
+} from './dto/hotel-booking.dto';
 
 @ApiTags('admin-hotels')
 @ApiBearerAuth()
@@ -22,7 +41,13 @@ export class AdminHotelsController {
   @Get()
   @ApiOperation({ summary: 'List hotels for administration' })
   findAll(@Query() query: AdminHotelsQueryDto) {
-    return this.hotelsService.findAllAdmin(query.page, query.limit, query.search, query.status, query.destinationSlug);
+    return this.hotelsService.findAllAdmin(
+      query.page,
+      query.limit,
+      query.search,
+      query.status,
+      query.destinationSlug,
+    );
   }
 
   // ----------------------------------------------------
@@ -42,7 +67,10 @@ export class AdminHotelsController {
 
   @Put('seasons/:seasonId')
   @ApiOperation({ summary: 'Update a pricing season' })
-  updateSeason(@Param('seasonId') seasonId: string, @Body() dto: UpdateSeasonDto) {
+  updateSeason(
+    @Param('seasonId') seasonId: string,
+    @Body() dto: UpdateSeasonDto,
+  ) {
     return this.hotelsService.updateSeasonAdmin(seasonId, dto);
   }
 
@@ -56,7 +84,9 @@ export class AdminHotelsController {
   // Hotel Bookings Management Endpoints
   // ----------------------------------------------------
   @Get('bookings')
-  @ApiOperation({ summary: 'List standalone hotel bookings for administration' })
+  @ApiOperation({
+    summary: 'List standalone hotel bookings for administration',
+  })
   findAllBookings(@Query() query: AdminHotelBookingsQueryDto) {
     return this.hotelsService.findAllBookingsAdmin(query);
   }
@@ -98,7 +128,9 @@ export class AdminHotelsController {
   }
 
   @Post(':id/unpublish')
-  @ApiOperation({ summary: 'Return a hotel to draft and hide it from the public catalog' })
+  @ApiOperation({
+    summary: 'Return a hotel to draft and hide it from the public catalog',
+  })
   unpublish(@Param('id') id: string) {
     return this.hotelsService.unpublishAdmin(id);
   }

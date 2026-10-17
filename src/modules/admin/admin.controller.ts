@@ -43,7 +43,10 @@ import { AssignBookingDto } from './dto/assign-booking.dto';
 import { BulkUpdateBookingsDto } from './dto/bulk-update-bookings.dto';
 import { ListNotificationLogsQueryDto } from './dto/list-notification-logs-query.dto';
 import { ListAdminToursQueryDto } from './dto/list-admin-tours-query.dto';
-import { CreateTourDto, UpsertTourAccommodationsDto } from './dto/create-tour.dto';
+import {
+  CreateTourDto,
+  UpsertTourAccommodationsDto,
+} from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { MoveTourDto } from './dto/move-tour.dto';
 import { BulkUpdateToursDto } from './dto/bulk-update-tours.dto';
@@ -691,7 +694,9 @@ export class AdminController {
   }
 
   @Get('tours/:slug/accommodations')
-  @ApiOperation({ summary: 'Get assigned accommodations (hotels & rooms) for a tour.' })
+  @ApiOperation({
+    summary: 'Get assigned accommodations (hotels & rooms) for a tour.',
+  })
   @ApiParam({ name: 'slug', type: 'string' })
   @ApiOkResponse({ description: 'List of assigned tour accommodations' })
   async getTourAccommodations(
@@ -702,7 +707,9 @@ export class AdminController {
   }
 
   @Put('tours/:slug/accommodations')
-  @ApiOperation({ summary: 'Upsert assigned accommodations (hotels & rooms) for a tour.' })
+  @ApiOperation({
+    summary: 'Upsert assigned accommodations (hotels & rooms) for a tour.',
+  })
   @ApiParam({ name: 'slug', type: 'string' })
   @ApiBody({ type: UpsertTourAccommodationsDto })
   @ApiOkResponse({ description: 'Tour accommodations updated successfully' })
@@ -711,15 +718,17 @@ export class AdminController {
     @Body() dto: UpsertTourAccommodationsDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.adminService.upsertTourAccommodations(slug, dto.accommodations, user.id);
+    return this.adminService.upsertTourAccommodations(
+      slug,
+      dto.accommodations,
+      user.id,
+    );
   }
 
   @Get('tours/:slug/hotel')
   @ApiOperation({ summary: 'Get dedicated trip-specific hotel for a tour.' })
   @ApiParam({ name: 'slug', type: 'string' })
-  async getTourTripHotel(
-    @Param('slug', ParseUuidOrSlugPipe) slug: string,
-  ) {
+  async getTourTripHotel(@Param('slug', ParseUuidOrSlugPipe) slug: string) {
     return this.hotelsService.getTripHotel(slug);
   }
 
@@ -731,15 +740,13 @@ export class AdminController {
     @Param('slug', ParseUuidOrSlugPipe) slug: string,
     @Body() dto: UpsertTripHotelDto,
   ) {
-    return this.hotelsService.upsertTripHotel(slug, dto as any);
+    return this.hotelsService.upsertTripHotel(slug, dto);
   }
 
   @Delete('tours/:slug/hotel')
   @ApiOperation({ summary: 'Delete dedicated trip-specific hotel for a tour.' })
   @ApiParam({ name: 'slug', type: 'string' })
-  async deleteTourTripHotel(
-    @Param('slug', ParseUuidOrSlugPipe) slug: string,
-  ) {
+  async deleteTourTripHotel(@Param('slug', ParseUuidOrSlugPipe) slug: string) {
     return this.hotelsService.deleteTripHotel(slug);
   }
 }

@@ -48,7 +48,8 @@ export class RagRetrievalService {
 
     // Common synonyms / mappings
     if (/^(حجز|احجز|احجزلي|الحجز|حجوزات|يحجز|تحجز)$/.test(t)) return 'حجز';
-    if (/^(الغاء|إلغاء|الالغاء|يلغي|تلغي|استرداد|استرجاع)$/.test(t)) return 'الغاء';
+    if (/^(الغاء|إلغاء|الالغاء|يلغي|تلغي|استرداد|استرجاع)$/.test(t))
+      return 'الغاء';
     if (/^(دفع|الدفع|يدفع|مدفوعات|كاش|كارت|فيزا)$/.test(t)) return 'دفع';
     if (/^(سعر|اسعار|الاسعار|تكلفة|بكام|بكم)$/.test(t)) return 'سعر';
     if (/^(تاشيرة|تأشيرة|تاشيرات|فيزا)$/.test(t)) return 'فيزا';
@@ -113,11 +114,18 @@ export class RagRetrievalService {
         let score = (item.priority || 0) * 2;
         const normTitle = this.normalizeText(item.title);
         const normContent = this.normalizeText(item.content);
-        const normTags = (item.tags || []).map((t: string) => this.normalizeText(t));
+        const normTags = (item.tags || []).map((t: string) =>
+          this.normalizeText(t),
+        );
 
         tokens.forEach((token: string) => {
           if (normTitle.includes(token)) score += 12;
-          if (normTags.some((tag: string) => tag.includes(token) || token.includes(tag))) score += 8;
+          if (
+            normTags.some(
+              (tag: string) => tag.includes(token) || token.includes(tag),
+            )
+          )
+            score += 8;
           if (normContent.includes(token)) score += 3;
         });
 

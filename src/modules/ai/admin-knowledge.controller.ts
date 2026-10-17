@@ -1,17 +1,17 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Patch, 
-  Delete, 
-  Body, 
-  Param, 
-  Query, 
-  UseGuards, 
-  NotFoundException, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  NotFoundException,
   BadRequestException,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -21,10 +21,18 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../common/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TourKnowledgeIngestionService } from './services/tour-knowledge-ingestion.service';
-import { KnowledgeTranslationService, FiveLanguageTranslationResult } from './services/knowledge-translation.service';
+import {
+  KnowledgeTranslationService,
+  FiveLanguageTranslationResult,
+} from './services/knowledge-translation.service';
 import { createHash } from 'crypto';
 import { HybridRagEngineService } from './services/hybrid-rag-engine.service';
-import { CreateKnowledgeItemDto, UpdateKnowledgeItemDto, CreateMultilingualKnowledgeDto, CreateResponseRuleDto } from './dto/knowledge.dto';
+import {
+  CreateKnowledgeItemDto,
+  UpdateKnowledgeItemDto,
+  CreateMultilingualKnowledgeDto,
+  CreateResponseRuleDto,
+} from './dto/knowledge.dto';
 
 const SUPPORTED_LOCALES = ['ar', 'en', 'es', 'pt', 'it'];
 
@@ -48,7 +56,10 @@ export class AdminKnowledgeController {
    * Groups localized knowledge items (AR, EN, ES, PT, IT) by their canonical business entity.
    */
   @Get('canonical-entities')
-  @ApiOperation({ summary: 'Get Knowledge grouped by canonical entities (Tours, Hotels, Policies) with multi-lingual completeness' })
+  @ApiOperation({
+    summary:
+      'Get Knowledge grouped by canonical entities (Tours, Hotels, Policies) with multi-lingual completeness',
+  })
   async getCanonicalEntities(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
@@ -66,7 +77,15 @@ export class AdminKnowledgeController {
     if (category && category !== 'ALL') {
       const cat = category.toUpperCase();
       if (cat === 'POLICIES') {
-        whereClause.category = { in: ['BOOKING_POLICY', 'CANCELLATION_POLICY', 'PAYMENT_INFO', 'VISA_GUIDANCE', 'SAFETY_ADVICE'] };
+        whereClause.category = {
+          in: [
+            'BOOKING_POLICY',
+            'CANCELLATION_POLICY',
+            'PAYMENT_INFO',
+            'VISA_GUIDANCE',
+            'SAFETY_ADVICE',
+          ],
+        };
       } else if (cat === 'FAQS' || cat === 'FAQ') {
         whereClause.category = 'FAQ';
       } else {
@@ -113,20 +132,29 @@ export class AdminKnowledgeController {
         : null;
 
       if (!canonicalKey && Array.isArray(item.tags)) {
-        const entityTag = item.tags.find((t: string) => typeof t === 'string' && (t.startsWith('entity:') || t.startsWith('canonical:')));
+        const entityTag = item.tags.find(
+          (t: string) =>
+            typeof t === 'string' &&
+            (t.startsWith('entity:') || t.startsWith('canonical:')),
+        );
         if (entityTag) {
           canonicalKey = `MANUAL:${entityTag.split(':')[1]}`;
         }
       }
 
       if (!canonicalKey) {
-        canonicalKey = (item.sourceEntityType && item.sourceEntityType !== 'MANUAL')
-          ? `${item.sourceEntityType}:${baseEntityId}`
-          : `MANUAL:${baseEntityId}`;
+        canonicalKey =
+          item.sourceEntityType && item.sourceEntityType !== 'MANUAL'
+            ? `${item.sourceEntityType}:${baseEntityId}`
+            : `MANUAL:${baseEntityId}`;
       }
 
       if (!groupedMap.has(canonicalKey)) {
-        const isSourceManaged = item.sourceType === 'SYNC_CATALOG' || item.sourceEntityType === 'TOUR' || item.sourceEntityType === 'HOTEL' || item.sourceEntityType === 'TRANSPORTATION';
+        const isSourceManaged =
+          item.sourceType === 'SYNC_CATALOG' ||
+          item.sourceEntityType === 'TOUR' ||
+          item.sourceEntityType === 'HOTEL' ||
+          item.sourceEntityType === 'TRANSPORTATION';
         groupedMap.set(canonicalKey, {
           canonicalEntityId: canonicalKey,
           sourceEntityType: item.sourceEntityType || 'MANUAL',
@@ -180,7 +208,8 @@ export class AdminKnowledgeController {
         isComplete: Boolean(entity.locales[loc]),
         id: entity.locales[loc]?.id,
         title: entity.locales[loc]?.title,
-        isExcludedFromAi: entity.locales[loc]?.isExcludedFromAi ?? entity.isExcludedFromAi,
+        isExcludedFromAi:
+          entity.locales[loc]?.isExcludedFromAi ?? entity.isExcludedFromAi,
         status: entity.locales[loc]?.status || 'MISSING',
       }));
 
@@ -227,7 +256,15 @@ export class AdminKnowledgeController {
     if (category && category !== 'ALL') {
       const cat = category.toUpperCase();
       if (cat === 'POLICIES') {
-        whereClause.category = { in: ['BOOKING_POLICY', 'CANCELLATION_POLICY', 'PAYMENT_INFO', 'VISA_GUIDANCE', 'SAFETY_ADVICE'] };
+        whereClause.category = {
+          in: [
+            'BOOKING_POLICY',
+            'CANCELLATION_POLICY',
+            'PAYMENT_INFO',
+            'VISA_GUIDANCE',
+            'SAFETY_ADVICE',
+          ],
+        };
       } else if (cat === 'FAQS' || cat === 'FAQ') {
         whereClause.category = 'FAQ';
       } else {
@@ -317,12 +354,18 @@ export class AdminKnowledgeController {
    * 2.2 REINDEX ALL KNOWLEDGE
    */
   @Post('index')
-  @ApiOperation({ summary: 'Trigger full reindexing and catalog synchronization for AI Knowledge Base' })
+  @ApiOperation({
+    summary:
+      'Trigger full reindexing and catalog synchronization for AI Knowledge Base',
+  })
   async triggerReindex() {
     const result = await this.ingestionService.syncCatalogToKnowledgeBase();
     return {
       success: true,
-      reindexedCount: result.syncedTours + result.syncedDestinations + (result.syncedServices || 0),
+      reindexedCount:
+        result.syncedTours +
+        result.syncedDestinations +
+        (result.syncedServices || 0),
       syncedTours: result.syncedTours,
       syncedDestinations: result.syncedDestinations,
       timestamp: new Date().toISOString(),
@@ -333,12 +376,23 @@ export class AdminKnowledgeController {
    * 2.3 UPLOAD KNOWLEDGE DOCUMENT
    */
   @Post('upload')
-  @ApiOperation({ summary: 'Upload markdown/text document directly into Knowledge Base' })
+  @ApiOperation({
+    summary: 'Upload markdown/text document directly into Knowledge Base',
+  })
   async uploadKnowledgeDocument(
-    @Body() body: { title: string; content: string; locale?: string; category?: string; tags?: string[] },
+    @Body()
+    body: {
+      title: string;
+      content: string;
+      locale?: string;
+      category?: string;
+      tags?: string[];
+    },
   ) {
     if (!body.title || !body.content) {
-      throw new BadRequestException('Title and content are required for knowledge upload.');
+      throw new BadRequestException(
+        'Title and content are required for knowledge upload.',
+      );
     }
 
     const item = await this.prisma.knowledgeBaseItem.create({
@@ -358,7 +412,6 @@ export class AdminKnowledgeController {
       item,
     };
   }
-
 
   /**
    * 4. CREATE NEW KNOWLEDGE ITEM
@@ -380,7 +433,10 @@ export class AdminKnowledgeController {
         tags: dto.tags || [],
         status: (dto.status as any) || 'PUBLISHED',
         source: dto.source || 'ADMIN_PANEL',
-        sourceType: (dto.sourceEntityType && dto.sourceEntityType !== 'MANUAL') ? 'SOURCE_MANAGED' : 'MANUALLY_MANAGED',
+        sourceType:
+          dto.sourceEntityType && dto.sourceEntityType !== 'MANUAL'
+            ? 'SOURCE_MANAGED'
+            : 'MANUALLY_MANAGED',
         sourceEntityType: dto.sourceEntityType || 'MANUAL',
         sourceEntityId: dto.sourceEntityId || undefined,
         contentHash,
@@ -390,17 +446,19 @@ export class AdminKnowledgeController {
     });
 
     // Create initial version snapshot
-    await this.prisma.aiKnowledgeVersion.create({
-      data: {
-        knowledgeItemId: item.id,
-        versionNumber: 1,
-        title: item.title,
-        content: item.content,
-        locale: item.locale,
-        changeSummary: 'Initial document creation',
-        changedBy: user?.email || user?.id || 'admin',
-      },
-    }).catch(() => {});
+    await this.prisma.aiKnowledgeVersion
+      .create({
+        data: {
+          knowledgeItemId: item.id,
+          versionNumber: 1,
+          title: item.title,
+          content: item.content,
+          locale: item.locale,
+          changeSummary: 'Initial document creation',
+          changedBy: user?.email || user?.id || 'admin',
+        },
+      })
+      .catch(() => {});
 
     // Immediately index into ai_knowledge_chunks so GuideR and Testing Lab can retrieve it
     try {
@@ -450,32 +508,45 @@ export class AdminKnowledgeController {
    * 4.1 CREATE MULTILINGUAL KNOWLEDGE (1-Click 5-Language Ingestion & Chunking)
    */
   @Post('multilingual')
-  @ApiOperation({ summary: 'Create manual knowledge with automatic 5-language localization and instant chunking' })
+  @ApiOperation({
+    summary:
+      'Create manual knowledge with automatic 5-language localization and instant chunking',
+  })
   async createMultilingualKnowledge(
     @Body() dto: CreateMultilingualKnowledgeDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     if (!dto.title || !dto.content) {
-      throw new BadRequestException('Title and content are required for knowledge creation.');
+      throw new BadRequestException(
+        'Title and content are required for knowledge creation.',
+      );
     }
 
     const sourceLocale = dto.sourceLocale || 'ar';
     const sharedEntityId = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const category = (dto.category as any) || 'GENERAL';
     const priority = dto.priority ?? 15;
-    const baseTags = dto.tags || ['custom', 'admin', String(category).toLowerCase()];
+    const baseTags = dto.tags || [
+      'custom',
+      'admin',
+      String(category).toLowerCase(),
+    ];
 
     let translations: Record<string, { title: string; content: string }>;
 
     if (dto.autoTranslate !== false) {
       try {
-        const genRes = await this.translationService.generateFiveLanguageArticle({
-          title: dto.title,
-          content: dto.content,
-          sourceLocale,
-          category,
-        });
-        translations = genRes as unknown as Record<string, { title: string; content: string }>;
+        const genRes =
+          await this.translationService.generateFiveLanguageArticle({
+            title: dto.title,
+            content: dto.content,
+            sourceLocale,
+            category,
+          });
+        translations = genRes as unknown as Record<
+          string,
+          { title: string; content: string }
+        >;
       } catch (err: any) {
         this.logger.warn(`Auto-translation fallback: ${err.message}`);
         translations = {
@@ -499,7 +570,9 @@ export class AdminKnowledgeController {
       const trans = translations[loc];
       if (!trans?.title || !trans?.content) continue;
 
-      const contentHash = createHash('sha256').update(trans.content).digest('hex');
+      const contentHash = createHash('sha256')
+        .update(trans.content)
+        .digest('hex');
       const itemTags = [...baseTags, loc];
 
       const item = await this.prisma.knowledgeBaseItem.create({
@@ -523,17 +596,22 @@ export class AdminKnowledgeController {
       });
 
       // Version log
-      await this.prisma.aiKnowledgeVersion.create({
-        data: {
-          knowledgeItemId: item.id,
-          versionNumber: 1,
-          title: trans.title,
-          content: trans.content,
-          locale: loc,
-          changeSummary: loc === sourceLocale ? 'Initial document creation' : 'Automated 5-language AI translation',
-          changedBy: user?.email || user?.id || 'admin',
-        },
-      }).catch(() => {});
+      await this.prisma.aiKnowledgeVersion
+        .create({
+          data: {
+            knowledgeItemId: item.id,
+            versionNumber: 1,
+            title: trans.title,
+            content: trans.content,
+            locale: loc,
+            changeSummary:
+              loc === sourceLocale
+                ? 'Initial document creation'
+                : 'Automated 5-language AI translation',
+            changedBy: user?.email || user?.id || 'admin',
+          },
+        })
+        .catch(() => {});
 
       // Upsert chunk into ai_knowledge_chunks immediately
       try {
@@ -593,7 +671,9 @@ export class AdminKnowledgeController {
     @Body() dto: UpdateKnowledgeItemDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    const existing = await this.prisma.knowledgeBaseItem.findUnique({ where: { id } });
+    const existing = await this.prisma.knowledgeBaseItem.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException('Knowledge item not found');
     }
@@ -613,8 +693,14 @@ export class AdminKnowledgeController {
         tags: dto.tags ?? existing.tags,
         status: (dto.status as any) ?? existing.status,
         source: dto.source ?? existing.source,
-        sourceEntityType: dto.sourceEntityType !== undefined ? dto.sourceEntityType : existing.sourceEntityType,
-        sourceEntityId: dto.sourceEntityId !== undefined ? dto.sourceEntityId : existing.sourceEntityId,
+        sourceEntityType:
+          dto.sourceEntityType !== undefined
+            ? dto.sourceEntityType
+            : existing.sourceEntityType,
+        sourceEntityId:
+          dto.sourceEntityId !== undefined
+            ? dto.sourceEntityId
+            : existing.sourceEntityId,
         contentHash,
         priority: dto.priority ?? existing.priority,
         isManuallyOverridden: true,
@@ -624,17 +710,19 @@ export class AdminKnowledgeController {
     });
 
     // Log version
-    await this.prisma.aiKnowledgeVersion.create({
-      data: {
-        knowledgeItemId: id,
-        versionNumber: nextVersion,
-        title: updated.title,
-        content: updated.content,
-        locale: updated.locale,
-        changeSummary: 'Content edited in Knowledge Center',
-        changedBy: user?.email || user?.id || 'admin',
-      },
-    }).catch(() => {});
+    await this.prisma.aiKnowledgeVersion
+      .create({
+        data: {
+          knowledgeItemId: id,
+          versionNumber: nextVersion,
+          title: updated.title,
+          content: updated.content,
+          locale: updated.locale,
+          changeSummary: 'Content edited in Knowledge Center',
+          changedBy: user?.email || user?.id || 'admin',
+        },
+      })
+      .catch(() => {});
 
     // Update chunk in ai_knowledge_chunks
     try {
@@ -684,12 +772,16 @@ export class AdminKnowledgeController {
    * 6. ONE-CLICK AI ACTIVATION TOGGLE
    */
   @Patch(':id/toggle-ai')
-  @ApiOperation({ summary: 'One-click toggle AI activation (Enable/Disable for GuideR)' })
+  @ApiOperation({
+    summary: 'One-click toggle AI activation (Enable/Disable for GuideR)',
+  })
   async toggleAiActivation(
     @Param('id') id: string,
     @Body() body: { isExcludedFromAi: boolean },
   ) {
-    const existing = await this.prisma.knowledgeBaseItem.findUnique({ where: { id } });
+    const existing = await this.prisma.knowledgeBaseItem.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException('Knowledge item not found');
     }
@@ -742,7 +834,10 @@ export class AdminKnowledgeController {
         OR: [
           { sourceEntityType: entityType, sourceEntityId: remainder },
           { sourceEntityType: entityType, sourceEntityId: baseId },
-          { sourceEntityType: entityType, sourceEntityId: { startsWith: baseId } },
+          {
+            sourceEntityType: entityType,
+            sourceEntityId: { startsWith: baseId },
+          },
           { id: remainder },
           { id: baseId },
           { sourceEntityId: remainder },
@@ -766,7 +861,9 @@ export class AdminKnowledgeController {
    * 7. CANONICAL ENTITY AI TOGGLE
    */
   @Post('canonical/:canonicalId/toggle-ai')
-  @ApiOperation({ summary: 'Toggle AI activation for all languages of a canonical entity' })
+  @ApiOperation({
+    summary: 'Toggle AI activation for all languages of a canonical entity',
+  })
   async toggleCanonicalAiActivation(
     @Param('canonicalId') canonicalId: string,
     @Body() body: { isExcludedFromAi: boolean },
@@ -794,7 +891,9 @@ export class AdminKnowledgeController {
    * Creates or updates GuideR-specific instructions without mutating underlying business database.
    */
   @Put('canonical/:canonicalId/override')
-  @ApiOperation({ summary: 'Create/update AI Knowledge Override for a canonical entity' })
+  @ApiOperation({
+    summary: 'Create/update AI Knowledge Override for a canonical entity',
+  })
   async updateCanonicalAiOverride(
     @Param('canonicalId') canonicalId: string,
     @Body()
@@ -810,7 +909,9 @@ export class AdminKnowledgeController {
   ) {
     const updateWhere = this.resolveCanonicalWhere(canonicalId);
 
-    let items = await this.prisma.knowledgeBaseItem.findMany({ where: updateWhere });
+    let items = await this.prisma.knowledgeBaseItem.findMany({
+      where: updateWhere,
+    });
     if (items.length === 0) {
       // Robust fallback search: try by ID or title match if exact where didn't find records
       const decoded = decodeURIComponent(canonicalId);
@@ -828,7 +929,9 @@ export class AdminKnowledgeController {
     }
 
     if (items.length === 0) {
-      throw new NotFoundException(`Canonical entity records not found for '${canonicalId}'`);
+      throw new NotFoundException(
+        `Canonical entity records not found for '${canonicalId}'`,
+      );
     }
 
     const itemIds = items.map((i) => i.id);
@@ -874,7 +977,9 @@ export class AdminKnowledgeController {
    * 9. CLEAR AI OVERRIDE
    */
   @Delete('canonical/:canonicalId/override')
-  @ApiOperation({ summary: 'Clear AI Knowledge Override and restore canonical database facts' })
+  @ApiOperation({
+    summary: 'Clear AI Knowledge Override and restore canonical database facts',
+  })
   async clearCanonicalAiOverride(@Param('canonicalId') canonicalId: string) {
     const updateWhere = this.resolveCanonicalWhere(canonicalId);
 
@@ -899,36 +1004,35 @@ export class AdminKnowledgeController {
    * 10. ACTIONABLE PROBLEM CENTER
    */
   @Get('problems/summary')
-  @ApiOperation({ summary: 'Get actionable issues (missing translations, expired overrides, sync errors)' })
+  @ApiOperation({
+    summary:
+      'Get actionable issues (missing translations, expired overrides, sync errors)',
+  })
   async getKnowledgeProblems() {
     const now = new Date();
 
-    const [
-      failedSyncs,
-      expiredOverrides,
-      sourceDeletedItems,
-      allTourItems,
-    ] = await Promise.all([
-      this.prisma.knowledgeBaseItem.findMany({
-        where: { syncStatus: 'FAILED' },
-        take: 10,
-      }),
-      this.prisma.knowledgeBaseItem.findMany({
-        where: {
-          validityEnd: { lt: now },
-          isManuallyOverridden: true,
-        },
-        take: 10,
-      }),
-      this.prisma.knowledgeBaseItem.findMany({
-        where: { syncStatus: 'SOURCE_DELETED' },
-        take: 10,
-      }),
-      this.prisma.knowledgeBaseItem.findMany({
-        where: { sourceEntityType: 'TOUR' },
-        select: { sourceEntityId: true, locale: true, title: true },
-      }),
-    ]);
+    const [failedSyncs, expiredOverrides, sourceDeletedItems, allTourItems] =
+      await Promise.all([
+        this.prisma.knowledgeBaseItem.findMany({
+          where: { syncStatus: 'FAILED' },
+          take: 10,
+        }),
+        this.prisma.knowledgeBaseItem.findMany({
+          where: {
+            validityEnd: { lt: now },
+            isManuallyOverridden: true,
+          },
+          take: 10,
+        }),
+        this.prisma.knowledgeBaseItem.findMany({
+          where: { syncStatus: 'SOURCE_DELETED' },
+          take: 10,
+        }),
+        this.prisma.knowledgeBaseItem.findMany({
+          where: { sourceEntityType: 'TOUR' },
+          select: { sourceEntityId: true, locale: true, title: true },
+        }),
+      ]);
 
     // Check missing translations in tours
     const tourLocaleMap = new Map<string, Set<string>>();
@@ -948,7 +1052,11 @@ export class AdminKnowledgeController {
 
     const problemsList: Array<{
       id: string;
-      type: 'FAILED_SYNC' | 'EXPIRED_OVERRIDE' | 'MISSING_TRANSLATION' | 'SOURCE_DELETED';
+      type:
+        | 'FAILED_SYNC'
+        | 'EXPIRED_OVERRIDE'
+        | 'MISSING_TRANSLATION'
+        | 'SOURCE_DELETED';
       title: string;
       description: string;
       actionText: string;
@@ -999,7 +1107,9 @@ export class AdminKnowledgeController {
    * 11. BULK ACTIONS (ENABLE, DISABLE, ARCHIVE)
    */
   @Post('bulk-action')
-  @ApiOperation({ summary: 'Execute bulk action on multiple knowledge documents' })
+  @ApiOperation({
+    summary: 'Execute bulk action on multiple knowledge documents',
+  })
   async executeBulkAction(
     @Body()
     body: {
@@ -1017,7 +1127,11 @@ export class AdminKnowledgeController {
     } else if (body.action === 'DISABLE_AI') {
       updateData = { isExcludedFromAi: true, lastIndexedAt: new Date() };
     } else if (body.action === 'ARCHIVE') {
-      updateData = { status: 'ARCHIVED', isExcludedFromAi: true, lastIndexedAt: new Date() };
+      updateData = {
+        status: 'ARCHIVED',
+        isExcludedFromAi: true,
+        lastIndexedAt: new Date(),
+      };
     } else if (body.action === 'PUBLISH') {
       updateData = { status: 'PUBLISHED', lastIndexedAt: new Date() };
     }
@@ -1055,12 +1169,16 @@ export class AdminKnowledgeController {
     @Param('versionId') versionId: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    const version = await this.prisma.aiKnowledgeVersion.findUnique({ where: { id: versionId } });
+    const version = await this.prisma.aiKnowledgeVersion.findUnique({
+      where: { id: versionId },
+    });
     if (!version || version.knowledgeItemId !== id) {
       throw new NotFoundException('Version snapshot not found');
     }
 
-    const item = await this.prisma.knowledgeBaseItem.findUnique({ where: { id } });
+    const item = await this.prisma.knowledgeBaseItem.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('Knowledge item not found');
 
     const nextVer = (item.version || 1) + 1;
@@ -1102,7 +1220,9 @@ export class AdminKnowledgeController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete Knowledge Base document' })
   async deleteKnowledgeItem(@Param('id') id: string) {
-    const existing = await this.prisma.knowledgeBaseItem.findUnique({ where: { id } });
+    const existing = await this.prisma.knowledgeBaseItem.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException('Knowledge item not found');
     }
@@ -1132,19 +1252,28 @@ export class AdminKnowledgeController {
    * 14. KNOWLEDGE FRESHNESS TELEMETRY & SAFE SYNC ENGINE
    */
   @Get('status')
-  @ApiOperation({ summary: 'Get GuideR Knowledge Freshness, snapshot version, and sync telemetry' })
+  @ApiOperation({
+    summary:
+      'Get GuideR Knowledge Freshness, snapshot version, and sync telemetry',
+  })
   async getKnowledgeStatus() {
     return this.ingestionService.getKnowledgeSyncStatus();
   }
 
   @Post('sync')
-  @ApiOperation({ summary: 'Trigger manual safe synchronization of GuideR Knowledge from live catalog' })
+  @ApiOperation({
+    summary:
+      'Trigger manual safe synchronization of GuideR Knowledge from live catalog',
+  })
   async triggerSafeSync() {
     return this.ingestionService.safeSyncCatalog('MANUAL');
   }
 
   @Post('sync-catalog')
-  @ApiOperation({ summary: 'Sync active database Tours & Destinations into Knowledge Base (backward compatible)' })
+  @ApiOperation({
+    summary:
+      'Sync active database Tours & Destinations into Knowledge Base (backward compatible)',
+  })
   async syncCatalogToKnowledgeBase() {
     return this.ingestionService.safeSyncCatalog('MANUAL');
   }
@@ -1153,14 +1282,26 @@ export class AdminKnowledgeController {
    * 15. AUTO-TRANSLATE (5 LANGUAGES)
    */
   @Post('auto-translate')
-  @ApiOperation({ summary: 'Auto-generate and translate article into 5 languages (AR, EN, ES, PT, IT) with AI' })
+  @ApiOperation({
+    summary:
+      'Auto-generate and translate article into 5 languages (AR, EN, ES, PT, IT) with AI',
+  })
   async autoTranslateKnowledge(
-    @Body() body: { title: string; content: string; sourceLocale?: string; category?: string },
+    @Body()
+    body: {
+      title: string;
+      content: string;
+      sourceLocale?: string;
+      category?: string;
+    },
   ) {
     if (!body.title || !body.content) {
-      throw new NotFoundException('Title and content are required for translation.');
+      throw new NotFoundException(
+        'Title and content are required for translation.',
+      );
     }
-    const translations = await this.translationService.generateFiveLanguageArticle(body);
+    const translations =
+      await this.translationService.generateFiveLanguageArticle(body);
     return {
       success: true,
       translations,
@@ -1171,7 +1312,9 @@ export class AdminKnowledgeController {
    * 16. BATCH SAVE MULTI-LANG
    */
   @Post('batch-multi-lang')
-  @ApiOperation({ summary: 'Save all 5 localized language versions of an article' })
+  @ApiOperation({
+    summary: 'Save all 5 localized language versions of an article',
+  })
   async saveBatchMultiLang(
     @Body()
     body: {
@@ -1185,7 +1328,11 @@ export class AdminKnowledgeController {
       }>;
     },
   ) {
-    if (!body.articles || !Array.isArray(body.articles) || body.articles.length === 0) {
+    if (
+      !body.articles ||
+      !Array.isArray(body.articles) ||
+      body.articles.length === 0
+    ) {
       throw new NotFoundException('At least one article version is required.');
     }
     return this.translationService.saveBatchMultiLang(body.articles);
@@ -1210,31 +1357,29 @@ export class AdminKnowledgeController {
     let byCategory: any[] = [];
 
     try {
-      const [
-        totalRes,
-        pubRes,
-        chunksRes,
-        locRes,
-        catRes,
-        autoRes,
-      ] = await Promise.all([
-        this.prisma.knowledgeBaseItem.count(),
-        this.prisma.knowledgeBaseItem.count({ where: { status: 'PUBLISHED' } }),
-        (this.prisma as any).aiKnowledgeChunk.count().catch(() => 0),
-        ((this.prisma.knowledgeBaseItem as any).groupBy
-          ? this.prisma.knowledgeBaseItem.groupBy({
-              by: ['locale'],
-              _count: { id: true },
-            })
-          : Promise.resolve([])),
-        ((this.prisma.knowledgeBaseItem as any).groupBy
-          ? this.prisma.knowledgeBaseItem.groupBy({
-              by: ['category'],
-              _count: { id: true },
-            })
-          : Promise.resolve([])),
-        this.prisma.knowledgeBaseItem.count({ where: { isAutoGenerated: true } }).catch(() => 0),
-      ]);
+      const [totalRes, pubRes, chunksRes, locRes, catRes, autoRes] =
+        await Promise.all([
+          this.prisma.knowledgeBaseItem.count(),
+          this.prisma.knowledgeBaseItem.count({
+            where: { status: 'PUBLISHED' },
+          }),
+          (this.prisma as any).aiKnowledgeChunk.count().catch(() => 0),
+          (this.prisma.knowledgeBaseItem as any).groupBy
+            ? this.prisma.knowledgeBaseItem.groupBy({
+                by: ['locale'],
+                _count: { id: true },
+              })
+            : Promise.resolve([]),
+          (this.prisma.knowledgeBaseItem as any).groupBy
+            ? this.prisma.knowledgeBaseItem.groupBy({
+                by: ['category'],
+                _count: { id: true },
+              })
+            : Promise.resolve([]),
+          this.prisma.knowledgeBaseItem
+            .count({ where: { isAutoGenerated: true } })
+            .catch(() => 0),
+        ]);
 
       totalArticles = totalRes;
       publishedCount = pubRes;
@@ -1246,9 +1391,15 @@ export class AdminKnowledgeController {
 
       // Test retrieval
       const retStart = Date.now();
-      const testRet = await this.hybridRagEngine.retrieveGroundedKnowledge('Egypt', 'en', ['tours', 'policies'], 1);
+      const testRet = await this.hybridRagEngine.retrieveGroundedKnowledge(
+        'Egypt',
+        'en',
+        ['tours', 'policies'],
+        1,
+      );
       retrievalLatencyMs = Date.now() - retStart;
-      retrievalFunctional = (testRet.matchedChunks.length > 0 || testRet.groundedTours.length > 0);
+      retrievalFunctional =
+        testRet.matchedChunks.length > 0 || testRet.groundedTours.length > 0;
     } catch (err: any) {
       lastError = err?.message || 'Database error during health check.';
     }
@@ -1272,8 +1423,14 @@ export class AdminKnowledgeController {
       publishedCount,
       chunksCount,
       autoGeneratedCount,
-      byLocale: (byLocale || []).map((l) => ({ locale: l.locale, count: l._count?.id ?? l.count ?? 0 })),
-      byCategory: (byCategory || []).map((c) => ({ category: c.category, count: c._count?.id ?? c.count ?? 0 })),
+      byLocale: (byLocale || []).map((l) => ({
+        locale: l.locale,
+        count: l._count?.id ?? l.count ?? 0,
+      })),
+      byCategory: (byCategory || []).map((c) => ({
+        category: c.category,
+        count: c._count?.id ?? c.count ?? 0,
+      })),
     };
   }
 
@@ -1281,7 +1438,10 @@ export class AdminKnowledgeController {
    * 18. TEST RETRIEVAL WITH AI OVERRIDES
    */
   @Post('test-retrieval')
-  @ApiOperation({ summary: 'Test multi-lingual hybrid RAG retrieval against live catalog and knowledge chunks' })
+  @ApiOperation({
+    summary:
+      'Test multi-lingual hybrid RAG retrieval against live catalog and knowledge chunks',
+  })
   async testRetrieval(
     @Body()
     body: {
@@ -1300,7 +1460,13 @@ export class AdminKnowledgeController {
     const result = await this.hybridRagEngine.retrieveGroundedKnowledge(
       body.query,
       locale,
-      body.allowedSources || ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
+      body.allowedSources || [
+        'tours',
+        'destinations',
+        'policies',
+        'hotels',
+        'transportation',
+      ],
       body.limit || 6,
     );
 
@@ -1324,7 +1490,9 @@ export class AdminKnowledgeController {
    * GET ALL DIRECT RESPONSE RULES (Q&A Directives: "لو اتسألت عن X قول Y")
    */
   @Get('response-rules')
-  @ApiOperation({ summary: 'Get all active & inactive GuideR Response Directives (Q&A Rules)' })
+  @ApiOperation({
+    summary: 'Get all active & inactive GuideR Response Directives (Q&A Rules)',
+  })
   async getResponseRules() {
     const items = await this.prisma.knowledgeBaseItem.findMany({
       where: {
@@ -1376,7 +1544,8 @@ export class AdminKnowledgeController {
         id: rule.languages[loc]?.id,
         triggerQuestion: rule.languages[loc]?.triggerQuestion || '',
         prescribedAnswer: rule.languages[loc]?.prescribedAnswer || '',
-        isExcludedFromAi: rule.languages[loc]?.isExcludedFromAi ?? rule.isExcludedFromAi,
+        isExcludedFromAi:
+          rule.languages[loc]?.isExcludedFromAi ?? rule.isExcludedFromAi,
       }));
 
       return {
@@ -1395,13 +1564,17 @@ export class AdminKnowledgeController {
    * CREATE A NEW DIRECT RESPONSE RULE ("لو اتسألت عن X قول Y")
    */
   @Post('response-rules')
-  @ApiOperation({ summary: 'Create a new GuideR Direct Response Rule (Q&A Directive)' })
+  @ApiOperation({
+    summary: 'Create a new GuideR Direct Response Rule (Q&A Directive)',
+  })
   async createResponseRule(
     @Body() body: CreateResponseRuleDto,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     if (!body.triggerQuestion?.trim() || !body.prescribedAnswer?.trim()) {
-      throw new BadRequestException('triggerQuestion and prescribedAnswer are required.');
+      throw new BadRequestException(
+        'triggerQuestion and prescribedAnswer are required.',
+      );
     }
 
     const trigger = body.triggerQuestion.trim();
@@ -1416,14 +1589,17 @@ export class AdminKnowledgeController {
 
     if (shouldTranslate) {
       try {
-        translations = await this.translationService.generateFiveLanguageArticle({
-          title: trigger,
-          content: answer,
-          sourceLocale: sourceLoc,
-          category,
-        });
+        translations =
+          await this.translationService.generateFiveLanguageArticle({
+            title: trigger,
+            content: answer,
+            sourceLocale: sourceLoc,
+            category,
+          });
       } catch (e: any) {
-        this.logger.warn(`AI Auto-translation failed for response rule: ${e.message}`);
+        this.logger.warn(
+          `AI Auto-translation failed for response rule: ${e.message}`,
+        );
         translations = {
           ar: { title: trigger, content: answer },
           en: { title: trigger, content: answer },
@@ -1440,14 +1616,21 @@ export class AdminKnowledgeController {
         pt: { title: trigger, content: answer },
         it: { title: trigger, content: answer },
       };
-      translations[sourceLoc as keyof FiveLanguageTranslationResult] = { title: trigger, content: answer };
+      translations[sourceLoc as keyof FiveLanguageTranslationResult] = {
+        title: trigger,
+        content: answer,
+      };
     }
 
     const createdItems: any[] = [];
 
     for (const loc of SUPPORTED_LOCALES) {
-      const locData = translations[loc as keyof FiveLanguageTranslationResult] || { title: trigger, content: answer };
-      const itemHash = createHash('sha256').update(`${locData.title}:${locData.content}`).digest('hex');
+      const locData = translations[
+        loc as keyof FiveLanguageTranslationResult
+      ] || { title: trigger, content: answer };
+      const itemHash = createHash('sha256')
+        .update(`${locData.title}:${locData.content}`)
+        .digest('hex');
 
       const created = await this.prisma.knowledgeBaseItem.create({
         data: {
@@ -1527,10 +1710,7 @@ export class AdminKnowledgeController {
 
     const items = await this.prisma.knowledgeBaseItem.findMany({
       where: {
-        OR: [
-          { sourceEntityId: ruleId },
-          { id: ruleId },
-        ],
+        OR: [{ sourceEntityId: ruleId }, { id: ruleId }],
       },
     });
 
@@ -1560,14 +1740,13 @@ export class AdminKnowledgeController {
    * DELETE DIRECT RESPONSE RULE
    */
   @Delete('response-rules/:ruleId')
-  @ApiOperation({ summary: 'Delete a direct response rule across all languages' })
+  @ApiOperation({
+    summary: 'Delete a direct response rule across all languages',
+  })
   async deleteResponseRule(@Param('ruleId') ruleId: string) {
     const items = await this.prisma.knowledgeBaseItem.findMany({
       where: {
-        OR: [
-          { sourceEntityId: ruleId },
-          { id: ruleId },
-        ],
+        OR: [{ sourceEntityId: ruleId }, { id: ruleId }],
       },
     });
 
@@ -1598,11 +1777,12 @@ export class AdminKnowledgeController {
   @Get(':id')
   @ApiOperation({ summary: 'Get Knowledge Base document by ID' })
   async getKnowledgeItemDetail(@Param('id') id: string) {
-    const item = await this.prisma.knowledgeBaseItem.findUnique({ where: { id } });
+    const item = await this.prisma.knowledgeBaseItem.findUnique({
+      where: { id },
+    });
     if (!item) {
       throw new NotFoundException('Knowledge item not found');
     }
     return item;
   }
 }
-

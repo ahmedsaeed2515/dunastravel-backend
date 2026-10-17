@@ -74,7 +74,7 @@ export class FaqService {
     if (!result.en?.trim()) {
       throw new BadRequestException('English FAQ content is required');
     }
-    return result as Prisma.InputJsonValue;
+    return result;
   }
 
   // --- PUBLIC API ---

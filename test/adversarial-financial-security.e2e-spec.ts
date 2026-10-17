@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -34,51 +38,58 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
   let capturedInitPayload: any = null;
 
   beforeAll(async () => {
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const body = JSON.parse(String(init?.body || '{}'));
-        capturedInitPayload = body;
-        const invoiceId = Math.floor(500000 + Math.random() * 400000);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${invoiceId}`,
-              invoice_id: invoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-
-      if (urlStr.includes('/api/integration/check-status')) {
-        let invoiceId = 123456;
-        try {
+        if (urlStr.includes('/api/v2/integration/init')) {
           const body = JSON.parse(String(init?.body || '{}'));
-          if (body.invoice_id) invoiceId = Number(body.invoice_id);
-        } catch {}
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              invoice_id: invoiceId,
-              paid_status: 'PAID',
-              auth_code: 'AUTH-ADV-TEST',
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
+          capturedInitPayload = body;
+          const invoiceId = Math.floor(500000 + Math.random() * 400000);
 
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${invoiceId}`,
+                invoice_id: invoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        if (urlStr.includes('/api/integration/check-status')) {
+          let invoiceId = 123456;
+          try {
+            const body = JSON.parse(String(init?.body || '{}'));
+            if (body.invoice_id) invoiceId = Number(body.invoice_id);
+          } catch {}
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                invoice_id: invoiceId,
+                paid_status: 'PAID',
+                auth_code: 'AUTH-ADV-TEST',
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
+        );
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -103,7 +114,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     await app.init();
 
     const configService = app.get(ConfigService);
-    hashToken = configService.get('GETPAYIN_HASH_TOKEN') || 'sandbox_hash_token_dunas_secret_2026';
+    hashToken =
+      configService.get('GETPAYIN_HASH_TOKEN') ||
+      'sandbox_hash_token_dunas_secret_2026';
 
     paylinkClient = new PaylinkClient({
       publicToken: 'dummy',
@@ -111,7 +124,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     });
 
     // Upsert availability slot for testDate
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -141,8 +156,11 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
   });
@@ -151,10 +169,16 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     fetchSpy?.mockRestore();
     // Restore baseline slot state
     if (testSlotId) {
-      await prisma.tourAvailability.update({
-        where: { id: testSlotId },
-        data: { totalCapacity: 100, remainingSeats: 100, status: 'AVAILABLE' },
-      }).catch(() => {});
+      await prisma.tourAvailability
+        .update({
+          where: { id: testSlotId },
+          data: {
+            totalCapacity: 100,
+            remainingSeats: 100,
+            status: 'AVAILABLE',
+          },
+        })
+        .catch(() => {});
     }
     await app?.close();
     await prisma?.$disconnect();
@@ -209,7 +233,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
 
     // Must be rejected with 422 Unprocessable Entity
     expect(res2.status).toBe(422);
-    expect(res2.body.message).toContain('Idempotency key reused with mismatched request payload');
+    expect(res2.body.message).toContain(
+      'Idempotency key reused with mismatched request payload',
+    );
   });
 
   it('1.2 Promotion bounds: Database constraint prevents discount > 90% and total never goes negative', async () => {
@@ -317,7 +343,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     // Server-side derivation overrides or ignores client price fields
     expect(res.status).toBe(201);
     const booking = res.body?.data || res.body;
-    expect(Number(booking.totalAmountUsd)).toBe(5.00);
+    expect(Number(booking.totalAmountUsd)).toBe(5.0);
     expect(booking.status).toBe('PENDING');
     expect(booking.paymentRequired).toBe(true);
   });
@@ -327,7 +353,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
   // =========================================================================
 
   it('2.1 Administrative CLOSED status blocks all concurrent bookings with 422', async () => {
-    const tour = (await prisma.tour.findFirst({ where: { slug: testTourSlug } }))!;
+    const tour = (await prisma.tour.findFirst({
+      where: { slug: testTourSlug },
+    }))!;
     const closedDate = new Date('2029-05-15');
     const closedSlot = await prisma.tourAvailability.upsert({
       where: { tourId_date: { tourId: tour.id, date: closedDate } },
@@ -377,7 +405,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
   });
 
   it('2.2 Remaining seats at 0 floor allows unlimited bookings without check-constraint crashes', async () => {
-    const tour = (await prisma.tour.findFirst({ where: { slug: testTourSlug } }))!;
+    const tour = (await prisma.tour.findFirst({
+      where: { slug: testTourSlug },
+    }))!;
     const zeroDate = new Date('2029-05-16');
     const zeroFloorSlot = await prisma.tourAvailability.upsert({
       where: { tourId_date: { tourId: tour.id, date: zeroDate } },
@@ -477,10 +507,13 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         invoice_status: 'PAID',
         success: 1,
         message: 'Paid',
-        order_amount: 5.00,
+        order_amount: 5.0,
         order_currency: 'USD',
       };
-      webhook1.signature = (paylinkClient.webhooks as any).computeSignature(webhook1, hashToken);
+      webhook1.signature = (paylinkClient.webhooks as any).computeSignature(
+        webhook1,
+        hashToken,
+      );
 
       const res1 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')
@@ -502,10 +535,13 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         invoice_status: 'PARTIALLY_REFUNDED',
         success: 1,
         message: 'Partially refunded',
-        order_amount: 5.00,
+        order_amount: 5.0,
         order_currency: 'USD',
       };
-      webhook2.signature = (paylinkClient.webhooks as any).computeSignature(webhook2, hashToken);
+      webhook2.signature = (paylinkClient.webhooks as any).computeSignature(
+        webhook2,
+        hashToken,
+      );
 
       const res2 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')
@@ -524,10 +560,13 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         invoice_status: 'PAID',
         success: 1,
         message: 'Paid duplicate delayed',
-        order_amount: 5.00,
+        order_amount: 5.0,
         order_currency: 'USD',
       };
-      webhook3.signature = (paylinkClient.webhooks as any).computeSignature(webhook3, hashToken);
+      webhook3.signature = (paylinkClient.webhooks as any).computeSignature(
+        webhook3,
+        hashToken,
+      );
 
       const res3 = await request(app.getHttpServer())
         .post('/api/payments/webhook/getpayin')
@@ -542,7 +581,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
       // DB remains in safe state
       const b3 = await prisma.booking.findUnique({ where: { id: bookingId } });
       expect(b3?.status).toBe('CONFIRMED');
-      expect(Number(b3?.paidAmountUsd)).toBe(5.00);
+      expect(Number(b3?.paidAmountUsd)).toBe(5.0);
     } finally {
       eventEmitter.removeListener(PAYMENT_EVENTS.SUCCEEDED, listener);
     }
@@ -574,7 +613,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     const bookingId = bookingData.id;
 
     // Verify token entropy stored in database: 64 hex chars = 256 bits of cryptographic SHA256
-    const bookingInDb = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const bookingInDb = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(bookingInDb?.guestTokenHash).toMatch(/^[a-f0-9]{64}$/);
 
     // Attempt initiate payment with forged/random token without authorization
@@ -621,7 +662,10 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
       .digest('base64');
 
     // 4.2a Bit-flipped signature (change 1 character)
-    const bitFlippedSig = genuineSig.slice(0, -2) + (genuineSig.slice(-2, -1) === 'A' ? 'B' : 'A') + genuineSig.slice(-1);
+    const bitFlippedSig =
+      genuineSig.slice(0, -2) +
+      (genuineSig.slice(-2, -1) === 'A' ? 'B' : 'A') +
+      genuineSig.slice(-1);
     const res1 = await request(app.getHttpServer())
       .post('/api/payments/callback/getpayin')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -688,6 +732,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     expect(testLog.id).toBeDefined();
 
     // Clean up test probe row
-    await prisma.$executeRawUnsafe(`DELETE FROM audit_logs WHERE id = $1`, testLog.id);
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM audit_logs WHERE id = $1`,
+      testLog.id,
+    );
   });
 });

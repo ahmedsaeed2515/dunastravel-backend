@@ -19,7 +19,8 @@ export class CreateTransportationServiceDto {
   name!: string;
 
   @ApiPropertyOptional({
-    description: 'Localized names dictionary in 5 languages: ar, en, es, pt, it',
+    description:
+      'Localized names dictionary in 5 languages: ar, en, es, pt, it',
     type: Object,
     additionalProperties: true,
   })
@@ -39,7 +40,16 @@ export class CreateTransportationServiceDto {
 
   @ApiProperty({
     description: 'Service type',
-    enum: ['AIRPORT', 'HOTEL', 'CITY_TO_CITY', 'FULL_DAY', 'VIP_ESCORT', 'COASTER', 'BUS', 'PRIVATE'],
+    enum: [
+      'AIRPORT',
+      'HOTEL',
+      'CITY_TO_CITY',
+      'FULL_DAY',
+      'VIP_ESCORT',
+      'COASTER',
+      'BUS',
+      'PRIVATE',
+    ],
     default: 'AIRPORT',
   })
   @IsString()
@@ -48,7 +58,15 @@ export class CreateTransportationServiceDto {
 
   @ApiPropertyOptional({
     description: 'Vehicle category',
-    enum: ['bus', 'coaster', 'private', 'transfer', 'luxury_van', 'sedan', 'suv'],
+    enum: [
+      'bus',
+      'coaster',
+      'private',
+      'transfer',
+      'luxury_van',
+      'sedan',
+      'suv',
+    ],
     default: 'bus',
   })
   @IsOptional()
@@ -60,7 +78,10 @@ export class CreateTransportationServiceDto {
   @IsString()
   vehicleType?: string;
 
-  @ApiPropertyOptional({ description: 'Passenger seating capacity', default: 50 })
+  @ApiPropertyOptional({
+    description: 'Passenger seating capacity',
+    default: 50,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -76,12 +97,18 @@ export class CreateTransportationServiceDto {
   @Max(10)
   doors?: number;
 
-  @ApiPropertyOptional({ description: 'Transmission type (AUTO or MANUAL)', default: 'AUTO' })
+  @ApiPropertyOptional({
+    description: 'Transmission type (AUTO or MANUAL)',
+    default: 'AUTO',
+  })
   @IsOptional()
   @IsString()
   transmission?: string;
 
-  @ApiProperty({ description: 'Base price per booking/trip in USD', default: 150 })
+  @ApiProperty({
+    description: 'Base price per booking/trip in USD',
+    default: 150,
+  })
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -97,12 +124,18 @@ export class CreateTransportationServiceDto {
   @IsString()
   heroMediaId?: string;
 
-  @ApiPropertyOptional({ description: 'Is private exclusive chauffeur vehicle', default: false })
+  @ApiPropertyOptional({
+    description: 'Is private exclusive chauffeur vehicle',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isPrivate?: boolean;
 
-  @ApiPropertyOptional({ description: 'Is active and available for booking', default: true })
+  @ApiPropertyOptional({
+    description: 'Is active and available for booking',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
@@ -113,7 +146,8 @@ export class CreateTransportationServiceDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Localized description dictionary in 5 languages: ar, en, es, pt, it',
+    description:
+      'Localized description dictionary in 5 languages: ar, en, es, pt, it',
     type: Object,
     additionalProperties: true,
   })
@@ -121,27 +155,38 @@ export class CreateTransportationServiceDto {
   @IsObject()
   descriptionJsonb?: Record<string, string>;
 
-  @ApiPropertyOptional({ description: 'Pickup instructions and meeting point advice' })
+  @ApiPropertyOptional({
+    description: 'Pickup instructions and meeting point advice',
+  })
   @IsOptional()
   @IsString()
   pickupInstructions?: string;
 
-  @ApiPropertyOptional({ description: 'Dropoff instructions and luggage advice' })
+  @ApiPropertyOptional({
+    description: 'Dropoff instructions and luggage advice',
+  })
   @IsOptional()
   @IsString()
   dropoffInstructions?: string;
 
-  @ApiPropertyOptional({ description: 'Vehicle luxury amenities and features list', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Vehicle luxury amenities and features list',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   features?: string[];
 
-  @ApiPropertyOptional({ description: 'Structured features jsonb or dictionary' })
+  @ApiPropertyOptional({
+    description: 'Structured features jsonb or dictionary',
+  })
   @IsOptional()
   featuresJsonb?: any;
 }
 
-export class UpdateTransportationServiceDto extends PartialType(CreateTransportationServiceDto) {}
+export class UpdateTransportationServiceDto extends PartialType(
+  CreateTransportationServiceDto,
+) {}
 
 export class QueryTransportationServiceDto {
   @ApiPropertyOptional({ description: 'Page number', default: 1 })
@@ -156,27 +201,37 @@ export class QueryTransportationServiceDto {
   @IsNumber()
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: 'Search term for name, type, or description' })
+  @ApiPropertyOptional({
+    description: 'Search term for name, type, or description',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by vehicle category (bus, coaster, private, transfer)' })
+  @ApiPropertyOptional({
+    description: 'Filter by vehicle category (bus, coaster, private, transfer)',
+  })
   @IsOptional()
   @IsString()
   category?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by service type (AIRPORT, HOTEL, CITY_TO_CITY)' })
+  @ApiPropertyOptional({
+    description: 'Filter by service type (AIRPORT, HOTEL, CITY_TO_CITY)',
+  })
   @IsOptional()
   @IsString()
   serviceType?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by status (ALL, ACTIVE, INACTIVE, ARCHIVED)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (ALL, ACTIVE, INACTIVE, ARCHIVED)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ description: 'Requested locale for translated content (en, ar, es, pt, it)' })
+  @ApiPropertyOptional({
+    description: 'Requested locale for translated content (en, ar, es, pt, it)',
+  })
   @IsOptional()
   @IsString()
   locale?: string;
@@ -214,4 +269,3 @@ export class UpdateTransportationBookingStatusDto {
   @IsString()
   notes?: string;
 }
-

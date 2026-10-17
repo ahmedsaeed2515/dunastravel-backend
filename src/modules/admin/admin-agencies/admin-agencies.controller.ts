@@ -9,11 +9,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { AdminAgenciesService } from './admin-agencies.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -65,11 +61,6 @@ export class AdminAgenciesController {
     @Body() dto: UpdateAgencyTierDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.service.updateTier(
-      id,
-      dto.tier,
-      dto.commissionRate,
-      actor.id,
-    );
+    return this.service.updateTier(id, dto.tier, dto.commissionRate, actor.id);
   }
 }

@@ -7,10 +7,7 @@ interface MemoryCacheEntry {
   expires: number;
 }
 
-export class RedisKeyvStore
-  extends EventEmitter
-  implements KeyvStoreAdapter
-{
+export class RedisKeyvStore extends EventEmitter implements KeyvStoreAdapter {
   readonly opts: { dialect: string; url: string };
   namespace?: string;
   private readonly redis: Redis;

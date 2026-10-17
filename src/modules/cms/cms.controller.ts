@@ -12,13 +12,19 @@ export class CmsController {
 
   @Get('blocks/:key')
   @ApiOperation({ summary: 'Get a public CMS block by blocks/:key (Cached)' })
-  async getPublicBlockByBlocksPath(@Param('key') key: string, @Query() query: PublicCmsBlockQueryDto) {
+  async getPublicBlockByBlocksPath(
+    @Param('key') key: string,
+    @Query() query: PublicCmsBlockQueryDto,
+  ) {
     return this.cmsService.getPublicBlock(key, query.lang);
   }
 
   @Get(':key')
   @ApiOperation({ summary: 'Get a public CMS block (Cached)' })
-  async getPublicBlock(@Param('key') key: string, @Query() query: PublicCmsBlockQueryDto) {
+  async getPublicBlock(
+    @Param('key') key: string,
+    @Query() query: PublicCmsBlockQueryDto,
+  ) {
     return this.cmsService.getPublicBlock(key, query.lang);
   }
 }

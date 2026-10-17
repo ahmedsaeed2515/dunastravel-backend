@@ -64,10 +64,7 @@ export class AdminFaqController {
   @Put(':id')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update an existing FAQ item' })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateFaqDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateFaqDto) {
     return this.faqService.updateAdmin(id, dto);
   }
 

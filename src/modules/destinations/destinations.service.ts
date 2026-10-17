@@ -101,11 +101,7 @@ export class DestinationsService {
     return this.landingPagesService.attachTours(idOrSlug, dto, actor);
   }
 
-  async detachTour(
-    idOrSlug: string,
-    tourId: string,
-    actor: AuthenticatedUser,
-  ) {
+  async detachTour(idOrSlug: string, tourId: string, actor: AuthenticatedUser) {
     return this.landingPagesService.detachTour(idOrSlug, tourId, actor);
   }
 

@@ -18,7 +18,8 @@ export class DashboardService {
     let from: Date;
 
     const preset = query.preset || (query.year ? query.year : undefined);
-    const yearMatch = preset && /^\d{4}$/.test(preset) ? parseInt(preset, 10) : null;
+    const yearMatch =
+      preset && /^\d{4}$/.test(preset) ? parseInt(preset, 10) : null;
 
     if (query.from) {
       from = new Date(query.from);
@@ -125,7 +126,7 @@ export class DashboardService {
           ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
         },
         _count: { _all: true },
-        _sum: { 
+        _sum: {
           totalAmountUsd: true,
           paidAmountUsd: true,
         },
@@ -355,16 +356,16 @@ export class DashboardService {
       rawTotalCapacity > 0
         ? rawTotalCapacity
         : bookedPax > 0
-        ? Math.max(100, bookedPax * 2)
-        : 0;
+          ? Math.max(100, bookedPax * 2)
+          : 0;
     const seatsSold = Math.max(rawTotalCapacity - rawRemaining, bookedPax);
     const totalRemainingSeats = Math.max(0, totalCapacity - seatsSold);
     const occupancyRate =
       totalCapacity > 0
         ? Number(((seatsSold / totalCapacity) * 100).toFixed(1))
         : bookedPax > 0
-        ? Math.min(100, bookedPax * 10)
-        : 0;
+          ? Math.min(100, bookedPax * 10)
+          : 0;
 
     // Helper for percentage change
     const calcChange = (curr: number, prev: number) => {
@@ -462,7 +463,9 @@ export class DashboardService {
           where: {
             createdAt: { gte: prevFrom, lte: prevTo },
             deletedAt: null,
-            status: { in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'] },
+            status: {
+              in: ['CONFIRMED', 'PAID', 'COMPLETED', 'PARTIALLY_PAID'],
+            },
             ...(query.tourSlug && { tour: { slug: query.tourSlug } }),
           },
           _sum: { totalAmountUsd: true },
@@ -506,7 +509,8 @@ export class DashboardService {
       (sum, item) => sum + item.bookingsCount,
       0,
     );
-    const activeMonths = trend.filter((t) => t.grossRevenue > 0).length || trend.length || 1;
+    const activeMonths =
+      trend.filter((t) => t.grossRevenue > 0).length || trend.length || 1;
     const monthlySalesRate = Math.round(totalGross / activeMonths);
 
     let monthlyGrowthPercent = 0;
@@ -514,14 +518,18 @@ export class DashboardService {
       const last = trend[trend.length - 1].grossRevenue;
       const prev = trend[trend.length - 2].grossRevenue;
       if (prev > 0) {
-        monthlyGrowthPercent = Number((((last - prev) / prev) * 100).toFixed(1));
+        monthlyGrowthPercent = Number(
+          (((last - prev) / prev) * 100).toFixed(1),
+        );
       } else {
         monthlyGrowthPercent = last > 0 ? 100 : 0;
       }
     } else {
       const prevTotal = Number(prevBookingsSum._sum.totalAmountUsd || 0);
       if (prevTotal > 0) {
-        monthlyGrowthPercent = Number((((totalGross - prevTotal) / prevTotal) * 100).toFixed(1));
+        monthlyGrowthPercent = Number(
+          (((totalGross - prevTotal) / prevTotal) * 100).toFixed(1),
+        );
       } else {
         monthlyGrowthPercent = totalGross > 0 ? 100 : 0;
       }
@@ -735,8 +743,8 @@ export class DashboardService {
         rawTotalCapacity > 0
           ? rawTotalCapacity
           : bookedPax > 0
-          ? Math.max(30, bookedPax * 2)
-          : 0;
+            ? Math.max(30, bookedPax * 2)
+            : 0;
       const occupiedSeats = Math.max(
         rawTotalCapacity - rawRemaining,
         bookedPax,
@@ -746,8 +754,8 @@ export class DashboardService {
         totalCapacity > 0
           ? Number(((occupiedSeats / totalCapacity) * 100).toFixed(1))
           : bookedPax > 0
-          ? Math.min(100, bookedPax * 10)
-          : 0;
+            ? Math.min(100, bookedPax * 10)
+            : 0;
 
       // Calculate starting/display price
       let displayPriceUsd = Number(t.basePriceUsd);
@@ -775,9 +783,7 @@ export class DashboardService {
       const views = eventCountsBySlug[t.slug]?.views || 0;
       const bookingStarts = eventCountsBySlug[t.slug]?.bookingStarts || 0;
       const conversionRate =
-        views > 0
-          ? Number(((confirmedBookings / views) * 100).toFixed(1))
-          : 0;
+        views > 0 ? Number(((confirmedBookings / views) * 100).toFixed(1)) : 0;
 
       return {
         id: t.id,
@@ -805,7 +811,11 @@ export class DashboardService {
 
     // Top rankings
     const mostBooked = [...performanceList]
-      .sort((a, b) => b.confirmedBookings - a.confirmedBookings || b.totalBookings - a.totalBookings)
+      .sort(
+        (a, b) =>
+          b.confirmedBookings - a.confirmedBookings ||
+          b.totalBookings - a.totalBookings,
+      )
       .slice(0, 5);
     const topRevenue = [...performanceList]
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
@@ -995,9 +1005,7 @@ export class DashboardService {
       {
         stage: 'Booking Initiated',
         count: Math.max(bookingStarts, bookingSubmissions),
-        percent: percentOfVisitors(
-          Math.max(bookingStarts, bookingSubmissions),
-        ),
+        percent: percentOfVisitors(Math.max(bookingStarts, bookingSubmissions)),
       },
       {
         stage: 'Booking Submitted',
@@ -1024,28 +1032,29 @@ export class DashboardService {
     const { from, to } = this.parseDates(query);
     const activeThreshold = new Date(Date.now() - 2 * 60 * 1000);
 
-    const [deviceGroups, localeGroups, totalEvents, activeVisitorsGroup] = await Promise.all([
-      this.prisma.analyticsEvent.groupBy({
-        by: ['deviceCategory'],
-        where: { createdAt: { gte: from, lte: to } },
-        _count: { _all: true },
-      }),
-      this.prisma.analyticsEvent.groupBy({
-        by: ['locale'],
-        where: { createdAt: { gte: from, lte: to } },
-        _count: { _all: true },
-      }),
-      this.prisma.analyticsEvent.count({
-        where: { createdAt: { gte: from, lte: to } },
-      }),
-      this.prisma.analyticsEvent.groupBy({
-        by: ['sessionId'],
-        where: {
-          createdAt: { gte: activeThreshold },
-          sessionId: { not: null },
-        },
-      }),
-    ]);
+    const [deviceGroups, localeGroups, totalEvents, activeVisitorsGroup] =
+      await Promise.all([
+        this.prisma.analyticsEvent.groupBy({
+          by: ['deviceCategory'],
+          where: { createdAt: { gte: from, lte: to } },
+          _count: { _all: true },
+        }),
+        this.prisma.analyticsEvent.groupBy({
+          by: ['locale'],
+          where: { createdAt: { gte: from, lte: to } },
+          _count: { _all: true },
+        }),
+        this.prisma.analyticsEvent.count({
+          where: { createdAt: { gte: from, lte: to } },
+        }),
+        this.prisma.analyticsEvent.groupBy({
+          by: ['sessionId'],
+          where: {
+            createdAt: { gte: activeThreshold },
+            sessionId: { not: null },
+          },
+        }),
+      ]);
 
     const activeVisitors = activeVisitorsGroup.length;
 
@@ -1402,8 +1411,8 @@ export class DashboardService {
         totalRevenueSum > 0
           ? Number(((d.grossRevenue / totalRevenueSum) * 100).toFixed(1))
           : totalBookingsSum > 0
-          ? Number(((d.bookingsCount / totalBookingsSum) * 100).toFixed(1))
-          : 0;
+            ? Number(((d.bookingsCount / totalBookingsSum) * 100).toFixed(1))
+            : 0;
 
       return {
         ...d,

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Request } from 'express';
 import {
   CheckoutSessionData,
@@ -32,7 +32,7 @@ export class MockPaymentGatewayAdapter implements IPaymentGatewayPort {
     input: CreateCheckoutSessionData,
   ): Promise<CheckoutSessionData> {
     const providerInvoiceId = `MOCK-INV-${Date.now()}`;
-    const url = `/booking-success?payment_id=${encodeURIComponent(input.paymentId)}&mock_success=true`;
+    const url = `https://test-gateway.dunastravel.local/checkout?payment_id=${encodeURIComponent(input.paymentId)}`;
     return {
       url,
       providerInvoiceId,

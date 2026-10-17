@@ -35,7 +35,10 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
   private isOffline = false;
   private lastConnectAttempt = 0;
   private lastWarnLog = 0;
-  private readonly memoryStore = new Map<string, { hits: number; resetAt: number }>();
+  private readonly memoryStore = new Map<
+    string,
+    { hits: number; resetAt: number }
+  >();
 
   constructor(redisUrl: string) {
     this.redis = new Redis(redisUrl, {
@@ -95,10 +98,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
         totalHits,
         timeToExpire: Math.max(0, Math.ceil(ttlMs / 1_000)),
         isBlocked: blocked === 1,
-        timeToBlockExpire: Math.max(
-          0,
-          Math.ceil(blockTtlMs / 1_000),
-        ),
+        timeToBlockExpire: Math.max(0, Math.ceil(blockTtlMs / 1_000)),
       };
     } catch (error) {
       this.isOffline = true;
@@ -130,7 +130,10 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 
       record.hits += 1;
       const isBlocked = record.hits > limit;
-      const timeToExpire = Math.max(0, Math.ceil((record.resetAt - now) / 1_000));
+      const timeToExpire = Math.max(
+        0,
+        Math.ceil((record.resetAt - now) / 1_000),
+      );
       return {
         totalHits: record.hits,
         timeToExpire,

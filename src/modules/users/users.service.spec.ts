@@ -97,14 +97,16 @@ describe('UserService - Create Admin User', () => {
       status: 'SUSPENDED',
       suspendReason: 'Suspicious login pattern',
     });
-    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) };
+    (prisma as any).auditLog = {
+      create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+    };
 
     const result = await service.suspendUser(
       'user-uuid-123',
       'Suspicious login pattern',
       'admin-actor-1',
       'ADMIN',
-      '127.0.0.1'
+      '127.0.0.1',
     );
 
     expect(result.status).toBe('SUSPENDED');
@@ -120,19 +122,24 @@ describe('UserService - Create Admin User', () => {
   });
 
   it('should reactivate suspended user and clear suspendReason', async () => {
-    prisma.user.findFirst.mockResolvedValue({ ...mockUser, status: 'SUSPENDED' });
+    prisma.user.findFirst.mockResolvedValue({
+      ...mockUser,
+      status: 'SUSPENDED',
+    });
     (prisma as any).user.update = jest.fn().mockResolvedValue({
       ...mockUser,
       status: 'ACTIVE',
       suspendReason: null,
     });
-    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-2' }) };
+    (prisma as any).auditLog = {
+      create: jest.fn().mockResolvedValue({ id: 'audit-2' }),
+    };
 
     const result = await service.activateUser(
       'user-uuid-123',
       'admin-actor-1',
       'ADMIN',
-      '127.0.0.1'
+      '127.0.0.1',
     );
 
     expect(result.status).toBe('ACTIVE');
@@ -152,9 +159,15 @@ describe('UserService - Create Admin User', () => {
       ...mockUser,
       sessionVersion: 2,
     });
-    (prisma as any).auditLog = { create: jest.fn().mockResolvedValue({ id: 'audit-3' }) };
+    (prisma as any).auditLog = {
+      create: jest.fn().mockResolvedValue({ id: 'audit-3' }),
+    };
 
-    const result = await service.revokeSessionsAdmin('user-uuid-123', 'admin-actor-1', '127.0.0.1');
+    const result = await service.revokeSessionsAdmin(
+      'user-uuid-123',
+      'admin-actor-1',
+      '127.0.0.1',
+    );
 
     expect(result.success).toBe(true);
     expect((prisma as any).user.update).toHaveBeenCalledWith({
@@ -191,7 +204,9 @@ describe('UserService - Create Admin User', () => {
           { name: 'Hacked Name' },
           UserRole.ADMIN,
         ),
-      ).rejects.toThrow('Only SUPER_ADMIN can modify another SUPER_ADMIN account');
+      ).rejects.toThrow(
+        'Only SUPER_ADMIN can modify another SUPER_ADMIN account',
+      );
     });
 
     it('should throw BadRequestException if attempting to demote the last SUPER_ADMIN', async () => {
@@ -207,7 +222,9 @@ describe('UserService - Create Admin User', () => {
           { role: UserRole.ADMIN },
           UserRole.SUPER_ADMIN,
         ),
-      ).rejects.toThrow('Cannot demote the last SUPER_ADMIN. Promote another user first.');
+      ).rejects.toThrow(
+        'Cannot demote the last SUPER_ADMIN. Promote another user first.',
+      );
     });
 
     it('should invalidate session and refreshToken when role changes', async () => {

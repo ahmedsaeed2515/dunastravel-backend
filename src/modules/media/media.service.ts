@@ -28,7 +28,10 @@ import { UploadBulkMediaDto } from './dto/upload-bulk-media.dto';
 import { ImportMediaUrlsDto } from './dto/import-media-urls.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { BulkMoveMediaDto } from './dto/bulk-move-media.dto';
-import { CreateMediaCategoryDto, UpdateMediaCategoryDto } from './dto/media-category.dto';
+import {
+  CreateMediaCategoryDto,
+  UpdateMediaCategoryDto,
+} from './dto/media-category.dto';
 import { ListMediaDto } from './dto/list-media.dto';
 import { DeleteMediaResponseDto } from './dto/delete-media-response.dto';
 import { IMediaAsset } from './interfaces/media-asset.interface';
@@ -67,7 +70,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'المكتبة العامة',
     color: 'amber',
     icon: 'Folder',
-    description: 'General media assets, brand graphics, and unclassified images',
+    description:
+      'General media assets, brand graphics, and unclassified images',
     isSystem: true,
   },
   {
@@ -77,7 +81,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'الرحلات والجولات',
     color: 'sky',
     icon: 'Compass',
-    description: 'Tour gallery photos, day-by-day itinerary images, and excursion highlights',
+    description:
+      'Tour gallery photos, day-by-day itinerary images, and excursion highlights',
     isSystem: true,
   },
   {
@@ -87,7 +92,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'الفنادق والإقامة',
     color: 'violet',
     icon: 'Hotel',
-    description: 'Luxury hotel exterior, interior, suites, rooms, and resort amenities',
+    description:
+      'Luxury hotel exterior, interior, suites, rooms, and resort amenities',
     isSystem: true,
   },
   {
@@ -97,7 +103,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'الوجهات والمعالم',
     color: 'emerald',
     icon: 'MapPin',
-    description: 'Pyramids, Bosphorus, Dead Sea, Petra, Dubai Burj, and world landmarks',
+    description:
+      'Pyramids, Bosphorus, Dead Sea, Petra, Dubai Burj, and world landmarks',
     isSystem: false,
   },
   {
@@ -107,7 +114,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'أغلفة وبانرات الواجهة',
     color: 'rose',
     icon: 'Sparkles',
-    description: 'Cinematic high-resolution hero banners and promotional graphics',
+    description:
+      'Cinematic high-resolution hero banners and promotional graphics',
     isSystem: false,
   },
   {
@@ -117,7 +125,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'المقالات والمدونة',
     color: 'indigo',
     icon: 'BookOpen',
-    description: 'Travel guides, stories, cultural tips, and blog editorial imagery',
+    description:
+      'Travel guides, stories, cultural tips, and blog editorial imagery',
     isSystem: false,
   },
   {
@@ -127,7 +136,8 @@ const DEFAULT_CATEGORIES: MediaCategoryItem[] = [
     nameAr: 'الأسطول والنقل',
     color: 'teal',
     icon: 'Car',
-    description: 'VIP Mercedes vans, luxury coaches, airport transfers, and private chauffeurs',
+    description:
+      'VIP Mercedes vans, luxury coaches, airport transfers, and private chauffeurs',
     isSystem: false,
   },
 ];
@@ -197,7 +207,7 @@ export class MediaService {
 
     const targetEntityId = isEntityMedia
       ? dto.entityId
-      : (dto.categorySlug || dto.entityId || null);
+      : dto.categorySlug || dto.entityId || null;
 
     this.logger.debug(
       `Upload initiated { entityType: ${dto.entityType}, entityId: ${targetEntityId}, mimeType: ${file.mimetype}, bytes: ${file.size} }`,
@@ -305,7 +315,9 @@ export class MediaService {
       select: { id: true },
     });
     if (existingPublicId) {
-      throw new BadRequestException('Provider returned a duplicate media asset');
+      throw new BadRequestException(
+        'Provider returned a duplicate media asset',
+      );
     }
 
     // Provider success, now database transaction
@@ -374,7 +386,7 @@ export class MediaService {
             },
           });
 
-          return asset as IMediaAsset;
+          return asset;
         },
       );
     } catch (dbError: unknown) {
@@ -439,7 +451,9 @@ export class MediaService {
       const file = files[i];
       const fileAltText =
         altTextMap[file.originalname] ||
-        (Object.keys(altTextMap).length === 0 && dto.altText && !dto.altText.startsWith('{')
+        (Object.keys(altTextMap).length === 0 &&
+        dto.altText &&
+        !dto.altText.startsWith('{')
           ? dto.altText
           : file.originalname.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
 
@@ -479,7 +493,9 @@ export class MediaService {
     }
 
     if (dto.items.length > 30) {
-      throw new BadRequestException('Maximum 30 URLs can be imported in a single batch');
+      throw new BadRequestException(
+        'Maximum 30 URLs can be imported in a single batch',
+      );
     }
 
     const isEntityMedia =
@@ -512,7 +528,7 @@ export class MediaService {
 
     const targetEntityId = isEntityMedia
       ? dto.entityId
-      : (dto.categorySlug || dto.entityId || null);
+      : dto.categorySlug || dto.entityId || null;
 
     const folder =
       this.configService.get<string>('storage.uploadFolder') || 'dunas-travel';
@@ -550,7 +566,9 @@ export class MediaService {
         folder,
         entityType: dto.entityType,
         entityId: targetEntityId ?? null,
-        altText: itemAltText ? sanitizePlainText(itemAltText).slice(0, 255) : null,
+        altText: itemAltText
+          ? sanitizePlainText(itemAltText).slice(0, 255)
+          : null,
         eager,
       };
 
@@ -571,7 +589,9 @@ export class MediaService {
         this.logger.error(
           `URL import failed { url: ${trimmedUrl}, error: ${result?.error} }`,
         );
-        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): ${result?.error || 'Provider upload failed'}`);
+        errors.push(
+          `URL (${trimmedUrl.slice(0, 40)}...): ${result?.error || 'Provider upload failed'}`,
+        );
         continue;
       }
 
@@ -589,11 +609,14 @@ export class MediaService {
 
       if (!outputIsSafe) {
         try {
-          if (result.publicId) await this.storageProvider.delete(result.publicId);
+          if (result.publicId)
+            await this.storageProvider.delete(result.publicId);
         } catch {
           // Ignore cleanup error
         }
-        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Content validation failed`);
+        errors.push(
+          `URL (${trimmedUrl.slice(0, 40)}...): Content validation failed`,
+        );
         continue;
       }
 
@@ -602,7 +625,9 @@ export class MediaService {
         select: { id: true },
       });
       if (existing) {
-        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Duplicate asset in database`);
+        errors.push(
+          `URL (${trimmedUrl.slice(0, 40)}...): Duplicate asset in database`,
+        );
         continue;
       }
 
@@ -666,7 +691,7 @@ export class MediaService {
               },
             });
 
-            return asset as IMediaAsset;
+            return asset;
           },
         );
 
@@ -682,18 +707,25 @@ export class MediaService {
         this.eventEmitter.emit(MEDIA_UPLOADED_EVENT, eventPayload);
         importedAssets.push(mediaAsset);
       } catch (dbError: any) {
-        this.logger.error(`Database transaction failed for URL import: ${dbError.message}`);
+        this.logger.error(
+          `Database transaction failed for URL import: ${dbError.message}`,
+        );
         try {
-          if (result.publicId) await this.storageProvider.delete(result.publicId);
+          if (result.publicId)
+            await this.storageProvider.delete(result.publicId);
         } catch {
           // Ignore cleanup error
         }
-        errors.push(`URL (${trimmedUrl.slice(0, 40)}...): Database error ${dbError.message}`);
+        errors.push(
+          `URL (${trimmedUrl.slice(0, 40)}...): Database error ${dbError.message}`,
+        );
       }
     }
 
     if (importedAssets.length === 0 && errors.length > 0) {
-      throw new BadRequestException(`Failed to import media URLs: ${errors.join(', ')}`);
+      throw new BadRequestException(
+        `Failed to import media URLs: ${errors.join(', ')}`,
+      );
     }
 
     return importedAssets;
@@ -713,27 +745,40 @@ export class MediaService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const newEntityType = dto.entityType ?? existing.entityType;
-      let newEntityId = dto.entityId !== undefined ? dto.entityId : existing.entityId;
+      let newEntityId =
+        dto.entityId !== undefined ? dto.entityId : existing.entityId;
 
       if (dto.category !== undefined) {
         newEntityId = dto.category || null;
       }
 
       // If moving away from TOUR, clean up tour image link
-      if (existing.entityType === MediaEntityType.TOUR && existing.entityId && newEntityType !== MediaEntityType.TOUR) {
+      if (
+        existing.entityType === MediaEntityType.TOUR &&
+        existing.entityId &&
+        newEntityType !== MediaEntityType.TOUR
+      ) {
         await tx.tourImage.deleteMany({
           where: { tourId: existing.entityId, imageUrl: existing.secureUrl },
         });
       }
 
       // If moving to TOUR, link to tour images
-      if (newEntityType === MediaEntityType.TOUR && newEntityId && (existing.entityType !== MediaEntityType.TOUR || existing.entityId !== newEntityId)) {
+      if (
+        newEntityType === MediaEntityType.TOUR &&
+        newEntityId &&
+        (existing.entityType !== MediaEntityType.TOUR ||
+          existing.entityId !== newEntityId)
+      ) {
         const existingTourImages = await tx.tourImage.findMany({
           where: { tourId: newEntityId },
           orderBy: { sortOrder: 'desc' },
           take: 1,
         });
-        const nextOrder = existingTourImages.length > 0 ? existingTourImages[0].sortOrder + 1 : 0;
+        const nextOrder =
+          existingTourImages.length > 0
+            ? existingTourImages[0].sortOrder + 1
+            : 0;
         await tx.tourImage.create({
           data: {
             tourId: newEntityId,
@@ -747,7 +792,10 @@ export class MediaService {
       const asset = await tx.mediaAsset.update({
         where: { id },
         data: {
-          altText: dto.altText !== undefined ? sanitizePlainText(dto.altText).slice(0, 255) || null : undefined,
+          altText:
+            dto.altText !== undefined
+              ? sanitizePlainText(dto.altText).slice(0, 255) || null
+              : undefined,
           entityType: newEntityType,
           entityId: newEntityId,
         },
@@ -771,7 +819,7 @@ export class MediaService {
         });
       }
 
-      return asset as IMediaAsset;
+      return asset;
     });
 
     return updated;
@@ -786,7 +834,10 @@ export class MediaService {
       throw new BadRequestException('No media asset IDs provided');
     }
 
-    const targetEntityId = entityType === MediaEntityType.GENERAL ? (categorySlug || entityId || null) : (entityId || null);
+    const targetEntityId =
+      entityType === MediaEntityType.GENERAL
+        ? categorySlug || entityId || null
+        : entityId || null;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const assets = await tx.mediaAsset.findMany({
@@ -795,7 +846,11 @@ export class MediaService {
 
       // Cleanup tour links for any assets leaving TOUR
       for (const a of assets) {
-        if (a.entityType === MediaEntityType.TOUR && a.entityId && entityType !== MediaEntityType.TOUR) {
+        if (
+          a.entityType === MediaEntityType.TOUR &&
+          a.entityId &&
+          entityType !== MediaEntityType.TOUR
+        ) {
           await tx.tourImage.deleteMany({
             where: { tourId: a.entityId, imageUrl: a.secureUrl },
           });
@@ -913,17 +968,28 @@ export class MediaService {
     dto: CreateMediaCategoryDto,
     actor?: AuthenticatedUser,
   ): Promise<MediaCategoryItem> {
-    const rawSlug = typeof dto.slug === 'string' && dto.slug.trim()
-      ? dto.slug.trim()
-      : (typeof dto.nameEn === 'string' && dto.nameEn.trim() ? dto.nameEn.trim() : 'category');
+    const rawSlug =
+      typeof dto.slug === 'string' && dto.slug.trim()
+        ? dto.slug.trim()
+        : typeof dto.nameEn === 'string' && dto.nameEn.trim()
+          ? dto.nameEn.trim()
+          : 'category';
     const slug = rawSlug.toLowerCase().replace(/\s+/g, '-');
     const existing = await this.getCategoriesWithCounts();
     if (existing.some((c) => c.slug === slug)) {
-      throw new BadRequestException(`Category with slug '${slug}' already exists`);
+      throw new BadRequestException(
+        `Category with slug '${slug}' already exists`,
+      );
     }
 
-    const cleanNameEn = typeof dto.nameEn === 'string' && dto.nameEn.trim() ? dto.nameEn.trim() : slug;
-    const cleanNameAr = typeof dto.nameAr === 'string' && dto.nameAr.trim() ? dto.nameAr.trim() : cleanNameEn;
+    const cleanNameEn =
+      typeof dto.nameEn === 'string' && dto.nameEn.trim()
+        ? dto.nameEn.trim()
+        : slug;
+    const cleanNameAr =
+      typeof dto.nameAr === 'string' && dto.nameAr.trim()
+        ? dto.nameAr.trim()
+        : cleanNameEn;
 
     const newCategory: MediaCategoryItem = {
       id: slug,
@@ -940,9 +1006,10 @@ export class MediaService {
     const currentBlock = await this.prisma.cmsBlock.findUnique({
       where: { key: CMS_MEDIA_CATEGORIES_KEY },
     });
-    const currentList: MediaCategoryItem[] = currentBlock && Array.isArray(currentBlock.content)
-      ? (currentBlock.content as unknown as MediaCategoryItem[])
-      : [];
+    const currentList: MediaCategoryItem[] =
+      currentBlock && Array.isArray(currentBlock.content)
+        ? (currentBlock.content as unknown as MediaCategoryItem[])
+        : [];
 
     currentList.push(newCategory);
 
@@ -972,9 +1039,10 @@ export class MediaService {
     const currentBlock = await this.prisma.cmsBlock.findUnique({
       where: { key: CMS_MEDIA_CATEGORIES_KEY },
     });
-    const currentList: MediaCategoryItem[] = currentBlock && Array.isArray(currentBlock.content)
-      ? (currentBlock.content as unknown as MediaCategoryItem[])
-      : [];
+    const currentList: MediaCategoryItem[] =
+      currentBlock && Array.isArray(currentBlock.content)
+        ? (currentBlock.content as unknown as MediaCategoryItem[])
+        : [];
 
     const index = currentList.findIndex((c) => c.slug === slug);
     if (index === -1) {
@@ -1001,7 +1069,10 @@ export class MediaService {
         nameAr: dto.nameAr || currentList[index].nameAr,
         color: dto.color || currentList[index].color,
         icon: dto.icon || currentList[index].icon,
-        description: dto.description !== undefined ? dto.description : currentList[index].description,
+        description:
+          dto.description !== undefined
+            ? dto.description
+            : currentList[index].description,
       };
     }
 
@@ -1028,7 +1099,9 @@ export class MediaService {
     slug: string,
     actor?: AuthenticatedUser,
   ): Promise<{ success: boolean; message: string }> {
-    const isSystem = DEFAULT_CATEGORIES.some((c) => c.slug === slug && c.isSystem);
+    const isSystem = DEFAULT_CATEGORIES.some(
+      (c) => c.slug === slug && c.isSystem,
+    );
     if (isSystem) {
       throw new BadRequestException('System categories cannot be deleted');
     }
@@ -1043,16 +1116,19 @@ export class MediaService {
       where: { key: CMS_MEDIA_CATEGORIES_KEY },
     });
     if (currentBlock && Array.isArray(currentBlock.content)) {
-      const filtered = (currentBlock.content as unknown as MediaCategoryItem[]).filter(
-        (c) => c.slug !== slug,
-      );
+      const filtered = (
+        currentBlock.content as unknown as MediaCategoryItem[]
+      ).filter((c) => c.slug !== slug);
       await this.prisma.cmsBlock.update({
         where: { key: CMS_MEDIA_CATEGORIES_KEY },
         data: { content: filtered as any, lastUpdatedBy: actor?.id },
       });
     }
 
-    return { success: true, message: `Category '${slug}' deleted and assets moved to General.` };
+    return {
+      success: true,
+      message: `Category '${slug}' deleted and assets moved to General.`,
+    };
   }
 
   async deleteAsset(
@@ -1070,12 +1146,9 @@ export class MediaService {
         if (!record) {
           throw new NotFoundException('Media asset not found');
         }
-        const isAdmin = actor && (actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN');
-        if (
-          actor &&
-          !isAdmin &&
-          record.uploadedBy !== actor.id
-        ) {
+        const isAdmin =
+          actor && (actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN');
+        if (actor && !isAdmin && record.uploadedBy !== actor.id) {
           throw new ForbiddenException(
             'You can only delete media that you uploaded',
           );
@@ -1150,9 +1223,7 @@ export class MediaService {
     };
   }
 
-  async listAssets(
-    query: ListMediaDto,
-  ): Promise<{
+  async listAssets(query: ListMediaDto): Promise<{
     data: IMediaAsset[];
     meta: { total: number; page: number; limit: number; totalPages: number };
   }> {
@@ -1211,7 +1282,8 @@ export class MediaService {
     }
 
     if (format && format !== 'all') {
-      const cleanFormat = typeof format === 'string' ? format.toLowerCase().trim() : '';
+      const cleanFormat =
+        typeof format === 'string' ? format.toLowerCase().trim() : '';
       if (cleanFormat) {
         andConditions.push({ format: cleanFormat });
       }
@@ -1318,7 +1390,11 @@ export class MediaService {
   }> {
     const where = { deletedAt: null };
     const [aggregate, grouped] = await Promise.all([
-      this.prisma.mediaAsset.aggregate({ where, _count: { id: true }, _sum: { bytes: true } }),
+      this.prisma.mediaAsset.aggregate({
+        where,
+        _count: { id: true },
+        _sum: { bytes: true },
+      }),
       this.prisma.mediaAsset.groupBy({
         by: ['entityType'],
         where,
@@ -1343,7 +1419,10 @@ export class MediaService {
     };
   }
 
-  async getPublicGallery(limit = 100, category?: string): Promise<IMediaAsset[]> {
+  async getPublicGallery(
+    limit = 100,
+    category?: string,
+  ): Promise<IMediaAsset[]> {
     const where: Prisma.MediaAssetWhereInput = {
       deletedAt: null,
     };
@@ -1493,7 +1572,9 @@ export class MediaService {
       });
     }
 
-    const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+    const cloudName =
+      this.configService.get<string>('storage.cloudinaryCloudName') ||
+      'u7xf91gp';
 
     const photos: ShowcasePhotoItemDto[] = finalPhotos.map((p, idx) => ({
       id: p.id,
@@ -1510,9 +1591,11 @@ export class MediaService {
     }));
 
     const videos: ShowcaseVideoItemDto[] = videoAssets.map((v, idx) => {
-      const poster = v.thumbnailUrl || (v.providerName === 'cloudinary'
-        ? `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${v.publicId}.jpg`
-        : v.secureUrl);
+      const poster =
+        v.thumbnailUrl ||
+        (v.providerName === 'cloudinary'
+          ? `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${v.publicId}.jpg`
+          : v.secureUrl);
       return {
         id: v.id,
         title: v.title || v.altText || 'Dunas Travel Story',
@@ -1532,7 +1615,10 @@ export class MediaService {
     return { photos, videos };
   }
 
-  async getAdminShowcase(): Promise<{ photos: IMediaAsset[]; videos: IMediaAsset[] }> {
+  async getAdminShowcase(): Promise<{
+    photos: IMediaAsset[];
+    videos: IMediaAsset[];
+  }> {
     const [photos, videos] = await Promise.all([
       this.prisma.mediaAsset.findMany({
         where: {
@@ -1551,13 +1637,18 @@ export class MediaService {
         orderBy: [{ showcasePosition: 'asc' }, { createdAt: 'asc' }],
       }),
     ]);
-    return { photos: photos as IMediaAsset[], videos: videos as IMediaAsset[] };
+    return { photos: photos, videos: videos };
   }
 
-  async addToShowcase(dto: AssignToShowcaseDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+  async addToShowcase(
+    dto: AssignToShowcaseDto,
+    actor?: AuthenticatedUser,
+  ): Promise<IMediaAsset> {
     const targetId = dto.assetId || dto.mediaId;
     if (!targetId) {
-      throw new BadRequestException('Either assetId or mediaId must be provided');
+      throw new BadRequestException(
+        'Either assetId or mediaId must be provided',
+      );
     }
 
     const asset = await this.prisma.mediaAsset.findFirst({
@@ -1570,7 +1661,11 @@ export class MediaService {
     let position = dto.position;
     if (typeof position !== 'number') {
       const maxPos = await this.prisma.mediaAsset.aggregate({
-        where: { isShowcase: true, showcaseSection: dto.section, deletedAt: null },
+        where: {
+          isShowcase: true,
+          showcaseSection: dto.section,
+          deletedAt: null,
+        },
         _max: { showcasePosition: true },
       });
       position = (maxPos._max.showcasePosition ?? 0) + 1;
@@ -1625,10 +1720,14 @@ export class MediaService {
       });
     }
 
-    return updated as IMediaAsset;
+    return updated;
   }
 
-  async updateShowcaseItem(id: string, dto: UpdateShowcaseItemDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+  async updateShowcaseItem(
+    id: string,
+    dto: UpdateShowcaseItemDto,
+    actor?: AuthenticatedUser,
+  ): Promise<IMediaAsset> {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, deletedAt: null },
     });
@@ -1661,9 +1760,11 @@ export class MediaService {
         title: cleanTitle,
         altText: cleanAltText,
         description: cleanDescription,
-        showcasePosition: dto.position !== undefined ? dto.position : asset.showcasePosition,
+        showcasePosition:
+          dto.position !== undefined ? dto.position : asset.showcasePosition,
         isActive: dto.isActive !== undefined ? dto.isActive : asset.isActive,
-        isPublished: dto.isPublished !== undefined ? dto.isPublished : asset.isPublished,
+        isPublished:
+          dto.isPublished !== undefined ? dto.isPublished : asset.isPublished,
       },
     });
 
@@ -1680,10 +1781,13 @@ export class MediaService {
       });
     }
 
-    return updated as IMediaAsset;
+    return updated;
   }
 
-  async reorderShowcase(dto: ReorderShowcaseDto, actor?: AuthenticatedUser): Promise<{ success: boolean; count: number }> {
+  async reorderShowcase(
+    dto: ReorderShowcaseDto,
+    actor?: AuthenticatedUser,
+  ): Promise<{ success: boolean; count: number }> {
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Items array cannot be empty');
     }
@@ -1716,7 +1820,10 @@ export class MediaService {
     return { success: true, count: dto.items.length };
   }
 
-  async removeFromShowcase(id: string, actor?: AuthenticatedUser): Promise<{ success: boolean; message: string }> {
+  async removeFromShowcase(
+    id: string,
+    actor?: AuthenticatedUser,
+  ): Promise<{ success: boolean; message: string }> {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, deletedAt: null },
     });
@@ -1764,9 +1871,12 @@ export class MediaService {
     userId: string,
     posterFile?: UploadableFile,
   ): Promise<IMediaAsset> {
-    const rawVideoUrl = typeof dto.videoUrl === 'string' ? dto.videoUrl.trim() : '';
+    const rawVideoUrl =
+      typeof dto.videoUrl === 'string' ? dto.videoUrl.trim() : '';
     if (!file && !rawVideoUrl) {
-      throw new BadRequestException('Either a video file or a video URL must be provided');
+      throw new BadRequestException(
+        'Either a video file or a video URL must be provided',
+      );
     }
 
     let resolvedPosterUrl =
@@ -1776,9 +1886,16 @@ export class MediaService {
 
     // 1. Process custom poster image file if provided
     if (posterFile) {
-      const allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+      const allowedImageMimes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/avif',
+      ];
       if (!allowedImageMimes.includes(posterFile.mimetype.toLowerCase())) {
-        throw new BadRequestException('Invalid poster image format. Allowed: JPG, PNG, WebP, AVIF');
+        throw new BadRequestException(
+          'Invalid poster image format. Allowed: JPG, PNG, WebP, AVIF',
+        );
       }
 
       const posterFolder = `${this.configService.get<string>('storage.uploadFolder') || 'dunas-travel'}/videos/posters`;
@@ -1791,7 +1908,10 @@ export class MediaService {
         resourceType: 'image',
       };
 
-      const posterResult = await this.storageProvider.upload(posterFile, posterOptions);
+      const posterResult = await this.storageProvider.upload(
+        posterFile,
+        posterOptions,
+      );
       if (posterResult.success && posterResult.secureUrl) {
         resolvedPosterUrl = posterResult.secureUrl;
       }
@@ -1813,11 +1933,21 @@ export class MediaService {
 
     // 3A. File Upload Flow
     if (file) {
-      const allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+      const allowedVideoMimes = [
+        'video/mp4',
+        'video/webm',
+        'video/quicktime',
+        'video/x-matroska',
+      ];
       const maxSizeBytes = 100 * 1024 * 1024; // 100MB
 
-      if (!file.mimetype || !allowedVideoMimes.includes(file.mimetype.toLowerCase())) {
-        throw new BadRequestException('Invalid video format. Allowed: MP4, WebM, QuickTime, MKV');
+      if (
+        !file.mimetype ||
+        !allowedVideoMimes.includes(file.mimetype.toLowerCase())
+      ) {
+        throw new BadRequestException(
+          'Invalid video format. Allowed: MP4, WebM, QuickTime, MKV',
+        );
       }
 
       if (file.size > maxSizeBytes) {
@@ -1842,7 +1972,9 @@ export class MediaService {
         );
       }
 
-      const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
+      const cloudName =
+        this.configService.get<string>('storage.cloudinaryCloudName') ||
+        'u7xf91gp';
       const autoPosterUrl = `https://res.cloudinary.com/${cloudName}/video/upload/w_800,h_480,c_fill/${result.publicId}.jpg`;
       const optimizedUrl = `https://res.cloudinary.com/${cloudName}/video/upload/q_auto/${result.publicId}.mp4`;
 
@@ -1887,15 +2019,24 @@ export class MediaService {
       // 3B. Video via URL / Link Flow
       const videoUrl = rawVideoUrl;
       if (!/^https?:\/\//i.test(videoUrl)) {
-        throw new BadRequestException('Video URL must be a valid HTTP or HTTPS address');
+        throw new BadRequestException(
+          'Video URL must be a valid HTTP or HTTPS address',
+        );
       }
 
       let providerName = 'url';
       let ytId: string | null = null;
       const cleanVideoUrl = videoUrl.trim();
       try {
-        if (cleanVideoUrl.includes('youtube.com') || cleanVideoUrl.includes('youtu.be')) {
-          const parsed = new URL(cleanVideoUrl.startsWith('http') ? cleanVideoUrl : `https://${cleanVideoUrl}`);
+        if (
+          cleanVideoUrl.includes('youtube.com') ||
+          cleanVideoUrl.includes('youtu.be')
+        ) {
+          const parsed = new URL(
+            cleanVideoUrl.startsWith('http')
+              ? cleanVideoUrl
+              : `https://${cleanVideoUrl}`,
+          );
           const v = parsed.searchParams.get('v');
           if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
             ytId = v;
@@ -1987,10 +2128,14 @@ export class MediaService {
       // Non-blocking audit log
     }
 
-    return asset as IMediaAsset;
+    return asset;
   }
 
-  async optimizeAsset(id: string, dto: OptimizeAssetDto, actor?: AuthenticatedUser): Promise<IMediaAsset> {
+  async optimizeAsset(
+    id: string,
+    dto: OptimizeAssetDto,
+    actor?: AuthenticatedUser,
+  ): Promise<IMediaAsset> {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, deletedAt: null },
     });
@@ -1999,7 +2144,8 @@ export class MediaService {
     }
 
     let optimizedUrl = asset.secureUrl || asset.url;
-    const isCloudinary = (asset.providerName?.toLowerCase() === 'cloudinary') ||
+    const isCloudinary =
+      asset.providerName?.toLowerCase() === 'cloudinary' ||
       asset.secureUrl.includes('cloudinary.com') ||
       asset.url.includes('cloudinary.com');
 
@@ -2015,9 +2161,10 @@ export class MediaService {
           optimizedUrl = sourceUrl.replace(
             /\/image\/upload\/(?:[^\/]+\/)?(v\d+\/.+)/,
             (_match, rest) => {
-              const cleanRest = targetFormat === 'auto'
-                ? rest
-                : `${rest.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
+              const cleanRest =
+                targetFormat === 'auto'
+                  ? rest
+                  : `${rest.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
               return `/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${cleanRest}`;
             },
           );
@@ -2028,14 +2175,19 @@ export class MediaService {
           );
         }
       } else {
-        const cloudName = this.configService.get<string>('storage.cloudinaryCloudName') || 'u7xf91gp';
-        const cleanPublicId = targetFormat === 'auto'
-          ? asset.publicId
-          : `${asset.publicId?.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
+        const cloudName =
+          this.configService.get<string>('storage.cloudinaryCloudName') ||
+          'u7xf91gp';
+        const cleanPublicId =
+          targetFormat === 'auto'
+            ? asset.publicId
+            : `${asset.publicId?.replace(/\.[a-zA-Z0-9]+$/, '')}.${targetFormat}`;
         optimizedUrl = `https://res.cloudinary.com/${cloudName}/image/upload/w_${maxWidth},c_limit,q_${quality},f_${targetFormat}/${cleanPublicId}`;
       }
     } else if (optimizedUrl && optimizedUrl.includes('images.unsplash.com')) {
-      optimizedUrl = optimizedUrl.replace(/&fm=[^&]+/, '') + `&fm=${targetFormat === 'auto' ? 'webp' : targetFormat}`;
+      optimizedUrl =
+        optimizedUrl.replace(/&fm=[^&]+/, '') +
+        `&fm=${targetFormat === 'auto' ? 'webp' : targetFormat}`;
     }
 
     let verified = false;
@@ -2050,7 +2202,9 @@ export class MediaService {
         });
         clearTimeout(timeoutId);
         const contentType = checkRes.headers.get('content-type') || '';
-        verified = checkRes.status === 200 && (contentType.includes('image') || contentType.includes('webp'));
+        verified =
+          checkRes.status === 200 &&
+          (contentType.includes('image') || contentType.includes('webp'));
       } catch {
         verified = isCloudinary;
       }
@@ -2081,7 +2235,9 @@ export class MediaService {
         },
       });
     } catch (tourImgErr) {
-      this.logger.warn(`Failed to propagate optimized WebP to tourImage: ${tourImgErr}`);
+      this.logger.warn(
+        `Failed to propagate optimized WebP to tourImage: ${tourImgErr}`,
+      );
     }
 
     if (actor) {
@@ -2101,11 +2257,13 @@ export class MediaService {
           },
         });
       } catch (logErr) {
-        this.logger.warn(`Failed to write audit log for optimizeAsset: ${logErr}`);
+        this.logger.warn(
+          `Failed to write audit log for optimizeAsset: ${logErr}`,
+        );
       }
     }
 
-    return updatedAsset as IMediaAsset;
+    return updatedAsset;
   }
 
   async checkMediaUsage(id: string): Promise<{
@@ -2126,27 +2284,35 @@ export class MediaService {
       throw new NotFoundException('Media asset not found');
     }
 
-    const [tourImagesCount, hotelHeroCount, docCount, attachCount] = await Promise.all([
-      this.prisma.tourImage.count({
-        where: {
-          OR: [
-            { imageUrl: asset.secureUrl },
-            { imageUrl: asset.url },
-            ...(asset.entityType === MediaEntityType.TOUR && asset.entityId ? [{ tourId: asset.entityId }] : []),
-          ],
-        },
-      }),
-      this.prisma.hotel.count({ where: { heroMediaId: id } }),
-      this.prisma.customerDocument.count({ where: { mediaAssetId: id } }),
-      this.prisma.bookingAttachment.count({ where: { mediaAssetId: id } }),
-    ]);
+    const [tourImagesCount, hotelHeroCount, docCount, attachCount] =
+      await Promise.all([
+        this.prisma.tourImage.count({
+          where: {
+            OR: [
+              { imageUrl: asset.secureUrl },
+              { imageUrl: asset.url },
+              ...(asset.entityType === MediaEntityType.TOUR && asset.entityId
+                ? [{ tourId: asset.entityId }]
+                : []),
+            ],
+          },
+        }),
+        this.prisma.hotel.count({ where: { heroMediaId: id } }),
+        this.prisma.customerDocument.count({ where: { mediaAssetId: id } }),
+        this.prisma.bookingAttachment.count({ where: { mediaAssetId: id } }),
+      ]);
 
     const locations: string[] = [];
-    if (asset.isShowcase) locations.push(`Homepage Showcase (${asset.showcaseSection})`);
-    if (tourImagesCount > 0) locations.push(`Tours (${tourImagesCount} references)`);
-    if (hotelHeroCount > 0) locations.push(`Hotels (${hotelHeroCount} references)`);
-    if (docCount > 0) locations.push(`Customer Documents (${docCount} references)`);
-    if (attachCount > 0) locations.push(`Booking Attachments (${attachCount} references)`);
+    if (asset.isShowcase)
+      locations.push(`Homepage Showcase (${asset.showcaseSection})`);
+    if (tourImagesCount > 0)
+      locations.push(`Tours (${tourImagesCount} references)`);
+    if (hotelHeroCount > 0)
+      locations.push(`Hotels (${hotelHeroCount} references)`);
+    if (docCount > 0)
+      locations.push(`Customer Documents (${docCount} references)`);
+    if (attachCount > 0)
+      locations.push(`Booking Attachments (${attachCount} references)`);
 
     return {
       isInUse: locations.length > 0,
@@ -2161,9 +2327,18 @@ export class MediaService {
     };
   }
 
-  async syncEntityMedia(actor?: AuthenticatedUser): Promise<{ syncedTours: number; syncedHotels: number }> {
+  async syncEntityMedia(
+    actor?: AuthenticatedUser,
+  ): Promise<{ syncedTours: number; syncedHotels: number }> {
     const tourImages = await this.prisma.tourImage.findMany({
-      select: { id: true, tourId: true, imageUrl: true, altText: true, isHero: true, isVideo: true },
+      select: {
+        id: true,
+        tourId: true,
+        imageUrl: true,
+        altText: true,
+        isHero: true,
+        isVideo: true,
+      },
     });
 
     let syncedTours = 0;

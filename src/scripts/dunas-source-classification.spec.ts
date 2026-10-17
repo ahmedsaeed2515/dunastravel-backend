@@ -25,9 +25,7 @@ describe('Dunas source classifications', () => {
       { id: 'REG-22', slug: 'reg-22-stop-over-dubai' },
       { id: 'HM001', slug: 'hm001-honeymoon-in-dubai' },
     ],
-    multiCountryTours: [
-      { id: 'mct-001', slug: 'estrellas-medio-oriente-19d' },
-    ],
+    multiCountryTours: [{ id: 'mct-001', slug: 'estrellas-medio-oriente-19d' }],
     additionalEgyptTours: [
       { slug: 'journey-of-the-holy-family-10-days', category: 'Religious' },
       { slug: 'hurghada-escape', category: 'Beach' },

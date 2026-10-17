@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -28,29 +32,36 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const freshInvoiceId = Math.floor(300000 + Math.random() * 600000);
+        if (urlStr.includes('/api/v2/integration/init')) {
+          const freshInvoiceId = Math.floor(300000 + Math.random() * 600000);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
+                invoice_id: freshInvoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
         return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
-              invoice_id: freshInvoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
         );
-      }
-
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -74,7 +85,9 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
     await app.init();
 
     const configService = app.get(ConfigService);
-    hashToken = configService.get('GETPAYIN_HASH_TOKEN') || 'sandbox_hash_token_dunas_secret_2026';
+    hashToken =
+      configService.get('GETPAYIN_HASH_TOKEN') ||
+      'sandbox_hash_token_dunas_secret_2026';
 
     paylinkClient = new PaylinkClient({
       publicToken: 'dummy',
@@ -82,7 +95,9 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
     });
 
     // Lookup tour and upsert availability slot
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -112,8 +127,11 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
   });
@@ -150,17 +168,18 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       success: 1,
       message: 'Payment completed',
     };
-    (invalidEventPayload as any).signature = (paylinkClient.webhooks as any).computeSignature(
-      invalidEventPayload,
-      hashToken,
-    );
+    (invalidEventPayload as any).signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(invalidEventPayload, hashToken);
 
     const res = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
       .send(invalidEventPayload);
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toContain('Unsupported or inconsistent PayLink event');
+    expect(res.body.message).toContain(
+      'Unsupported or inconsistent PayLink event',
+    );
   });
 
   it('3. Idempotency & Deduplication: gateway retries (2nd and 3rd delivery) return 200 OK without re-executing logic', async () => {
@@ -199,10 +218,13 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed successfully',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'USD',
     };
-    webhookPayload.signature = (paylinkClient.webhooks as any).computeSignature(webhookPayload, hashToken);
+    webhookPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      webhookPayload,
+      hashToken,
+    );
 
     // 3b. First delivery: processes successfully
     const firstDeliveryRes = await request(app.getHttpServer())
@@ -210,13 +232,19 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       .send(webhookPayload);
 
     expect(firstDeliveryRes.status).toBe(200);
-    expect((firstDeliveryRes.body?.data || firstDeliveryRes.body).received).toBe(true);
+    expect(
+      (firstDeliveryRes.body?.data || firstDeliveryRes.body).received,
+    ).toBe(true);
 
-    const bookingAfterFirst = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const bookingAfterFirst = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(bookingAfterFirst?.status).toBe('CONFIRMED');
 
     // Count activity logs after first delivery
-    const logsAfterFirst = await prisma.bookingActivityLog.count({ where: { bookingId } });
+    const logsAfterFirst = await prisma.bookingActivityLog.count({
+      where: { bookingId },
+    });
 
     // 3c. Second delivery (retry 1): returns 200 OK via ProcessedWebhookEvent deduplication
     const secondDeliveryRes = await request(app.getHttpServer())
@@ -224,7 +252,9 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       .send(webhookPayload);
 
     expect(secondDeliveryRes.status).toBe(200);
-    expect((secondDeliveryRes.body?.data || secondDeliveryRes.body).received).toBe(true);
+    expect(
+      (secondDeliveryRes.body?.data || secondDeliveryRes.body).received,
+    ).toBe(true);
 
     // 3d. Third delivery (retry 2): returns 200 OK
     const thirdDeliveryRes = await request(app.getHttpServer())
@@ -232,10 +262,14 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       .send(webhookPayload);
 
     expect(thirdDeliveryRes.status).toBe(200);
-    expect((thirdDeliveryRes.body?.data || thirdDeliveryRes.body).received).toBe(true);
+    expect(
+      (thirdDeliveryRes.body?.data || thirdDeliveryRes.body).received,
+    ).toBe(true);
 
     // Verify NO duplicate activity logs or state mutations occurred
-    const logsAfterThird = await prisma.bookingActivityLog.count({ where: { bookingId } });
+    const logsAfterThird = await prisma.bookingActivityLog.count({
+      where: { bookingId },
+    });
     expect(logsAfterThird).toBe(logsAfterFirst);
 
     // Verify single payment record remains
@@ -278,11 +312,15 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       data: { status: 'CANCELLED' },
     });
 
-    const bookingAfterCancel = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const bookingAfterCancel = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(bookingAfterCancel?.status).toBe('CANCELLED');
 
     // Confirm payment session is still in PENDING status
-    const paymentBeforeWebhook = await prisma.payment.findFirst({ where: { bookingId } });
+    const paymentBeforeWebhook = await prisma.payment.findFirst({
+      where: { bookingId },
+    });
     expect(paymentBeforeWebhook?.status).toBe('PENDING');
 
     // 4b. Delayed invoice.paid arrives late: must be rejected with 422, cannot confirm cancelled booking
@@ -292,10 +330,12 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Late payment confirmation',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'USD',
     };
-    latePaidPayload.signature = (paylinkClient.webhooks as any).computeSignature(latePaidPayload, hashToken);
+    latePaidPayload.signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(latePaidPayload, hashToken);
 
     const latePaidRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -306,7 +346,9 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
     expect(latePaidRes.body.message).toContain('terminal status CANCELLED');
 
     // Verify booking remains CANCELLED and was NOT resurrected to CONFIRMED
-    const bookingFinal = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const bookingFinal = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
     expect(bookingFinal?.status).toBe('CANCELLED');
   });
 });

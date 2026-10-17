@@ -24,8 +24,10 @@ export class NotificationsService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(EmailCompositionService) private readonly emailComposition: EmailCompositionService,
-    @Inject(EmailDeliveryService) private readonly emailDelivery: EmailDeliveryService,
+    @Inject(EmailCompositionService)
+    private readonly emailComposition: EmailCompositionService,
+    @Inject(EmailDeliveryService)
+    private readonly emailDelivery: EmailDeliveryService,
     @Inject(ConfigService) private readonly configService?: ConfigService,
   ) {}
 
@@ -105,9 +107,7 @@ export class NotificationsService {
       log.status !== NotificationDeliveryStatus.FAILED &&
       log.status !== NotificationDeliveryStatus.EXHAUSTED
     ) {
-      throw new BadRequestException(
-        'Only failed notifications can be retried',
-      );
+      throw new BadRequestException('Only failed notifications can be retried');
     }
 
     const claim = await this.prisma.notificationDeliveryLog.updateMany({
@@ -249,7 +249,8 @@ export class NotificationsService {
 
           const bookingPayload: BookingCreatedPayload = {
             referenceCode: booking.referenceCode,
-            invoiceNumber: booking.invoice?.invoiceNumber || booking.referenceCode,
+            invoiceNumber:
+              booking.invoice?.invoiceNumber || booking.referenceCode,
             tourTitle,
             totalAmountUsd: String(booking.totalAmountUsd),
             arrivalDate: booking.arrivalDate,
@@ -300,7 +301,9 @@ export class NotificationsService {
           select: { id: true, email: true, name: true },
         });
         if (!user) {
-          throw new NotFoundException('User not found for retry reconstruction');
+          throw new NotFoundException(
+            'User not found for retry reconstruction',
+          );
         }
         this.logger.log(`Retrying USER notification for ${user.email}`);
         const payload = {

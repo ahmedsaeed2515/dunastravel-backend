@@ -1,4 +1,7 @@
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import crypto from 'node:crypto';
 import { GetPayInGatewayAdapter } from './getpayin-gateway.adapter';
@@ -52,7 +55,9 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
       .mockImplementation(async (_url, init) => {
-        expect(String(_url)).toBe('https://pay.getpayin.com/api/v2/integration/init');
+        expect(String(_url)).toBe(
+          'https://pay.getpayin.com/api/v2/integration/init',
+        );
         const body = JSON.parse(String(init?.body)) as Record<string, string>;
         expect(body).toEqual(
           expect.objectContaining({
@@ -61,18 +66,28 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
             last_name: 'Saeed',
             order_amount: '250.00',
             currency: 'USD',
-            redirection_url:
-              'https://www.dunastravel.com/payment/return',
+            redirection_url: 'https://www.dunastravel.com/payment/return',
             webhook_url:
               'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
           }),
         );
         // BUG-4: order_details must be a valid JSON array of {label,value} objects
         expect(() => JSON.parse(body.order_details)).not.toThrow();
-        const details = JSON.parse(body.order_details) as Array<{ label: string; value: string }>;
+        const details = JSON.parse(body.order_details) as Array<{
+          label: string;
+          value: string;
+        }>;
         expect(Array.isArray(details)).toBe(true);
-        expect(details.some((d) => d.label === 'Booking Reference' && d.value === 'DUNAS-1')).toBe(true);
-        expect(details.some((d) => d.label === 'Payment ID' && d.value === 'payment-1')).toBe(true);
+        expect(
+          details.some(
+            (d) => d.label === 'Booking Reference' && d.value === 'DUNAS-1',
+          ),
+        ).toBe(true);
+        expect(
+          details.some(
+            (d) => d.label === 'Payment ID' && d.value === 'payment-1',
+          ),
+        ).toBe(true);
         expect(body.signature).toMatch(/^[A-Za-z0-9+/]+=*$/);
         expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
           'checkout:payment-1',
@@ -238,14 +253,20 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
         return new Response(
           JSON.stringify({
             success: true,
-            data: { invoice_id: 40506, paid_status: 'PAID', auth_code: '831000' },
+            data: {
+              invoice_id: 40506,
+              paid_status: 'PAID',
+              auth_code: '831000',
+            },
           }),
           { status: 200, headers: { 'content-type': 'application/json' } },
         );
       }
       expect(path).toBe('/api/integration/refund');
       expect(body.amount).toBe('50.00');
-      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('refund:1');
+      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
+        'refund:1',
+      );
       return new Response(
         JSON.stringify({
           success: true,
@@ -266,9 +287,7 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
       providerStatus: 'PAID',
       authCode: '831000',
     });
-    await expect(
-      adapter.refund('40506', '50.00', 'refund:1'),
-    ).rejects.toThrow(
+    await expect(adapter.refund('40506', '50.00', 'refund:1')).rejects.toThrow(
       'Online payment gateway refunds are disabled. All refunds are processed offline directly by company finance.',
     );
   });

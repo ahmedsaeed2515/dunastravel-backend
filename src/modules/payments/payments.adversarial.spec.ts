@@ -24,7 +24,9 @@ describe('Adversarial Security & Systems Verification', () => {
 
   beforeEach(async () => {
     mockPrisma = {
-      $transaction: jest.fn().mockImplementation(async (cb: any) => cb(mockPrisma)),
+      $transaction: jest
+        .fn()
+        .mockImplementation(async (cb: any) => cb(mockPrisma)),
       payment: {
         findUnique: jest.fn(),
         findUniqueOrThrow: jest.fn(),
@@ -108,9 +110,12 @@ describe('Adversarial Security & Systems Verification', () => {
               if (key === 'payments.provider') return 'GETPAYIN';
               if (key === 'GETPAYIN_HASH_TOKEN') return TEST_HASH_TOKEN;
               if (key === 'GETPAYIN_AUTH_TOKEN') return TEST_AUTH_TOKEN;
-              if (key === 'GETPAYIN_REDIRECT_URL') return 'https://pay.getpayin.com/return';
-              if (key === 'GETPAYIN_WEBHOOK_URL') return 'https://pay.getpayin.com/webhook';
-              if (key === 'GETPAYIN_BASE_URL') return 'https://pay.getpayin.com';
+              if (key === 'GETPAYIN_REDIRECT_URL')
+                return 'https://pay.getpayin.com/return';
+              if (key === 'GETPAYIN_WEBHOOK_URL')
+                return 'https://pay.getpayin.com/webhook';
+              if (key === 'GETPAYIN_BASE_URL')
+                return 'https://pay.getpayin.com';
               return undefined;
             }),
           },
@@ -200,7 +205,9 @@ describe('Adversarial Security & Systems Verification', () => {
       // Delayed capture attempt is strictly rejected
       await expect(
         service.handleWebhook('GETPAYIN', {} as any, Buffer.from('{}')),
-      ).rejects.toThrow('Cannot capture payment for booking in terminal status REFUNDED');
+      ).rejects.toThrow(
+        'Cannot capture payment for booking in terminal status REFUNDED',
+      );
     });
   });
 
@@ -257,7 +264,10 @@ describe('Adversarial Security & Systems Verification', () => {
       ).rejects.toThrow();
 
       await expect(
-        adapter.verifyAndParseWebhook({} as any, Buffer.from('not json', 'utf8')),
+        adapter.verifyAndParseWebhook(
+          {} as any,
+          Buffer.from('not json', 'utf8'),
+        ),
       ).rejects.toThrow();
     });
 

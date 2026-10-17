@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface CreateAgentDto {
@@ -46,7 +51,8 @@ export const DEFAULT_PRESET_AGENTS: CreateAgentDto[] = [
     role: 'Travel Concierge',
     avatar: '👑',
     tone: 'Sophisticated, Ultra-Polite, Executive & Refined',
-    personalityGuidelines: 'Speak with effortless elegance, like a chief concierge at Four Seasons or St. Regis. Highlight private Dahabiyas, presidential suites, private jets, and VIP fast-track transfers.',
+    personalityGuidelines:
+      'Speak with effortless elegance, like a chief concierge at Four Seasons or St. Regis. Highlight private Dahabiyas, presidential suites, private jets, and VIP fast-track transfers.',
     systemPrompt: `You are GuideR, the premier luxury AI Travel Concierge for Dunas Travel.
 You represent the pinnacle of bespoke Egyptian hospitality.
 Adhere strictly to these principles:
@@ -60,8 +66,19 @@ Adhere strictly to these principles:
     fallbackModels: ['gemini-3.5-flash', 'gpt-4o-mini'],
     temperature: 0.7,
     maxTokens: 1200,
-    allowedSources: ['tours', 'destinations', 'policies', 'hotels', 'transportation'],
-    allowedTools: ['search_catalog', 'check_availability', 'tailor_itinerary', 'book_tour'],
+    allowedSources: [
+      'tours',
+      'destinations',
+      'policies',
+      'hotels',
+      'transportation',
+    ],
+    allowedTools: [
+      'search_catalog',
+      'check_availability',
+      'tailor_itinerary',
+      'book_tour',
+    ],
     supportedLanguages: ['en', 'ar', 'es', 'pt', 'it'],
     defaultLanguage: 'en',
     isActive: true,
@@ -86,7 +103,8 @@ Adhere strictly to these principles:
     role: 'Booking Specialist',
     avatar: '📅',
     tone: 'Precise, Efficient, Reassuring & Transparent',
-    personalityGuidelines: 'Guide travelers step-by-step through dates, traveler counts, invoice summaries, and secure payment steps.',
+    personalityGuidelines:
+      'Guide travelers step-by-step through dates, traveler counts, invoice summaries, and secure payment steps.',
     systemPrompt: `You are the Booking & Reservations Specialist for Dunas Travel.
 Your responsibility is validating traveler arrival dates, guest counts (adults, children), and creating verified booking reservations.
 Never state a booking is completed unless backend invoice/booking reference has been issued.`,
@@ -120,7 +138,8 @@ Never state a booking is completed unless backend invoice/booking reference has 
     role: 'Sales Consultant',
     avatar: '💎',
     tone: 'Consultative, Persuasive, Elegant & Value-Focused',
-    personalityGuidelines: 'Uncover traveler passions, recommend private experiences, and construct custom luxury packages.',
+    personalityGuidelines:
+      'Uncover traveler passions, recommend private experiences, and construct custom luxury packages.',
     systemPrompt: `You are the VIP Sales Consultant for Dunas Travel.
 Focus on identifying traveler tastes, offering private Nile Dahabiya charters, and delivering bespoke travel experiences.`,
     primaryModel: 'gemini-3.7-flash',
@@ -153,7 +172,8 @@ Focus on identifying traveler tastes, offering private Nile Dahabiya charters, a
     role: 'Egyptologist',
     avatar: '📜',
     tone: 'Intellectual, Passionate, Engaging & Scholarly',
-    personalityGuidelines: 'Bring Egyptian history alive through vivid anecdotes while recommending guided heritage tours.',
+    personalityGuidelines:
+      'Bring Egyptian history alive through vivid anecdotes while recommending guided heritage tours.',
     systemPrompt: `You are the Egyptologist & Historian for Dunas Travel.
 Bring 5,000 years of ancient history alive and connect monuments to Dunas Travel's guided heritage tours.`,
     primaryModel: 'gemini-3.7-flash',
@@ -186,7 +206,8 @@ Bring 5,000 years of ancient history alive and connect monuments to Dunas Travel
     role: 'Customer Care',
     avatar: '🛡️',
     tone: 'Helpful, Reassuring, Clear & Compliant',
-    personalityGuidelines: 'Provide clear, factual assistance regarding travel logistics, booking terms, and safety policies.',
+    personalityGuidelines:
+      'Provide clear, factual assistance regarding travel logistics, booking terms, and safety policies.',
     systemPrompt: `You are the Customer Care Specialist for Dunas Travel.
 Help guests with payment policies, visa questions, cancellation rules, and pickup logistics.`,
     primaryModel: 'gemini-3.7-flash',
@@ -214,12 +235,13 @@ Help guests with payment policies, visa questions, cancellation rules, and picku
       ar: 'أسرار الحضارة المصرية القديمة، فك شفرات الهيروغليفية، وتاريخ معابد الفراعنة والمتحف الكبير.',
       es: 'Misterios de los faraones, jeroglíficos y tumbas sagradas de Egipto.',
       pt: 'Histórias arqueológicas, hieróglifos e segredos do Antigo Egito.',
-      it: 'Storia archeologica, geroglifici e segreti dell\'Antigo Egitto.',
+      it: "Storia archeologica, geroglifici e segreti dell'Antigo Egitto.",
     },
     role: 'Historian & Egyptologist',
     avatar: '📜',
     tone: 'Passionate, Scholarly, Narrative & Captivating',
-    personalityGuidelines: 'Bring 5,000 years of civilization alive. Share historical depth about Karnak, Valley of the Kings, Abu Simbel, and connecting historical wonders to Dunas Travel guided tours.',
+    personalityGuidelines:
+      'Bring 5,000 years of civilization alive. Share historical depth about Karnak, Valley of the Kings, Abu Simbel, and connecting historical wonders to Dunas Travel guided tours.',
     systemPrompt: `You are the Resident Egyptologist for Dunas Travel.
 You illuminate the monuments of Egypt with scholarly accuracy, storytelling mastery, and cultural reverence.`,
     primaryModel: 'gemini-3.7-flash',
@@ -245,19 +267,25 @@ export class AgentRegistryService implements OnModuleInit {
     try {
       await this.ensureDefaultAgentsSeeded();
     } catch (err: any) {
-      this.logger.warn(`Failed to seed AI agent presets (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Failed to seed AI agent presets (non-fatal): ${err.message}`,
+      );
     }
 
     try {
       await this.backfillEmptyPrompts();
     } catch (err: any) {
-      this.logger.warn(`Failed to backfill empty agent prompts (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Failed to backfill empty agent prompts (non-fatal): ${err.message}`,
+      );
     }
 
     try {
       await this.ensureSingleActiveAgent();
     } catch (err: any) {
-      this.logger.warn(`Failed to sanitize active agents (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Failed to sanitize active agents (non-fatal): ${err.message}`,
+      );
     }
   }
 
@@ -274,7 +302,9 @@ export class AgentRegistryService implements OnModuleInit {
         where: { id: { in: idsToDeactivate } },
         data: { isActive: false },
       });
-      this.logger.log(`Sanitized active agents: Only '${primary.slug}' is active on website.`);
+      this.logger.log(
+        `Sanitized active agents: Only '${primary.slug}' is active on website.`,
+      );
     } else if (activeAgents.length === 0) {
       await (this.prisma as any).aiAgent.updateMany({
         where: { slug: 'guider' },
@@ -286,33 +316,42 @@ export class AgentRegistryService implements OnModuleInit {
   async backfillEmptyPrompts() {
     const agentsWithoutPrompt = await (this.prisma as any).aiAgent.findMany({
       where: {
-        OR: [
-          { systemPrompt: null },
-          { systemPrompt: '' },
-        ],
+        OR: [{ systemPrompt: null }, { systemPrompt: '' }],
       },
     });
 
     if (agentsWithoutPrompt.length > 0) {
-      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
+      const currentConfig = await (this.prisma as any).aiConfig
+        .findFirst({ orderBy: { createdAt: 'desc' } })
+        .catch(() => null);
       for (const agent of agentsWithoutPrompt) {
         const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
-        const promptToSet = (agent.isActive && currentConfig?.systemInstructions)
-          ? currentConfig.systemInstructions
-          : preset?.systemPrompt || currentConfig?.systemInstructions || DEFAULT_PRESET_AGENTS[0].systemPrompt;
-        const personalityToSet = (agent.isActive && currentConfig?.salesPersonality)
-          ? currentConfig.salesPersonality
-          : preset?.personalityGuidelines || currentConfig?.salesPersonality || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+        const promptToSet =
+          agent.isActive && currentConfig?.systemInstructions
+            ? currentConfig.systemInstructions
+            : preset?.systemPrompt ||
+              currentConfig?.systemInstructions ||
+              DEFAULT_PRESET_AGENTS[0].systemPrompt;
+        const personalityToSet =
+          agent.isActive && currentConfig?.salesPersonality
+            ? currentConfig.salesPersonality
+            : preset?.personalityGuidelines ||
+              currentConfig?.salesPersonality ||
+              DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
 
         await (this.prisma as any).aiAgent.update({
           where: { id: agent.id },
           data: {
             systemPrompt: promptToSet,
-            ...(!agent.personalityGuidelines ? { personalityGuidelines: personalityToSet } : {}),
+            ...(!agent.personalityGuidelines
+              ? { personalityGuidelines: personalityToSet }
+              : {}),
           },
         });
       }
-      this.logger.log(`Backfilled ${agentsWithoutPrompt.length} agents with empty system prompts.`);
+      this.logger.log(
+        `Backfilled ${agentsWithoutPrompt.length} agents with empty system prompts.`,
+      );
     }
   }
 
@@ -337,13 +376,17 @@ export class AgentRegistryService implements OnModuleInit {
 
     // 3. Immediately synchronize the system prompt to AiConfig
     if (activated.systemPrompt) {
-      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } });
+      const currentConfig = await (this.prisma as any).aiConfig.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
       if (currentConfig) {
         await this.prisma.aiConfig.update({
           where: { id: currentConfig.id },
           data: {
             systemInstructions: activated.systemPrompt,
-            ...(activated.personalityGuidelines ? { salesPersonality: activated.personalityGuidelines } : {}),
+            ...(activated.personalityGuidelines
+              ? { salesPersonality: activated.personalityGuidelines }
+              : {}),
             ...(activated.tone ? { toneOfVoice: activated.tone } : {}),
           },
         });
@@ -361,32 +404,53 @@ export class AgentRegistryService implements OnModuleInit {
           })
         : Promise.resolve([]),
       (this.prisma as any).aiConfig?.findFirst
-        ? (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null)
+        ? (this.prisma as any).aiConfig
+            .findFirst({ orderBy: { createdAt: 'desc' } })
+            .catch(() => null)
         : Promise.resolve(null),
     ]);
 
-    const agentsList = (Array.isArray(rows) && rows.length > 0)
-      ? rows
-      : DEFAULT_PRESET_AGENTS.map((p, idx) => ({ id: `agent-${idx + 1}`, ...p, createdAt: new Date(), updatedAt: new Date() }));
+    const agentsList =
+      Array.isArray(rows) && rows.length > 0
+        ? rows
+        : DEFAULT_PRESET_AGENTS.map((p, idx) => ({
+            id: `agent-${idx + 1}`,
+            ...p,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }));
 
     return agentsList.map((agent: any) => {
       const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === agent.slug);
-      const fallbackPrompt = (agent.isActive && currentConfig?.systemInstructions)
-        ? currentConfig.systemInstructions
-        : preset?.systemPrompt || currentConfig?.systemInstructions || DEFAULT_PRESET_AGENTS[0].systemPrompt;
-      const fallbackPersonality = (agent.isActive && currentConfig?.salesPersonality)
-        ? currentConfig.salesPersonality
-        : preset?.personalityGuidelines || currentConfig?.salesPersonality || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+      const fallbackPrompt =
+        agent.isActive && currentConfig?.systemInstructions
+          ? currentConfig.systemInstructions
+          : preset?.systemPrompt ||
+            currentConfig?.systemInstructions ||
+            DEFAULT_PRESET_AGENTS[0].systemPrompt;
+      const fallbackPersonality =
+        agent.isActive && currentConfig?.salesPersonality
+          ? currentConfig.salesPersonality
+          : preset?.personalityGuidelines ||
+            currentConfig?.salesPersonality ||
+            DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
 
-      const resolvedPrompt = (agent.systemPrompt && agent.systemPrompt.trim()) ? agent.systemPrompt : fallbackPrompt;
-      const resolvedPersonality = (agent.personalityGuidelines && agent.personalityGuidelines.trim()) ? agent.personalityGuidelines : fallbackPersonality;
+      const resolvedPrompt =
+        agent.systemPrompt && agent.systemPrompt.trim()
+          ? agent.systemPrompt
+          : fallbackPrompt;
+      const resolvedPersonality =
+        agent.personalityGuidelines && agent.personalityGuidelines.trim()
+          ? agent.personalityGuidelines
+          : fallbackPersonality;
 
       return {
         id: agent.id,
         slug: agent.slug,
         name: agent.nameJsonb?.[locale] || agent.nameJsonb?.en || agent.slug,
         nameJsonb: agent.nameJsonb,
-        description: agent.descriptionJsonb?.[locale] || agent.descriptionJsonb?.en || '',
+        description:
+          agent.descriptionJsonb?.[locale] || agent.descriptionJsonb?.en || '',
         descriptionJsonb: agent.descriptionJsonb,
         role: agent.role,
         avatar: agent.avatar,
@@ -405,8 +469,12 @@ export class AgentRegistryService implements OnModuleInit {
         isPublic: agent.isPublic,
         totalConversations: agent.totalConversations || 0,
         averageRating: agent.averageRating || 5.0,
-        createdAt: agent.createdAt?.toISOString ? agent.createdAt.toISOString() : new Date().toISOString(),
-        updatedAt: agent.updatedAt?.toISOString ? agent.updatedAt.toISOString() : new Date().toISOString(),
+        createdAt: agent.createdAt?.toISOString
+          ? agent.createdAt.toISOString()
+          : new Date().toISOString(),
+        updatedAt: agent.updatedAt?.toISOString
+          ? agent.updatedAt.toISOString()
+          : new Date().toISOString(),
       };
     });
   }
@@ -419,31 +487,42 @@ export class AgentRegistryService implements OnModuleInit {
           })
         : Promise.resolve(null),
       (this.prisma as any).aiConfig?.findFirst
-        ? (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null)
+        ? (this.prisma as any).aiConfig
+            .findFirst({ orderBy: { createdAt: 'desc' } })
+            .catch(() => null)
         : Promise.resolve(null),
     ]);
 
     const preset = DEFAULT_PRESET_AGENTS.find((p) => p.slug === slug);
-    const agent = agentFromDb || (preset ? { id: `preset-${slug}`, ...preset } : null);
+    const agent =
+      agentFromDb || (preset ? { id: `preset-${slug}`, ...preset } : null);
 
     if (!agent) {
       throw new NotFoundException(`AI Agent with slug '${slug}' not found.`);
     }
 
-    const resolvedPrompt = (agent.systemPrompt && agent.systemPrompt.trim())
-      || (agent.isActive && currentConfig?.systemInstructions)
-      || preset?.systemPrompt
-      || currentConfig?.systemInstructions
-      || DEFAULT_PRESET_AGENTS[0].systemPrompt;
-    const resolvedPersonality = (agent.personalityGuidelines && agent.personalityGuidelines.trim())
-      || (agent.isActive && currentConfig?.salesPersonality)
-      || preset?.personalityGuidelines
-      || currentConfig?.salesPersonality
-      || DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
+    const resolvedPrompt =
+      (agent.systemPrompt && agent.systemPrompt.trim()) ||
+      (agent.isActive && currentConfig?.systemInstructions) ||
+      preset?.systemPrompt ||
+      currentConfig?.systemInstructions ||
+      DEFAULT_PRESET_AGENTS[0].systemPrompt;
+    const resolvedPersonality =
+      (agent.personalityGuidelines && agent.personalityGuidelines.trim()) ||
+      (agent.isActive && currentConfig?.salesPersonality) ||
+      preset?.personalityGuidelines ||
+      currentConfig?.salesPersonality ||
+      DEFAULT_PRESET_AGENTS[0].personalityGuidelines;
 
     const loc = (locale || 'en').toLowerCase().split('-')[0];
-    const nameMap = (agent.nameJsonb && typeof agent.nameJsonb === 'object') ? agent.nameJsonb : {};
-    const descMap = (agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object') ? agent.descriptionJsonb : {};
+    const nameMap =
+      agent.nameJsonb && typeof agent.nameJsonb === 'object'
+        ? agent.nameJsonb
+        : {};
+    const descMap =
+      agent.descriptionJsonb && typeof agent.descriptionJsonb === 'object'
+        ? agent.descriptionJsonb
+        : {};
 
     return {
       ...agent,
@@ -466,12 +545,28 @@ export class AgentRegistryService implements OnModuleInit {
         personalityGuidelines: dto.personalityGuidelines,
         tone: dto.tone || 'Refined & Professional',
         primaryModel: dto.primaryModel || 'gemini-3.6-flash',
-        fallbackModels: dto.fallbackModels || ['gemini-3.5-flash-lite', 'gpt-4o-mini'],
+        fallbackModels: dto.fallbackModels || [
+          'gemini-3.5-flash-lite',
+          'gpt-4o-mini',
+        ],
         temperature: dto.temperature ?? 0.7,
         maxTokens: dto.maxTokens ?? 1024,
-        allowedSources: dto.allowedSources || ['tours', 'destinations', 'policies'],
-        allowedTools: dto.allowedTools || ['search_catalog', 'check_availability'],
-        supportedLanguages: dto.supportedLanguages || ['en', 'ar', 'es', 'pt', 'it'],
+        allowedSources: dto.allowedSources || [
+          'tours',
+          'destinations',
+          'policies',
+        ],
+        allowedTools: dto.allowedTools || [
+          'search_catalog',
+          'check_availability',
+        ],
+        supportedLanguages: dto.supportedLanguages || [
+          'en',
+          'ar',
+          'es',
+          'pt',
+          'it',
+        ],
         defaultLanguage: dto.defaultLanguage || 'en',
         isActive: dto.isActive ?? true,
         isPublic: dto.isPublic ?? true,
@@ -482,7 +577,9 @@ export class AgentRegistryService implements OnModuleInit {
   }
 
   async updateAgent(id: string, dto: UpdateAgentDto) {
-    const existing = await (this.prisma as any).aiAgent.findUnique({ where: { id } });
+    const existing = await (this.prisma as any).aiAgent.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException(`Agent '${id}' not found.`);
     }
@@ -494,8 +591,14 @@ export class AgentRegistryService implements OnModuleInit {
         descriptionJsonb: dto.descriptionJsonb ?? existing.descriptionJsonb,
         role: dto.role ?? existing.role,
         avatar: dto.avatar ?? existing.avatar,
-        systemPrompt: dto.systemPrompt !== undefined ? dto.systemPrompt : existing.systemPrompt,
-        personalityGuidelines: dto.personalityGuidelines !== undefined ? dto.personalityGuidelines : existing.personalityGuidelines,
+        systemPrompt:
+          dto.systemPrompt !== undefined
+            ? dto.systemPrompt
+            : existing.systemPrompt,
+        personalityGuidelines:
+          dto.personalityGuidelines !== undefined
+            ? dto.personalityGuidelines
+            : existing.personalityGuidelines,
         tone: dto.tone ?? existing.tone,
         primaryModel: dto.primaryModel ?? existing.primaryModel,
         fallbackModels: dto.fallbackModels ?? existing.fallbackModels,
@@ -503,23 +606,29 @@ export class AgentRegistryService implements OnModuleInit {
         maxTokens: dto.maxTokens ?? existing.maxTokens,
         allowedSources: dto.allowedSources ?? existing.allowedSources,
         allowedTools: dto.allowedTools ?? existing.allowedTools,
-        supportedLanguages: dto.supportedLanguages ?? existing.supportedLanguages,
+        supportedLanguages:
+          dto.supportedLanguages ?? existing.supportedLanguages,
         defaultLanguage: dto.defaultLanguage ?? existing.defaultLanguage,
         isActive: dto.isActive ?? existing.isActive,
         isPublic: dto.isPublic ?? existing.isPublic,
-        activePromptVersionId: dto.activePromptVersionId ?? existing.activePromptVersionId,
+        activePromptVersionId:
+          dto.activePromptVersionId ?? existing.activePromptVersionId,
       },
     });
 
     // If updated agent is active on the website and systemPrompt was provided, synchronize to live AiConfig immediately
     if (updated.isActive && updated.systemPrompt) {
-      const currentConfig = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
+      const currentConfig = await (this.prisma as any).aiConfig
+        .findFirst({ orderBy: { createdAt: 'desc' } })
+        .catch(() => null);
       if (currentConfig) {
         await this.prisma.aiConfig.update({
           where: { id: currentConfig.id },
           data: {
             systemInstructions: updated.systemPrompt,
-            ...(updated.personalityGuidelines ? { salesPersonality: updated.personalityGuidelines } : {}),
+            ...(updated.personalityGuidelines
+              ? { salesPersonality: updated.personalityGuidelines }
+              : {}),
             ...(updated.tone ? { toneOfVoice: updated.tone } : {}),
           },
         });
@@ -530,7 +639,9 @@ export class AgentRegistryService implements OnModuleInit {
   }
 
   async deleteAgent(id: string) {
-    const existing = await (this.prisma as any).aiAgent.findUnique({ where: { id } });
+    const existing = await (this.prisma as any).aiAgent.findUnique({
+      where: { id },
+    });
     if (!existing) {
       throw new NotFoundException(`Agent '${id}' not found.`);
     }

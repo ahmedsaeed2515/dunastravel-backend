@@ -67,10 +67,7 @@ export class BlogsService {
         ? sanitizeHtmlContent(value)
         : sanitizePlainText(value);
     }
-    if (
-      requireEnglish &&
-      (!result.en || result.en.trim().length === 0)
-    ) {
+    if (requireEnglish && (!result.en || result.en.trim().length === 0)) {
       throw new BadRequestException('English localized content is required');
     }
     return result;
@@ -325,20 +322,10 @@ export class BlogsService {
       true,
     );
     const sanitizedExcerpt = dto.excerptJsonb
-      ? this.sanitizeLocalizedContent(
-          dto.excerptJsonb,
-          2_000,
-          true,
-          false,
-        )
+      ? this.sanitizeLocalizedContent(dto.excerptJsonb, 2_000, true, false)
       : undefined;
     const sanitizedSeoTitle = dto.seoTitleJsonb
-      ? this.sanitizeLocalizedContent(
-          dto.seoTitleJsonb,
-          300,
-          false,
-          false,
-        )
+      ? this.sanitizeLocalizedContent(dto.seoTitleJsonb, 300, false, false)
       : undefined;
     const sanitizedSeoDescription = dto.seoDescriptionJsonb
       ? this.sanitizeLocalizedContent(
@@ -352,15 +339,14 @@ export class BlogsService {
     const created = await this.prisma.blogArticle.create({
       data: {
         slug: targetSlug,
-        titleJsonb: sanitizedTitle as Prisma.InputJsonValue,
-        contentJsonb: sanitizedContent as Prisma.InputJsonValue,
+        titleJsonb: sanitizedTitle,
+        contentJsonb: sanitizedContent,
         excerptJsonb:
           (sanitizedExcerpt as Prisma.InputJsonValue) || Prisma.JsonNull,
         seoTitleJsonb:
           (sanitizedSeoTitle as Prisma.InputJsonValue) || Prisma.JsonNull,
         seoDescriptionJsonb:
-          (sanitizedSeoDescription as Prisma.InputJsonValue) ||
-          Prisma.JsonNull,
+          (sanitizedSeoDescription as Prisma.InputJsonValue) || Prisma.JsonNull,
         coverImage: this.validateCoverImage(dto.coverImage),
         author: sanitizePlainText(dto.author).slice(0, 100) || null,
         category: sanitizePlainText(dto.category).slice(0, 100) || null,
@@ -431,22 +417,12 @@ export class BlogsService {
       }),
       ...(dto.excerptJsonb !== undefined && {
         excerptJsonb: dto.excerptJsonb
-          ? this.sanitizeLocalizedContent(
-              dto.excerptJsonb,
-              2_000,
-              true,
-              false,
-            )
+          ? this.sanitizeLocalizedContent(dto.excerptJsonb, 2_000, true, false)
           : Prisma.JsonNull,
       }),
       ...(dto.seoTitleJsonb !== undefined && {
         seoTitleJsonb: dto.seoTitleJsonb
-          ? this.sanitizeLocalizedContent(
-              dto.seoTitleJsonb,
-              300,
-              false,
-              false,
-            )
+          ? this.sanitizeLocalizedContent(dto.seoTitleJsonb, 300, false, false)
           : Prisma.JsonNull,
       }),
       ...(dto.seoDescriptionJsonb !== undefined && {
@@ -469,9 +445,7 @@ export class BlogsService {
         category: sanitizePlainText(dto.category).slice(0, 100) || null,
       }),
       ...(dto.tags !== undefined && {
-        tags: dto.tags.map((tag) =>
-          sanitizePlainText(tag).slice(0, 50),
-        ),
+        tags: dto.tags.map((tag) => sanitizePlainText(tag).slice(0, 50)),
       }),
       ...(dto.status && {
         status: dto.status,
@@ -536,18 +510,13 @@ export class BlogsService {
     };
   }
 
-  private assertPublicationState(
-    status?: string,
-    isPublished?: boolean,
-  ): void {
+  private assertPublicationState(status?: string, isPublished?: boolean): void {
     if (
       status &&
       isPublished !== undefined &&
       (status === 'PUBLISHED') !== isPublished
     ) {
-      throw new BadRequestException(
-        'Blog publication fields are inconsistent',
-      );
+      throw new BadRequestException('Blog publication fields are inconsistent');
     }
   }
 
@@ -566,10 +535,7 @@ export class BlogsService {
   private validateCoverImage(value?: string): string | null {
     if (!value) return null;
     const url = new URL(value);
-    if (
-      url.protocol !== 'https:' ||
-      url.hostname !== 'res.cloudinary.com'
-    ) {
+    if (url.protocol !== 'https:' || url.hostname !== 'res.cloudinary.com') {
       throw new BadRequestException(
         'Blog cover image must use approved media storage',
       );

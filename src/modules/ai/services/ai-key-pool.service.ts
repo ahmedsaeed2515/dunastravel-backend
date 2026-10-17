@@ -7,14 +7,26 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { UniversalAiProvider, ProviderError } from '../providers/universal-ai.provider';
-import { IAiCompletionOptions, IAiProviderResponse } from '../interfaces/ai-provider.interface';
-import { ModelRegistryService, PROVIDER_REGISTRY, validateBaseUrl, validateApiKeyFormat, sanitizeApiKey, normalizeModelId } from './model-registry.service';
+import {
+  UniversalAiProvider,
+  ProviderError,
+} from '../providers/universal-ai.provider';
+import {
+  IAiCompletionOptions,
+  IAiProviderResponse,
+} from '../interfaces/ai-provider.interface';
+import {
+  ModelRegistryService,
+  PROVIDER_REGISTRY,
+  validateBaseUrl,
+  validateApiKeyFormat,
+  sanitizeApiKey,
+  normalizeModelId,
+} from './model-registry.service';
 import {
   decryptSensitiveField,
   encryptSensitiveField,
 } from '../../../common/security/field-encryption.util';
-
 
 // ============================================================
 // TYPES
@@ -32,20 +44,38 @@ export interface CredentialEntry {
   priority: number;
   isActive: boolean;
   failCount: number;
-  lastStatus: 'HEALTHY' | 'RATE_LIMITED' | 'FAILED' | 'UNTESTED' | 'INVALID_CREDENTIAL' | 'CONFIGURATION_ERROR';
+  lastStatus:
+    | 'HEALTHY'
+    | 'RATE_LIMITED'
+    | 'FAILED'
+    | 'UNTESTED'
+    | 'INVALID_CREDENTIAL'
+    | 'CONFIGURATION_ERROR';
   lastLatencyMs?: number;
   lastTestedAt?: string;
   lastUsedAt?: string;
 }
 
-export interface MaskedCredentialEntry extends Omit<CredentialEntry, 'encryptedKey'> {
+export interface MaskedCredentialEntry extends Omit<
+  CredentialEntry,
+  'encryptedKey'
+> {
   maskedKey: string;
   hasKey: boolean;
 }
 
 export interface ProviderTestResult {
   success: boolean;
-  code: 'SUCCESS' | 'INVALID_KEY' | 'UNAUTHORIZED' | 'MODEL_NOT_FOUND' | 'RATE_LIMITED' | 'PROVIDER_DOWN' | 'INVALID_CONFIGURATION' | 'TIMEOUT' | 'UNKNOWN_ERROR';
+  code:
+    | 'SUCCESS'
+    | 'INVALID_KEY'
+    | 'UNAUTHORIZED'
+    | 'MODEL_NOT_FOUND'
+    | 'RATE_LIMITED'
+    | 'PROVIDER_DOWN'
+    | 'INVALID_CONFIGURATION'
+    | 'TIMEOUT'
+    | 'UNKNOWN_ERROR';
   provider: string;
   model: string;
   latencyMs?: number;
@@ -75,19 +105,25 @@ export class AiKeyPoolService implements OnModuleInit {
     try {
       await this.migrateJsonBlobToTable();
     } catch (err: any) {
-      this.logger.warn(`Startup migration check failed (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Startup migration check failed (non-fatal): ${err.message}`,
+      );
     }
 
     try {
       await this.sanitizeLegacyModelIds();
     } catch (err: any) {
-      this.logger.warn(`Startup model sanitization failed (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Startup model sanitization failed (non-fatal): ${err.message}`,
+      );
     }
 
     try {
       await this.cleanupCorruptedDummyKeys();
     } catch (err: any) {
-      this.logger.warn(`Startup key cleanup failed (non-fatal): ${err.message}`);
+      this.logger.warn(
+        `Startup key cleanup failed (non-fatal): ${err.message}`,
+      );
     }
   }
 
@@ -103,21 +139,24 @@ export class AiKeyPoolService implements OnModuleInit {
           decrypted.includes('[DECRYPT_FAILED') ||
           !fmt.valid
         ) {
-          this.logger.warn(`Deactivating invalid/dummy API key credential ${r.id} (${r.label || r.provider}): ${fmt.reason || 'Invalid format'}`);
-          await (this.prisma as any).aiProviderCredential.update({
-            where: { id: r.id },
-            data: {
-              isActive: false,
-              lastStatus: 'INVALID_CREDENTIAL',
-            },
-          }).catch(() => {});
+          this.logger.warn(
+            `Deactivating invalid/dummy API key credential ${r.id} (${r.label || r.provider}): ${fmt.reason || 'Invalid format'}`,
+          );
+          await (this.prisma as any).aiProviderCredential
+            .update({
+              where: { id: r.id },
+              data: {
+                isActive: false,
+                lastStatus: 'INVALID_CREDENTIAL',
+              },
+            })
+            .catch(() => {});
         }
       }
     } catch (err: any) {
       this.logger.warn(`Could not run key cleanup: ${err.message}`);
     }
   }
-
 
   private async sanitizeLegacyModelIds() {
     const legacyModelMap: Record<string, string> = {
@@ -132,48 +171,60 @@ export class AiKeyPoolService implements OnModuleInit {
     };
 
     for (const [legacy, current] of Object.entries(legacyModelMap)) {
-      await (this.prisma as any).aiProviderCredential.updateMany({
-        where: { model: legacy },
-        data: { model: current },
-      }).catch(() => {});
+      await (this.prisma as any).aiProviderCredential
+        .updateMany({
+          where: { model: legacy },
+          data: { model: current },
+        })
+        .catch(() => {});
     }
 
-    await (this.prisma as any).aiConfig.updateMany({
-      where: {
-        model: {
-          in: [
-            'gemini-2.5-flash',
-            'google/gemini-2.5-flash',
-            'gemini-2.5-flash-lite',
-            'gemini-3.1-flash-lite',
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
-            'gemini-1.5-flash-8b',
-          ],
+    await (this.prisma as any).aiConfig
+      .updateMany({
+        where: {
+          model: {
+            in: [
+              'gemini-2.5-flash',
+              'google/gemini-2.5-flash',
+              'gemini-2.5-flash-lite',
+              'gemini-3.1-flash-lite',
+              'gemini-1.5-flash',
+              'gemini-1.5-pro',
+              'gemini-1.5-flash-8b',
+            ],
+          },
         },
-      },
-      data: { model: 'gemini-3.6-flash' },
-    }).catch(() => {});
+        data: { model: 'gemini-3.6-flash' },
+      })
+      .catch(() => {});
   }
 
   private async migrateJsonBlobToTable() {
-    const existingCount = await (this.prisma as any).aiProviderCredential.count();
+    const existingCount = await (
+      this.prisma as any
+    ).aiProviderCredential.count();
     if (existingCount > 0) {
-      this.logger.log(`AiProviderCredential table has ${existingCount} rows — skipping JSON blob migration.`);
+      this.logger.log(
+        `AiProviderCredential table has ${existingCount} rows — skipping JSON blob migration.`,
+      );
       return;
     }
 
     // Look for legacy JSON blob
-    const config = await (this.prisma as any).aiConfig.findFirst({ orderBy: { createdAt: 'desc' } });
+    const config = await (this.prisma as any).aiConfig.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
     if (!config) return;
 
-    const pool: any[] = (config.tourSettings as any)?.apiKeysPool || [];
+    const pool: any[] = config.tourSettings?.apiKeysPool || [];
     if (pool.length === 0) {
       this.logger.log('No legacy JSON blob keys found — starting fresh.');
       return;
     }
 
-    this.logger.log(`Migrating ${pool.length} legacy JSON blob key(s) to AiProviderCredential table...`);
+    this.logger.log(
+      `Migrating ${pool.length} legacy JSON blob key(s) to AiProviderCredential table...`,
+    );
 
     for (const entry of pool) {
       try {
@@ -189,12 +240,18 @@ export class AiKeyPoolService implements OnModuleInit {
             failCount: entry.failCount || 0,
             lastStatus: entry.lastStatus || 'UNTESTED',
             lastLatencyMs: entry.lastLatencyMs || null,
-            lastTestedAt: entry.lastTestedAt ? new Date(entry.lastTestedAt) : null,
+            lastTestedAt: entry.lastTestedAt
+              ? new Date(entry.lastTestedAt)
+              : null,
           },
         });
-        this.logger.log(`  Migrated: ${entry.label || entry.provider}/${entry.model}`);
+        this.logger.log(
+          `  Migrated: ${entry.label || entry.provider}/${entry.model}`,
+        );
       } catch (err: any) {
-        this.logger.warn(`  Failed to migrate entry ${entry.id}: ${err.message}`);
+        this.logger.warn(
+          `  Failed to migrate entry ${entry.id}: ${err.message}`,
+        );
       }
     }
 
@@ -218,14 +275,18 @@ export class AiKeyPoolService implements OnModuleInit {
       provider: row.provider,
       model: row.model || '',
       defaultModel: row.model || '',
-      enabledModels: Array.isArray(row.enabledModels) ? row.enabledModels : (row.model ? [row.model] : []),
+      enabledModels: Array.isArray(row.enabledModels)
+        ? row.enabledModels
+        : row.model
+          ? [row.model]
+          : [],
 
       baseUrl: row.baseUrl || undefined,
       label: row.label || undefined,
       priority: row.priority,
       isActive: row.isActive,
       failCount: row.failCount || 0,
-      lastStatus: row.lastStatus as any || 'UNTESTED',
+      lastStatus: row.lastStatus || 'UNTESTED',
       lastLatencyMs: row.lastLatencyMs || undefined,
       lastTestedAt: row.lastTestedAt?.toISOString() || undefined,
       lastUsedAt: row.lastUsedAt?.toISOString() || undefined,
@@ -250,7 +311,8 @@ export class AiKeyPoolService implements OnModuleInit {
           model: 'gemini-3.6-flash',
           isEnabled: true,
           isPublicEnabled: true,
-          systemInstructions: 'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
+          systemInstructions:
+            'You are GuideR, a luxury AI travel concierge for Dunas Travel.',
           fallbackMessage: `I'd be delighted to assist you! Would you like me to connect you with our senior travel team or help you customize a private itinerary?`,
           escalationMessage: `I have notified our senior travel team. A dedicated travel specialist will contact you shortly!`,
           tourSettings: { apiKeysPool: [] },
@@ -285,7 +347,9 @@ export class AiKeyPoolService implements OnModuleInit {
 
     // Validate provider exists
     if (!PROVIDER_REGISTRY[providerId]) {
-      throw new BadRequestException(`Unknown provider '${dto.provider}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+      throw new BadRequestException(
+        `Unknown provider '${dto.provider}'. Supported: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`,
+      );
     }
 
     if (dto.baseUrl) {
@@ -305,18 +369,23 @@ export class AiKeyPoolService implements OnModuleInit {
     // Validate model/provider pair if a model is specified
     if (dto.model && dto.model.trim()) {
       const trimmedModel = dto.model.trim();
-      const validation = this.modelRegistry.validateProviderModelPair(providerId, trimmedModel);
+      const validation = this.modelRegistry.validateProviderModelPair(
+        providerId,
+        trimmedModel,
+      );
       if (!validation.valid) {
         throw new BadRequestException(
-          `Invalid provider/model combination: ${validation.reason}`
+          `Invalid provider/model combination: ${validation.reason}`,
         );
       }
     }
 
-    const maxPriority = await (this.prisma as any).aiProviderCredential.aggregate({
+    const maxPriority = await (
+      this.prisma as any
+    ).aiProviderCredential.aggregate({
       _max: { priority: true },
     });
-    const nextPriority = dto.priority ?? ((maxPriority._max.priority || 0) + 1);
+    const nextPriority = dto.priority ?? (maxPriority._max.priority || 0) + 1;
 
     const row = await (this.prisma as any).aiProviderCredential.create({
       data: {
@@ -334,13 +403,15 @@ export class AiKeyPoolService implements OnModuleInit {
 
     if (dto.isActive !== false && dto.model?.trim()) {
       const activeModel = normalizeModelId(dto.model.trim());
-      await (this.prisma as any).aiConfig.updateMany({
-        data: {
-          provider: providerId,
-          model: activeModel,
-          isEnabled: true,
-        },
-      }).catch(() => {});
+      await (this.prisma as any).aiConfig
+        .updateMany({
+          data: {
+            provider: providerId,
+            model: activeModel,
+            isEnabled: true,
+          },
+        })
+        .catch(() => {});
     }
 
     this.modelRegistry.invalidateDiscoveryCache(providerId);
@@ -359,7 +430,9 @@ export class AiKeyPoolService implements OnModuleInit {
       isActive?: boolean;
     },
   ): Promise<MaskedCredentialEntry> {
-    const existing = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id } });
+    const existing = await (this.prisma as any).aiProviderCredential.findUnique(
+      { where: { id } },
+    );
     if (!existing) throw new NotFoundException(`Credential '${id}' not found.`);
 
     const providerId = (dto.provider || existing.provider).toLowerCase();
@@ -376,9 +449,14 @@ export class AiKeyPoolService implements OnModuleInit {
 
     const modelId = dto.model !== undefined ? dto.model.trim() : existing.model;
     if (modelId && dto.model !== undefined) {
-      const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
+      const validation = this.modelRegistry.validateProviderModelPair(
+        providerId,
+        modelId,
+      );
       if (!validation.valid) {
-        throw new BadRequestException(`Invalid provider/model combination: ${validation.reason}`);
+        throw new BadRequestException(
+          `Invalid provider/model combination: ${validation.reason}`,
+        );
       }
     }
 
@@ -395,7 +473,11 @@ export class AiKeyPoolService implements OnModuleInit {
       }
     }
     // API key: only update if a real new key is provided (not masked dots)
-    if (dto.apiKey && dto.apiKey.trim().length > 5 && !dto.apiKey.includes('••')) {
+    if (
+      dto.apiKey &&
+      dto.apiKey.trim().length > 5 &&
+      !dto.apiKey.includes('••')
+    ) {
       const cleanedKey = sanitizeApiKey(dto.apiKey);
       const keyFormatCheck = validateApiKeyFormat(providerId, cleanedKey);
       if (!keyFormatCheck.valid) {
@@ -413,13 +495,15 @@ export class AiKeyPoolService implements OnModuleInit {
 
     if (dto.isActive === true && (updateData.model || existing.model)) {
       const activeModel = normalizeModelId(updateData.model || existing.model);
-      await (this.prisma as any).aiConfig.updateMany({
-        data: {
-          provider: providerId,
-          model: activeModel,
-          isEnabled: true,
-        },
-      }).catch(() => {});
+      await (this.prisma as any).aiConfig
+        .updateMany({
+          data: {
+            provider: providerId,
+            model: activeModel,
+            isEnabled: true,
+          },
+        })
+        .catch(() => {});
     }
 
     this.modelRegistry.invalidateDiscoveryCache(providerId);
@@ -427,21 +511,27 @@ export class AiKeyPoolService implements OnModuleInit {
   }
 
   async deleteKey(id: string): Promise<{ success: boolean; id: string }> {
-    const existing = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id } });
+    const existing = await (this.prisma as any).aiProviderCredential.findUnique(
+      { where: { id } },
+    );
     if (existing) {
       this.modelRegistry.invalidateDiscoveryCache(existing.provider);
     }
-    await (this.prisma as any).aiProviderCredential.delete({ where: { id } }).catch(() => {});
+    await (this.prisma as any).aiProviderCredential
+      .delete({ where: { id } })
+      .catch(() => {});
     return { success: true, id };
   }
 
   async reorderKeys(orderedIds: string[]): Promise<MaskedCredentialEntry[]> {
     await Promise.all(
       orderedIds.map((id, index) =>
-        (this.prisma as any).aiProviderCredential.update({
-          where: { id },
-          data: { priority: index + 1 },
-        }).catch(() => {}),
+        (this.prisma as any).aiProviderCredential
+          .update({
+            where: { id },
+            data: { priority: index + 1 },
+          })
+          .catch(() => {}),
       ),
     );
     return this.getKeyPool();
@@ -452,41 +542,59 @@ export class AiKeyPoolService implements OnModuleInit {
     model: string;
     credentialId?: string;
     testBeforeActivate?: boolean;
-  }): Promise<{ success: boolean; provider: string; model: string; message: string }> {
+  }): Promise<{
+    success: boolean;
+    provider: string;
+    model: string;
+    message: string;
+  }> {
     const providerId = params.provider.toLowerCase();
     const modelId = normalizeModelId(params.model);
 
-    const validation = this.modelRegistry.validateProviderModelPair(providerId, modelId);
+    const validation = this.modelRegistry.validateProviderModelPair(
+      providerId,
+      modelId,
+    );
     if (!validation.valid) {
-      throw new BadRequestException(`Cannot activate invalid model: ${validation.reason}`);
+      throw new BadRequestException(
+        `Cannot activate invalid model: ${validation.reason}`,
+      );
     }
 
     if (params.testBeforeActivate && params.credentialId) {
       const testResult = await this.testKey(params.credentialId);
       if (!testResult.success) {
-        throw new BadRequestException(`Cannot activate model. Test connection failed: ${testResult.error || testResult.diagnosis}`);
+        throw new BadRequestException(
+          `Cannot activate model. Test connection failed: ${testResult.error || testResult.diagnosis}`,
+        );
       }
     }
 
     if (params.credentialId) {
-      await (this.prisma as any).aiProviderCredential.update({
-        where: { id: params.credentialId },
-        data: {
-          isActive: true,
-          priority: 1,
-          model: modelId,
-          provider: providerId,
-        },
-      }).catch(() => {});
+      await (this.prisma as any).aiProviderCredential
+        .update({
+          where: { id: params.credentialId },
+          data: {
+            isActive: true,
+            priority: 1,
+            model: modelId,
+            provider: providerId,
+          },
+        })
+        .catch(() => {});
     } else {
-      const matchingCred = await (this.prisma as any).aiProviderCredential.findFirst({
+      const matchingCred = await (
+        this.prisma as any
+      ).aiProviderCredential.findFirst({
         where: { provider: providerId, isActive: true },
       });
       if (matchingCred) {
-        await (this.prisma as any).aiProviderCredential.update({
-          where: { id: matchingCred.id },
-          data: { model: modelId },
-        }).catch(() => {});
+        await (this.prisma as any).aiProviderCredential
+          .update({
+            where: { id: matchingCred.id },
+            data: { model: modelId },
+          })
+          .catch(() => {});
       }
     }
 
@@ -501,7 +609,9 @@ export class AiKeyPoolService implements OnModuleInit {
     });
 
     this.modelRegistry.invalidateDiscoveryCache(providerId);
-    this.logger.log(`Active GuideR model successfully set to '${modelId}' (${providerId})`);
+    this.logger.log(
+      `Active GuideR model successfully set to '${modelId}' (${providerId})`,
+    );
 
     return {
       success: true,
@@ -516,7 +626,9 @@ export class AiKeyPoolService implements OnModuleInit {
   // ──────────────────────────────────────────────────────────────────
 
   async testKey(id: string): Promise<ProviderTestResult> {
-    const row = await (this.prisma as any).aiProviderCredential.findUnique({ where: { id } });
+    const row = await (this.prisma as any).aiProviderCredential.findUnique({
+      where: { id },
+    });
     if (!row) throw new NotFoundException(`Credential '${id}' not found.`);
 
     const apiKey = decryptSensitiveField(row.encryptedApiKey) || '';
@@ -537,10 +649,12 @@ export class AiKeyPoolService implements OnModuleInit {
     const cleanedKey = sanitizeApiKey(apiKey);
     const keyCheck = validateApiKeyFormat(providerId, cleanedKey);
     if (!keyCheck.valid) {
-      await (this.prisma as any).aiProviderCredential.update({
-        where: { id },
-        data: { lastStatus: 'INVALID_CREDENTIAL', lastTestedAt: new Date() },
-      }).catch(() => {});
+      await (this.prisma as any).aiProviderCredential
+        .update({
+          where: { id },
+          data: { lastStatus: 'INVALID_CREDENTIAL', lastTestedAt: new Date() },
+        })
+        .catch(() => {});
       return {
         success: false,
         code: 'INVALID_KEY',
@@ -551,19 +665,21 @@ export class AiKeyPoolService implements OnModuleInit {
       };
     }
 
-
     const effectiveModel =
       modelId?.trim() ||
       (providerId === 'google'
         ? 'gemini-3.6-flash'
         : providerId === 'openai'
-        ? 'gpt-4o-mini'
-        : providerId === 'xai'
-        ? 'grok-3-mini'
-        : 'deepseek/deepseek-chat-v3-0324');
+          ? 'gpt-4o-mini'
+          : providerId === 'xai'
+            ? 'grok-3-mini'
+            : 'deepseek/deepseek-chat-v3-0324');
 
     // Validate provider/model before making any external call
-    const validation = this.modelRegistry.validateProviderModelPair(providerId, effectiveModel);
+    const validation = this.modelRegistry.validateProviderModelPair(
+      providerId,
+      effectiveModel,
+    );
     if (!validation.valid) {
       await (this.prisma as any).aiProviderCredential.update({
         where: { id },
@@ -616,12 +732,19 @@ export class AiKeyPoolService implements OnModuleInit {
 
       let newStatus: string;
       switch (code) {
-        case 'RATE_LIMITED': newStatus = 'RATE_LIMITED'; break;
+        case 'RATE_LIMITED':
+          newStatus = 'RATE_LIMITED';
+          break;
         case 'UNAUTHORIZED':
-        case 'INVALID_KEY': newStatus = 'INVALID_CREDENTIAL'; break;
+        case 'INVALID_KEY':
+          newStatus = 'INVALID_CREDENTIAL';
+          break;
         case 'MODEL_NOT_FOUND':
-        case 'INVALID_CONFIGURATION': newStatus = 'CONFIGURATION_ERROR'; break;
-        default: newStatus = 'FAILED';
+        case 'INVALID_CONFIGURATION':
+          newStatus = 'CONFIGURATION_ERROR';
+          break;
+        default:
+          newStatus = 'FAILED';
       }
 
       await (this.prisma as any).aiProviderCredential.update({
@@ -635,7 +758,8 @@ export class AiKeyPoolService implements OnModuleInit {
 
       let diagnosis = err.message;
       if (code === 'MODEL_NOT_FOUND') {
-        diagnosis = `The model '${modelId}' was not found at provider '${providerId}'. ` +
+        diagnosis =
+          `The model '${modelId}' was not found at provider '${providerId}'. ` +
           `Verify the model ID is correct and the provider supports it. ` +
           `DO NOT retry — this is a configuration error, not a transient failure.`;
       } else if (code === 'UNAUTHORIZED' || code === 'INVALID_KEY') {
@@ -681,12 +805,20 @@ export class AiKeyPoolService implements OnModuleInit {
       .map((r: any) => ({
         id: r.id,
         provider: r.provider,
-        model: r.model || config.model || (r.provider === 'google' ? 'gemini-3.6-flash' : 'gpt-4o-mini'),
+        model:
+          r.model ||
+          config.model ||
+          (r.provider === 'google' ? 'gemini-3.6-flash' : 'gpt-4o-mini'),
         apiKey: decryptSensitiveField(r.encryptedApiKey) || '',
         source: 'database' as const,
       }))
       .filter((c: any) => {
-        if (!c.apiKey || c.apiKey.length < 5 || c.apiKey.includes('[DECRYPT_FAILED')) return false;
+        if (
+          !c.apiKey ||
+          c.apiKey.length < 5 ||
+          c.apiKey.includes('[DECRYPT_FAILED')
+        )
+          return false;
         if (c.apiKey === 'Password123') return false;
         const fmt = validateApiKeyFormat(c.provider, c.apiKey);
         return fmt.valid;
@@ -694,7 +826,11 @@ export class AiKeyPoolService implements OnModuleInit {
 
     // Environment keys fallback
     const envGemini = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    if (envGemini && envGemini.length > 5 && validateApiKeyFormat('google', envGemini).valid) {
+    if (
+      envGemini &&
+      envGemini.length > 5 &&
+      validateApiKeyFormat('google', envGemini).valid
+    ) {
       if (!candidates.some((c) => c.apiKey === envGemini)) {
         candidates.push({
           provider: 'google',
@@ -706,7 +842,11 @@ export class AiKeyPoolService implements OnModuleInit {
     }
 
     const envOpenAi = process.env.OPENAI_API_KEY;
-    if (envOpenAi && envOpenAi.length > 5 && validateApiKeyFormat('openai', envOpenAi).valid) {
+    if (
+      envOpenAi &&
+      envOpenAi.length > 5 &&
+      validateApiKeyFormat('openai', envOpenAi).valid
+    ) {
       if (!candidates.some((c) => c.apiKey === envOpenAi)) {
         candidates.push({
           provider: 'openai',
@@ -718,7 +858,11 @@ export class AiKeyPoolService implements OnModuleInit {
     }
 
     const envOpenRouter = process.env.OPENROUTER_API_KEY;
-    if (envOpenRouter && envOpenRouter.length > 5 && validateApiKeyFormat('openrouter', envOpenRouter).valid) {
+    if (
+      envOpenRouter &&
+      envOpenRouter.length > 5 &&
+      validateApiKeyFormat('openrouter', envOpenRouter).valid
+    ) {
       if (!candidates.some((c) => c.apiKey === envOpenRouter)) {
         candidates.push({
           provider: 'openrouter',
@@ -756,15 +900,19 @@ export class AiKeyPoolService implements OnModuleInit {
 
         // Update health metrics async if stored in database
         if (candidate.id) {
-          (this.prisma as any).aiProviderCredential.update({
-            where: { id: candidate.id },
-            data: {
-              lastStatus: 'HEALTHY',
-              failCount: 0,
-              lastLatencyMs: response.latencyMs,
-              lastUsedAt: new Date(),
-            },
-          }).catch((e: any) => this.logger.warn(`Async telemetry update failed: ${e.message}`));
+          (this.prisma as any).aiProviderCredential
+            .update({
+              where: { id: candidate.id },
+              data: {
+                lastStatus: 'HEALTHY',
+                failCount: 0,
+                lastLatencyMs: response.latencyMs,
+                lastUsedAt: new Date(),
+              },
+            })
+            .catch((e: any) =>
+              this.logger.warn(`Async telemetry update failed: ${e.message}`),
+            );
         }
 
         return response;
@@ -781,29 +929,36 @@ export class AiKeyPoolService implements OnModuleInit {
           newStatus = 'RATE_LIMITED';
         } else if (code === 'UNAUTHORIZED' || code === 'INVALID_KEY') {
           newStatus = 'INVALID_CREDENTIAL';
-        } else if (code === 'MODEL_NOT_FOUND' || code === 'INVALID_CONFIGURATION') {
+        } else if (
+          code === 'MODEL_NOT_FOUND' ||
+          code === 'INVALID_CONFIGURATION'
+        ) {
           newStatus = 'CONFIGURATION_ERROR';
         }
 
         if (candidate.id) {
-          (this.prisma as any).aiProviderCredential.update({
-            where: { id: candidate.id },
-            data: {
-              lastStatus: newStatus,
-              failCount: { increment: 1 },
-            },
-          }).catch((e: any) => this.logger.warn(`Async status update failed: ${e.message}`));
+          (this.prisma as any).aiProviderCredential
+            .update({
+              where: { id: candidate.id },
+              data: {
+                lastStatus: newStatus,
+                failCount: { increment: 1 },
+              },
+            })
+            .catch((e: any) =>
+              this.logger.warn(`Async status update failed: ${e.message}`),
+            );
         }
       }
     }
 
-    const lastCode = lastError instanceof ProviderError ? lastError.code : 'UNKNOWN_ERROR';
+    const lastCode =
+      lastError instanceof ProviderError ? lastError.code : 'UNKNOWN_ERROR';
     throw new ServiceUnavailableException(
       `All AI credentials failed. Last error: [${lastCode}] ${lastError?.message || 'Unknown error'}. ` +
-      `Check the Models & Providers tab to verify your credentials are healthy.`,
+        `Check the Models & Providers tab to verify your credentials are healthy.`,
     );
   }
-
 
   // ──────────────────────────────────────────────────────────────────
   // LEGACY: getRawKeyPool (for backwards compat with ChatOrchestratorService)

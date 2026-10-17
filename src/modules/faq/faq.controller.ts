@@ -17,9 +17,6 @@ export class FaqController {
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'locale', required: false, type: String })
   async findAll(@Query() query: PublicFaqQueryDto) {
-    return this.faqService.findAllPublic(
-      query.category,
-      query.locale ?? 'en',
-    );
+    return this.faqService.findAllPublic(query.category, query.locale ?? 'en');
   }
 }

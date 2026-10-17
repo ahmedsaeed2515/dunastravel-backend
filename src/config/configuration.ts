@@ -19,7 +19,7 @@ export default () => ({
   auth: {
     guestTokenSecret: process.env.GUEST_TOKEN_SECRET,
     requireEmailVerification:
-      process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== 'false',
+      process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === 'true',
   },
   turnstile: {
     secretKey: process.env.TURNSTILE_SECRET_KEY,

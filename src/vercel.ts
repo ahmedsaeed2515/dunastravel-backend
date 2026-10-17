@@ -127,7 +127,7 @@ async function bootstrapServerless(): Promise<express.Express> {
     cachedApp = app;
   }
 
-  return cachedApp.getHttpAdapter().getInstance() as express.Express;
+  return cachedApp.getHttpAdapter().getInstance();
 }
 
 export default async function handler(

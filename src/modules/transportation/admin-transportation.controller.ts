@@ -10,7 +10,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiCreatedResponse,
+} from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators';
@@ -69,28 +75,36 @@ export class AdminTransportationController {
   }
 
   @Post('services/:id/archive')
-  @ApiOperation({ summary: 'Archive a transportation service (hide from active catalog)' })
+  @ApiOperation({
+    summary: 'Archive a transportation service (hide from active catalog)',
+  })
   @ApiOkResponse({ description: 'Vehicle archived successfully' })
   async archiveService(@Param('id') id: string) {
     return this.transportationService.archiveAdmin(id);
   }
 
   @Post('services/:id/unarchive')
-  @ApiOperation({ summary: 'Restore an archived transportation service to active' })
+  @ApiOperation({
+    summary: 'Restore an archived transportation service to active',
+  })
   @ApiOkResponse({ description: 'Vehicle restored to active draft' })
   async unarchiveService(@Param('id') id: string) {
     return this.transportationService.unarchiveAdmin(id);
   }
 
   @Get('bookings')
-  @ApiOperation({ summary: 'List all transportation bookings with customer details' })
+  @ApiOperation({
+    summary: 'List all transportation bookings with customer details',
+  })
   @ApiOkResponse({ description: 'List of transportation bookings' })
   async getBookings(@Query('status') status?: string) {
     return this.transportationService.findAllBookingsAdmin(status);
   }
 
   @Patch('bookings/:id/status')
-  @ApiOperation({ summary: 'Update status and driver assignment for a booking' })
+  @ApiOperation({
+    summary: 'Update status and driver assignment for a booking',
+  })
   @ApiOkResponse({ description: 'Booking status updated successfully' })
   async updateBookingStatus(
     @Param('id') id: string,

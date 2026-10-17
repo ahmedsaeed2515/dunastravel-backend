@@ -6,7 +6,10 @@ import { EmailDeliveryService } from '../services/email-delivery.service';
 import { NotificationType } from '../types';
 
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
-import { InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -43,12 +46,17 @@ export class InquiryCreatedListener {
       if (payload.email) {
         try {
           const matchedUser = await this.prisma.user.findFirst({
-            where: { email: { equals: payload.email, mode: 'insensitive' }, deletedAt: null },
+            where: {
+              email: { equals: payload.email, mode: 'insensitive' },
+              deletedAt: null,
+            },
             select: { id: true },
           });
 
           if (matchedUser) {
-            const destLabel = Array.isArray(payload.destinations) ? payload.destinations.join(', ') : 'Custom Trip';
+            const destLabel = Array.isArray(payload.destinations)
+              ? payload.destinations.join(', ')
+              : 'Custom Trip';
             await this.inAppNotifications.createNotification({
               userId: matchedUser.id,
               category: InAppNotificationCategory.INQUIRY,
@@ -63,7 +71,9 @@ export class InquiryCreatedListener {
             });
           }
         } catch (custNotifErr: any) {
-          this.logger.warn(`Could not create customer in-app notification: ${custNotifErr.message}`);
+          this.logger.warn(
+            `Could not create customer in-app notification: ${custNotifErr.message}`,
+          );
         }
       }
       // 1. Compose emails

@@ -38,7 +38,9 @@ export class ListUsersQueryDto {
   @IsEnum(UserRole)
   role?: UserRole;
 
-  @ApiPropertyOptional({ description: 'Filter by status (ACTIVE, SUSPENDED, etc.)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (ACTIVE, SUSPENDED, etc.)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -58,7 +60,9 @@ export class ListUsersQueryDto {
   @IsString()
   dateTo?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by companyId (use "null" for unassigned)' })
+  @ApiPropertyOptional({
+    description: 'Filter by companyId (use "null" for unassigned)',
+  })
   @IsOptional()
   @IsString()
   companyId?: string;

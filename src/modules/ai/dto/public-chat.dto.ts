@@ -1,14 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, MaxLength, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  IsObject,
+} from 'class-validator';
 
 export class SendChatMessageDto {
-  @ApiProperty({ description: 'Visitor text message content', example: 'Recommend a 5-day Nile Cruise tour' })
+  @ApiProperty({
+    description: 'Visitor text message content',
+    example: 'Recommend a 5-day Nile Cruise tour',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)
   message!: string;
 
-  @ApiProperty({ description: 'Public session identifier', example: 'session-xyz-123' })
+  @ApiProperty({
+    description: 'Public session identifier',
+    example: 'session-xyz-123',
+  })
   @IsString()
   @IsNotEmpty()
   sessionId!: string;
@@ -18,12 +30,16 @@ export class SendChatMessageDto {
   @IsOptional()
   locale?: string;
 
-  @ApiPropertyOptional({ description: 'Client-generated idempotency key for deduplication' })
+  @ApiPropertyOptional({
+    description: 'Client-generated idempotency key for deduplication',
+  })
   @IsString()
   @IsOptional()
   idempotencyKey?: string;
 
-  @ApiPropertyOptional({ description: 'Context of the page currently viewed by visitor' })
+  @ApiPropertyOptional({
+    description: 'Context of the page currently viewed by visitor',
+  })
   @IsObject()
   @IsOptional()
   pageContext?: {
@@ -32,12 +48,17 @@ export class SendChatMessageDto {
     pathname?: string;
   };
 
-  @ApiPropertyOptional({ description: 'Selected AI Concierge persona code (e.g. luxury_concierge, egyptologist, practical_budget, family_adventure, romantic_honeymoon)' })
+  @ApiPropertyOptional({
+    description:
+      'Selected AI Concierge persona code (e.g. luxury_concierge, egyptologist, practical_budget, family_adventure, romantic_honeymoon)',
+  })
   @IsString()
   @IsOptional()
   personaCode?: string;
 
-  @ApiPropertyOptional({ description: 'Visitor voluntarily supplied contact information' })
+  @ApiPropertyOptional({
+    description: 'Visitor voluntarily supplied contact information',
+  })
   @IsObject()
   @IsOptional()
   visitorInfo?: {
@@ -59,7 +80,10 @@ export class BookTourChatDto {
   @IsNotEmpty()
   tourId!: string;
 
-  @ApiProperty({ description: 'Arrival date (YYYY-MM-DD)', example: '2026-10-15' })
+  @ApiProperty({
+    description: 'Arrival date (YYYY-MM-DD)',
+    example: '2026-10-15',
+  })
   @IsString()
   @IsNotEmpty()
   arrivalDate!: string;
@@ -67,7 +91,10 @@ export class BookTourChatDto {
   @ApiProperty({ description: 'Number of adult travelers', example: 2 })
   adults!: number;
 
-  @ApiPropertyOptional({ description: 'Number of children (under 12)', example: 0 })
+  @ApiPropertyOptional({
+    description: 'Number of children (under 12)',
+    example: 0,
+  })
   @IsOptional()
   children?: number;
 
@@ -75,27 +102,42 @@ export class BookTourChatDto {
   @IsOptional()
   infants?: number;
 
-  @ApiProperty({ description: 'Lead traveler full name', example: 'Ahmed Saeed' })
+  @ApiProperty({
+    description: 'Lead traveler full name',
+    example: 'Ahmed Saeed',
+  })
   @IsString()
   @IsNotEmpty()
   fullName!: string;
 
-  @ApiProperty({ description: 'Lead traveler email address', example: 'ahmed@example.com' })
+  @ApiProperty({
+    description: 'Lead traveler email address',
+    example: 'ahmed@example.com',
+  })
   @IsString()
   @IsNotEmpty()
   email!: string;
 
-  @ApiPropertyOptional({ description: 'Lead traveler phone / WhatsApp number', example: '+201012345678' })
+  @ApiPropertyOptional({
+    description: 'Lead traveler phone / WhatsApp number',
+    example: '+201012345678',
+  })
   @IsString()
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'Nationality or country of residence', example: 'Egypt' })
+  @ApiPropertyOptional({
+    description: 'Nationality or country of residence',
+    example: 'Egypt',
+  })
   @IsString()
   @IsOptional()
   nationality?: string;
 
-  @ApiPropertyOptional({ description: 'Preferred transportation type', example: 'Private VIP Mercedes' })
+  @ApiPropertyOptional({
+    description: 'Preferred transportation type',
+    example: 'Private VIP Mercedes',
+  })
   @IsString()
   @IsOptional()
   transportChoice?: string;
@@ -132,7 +174,9 @@ export class SubmitLeadDto {
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'Visitor country of residence or nationality' })
+  @ApiPropertyOptional({
+    description: 'Visitor country of residence or nationality',
+  })
   @IsString()
   @IsOptional()
   nationality?: string;

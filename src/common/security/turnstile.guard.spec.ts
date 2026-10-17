@@ -17,7 +17,10 @@ describe('TurnstileGuard', () => {
     );
   });
 
-  const createMockContext = (headers: Record<string, any> = {}, body: Record<string, any> = {}) => {
+  const createMockContext = (
+    headers: Record<string, any> = {},
+    body: Record<string, any> = {},
+  ) => {
     return {
       getHandler: jest.fn(),
       getClass: jest.fn(),
@@ -35,7 +38,9 @@ describe('TurnstileGuard', () => {
     reflector.getAllAndOverride.mockReturnValue('register');
     turnstileService.validateToken.mockResolvedValue({ success: true });
 
-    const context = createMockContext({ 'cf-turnstile-token': 'token-from-header' });
+    const context = createMockContext({
+      'cf-turnstile-token': 'token-from-header',
+    });
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
@@ -50,7 +55,10 @@ describe('TurnstileGuard', () => {
     reflector.getAllAndOverride.mockReturnValue('resend_verification');
     turnstileService.validateToken.mockResolvedValue({ success: true });
 
-    const context = createMockContext({}, { turnstileToken: 'token-from-body' });
+    const context = createMockContext(
+      {},
+      { turnstileToken: 'token-from-body' },
+    );
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
@@ -68,6 +76,8 @@ describe('TurnstileGuard', () => {
     );
 
     const context = createMockContext();
-    await expect(guard.canActivate(context)).rejects.toThrow(BadRequestException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 });

@@ -2,7 +2,8 @@ process.env.GUEST_TOKEN_SECRET =
   process.env.GUEST_TOKEN_SECRET ||
   'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
-  process.env.JWT_SECRET || 'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
+  process.env.JWT_SECRET ||
+  'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.NODE_ENV = 'test';
 
 import { Test, TestingModule } from '@nestjs/testing';

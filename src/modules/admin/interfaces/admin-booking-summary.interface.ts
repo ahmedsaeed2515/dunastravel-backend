@@ -33,4 +33,3 @@ export interface IAdminBookingSummary {
   } | null;
   readonly createdAt: Date;
 }
-

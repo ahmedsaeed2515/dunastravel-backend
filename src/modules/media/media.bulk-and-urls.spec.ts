@@ -41,7 +41,8 @@ describe('MediaService Bulk Upload & URL Import', () => {
         success: true,
         publicId: 'dunas-travel/test-img',
         url: 'http://res.cloudinary.com/test/image/upload/v1/test-img.webp',
-        secureUrl: 'https://res.cloudinary.com/test/image/upload/v1/test-img.webp',
+        secureUrl:
+          'https://res.cloudinary.com/test/image/upload/v1/test-img.webp',
         format: 'webp',
         bytes: 1024,
         width: 800,
@@ -52,7 +53,8 @@ describe('MediaService Bulk Upload & URL Import', () => {
         success: true,
         publicId: 'dunas-travel/test-url-img',
         url: 'http://res.cloudinary.com/test/image/upload/v1/test-url-img.webp',
-        secureUrl: 'https://res.cloudinary.com/test/image/upload/v1/test-url-img.webp',
+        secureUrl:
+          'https://res.cloudinary.com/test/image/upload/v1/test-url-img.webp',
         format: 'webp',
         bytes: 2048,
         width: 1200,
@@ -60,7 +62,9 @@ describe('MediaService Bulk Upload & URL Import', () => {
         error: null,
       }),
       delete: jest.fn().mockResolvedValue(undefined),
-      getDeliveryUrl: jest.fn().mockResolvedValue('https://res.cloudinary.com/test/img.webp'),
+      getDeliveryUrl: jest
+        .fn()
+        .mockResolvedValue('https://res.cloudinary.com/test/img.webp'),
     };
 
     mockConfig = {
@@ -76,7 +80,7 @@ describe('MediaService Bulk Upload & URL Import', () => {
     };
 
     mediaService = new MediaService(
-      mockPrisma as unknown as PrismaService,
+      mockPrisma,
       mockStorage as StorageProvider,
       mockConfig as ConfigService,
       mockEvents as EventEmitter2,
@@ -229,4 +233,3 @@ describe('MediaService Bulk Upload & URL Import', () => {
     });
   });
 });
-

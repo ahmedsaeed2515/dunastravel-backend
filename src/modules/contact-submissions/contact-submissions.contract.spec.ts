@@ -2,7 +2,8 @@ process.env.GUEST_TOKEN_SECRET =
   process.env.GUEST_TOKEN_SECRET ||
   'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
-  process.env.JWT_SECRET || 'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
+  process.env.JWT_SECRET ||
+  'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.NODE_ENV = 'test';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -39,7 +40,10 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
     contactSubmission: {
       create: jest.fn().mockResolvedValue(mockSubmission),
       findUnique: jest.fn().mockImplementation((args: any) => {
-        if (args?.where?.id == 1 || args?.where?.referenceCode === 'CON-A1B2C3') {
+        if (
+          args?.where?.id == 1 ||
+          args?.where?.referenceCode === 'CON-A1B2C3'
+        ) {
           return Promise.resolve(mockSubmission);
         }
         return Promise.resolve(null);
@@ -52,9 +56,7 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
       update: jest
         .fn()
         .mockResolvedValue({ ...mockSubmission, status: 'READ' }),
-      updateMany: jest
-        .fn()
-        .mockResolvedValue({ count: 1 }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     emailTemplate: {
       findUnique: jest.fn().mockResolvedValue(null),
@@ -162,12 +164,22 @@ describe('Contact Submissions Engine (HTTP Contracts)', () => {
       const body = res.body as {
         success: boolean;
         data: unknown[];
-        meta: { total: number; page: number; limit: number; totalPages: number };
+        meta: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
       };
       expect(body.success).toBe(true);
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data.length).toBeGreaterThan(0);
-      expect(body.meta).toEqual({ total: 1, page: 1, limit: 10, totalPages: 1 });
+      expect(body.meta).toEqual({
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
     });
   });
 

@@ -66,10 +66,7 @@ describe('AdminTailorMadeController Contract Tests', () => {
   it('POST /api/admin/tailor-made-inquiries/:id/convert-to-booking converts approved inquiry to linked booking', async () => {
     const res = await controller.convertToBooking('inq-100', adminUser);
     expect(res).toBeDefined();
-    expect(service.convertToBooking).toHaveBeenCalledWith(
-      'inq-100',
-      adminUser,
-    );
+    expect(service.convertToBooking).toHaveBeenCalledWith('inq-100', adminUser);
   });
 
   it('POST /api/admin/tailor-made-inquiries/:id/convert-to-booking rejects non-approved status', async () => {

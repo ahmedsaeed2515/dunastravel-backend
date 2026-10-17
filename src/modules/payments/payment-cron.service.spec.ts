@@ -12,7 +12,9 @@ describe('PaymentCronService', () => {
 
   beforeEach(async () => {
     paymentsServiceMock = {
-      reconcilePaymentByProviderInvoiceId: jest.fn().mockResolvedValue({ transition: 'SUCCEEDED' }),
+      reconcilePaymentByProviderInvoiceId: jest
+        .fn()
+        .mockResolvedValue({ transition: 'SUCCEEDED' }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,7 +29,9 @@ describe('PaymentCronService', () => {
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
             booking: {
-              findUnique: jest.fn().mockResolvedValue({ id: 'bkg-1', promotionRedemption: null }),
+              findUnique: jest
+                .fn()
+                .mockResolvedValue({ id: 'bkg-1', promotionRedemption: null }),
             },
             bookingActivityLog: {
               create: jest.fn().mockResolvedValue({}),
@@ -93,7 +97,9 @@ describe('PaymentCronService', () => {
 
     await service.expireStalePayments();
 
-    expect(paymentsServiceMock.reconcilePaymentByProviderInvoiceId).toHaveBeenCalledWith('inv-99999');
+    expect(
+      paymentsServiceMock.reconcilePaymentByProviderInvoiceId,
+    ).toHaveBeenCalledWith('inv-99999');
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
   });
 
@@ -105,8 +111,14 @@ describe('PaymentCronService', () => {
 
     await service.reconcilePendingPayments();
 
-    expect(paymentsServiceMock.reconcilePaymentByProviderInvoiceId).toHaveBeenCalledTimes(2);
-    expect(paymentsServiceMock.reconcilePaymentByProviderInvoiceId).toHaveBeenCalledWith('inv-333');
-    expect(paymentsServiceMock.reconcilePaymentByProviderInvoiceId).toHaveBeenCalledWith('inv-444');
+    expect(
+      paymentsServiceMock.reconcilePaymentByProviderInvoiceId,
+    ).toHaveBeenCalledTimes(2);
+    expect(
+      paymentsServiceMock.reconcilePaymentByProviderInvoiceId,
+    ).toHaveBeenCalledWith('inv-333');
+    expect(
+      paymentsServiceMock.reconcilePaymentByProviderInvoiceId,
+    ).toHaveBeenCalledWith('inv-444');
   });
 });

@@ -3,8 +3,14 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString || process.env.NODE_ENV !== 'test' || process.env.ALLOW_TEST_SEED !== 'true') {
-  throw new Error('seed-test-data requires NODE_ENV=test, DATABASE_URL, and ALLOW_TEST_SEED=true.');
+if (
+  !connectionString ||
+  process.env.NODE_ENV !== 'test' ||
+  process.env.ALLOW_TEST_SEED !== 'true'
+) {
+  throw new Error(
+    'seed-test-data requires NODE_ENV=test, DATABASE_URL, and ALLOW_TEST_SEED=true.',
+  );
 }
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);

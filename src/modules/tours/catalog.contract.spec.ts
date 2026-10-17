@@ -2,7 +2,8 @@ process.env.GUEST_TOKEN_SECRET =
   process.env.GUEST_TOKEN_SECRET ||
   'test-guest-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.JWT_SECRET =
-  process.env.JWT_SECRET || 'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
+  process.env.JWT_SECRET ||
+  'test-jwt-secret-48-chars-long-valid-entropy-key-123456789';
 process.env.NODE_ENV = 'test';
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -185,7 +186,7 @@ describe('Catalog & Destinations Engine (HTTP Contracts)', () => {
         .get('/api/tours/luxury-nile-cruise?lang=en')
         .expect(200);
 
-      const detail = (res.body.data || res.body) as any;
+      const detail = res.body.data || res.body;
       expect(detail.slug).toBe('luxury-nile-cruise');
       expect(detail.title).toBe('Luxury Nile Cruise');
       expect(detail.city).toBe('Luxor');

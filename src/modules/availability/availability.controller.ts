@@ -14,9 +14,7 @@ export class AvailabilityController {
   @Get()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'Get availability for a tour' })
-  async getAvailability(
-    @Param('slug', ParseUuidOrSlugPipe) slug: string,
-  ) {
+  async getAvailability(@Param('slug', ParseUuidOrSlugPipe) slug: string) {
     return this.availabilityService.getAvailability(slug);
   }
 }

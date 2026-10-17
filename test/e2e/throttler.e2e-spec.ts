@@ -46,9 +46,7 @@ describe('Rate Limiting (e2e)', () => {
     }
 
     // The (limit + 1)th request must be rate-limited
-    const res = await request(app.getHttpServer()).get(
-      '/api/currency/rates',
-    );
+    const res = await request(app.getHttpServer()).get('/api/currency/rates');
 
     // Assuming throttling catches it
     expect(res.status).toBe(429);

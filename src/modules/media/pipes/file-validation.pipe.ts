@@ -21,9 +21,7 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
     }
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Invalid file type',
-      );
+      throw new BadRequestException('Invalid file type');
     }
 
     if (!this.matchesDeclaredExtension(file.originalname, file.mimetype)) {
@@ -100,6 +98,8 @@ export class FileValidationPipe implements PipeTransform<Express.Multer.File> {
       'image/png': ['png'],
       'image/webp': ['webp'],
     };
-    return Boolean(extension && expectedExtensions[mimetype]?.includes(extension));
+    return Boolean(
+      extension && expectedExtensions[mimetype]?.includes(extension),
+    );
   }
 }

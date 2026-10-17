@@ -48,7 +48,9 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
           basePriceUsd: 1450,
           currency: 'USD',
           publicUrl: '/tours/siwa-alexandria-5-days',
-          upcomingAvailabilities: [{ startDate: '2026-10-15', availableSeats: 8 }],
+          upcomingAvailabilities: [
+            { startDate: '2026-10-15', availableSeats: 8 },
+          ],
         },
       ]),
       searchLiveTours: jest.fn().mockResolvedValue([]),
@@ -64,7 +66,9 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
       ],
     }).compile();
 
-    hybridRagEngine = module.get<HybridRagEngineService>(HybridRagEngineService);
+    hybridRagEngine = module.get<HybridRagEngineService>(
+      HybridRagEngineService,
+    );
   });
 
   describe('1. Critical Data Governance & Source-of-Truth Integrity', () => {
@@ -83,13 +87,22 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
         },
       ]);
 
-      const result = await hybridRagEngine.retrieveGroundedKnowledge('Siwa oasis luxury trip', 'en', ['tours']);
+      const result = await hybridRagEngine.retrieveGroundedKnowledge(
+        'Siwa oasis luxury trip',
+        'en',
+        ['tours'],
+      );
 
-      expect(mockLiveCatalog.getLiveToursByIds).toHaveBeenCalledWith(['tour-siwa-123'], 'en');
+      expect(mockLiveCatalog.getLiveToursByIds).toHaveBeenCalledWith(
+        ['tour-siwa-123'],
+        'en',
+      );
       expect(result.groundedTours).toHaveLength(1);
       expect(result.groundedTours[0].basePriceUsd).toBe(1450);
       expect(result.groundedSummaryText).toContain('Base Price: $1450 USD');
-      expect(result.groundedSummaryText).toContain('Next Departures: 2026-10-15 (8 seats left)');
+      expect(result.groundedSummaryText).toContain(
+        'Next Departures: 2026-10-15 (8 seats left)',
+      );
     });
   });
 
@@ -112,12 +125,17 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
         .mockResolvedValueOnce([
           {
             sourceEntityId: 'tour-siwa-123',
-            aiOverrideInstructions: 'Emphasize private desert stargazing and suitability for luxury couples.',
+            aiOverrideInstructions:
+              'Emphasize private desert stargazing and suitability for luxury couples.',
             isRecommendationAllowed: true,
           },
         ]);
 
-      const result = await hybridRagEngine.retrieveGroundedKnowledge('Siwa oasis luxury trip', 'en', ['tours']);
+      const result = await hybridRagEngine.retrieveGroundedKnowledge(
+        'Siwa oasis luxury trip',
+        'en',
+        ['tours'],
+      );
 
       expect(result.groundedSummaryText).toContain(
         '[GUIDER SPECIAL INSTRUCTION FOR THIS TOUR]: Emphasize private desert stargazing and suitability for luxury couples.',
@@ -143,12 +161,17 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
         .mockResolvedValueOnce([
           {
             sourceEntityId: 'tour-siwa-123',
-            aiOverrideInstructions: 'Sold out for October, only offer November departures if asked.',
+            aiOverrideInstructions:
+              'Sold out for October, only offer November departures if asked.',
             isRecommendationAllowed: false,
           },
         ]);
 
-      const result = await hybridRagEngine.retrieveGroundedKnowledge('Siwa oasis luxury trip', 'en', ['tours']);
+      const result = await hybridRagEngine.retrieveGroundedKnowledge(
+        'Siwa oasis luxury trip',
+        'en',
+        ['tours'],
+      );
 
       expect(result.groundedSummaryText).toContain(
         'DO NOT proactively recommend',
@@ -160,7 +183,11 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
     it('MUST strictly exclude knowledge items marked isExcludedFromAi = true from retrieval', async () => {
       mockPrisma.knowledgeBaseItem.findMany.mockResolvedValue([]); // DB returns nothing because where: { isExcludedFromAi: false }
 
-      const result = await hybridRagEngine.retrieveGroundedKnowledge('Siwa oasis luxury trip', 'en', ['tours']);
+      const result = await hybridRagEngine.retrieveGroundedKnowledge(
+        'Siwa oasis luxury trip',
+        'en',
+        ['tours'],
+      );
 
       expect(mockPrisma.knowledgeBaseItem.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -177,7 +204,11 @@ describe('Guider Knowledge Center V5 — Multilingual RAG & Governance Test Suit
     it('MUST query both target locale and canonical fallbacks (en/ar) during retrieval', async () => {
       mockPrisma.knowledgeBaseItem.findMany.mockResolvedValue([]);
 
-      await hybridRagEngine.retrieveGroundedKnowledge('Viaggio di lusso sul Nilo', 'it', ['tours']);
+      await hybridRagEngine.retrieveGroundedKnowledge(
+        'Viaggio di lusso sul Nilo',
+        'it',
+        ['tours'],
+      );
 
       expect(mockPrisma.knowledgeBaseItem.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

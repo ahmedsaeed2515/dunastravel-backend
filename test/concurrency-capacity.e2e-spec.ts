@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -49,12 +53,17 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
         email: 'traveler.test@dunastravel.com',
         password: 'Password123!',
       });
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
 
     // Find Cairo Express tour
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error('Cairo Express tour not found');
     testTourId = tour.id;
 
@@ -85,16 +94,28 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
   afterAll(async () => {
     // Clean up created bookings
     for (const bkgId of createdBookingIds) {
-      await prisma.bookingActivityLog.deleteMany({ where: { bookingId: bkgId } }).catch(() => {});
-      await prisma.payment.deleteMany({ where: { bookingId: bkgId } }).catch(() => {});
-      await prisma.invoice.deleteMany({ where: { bookingId: bkgId } }).catch(() => {});
-      await prisma.billingInfo.deleteMany({ where: { bookingId: bkgId } }).catch(() => {});
-      await prisma.passenger.deleteMany({ where: { bookingId: bkgId } }).catch(() => {});
+      await prisma.bookingActivityLog
+        .deleteMany({ where: { bookingId: bkgId } })
+        .catch(() => {});
+      await prisma.payment
+        .deleteMany({ where: { bookingId: bkgId } })
+        .catch(() => {});
+      await prisma.invoice
+        .deleteMany({ where: { bookingId: bkgId } })
+        .catch(() => {});
+      await prisma.billingInfo
+        .deleteMany({ where: { bookingId: bkgId } })
+        .catch(() => {});
+      await prisma.passenger
+        .deleteMany({ where: { bookingId: bkgId } })
+        .catch(() => {});
       await prisma.booking.deleteMany({ where: { id: bkgId } }).catch(() => {});
     }
 
     if (testSlotId) {
-      await prisma.tourAvailability.delete({ where: { id: testSlotId } }).catch(() => {});
+      await prisma.tourAvailability
+        .delete({ where: { id: testSlotId } })
+        .catch(() => {});
     }
 
     await app.close();
@@ -125,7 +146,10 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
     });
 
     const responses = await Promise.all(requests);
-    console.log('MUTATION 1 DEBUG RESPONSES:', responses.map((r) => ({ status: r.status, body: r.body })));
+    console.log(
+      'MUTATION 1 DEBUG RESPONSES:',
+      responses.map((r) => ({ status: r.status, body: r.body })),
+    );
     const successful = responses.filter((r) => r.status === 201);
     expect(successful.length).toBe(N);
 

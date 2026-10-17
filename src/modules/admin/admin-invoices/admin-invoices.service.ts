@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InvoiceStatus, Prisma } from '@prisma/client';
-import { paginate, getPaginationParams, extractI18n } from '../../../common/utils';
+import {
+  paginate,
+  getPaginationParams,
+  extractI18n,
+} from '../../../common/utils';
 import { PaymentsService } from '../../payments/payments.service';
 import { AuthenticatedUser } from '../../../common/types';
 import { RefundPaymentDto } from '../../payments/dto/refund-payment.dto';
@@ -146,7 +150,9 @@ export class AdminInvoicesService {
       })) as any;
 
       if (!booking) {
-        throw new NotFoundException(`Invoice or booking '${idOrRef}' not found`);
+        throw new NotFoundException(
+          `Invoice or booking '${idOrRef}' not found`,
+        );
       }
 
       // Generate invoice on-the-fly for legacy/unseeded booking
@@ -158,15 +164,23 @@ export class AdminInvoicesService {
       const taxVal = '0.00';
       const totalAmount = totalDec.toNumber();
 
-      const recipientName = booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest';
-      const recipientEmail = booking.billingInfo?.email || booking.user?.email || 'guest@dunastravel.com';
+      const recipientName =
+        booking.billingInfo?.fullName || booking.user?.name || 'Valued Guest';
+      const recipientEmail =
+        booking.billingInfo?.email ||
+        booking.user?.email ||
+        'guest@dunastravel.com';
 
       const snapshot = {
         version: 1,
-        tourTitle: extractI18n(booking.tour?.titleJsonb, 'en') || 'Exclusive Luxury Tour',
+        tourTitle:
+          extractI18n(booking.tour?.titleJsonb, 'en') ||
+          'Exclusive Luxury Tour',
         tourSlug: booking.tour?.slug || 'luxury-tour',
         arrivalDate: booking.arrivalDate.toISOString().split('T')[0],
-        departureDate: booking.departureDate ? booking.departureDate.toISOString().split('T')[0] : null,
+        departureDate: booking.departureDate
+          ? booking.departureDate.toISOString().split('T')[0]
+          : null,
         adults: booking.adults,
         children: booking.children,
         infants: booking.infants,
@@ -187,7 +201,9 @@ export class AdminInvoicesService {
         },
       };
 
-      const isPaid = booking.status === 'CONFIRMED' || Number(booking.paidAmountUsd) >= totalAmount;
+      const isPaid =
+        booking.status === 'CONFIRMED' ||
+        Number(booking.paidAmountUsd) >= totalAmount;
 
       invoice = (await this.prisma.invoice.create({
         data: {
@@ -200,7 +216,7 @@ export class AdminInvoicesService {
           total: new Prisma.Decimal(totalAmount.toFixed(2)),
           currency: 'USD',
           paymentId: booking.payments[0]?.id || null,
-          snapshotJsonb: snapshot as unknown as Prisma.InputJsonValue,
+          snapshotJsonb: snapshot,
         },
         include: {
           booking: {

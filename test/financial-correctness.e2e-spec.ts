@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -30,46 +34,53 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
   let capturedGatewayInitPayload: any = null;
 
   beforeAll(async () => {
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const body = JSON.parse(String(init?.body || '{}'));
-        capturedGatewayInitPayload = body;
-        const freshInvoiceId = Math.floor(200000 + Math.random() * 700000);
+        if (urlStr.includes('/api/v2/integration/init')) {
+          const body = JSON.parse(String(init?.body || '{}'));
+          capturedGatewayInitPayload = body;
+          const freshInvoiceId = Math.floor(200000 + Math.random() * 700000);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
+                invoice_id: freshInvoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        if (urlStr.includes('/api/integration/check-status')) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                invoice_id: 123456,
+                paid_status: 'PAID',
+                auth_code: 'AUTH-GETPAYIN-TEST',
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
 
         return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
-              invoice_id: freshInvoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
         );
-      }
-
-      if (urlStr.includes('/api/integration/check-status')) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              invoice_id: 123456,
-              paid_status: 'PAID',
-              auth_code: 'AUTH-GETPAYIN-TEST',
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -93,7 +104,9 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     await app.init();
 
     const configService = app.get(ConfigService);
-    hashToken = configService.get('GETPAYIN_HASH_TOKEN') || 'sandbox_hash_token_dunas_secret_2026';
+    hashToken =
+      configService.get('GETPAYIN_HASH_TOKEN') ||
+      'sandbox_hash_token_dunas_secret_2026';
 
     paylinkClient = new PaylinkClient({
       publicToken: 'dummy',
@@ -101,7 +114,9 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     });
 
     // Upsert availability slot for testDate
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -131,8 +146,11 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       .send({ email: testUserEmail, password: testUserPassword });
 
     expect(loginRes.status).toBe(200);
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie!.split(';')[0].replace('access_token=', '');
   });
@@ -200,14 +218,14 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     expect(res.status).toBe(201);
     const bookingData = res.body?.data || res.body;
 
-    expect(Number(bookingData.totalAmountUsd)).toBe(5.00);
+    expect(Number(bookingData.totalAmountUsd)).toBe(5.0);
 
     const bookingInDb = await prisma.booking.findUnique({
       where: { id: bookingData.id },
       include: { invoice: true },
     });
-    expect(Number(bookingInDb?.totalAmountUsd)).toBe(5.00);
-    expect(Number(bookingInDb?.invoice?.total)).toBe(5.00);
+    expect(Number(bookingInDb?.totalAmountUsd)).toBe(5.0);
+    expect(Number(bookingInDb?.invoice?.total)).toBe(5.0);
   });
 
   it('2. Gateway amount matching: sends exact server-calculated amount and USD currency to PayLink', async () => {
@@ -245,7 +263,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     const paymentInDb = await prisma.payment.findFirst({
       where: { bookingId },
     });
-    expect(Number(paymentInDb?.amount)).toBe(5.00);
+    expect(Number(paymentInDb?.amount)).toBe(5.0);
     expect(paymentInDb?.currency).toBe('USD');
   });
 
@@ -286,11 +304,14 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed successfully',
-      order_amount: 1.00, // Tampered amount!
+      order_amount: 1.0, // Tampered amount!
       order_currency: 'USD',
-      paid_amount: 1.00,
+      paid_amount: 1.0,
     };
-    fraudPayload.signature = (paylinkClient.webhooks as any).computeSignature(fraudPayload, hashToken);
+    fraudPayload.signature = (paylinkClient.webhooks as any).computeSignature(
+      fraudPayload,
+      hashToken,
+    );
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -301,9 +322,15 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     expect(webhookRes.body.message).toContain('Gateway reported amount');
 
     // Verify DB integrity: Payment and Booking must remain PENDING
-    const paymentAfter = await prisma.payment.findFirst({ where: { bookingId } });
-    const bookingAfter = await prisma.booking.findUnique({ where: { id: bookingId } });
-    const invoiceAfter = await prisma.invoice.findFirst({ where: { bookingId } });
+    const paymentAfter = await prisma.payment.findFirst({
+      where: { bookingId },
+    });
+    const bookingAfter = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+    const invoiceAfter = await prisma.invoice.findFirst({
+      where: { bookingId },
+    });
 
     expect(paymentAfter?.status).toBe('PENDING');
     expect(bookingAfter?.status).toBe('PENDING');
@@ -346,10 +373,12 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed successfully',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'EUR', // Mismatched currency!
     };
-    currMismatchPayload.signature = (paylinkClient.webhooks as any).computeSignature(currMismatchPayload, hashToken);
+    currMismatchPayload.signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(currMismatchPayload, hashToken);
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -395,10 +424,12 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed successfully',
-      order_amount: 5.00,
+      order_amount: 5.0,
       order_currency: 'USD',
     };
-    authenticPayload.signature = (paylinkClient.webhooks as any).computeSignature(authenticPayload, hashToken);
+    authenticPayload.signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(authenticPayload, hashToken);
 
     const webhookRes = await request(app.getHttpServer())
       .post('/api/payments/webhook/getpayin')
@@ -409,14 +440,20 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     expect(webhookData.received).toBe(true);
 
     // Verify all 3 transitions occurred atomically
-    const paymentAfter = await prisma.payment.findFirst({ where: { bookingId } });
-    const bookingAfter = await prisma.booking.findUnique({ where: { id: bookingId } });
-    const invoiceAfter = await prisma.invoice.findFirst({ where: { bookingId } });
+    const paymentAfter = await prisma.payment.findFirst({
+      where: { bookingId },
+    });
+    const bookingAfter = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+    const invoiceAfter = await prisma.invoice.findFirst({
+      where: { bookingId },
+    });
 
     expect(paymentAfter?.status).toBe('CAPTURED');
     expect(paymentAfter?.providerStatus).toBe('PAID');
     expect(bookingAfter?.status).toBe('CONFIRMED');
-    expect(Number(bookingAfter?.paidAmountUsd)).toBe(5.00);
+    expect(Number(bookingAfter?.paidAmountUsd)).toBe(5.0);
     expect(invoiceAfter?.status).toBe('PAID');
   });
 
@@ -472,12 +509,14 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     const bookingData = res.body?.data || res.body;
 
     // $5.00 minus 90% ($4.50) = $0.50
-    expect(Number(bookingData.totalAmountUsd)).toBe(0.50);
+    expect(Number(bookingData.totalAmountUsd)).toBe(0.5);
     expect(bookingData.paymentRequired).toBe(true);
     expect(bookingData.status).toBe('PENDING');
 
     // 6c. If a booking has status CONFIRMED or $0, payment initiation is blocked
-    const user = await prisma.user.findUnique({ where: { email: testUserEmail } });
+    const user = await prisma.user.findUnique({
+      where: { email: testUserEmail },
+    });
     const tour = await prisma.tour.findFirst({ where: { slug: testTourSlug } });
     const zeroRef = `BKG-Z${Date.now().toString().slice(-6)}`;
 

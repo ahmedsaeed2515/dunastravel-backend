@@ -14,7 +14,11 @@ import {
   UpdateTransportationBookingStatusDto,
 } from './dto/transportation-service.dto';
 import { generateReferenceCode } from '../../common/utils';
-import { Prisma, InAppNotificationCategory, InAppNotificationPriority } from '@prisma/client';
+import {
+  Prisma,
+  InAppNotificationCategory,
+  InAppNotificationPriority,
+} from '@prisma/client';
 import { sanitizePlainText } from '../../common/utils/content-sanitizer.util';
 import { CANONICAL_FLEET } from './constants/canonical-fleet.constant';
 import crypto from 'crypto';
@@ -43,44 +47,72 @@ export class TransportationService {
   /**
    * Helper to resolve 5-language localized names, descriptions, features, and media asset URLs.
    */
-  private resolveLocalizedService(service: any, locale = 'en', mediaById?: Map<string, any>) {
-    const jsonb = (service.featuresJsonb && typeof service.featuresJsonb === 'object' && !Array.isArray(service.featuresJsonb))
-      ? service.featuresJsonb
-      : {};
+  private resolveLocalizedService(
+    service: any,
+    locale = 'en',
+    mediaById?: Map<string, any>,
+  ) {
+    const jsonb =
+      service.featuresJsonb &&
+      typeof service.featuresJsonb === 'object' &&
+      !Array.isArray(service.featuresJsonb)
+        ? service.featuresJsonb
+        : {};
 
-    const nameJsonb = jsonb.nameJsonb || service.nameJsonb || {
-      en: service.name,
-      ar: service.name,
-      es: service.name,
-      pt: service.name,
-      it: service.name,
-    };
+    const nameJsonb = jsonb.nameJsonb ||
+      service.nameJsonb || {
+        en: service.name,
+        ar: service.name,
+        es: service.name,
+        pt: service.name,
+        it: service.name,
+      };
 
-    const descriptionJsonb = jsonb.descriptionJsonb || service.descriptionJsonb || {
-      en: service.description || '',
-      ar: service.description || '',
-      es: service.description || '',
-      pt: service.description || '',
-      it: service.description || '',
-    };
+    const descriptionJsonb = jsonb.descriptionJsonb ||
+      service.descriptionJsonb || {
+        en: service.description || '',
+        ar: service.description || '',
+        es: service.description || '',
+        pt: service.description || '',
+        it: service.description || '',
+      };
 
     const rawFeatures = Array.isArray(service.featuresJsonb)
       ? service.featuresJsonb
       : Array.isArray(jsonb.features)
-      ? jsonb.features
-      : Array.isArray(service.features)
-      ? service.features
-      : [];
+        ? jsonb.features
+        : Array.isArray(service.features)
+          ? service.features
+          : [];
 
-    const localizedName = nameJsonb[locale] || nameJsonb.en || nameJsonb.ar || service.name;
-    const localizedDescription = descriptionJsonb[locale] || descriptionJsonb.en || descriptionJsonb.ar || service.description || '';
+    const localizedName =
+      nameJsonb[locale] || nameJsonb.en || nameJsonb.ar || service.name;
+    const localizedDescription =
+      descriptionJsonb[locale] ||
+      descriptionJsonb.en ||
+      descriptionJsonb.ar ||
+      service.description ||
+      '';
 
-    const hero = service.heroMediaId && mediaById ? mediaById.get(service.heroMediaId) : undefined;
-    const resolvedHeroUrl = hero?.secureUrl || hero?.url || service.heroImageUrl || this.getFallbackVehicleImage(service.vehicleCategory);
+    const hero =
+      service.heroMediaId && mediaById
+        ? mediaById.get(service.heroMediaId)
+        : undefined;
+    const resolvedHeroUrl =
+      hero?.secureUrl ||
+      hero?.url ||
+      service.heroImageUrl ||
+      this.getFallbackVehicleImage(service.vehicleCategory);
 
     const rating = service.rating || jsonb.rating || 5.0;
     const reviews = service.reviews || jsonb.reviews || 120;
-    const seats = service.capacity || (service.vehicleCategory === 'private' ? 4 : service.vehicleCategory === 'coaster' ? 24 : 50);
+    const seats =
+      service.capacity ||
+      (service.vehicleCategory === 'private'
+        ? 4
+        : service.vehicleCategory === 'coaster'
+          ? 24
+          : 50);
 
     return {
       ...service,
@@ -91,7 +123,9 @@ export class TransportationService {
       description: localizedDescription,
       descriptionJsonb,
       basePriceUsd: Number(service.basePriceUsd),
-      features: rawFeatures.filter((item: any): item is string => typeof item === 'string'),
+      features: rawFeatures.filter(
+        (item: any): item is string => typeof item === 'string',
+      ),
       featuresJsonb: rawFeatures,
       heroImageUrl: resolvedHeroUrl,
       image: resolvedHeroUrl,
@@ -108,7 +142,13 @@ export class TransportationService {
   private getFallbackVehicleImage(category?: string | null): string {
     const cat = (category || 'bus').toLowerCase();
     if (cat === 'coaster') return '/imgs/transportation/costar.jpeg';
-    if (cat === 'private' || cat === 'transfer' || cat === 'sedan' || cat === 'suv') return '/imgs/transportation/privte.jpeg';
+    if (
+      cat === 'private' ||
+      cat === 'transfer' ||
+      cat === 'sedan' ||
+      cat === 'suv'
+    )
+      return '/imgs/transportation/privte.jpeg';
     return '/imgs/transportation/bus1.jpeg';
   }
 
@@ -188,20 +228,24 @@ export class TransportationService {
     const multiplier = new Prisma.Decimal(1).add(
       new Prisma.Decimal(0.2).mul(dto.passengerCount - 1),
     );
-    const totalAmount = service.basePriceUsd
-      .mul(multiplier)
-      .toDecimalPlaces(2);
+    const totalAmount = service.basePriceUsd.mul(multiplier).toDecimalPlaces(2);
 
     const guestContact = [
-      dto.fullName ? `Name: ${sanitizePlainText(dto.fullName).slice(0, 100)}` : null,
+      dto.fullName
+        ? `Name: ${sanitizePlainText(dto.fullName).slice(0, 100)}`
+        : null,
       dto.email ? `Email: ${sanitizePlainText(dto.email).slice(0, 255)}` : null,
       dto.phone ? `Phone: ${sanitizePlainText(dto.phone).slice(0, 50)}` : null,
-    ].filter(Boolean).join(' | ');
+    ]
+      .filter(Boolean)
+      .join(' | ');
 
     const combinedNotes = [
       guestContact ? `[Contact: ${guestContact}]` : null,
       dto.notes ? sanitizePlainText(dto.notes).slice(0, 2_000) : null,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -220,9 +264,7 @@ export class TransportationService {
             passengerCount: dto.passengerCount,
             luggageCount: dto.luggageCount || 0,
             flightNumber: dto.flightNumber
-              ? sanitizePlainText(dto.flightNumber)
-                  .slice(0, 20)
-                  .toUpperCase()
+              ? sanitizePlainText(dto.flightNumber).slice(0, 20).toUpperCase()
               : null,
             notes: combinedNotes || null,
             totalAmountUsd: totalAmount,
@@ -241,7 +283,10 @@ export class TransportationService {
               entityType: 'TRANSPORTATION_BOOKING',
               entityId: created.referenceCode,
               deepLink: '/admin/transportation',
-              metadata: { referenceCode: created.referenceCode, totalAmount: created.totalAmountUsd },
+              metadata: {
+                referenceCode: created.referenceCode,
+                totalAmount: created.totalAmountUsd,
+              },
             });
 
             if (userId) {
@@ -306,7 +351,10 @@ export class TransportationService {
           orderBy: { createdAt: 'desc' },
         });
       } catch (err) {
-        this.logger.warn('Auto-seed transportation fleet failed, using in-memory canonical fleet', err);
+        this.logger.warn(
+          'Auto-seed transportation fleet failed, using in-memory canonical fleet',
+          err,
+        );
         return CANONICAL_FLEET.filter((v) => v.isActive).map((v) => ({
           ...v,
           basePriceUsd: v.basePriceUsd,
@@ -321,7 +369,9 @@ export class TransportationService {
       }
     }
 
-    const mediaIds = services.flatMap((service) => (service.heroMediaId ? [service.heroMediaId] : []));
+    const mediaIds = services.flatMap((service) =>
+      service.heroMediaId ? [service.heroMediaId] : [],
+    );
     const media = mediaIds.length
       ? await this.prisma.mediaAsset.findMany({
           where: { id: { in: mediaIds }, deletedAt: null },
@@ -330,7 +380,9 @@ export class TransportationService {
       : [];
     const mediaById = new Map(media.map((asset) => [asset.id, asset]));
 
-    return services.map((service) => this.resolveLocalizedService(service, locale, mediaById));
+    return services.map((service) =>
+      this.resolveLocalizedService(service, locale, mediaById),
+    );
   }
 
   async findOnePublic(id: string, locale = 'en') {
@@ -354,7 +406,15 @@ export class TransportationService {
   // ADMIN FLEET CRUD & LIFECYCLE
   // ------------------------------------------------------
   async findAllAdmin(query: QueryTransportationServiceDto) {
-    const { page = 1, limit = 50, search, category, serviceType, status, locale = 'en' } = query;
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      category,
+      serviceType,
+      status,
+      locale = 'en',
+    } = query;
     const skip = (Math.max(1, page) - 1) * Math.max(1, limit);
 
     const where: Prisma.TransportationServiceWhereInput = {};
@@ -392,7 +452,13 @@ export class TransportationService {
       }),
     ]);
 
-    if (total === 0 && (!search && !category && !serviceType && (!status || status === 'ALL'))) {
+    if (
+      total === 0 &&
+      !search &&
+      !category &&
+      !serviceType &&
+      (!status || status === 'ALL')
+    ) {
       try {
         await this.autoSeedCanonicalFleet();
         [total, services] = await Promise.all([
@@ -405,11 +471,16 @@ export class TransportationService {
           }),
         ]);
       } catch (e) {
-        this.logger.warn('Failed to seed canonical fleet during admin list:', e);
+        this.logger.warn(
+          'Failed to seed canonical fleet during admin list:',
+          e,
+        );
       }
     }
 
-    const mediaIds = services.flatMap((s) => (s.heroMediaId ? [s.heroMediaId] : []));
+    const mediaIds = services.flatMap((s) =>
+      s.heroMediaId ? [s.heroMediaId] : [],
+    );
     const media = mediaIds.length
       ? await this.prisma.mediaAsset.findMany({
           where: { id: { in: mediaIds }, deletedAt: null },
@@ -418,7 +489,9 @@ export class TransportationService {
       : [];
     const mediaById = new Map(media.map((a) => [a.id, a]));
 
-    const items = services.map((service) => this.resolveLocalizedService(service, locale, mediaById));
+    const items = services.map((service) =>
+      this.resolveLocalizedService(service, locale, mediaById),
+    );
 
     return {
       data: items,
@@ -440,7 +513,9 @@ export class TransportationService {
       },
     });
     if (!service) {
-      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation service with ID "${id}" was not found.`,
+      );
     }
     const media = service.heroMediaId
       ? await this.prisma.mediaAsset.findUnique({
@@ -453,7 +528,8 @@ export class TransportationService {
   }
 
   async createAdmin(dto: CreateTransportationServiceDto) {
-    const primaryName = dto.name || dto.nameAr || dto.nameEn || 'New Vehicle Service';
+    const primaryName =
+      dto.name || dto.nameAr || dto.nameEn || 'New Vehicle Service';
     const nameJsonb = dto.nameJsonb || {
       ar: dto.nameAr || primaryName,
       en: dto.nameEn || primaryName,
@@ -470,7 +546,11 @@ export class TransportationService {
       it: dto.description || '',
     };
 
-    const featuresList = Array.isArray(dto.features) ? dto.features : Array.isArray(dto.featuresJsonb) ? dto.featuresJsonb : [];
+    const featuresList = Array.isArray(dto.features)
+      ? dto.features
+      : Array.isArray(dto.featuresJsonb)
+        ? dto.featuresJsonb
+        : [];
 
     const combinedFeaturesJsonb = {
       features: featuresList,
@@ -494,11 +574,13 @@ export class TransportationService {
             ? dto.basePriceUsd
             : 150,
         ),
-        heroImageUrl: dto.heroImageUrl || this.getFallbackVehicleImage(dto.vehicleCategory),
+        heroImageUrl:
+          dto.heroImageUrl || this.getFallbackVehicleImage(dto.vehicleCategory),
         heroMediaId: dto.heroMediaId || null,
         isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : false,
         isActive: dto.isActive !== undefined ? Boolean(dto.isActive) : true,
-        description: dto.description || descriptionJsonb.en || descriptionJsonb.ar || '',
+        description:
+          dto.description || descriptionJsonb.en || descriptionJsonb.ar || '',
         pickupInstructions: dto.pickupInstructions || null,
         dropoffInstructions: dto.dropoffInstructions || null,
         featuresJsonb: combinedFeaturesJsonb,
@@ -513,18 +595,23 @@ export class TransportationService {
       where: { id },
     });
     if (!existing) {
-      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation service with ID "${id}" was not found.`,
+      );
     }
 
-    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
-      ? (existing.featuresJsonb as Record<string, any>)
-      : {};
+    const prevJsonb: Record<string, any> =
+      existing.featuresJsonb &&
+      typeof existing.featuresJsonb === 'object' &&
+      !Array.isArray(existing.featuresJsonb)
+        ? (existing.featuresJsonb as Record<string, any>)
+        : {};
 
     const nameJsonb: Record<string, any> = {
       ...(prevJsonb.nameJsonb || {}),
       ...(dto.nameJsonb || {}),
-      ar: dto.nameAr || dto.name || (prevJsonb.nameJsonb as any)?.ar || existing.name,
-      en: dto.nameEn || dto.name || (prevJsonb.nameJsonb as any)?.en || existing.name,
+      ar: dto.nameAr || dto.name || prevJsonb.nameJsonb?.ar || existing.name,
+      en: dto.nameEn || dto.name || prevJsonb.nameJsonb?.en || existing.name,
     };
     if (dto.nameAr) nameJsonb.ar = dto.nameAr;
     if (dto.nameEn) nameJsonb.en = dto.nameEn;
@@ -532,47 +619,93 @@ export class TransportationService {
     const descriptionJsonb: Record<string, any> = {
       ...(prevJsonb.descriptionJsonb || {}),
       ...(dto.descriptionJsonb || {}),
-      ar: dto.description || (prevJsonb.descriptionJsonb as any)?.ar || existing.description || '',
-      en: dto.description || (prevJsonb.descriptionJsonb as any)?.en || existing.description || '',
+      ar:
+        dto.description ||
+        prevJsonb.descriptionJsonb?.ar ||
+        existing.description ||
+        '',
+      en:
+        dto.description ||
+        prevJsonb.descriptionJsonb?.en ||
+        existing.description ||
+        '',
     };
 
-    const featuresList = dto.features !== undefined
-      ? dto.features
-      : Array.isArray(prevJsonb.features)
-      ? prevJsonb.features
-      : Array.isArray(existing.featuresJsonb)
-      ? existing.featuresJsonb
-      : [];
+    const featuresList =
+      dto.features !== undefined
+        ? dto.features
+        : Array.isArray(prevJsonb.features)
+          ? prevJsonb.features
+          : Array.isArray(existing.featuresJsonb)
+            ? existing.featuresJsonb
+            : [];
 
     const updatedFeaturesJsonb = {
       ...prevJsonb,
       features: featuresList,
       nameJsonb,
       descriptionJsonb,
-      heroImageUrl: dto.heroImageUrl !== undefined ? dto.heroImageUrl : existing.heroImageUrl,
+      heroImageUrl:
+        dto.heroImageUrl !== undefined
+          ? dto.heroImageUrl
+          : existing.heroImageUrl,
     };
 
     const updated = await this.prisma.transportationService.update({
       where: { id },
       data: {
         name: dto.name || dto.nameEn || dto.nameAr || existing.name,
-        serviceType: dto.serviceType !== undefined ? dto.serviceType : existing.serviceType,
-        vehicleCategory: dto.vehicleCategory !== undefined ? dto.vehicleCategory : existing.vehicleCategory,
-        vehicleType: dto.vehicleType !== undefined ? dto.vehicleType : existing.vehicleType,
-        capacity: dto.capacity !== undefined ? Number(dto.capacity) : existing.capacity,
+        serviceType:
+          dto.serviceType !== undefined
+            ? dto.serviceType
+            : existing.serviceType,
+        vehicleCategory:
+          dto.vehicleCategory !== undefined
+            ? dto.vehicleCategory
+            : existing.vehicleCategory,
+        vehicleType:
+          dto.vehicleType !== undefined
+            ? dto.vehicleType
+            : existing.vehicleType,
+        capacity:
+          dto.capacity !== undefined ? Number(dto.capacity) : existing.capacity,
         doors: dto.doors !== undefined ? Number(dto.doors) : existing.doors,
-        transmission: dto.transmission !== undefined ? dto.transmission : existing.transmission,
+        transmission:
+          dto.transmission !== undefined
+            ? dto.transmission
+            : existing.transmission,
         basePriceUsd:
           dto.basePriceUsd !== undefined && dto.basePriceUsd !== null
             ? new Prisma.Decimal(dto.basePriceUsd)
             : existing.basePriceUsd,
-        heroImageUrl: dto.heroImageUrl !== undefined ? dto.heroImageUrl : existing.heroImageUrl,
-        heroMediaId: dto.heroMediaId !== undefined ? dto.heroMediaId : existing.heroMediaId,
-        isPrivate: dto.isPrivate !== undefined ? Boolean(dto.isPrivate) : existing.isPrivate,
-        isActive: dto.isActive !== undefined ? Boolean(dto.isActive) : existing.isActive,
-        description: dto.description !== undefined ? dto.description : existing.description,
-        pickupInstructions: dto.pickupInstructions !== undefined ? dto.pickupInstructions : existing.pickupInstructions,
-        dropoffInstructions: dto.dropoffInstructions !== undefined ? dto.dropoffInstructions : existing.dropoffInstructions,
+        heroImageUrl:
+          dto.heroImageUrl !== undefined
+            ? dto.heroImageUrl
+            : existing.heroImageUrl,
+        heroMediaId:
+          dto.heroMediaId !== undefined
+            ? dto.heroMediaId
+            : existing.heroMediaId,
+        isPrivate:
+          dto.isPrivate !== undefined
+            ? Boolean(dto.isPrivate)
+            : existing.isPrivate,
+        isActive:
+          dto.isActive !== undefined
+            ? Boolean(dto.isActive)
+            : existing.isActive,
+        description:
+          dto.description !== undefined
+            ? dto.description
+            : existing.description,
+        pickupInstructions:
+          dto.pickupInstructions !== undefined
+            ? dto.pickupInstructions
+            : existing.pickupInstructions,
+        dropoffInstructions:
+          dto.dropoffInstructions !== undefined
+            ? dto.dropoffInstructions
+            : existing.dropoffInstructions,
         featuresJsonb: updatedFeaturesJsonb,
       },
     });
@@ -586,7 +719,9 @@ export class TransportationService {
       include: { bookings: { take: 1 } },
     });
     if (!existing) {
-      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation service with ID "${id}" was not found.`,
+      );
     }
 
     if (existing.bookings.length > 0) {
@@ -596,20 +731,29 @@ export class TransportationService {
         data: {
           isActive: false,
           featuresJsonb: {
-            ...(typeof existing.featuresJsonb === 'object' ? (existing.featuresJsonb as object) : {}),
+            ...(typeof existing.featuresJsonb === 'object'
+              ? (existing.featuresJsonb as object)
+              : {}),
             isArchived: true,
             deletedAt: new Date().toISOString(),
           },
         },
       });
-      return { success: true, message: 'Transportation service archived due to existing customer bookings.' };
+      return {
+        success: true,
+        message:
+          'Transportation service archived due to existing customer bookings.',
+      };
     }
 
     await this.prisma.transportationService.delete({
       where: { id },
     });
 
-    return { success: true, message: 'Transportation service deleted permanently.' };
+    return {
+      success: true,
+      message: 'Transportation service deleted permanently.',
+    };
   }
 
   async archiveAdmin(id: string) {
@@ -617,12 +761,17 @@ export class TransportationService {
       where: { id },
     });
     if (!existing) {
-      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation service with ID "${id}" was not found.`,
+      );
     }
 
-    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
-      ? (existing.featuresJsonb as Record<string, any>)
-      : {};
+    const prevJsonb: Record<string, any> =
+      existing.featuresJsonb &&
+      typeof existing.featuresJsonb === 'object' &&
+      !Array.isArray(existing.featuresJsonb)
+        ? (existing.featuresJsonb as Record<string, any>)
+        : {};
 
     const updated = await this.prisma.transportationService.update({
       where: { id },
@@ -644,12 +793,17 @@ export class TransportationService {
       where: { id },
     });
     if (!existing) {
-      throw new NotFoundException(`Transportation service with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation service with ID "${id}" was not found.`,
+      );
     }
 
-    const prevJsonb: Record<string, any> = (existing.featuresJsonb && typeof existing.featuresJsonb === 'object' && !Array.isArray(existing.featuresJsonb))
-      ? (existing.featuresJsonb as Record<string, any>)
-      : {};
+    const prevJsonb: Record<string, any> =
+      existing.featuresJsonb &&
+      typeof existing.featuresJsonb === 'object' &&
+      !Array.isArray(existing.featuresJsonb)
+        ? (existing.featuresJsonb as Record<string, any>)
+        : {};
 
     const updated = await this.prisma.transportationService.update({
       where: { id },
@@ -689,19 +843,25 @@ export class TransportationService {
     return bookings.map((b) => this.toSafeBooking(b));
   }
 
-  async updateBookingStatusAdmin(id: string, dto: UpdateTransportationBookingStatusDto) {
+  async updateBookingStatusAdmin(
+    id: string,
+    dto: UpdateTransportationBookingStatusDto,
+  ) {
     const existing = await this.prisma.transportationBooking.findUnique({
       where: { id },
     });
     if (!existing) {
-      throw new NotFoundException(`Transportation booking with ID "${id}" was not found.`);
+      throw new NotFoundException(
+        `Transportation booking with ID "${id}" was not found.`,
+      );
     }
 
     const updated = await this.prisma.transportationBooking.update({
       where: { id },
       data: {
         status: dto.status,
-        driverName: dto.driverName !== undefined ? dto.driverName : existing.driverName,
+        driverName:
+          dto.driverName !== undefined ? dto.driverName : existing.driverName,
         notes: dto.notes !== undefined ? dto.notes : existing.notes,
       },
       include: {
@@ -749,4 +909,3 @@ export class TransportationService {
     return bookings.map((booking) => this.toSafeBooking(booking));
   }
 }
-

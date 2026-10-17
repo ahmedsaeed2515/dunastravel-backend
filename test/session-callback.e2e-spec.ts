@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
@@ -29,50 +33,57 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
-      const urlStr = String(url);
+    fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (url, init) => {
+        const urlStr = String(url);
 
-      if (urlStr.includes('/api/v2/integration/init')) {
-        const freshInvoiceId = Math.floor(600000 + Math.random() * 300000);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
-              invoice_id: freshInvoiceId,
-              expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-
-      if (urlStr.includes('check-status')) {
-        let invoiceId = 700000;
-        try {
-          const body = JSON.parse(String(init?.body));
-          if (body.invoice_id) invoiceId = Number(body.invoice_id);
-        } catch {
-          // ignore
+        if (urlStr.includes('/api/v2/integration/init')) {
+          const freshInvoiceId = Math.floor(600000 + Math.random() * 300000);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                checkout_url: `https://pay.getpayin.com/integration/checkout?invoice_id=${freshInvoiceId}`,
+                invoice_id: freshInvoiceId,
+                expires_at: new Date(
+                  Date.now() + 24 * 3600 * 1000,
+                ).toISOString(),
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
         }
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              invoice_id: invoiceId,
-              paid_status: 'PAID',
-              auth_code: '831000',
-            },
-          }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
 
-      return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
+        if (urlStr.includes('check-status')) {
+          let invoiceId = 700000;
+          try {
+            const body = JSON.parse(String(init?.body));
+            if (body.invoice_id) invoiceId = Number(body.invoice_id);
+          } catch {
+            // ignore
+          }
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                invoice_id: invoiceId,
+                paid_status: 'PAID',
+                auth_code: '831000',
+              },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: false, message: 'Not found' }),
+          {
+            status: 404,
+            headers: { 'content-type': 'application/json' },
+          },
+        );
       });
-    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -95,7 +106,9 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
 
     prisma = app.get(PrismaService);
     const configService = app.get(ConfigService);
-    hashToken = configService.get<string>('GETPAYIN_HASH_TOKEN') || 'sandbox_hash_token_dunas_secret_2026';
+    hashToken =
+      configService.get<string>('GETPAYIN_HASH_TOKEN') ||
+      'sandbox_hash_token_dunas_secret_2026';
 
     paylinkClient = new PaylinkClient({
       publicToken: 'dummy',
@@ -103,7 +116,9 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
     });
 
     // Lookup tour and upsert availability slot
-    const tour = await prisma.tour.findUnique({ where: { slug: testTourSlug } });
+    const tour = await prisma.tour.findUnique({
+      where: { slug: testTourSlug },
+    });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -131,11 +146,14 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: testUserEmail, password: testUserPassword });
-    const cookies = loginRes.headers['set-cookie'] as unknown as string[] | undefined;
-    const accessTokenCookie = cookies?.find((c) => c.startsWith('access_token='));
+    const cookies = loginRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
+    const accessTokenCookie = cookies?.find((c) =>
+      c.startsWith('access_token='),
+    );
     accessToken = accessTokenCookie
       ? accessTokenCookie.split(';')[0].replace('access_token=', '')
-      : (loginRes.body?.data?.accessToken || loginRes.body?.accessToken);
+      : loginRes.body?.data?.accessToken || loginRes.body?.accessToken;
   });
 
   afterAll(async () => {
@@ -199,7 +217,9 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
   it('2. Verified PayLink Callback: reconciles return even if user JWT expired completely', async () => {
     const bookingId = crypto.randomUUID();
     const referenceCode = `DUNAS-CB-${Date.now().toString().slice(-6)}`;
-    const providerInvoiceId = String(Math.floor(700000 + Math.random() * 200000));
+    const providerInvoiceId = String(
+      Math.floor(700000 + Math.random() * 200000),
+    );
 
     // Create a dummy pending payment record directly
     await prisma.booking.create({
@@ -210,8 +230,8 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
         arrivalDate: new Date(testDate),
         status: 'PENDING',
         adults: 1,
-        totalAmountUsd: 10.00,
-        paidAmountUsd: 0.00,
+        totalAmountUsd: 10.0,
+        paidAmountUsd: 0.0,
       },
     });
 
@@ -224,7 +244,7 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
         providerPaymentId: providerInvoiceId,
         transactionId: providerInvoiceId,
         method: 'GETPAYIN',
-        amount: 10.00,
+        amount: 10.0,
         currency: 'USD',
         status: 'PENDING',
         providerStatus: 'PENDING',
@@ -238,7 +258,9 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
       invoice_status: 'PAID',
       message: 'Payment completed successfully',
     };
-    callbackPayload.signature = (paylinkClient.webhooks as any).computeSignature(callbackPayload, hashToken);
+    callbackPayload.signature = (
+      paylinkClient.webhooks as any
+    ).computeSignature(callbackPayload, hashToken);
 
     // Request made WITHOUT any Authorization header (session expired)
     const callbackRes = await request(app.getHttpServer())
