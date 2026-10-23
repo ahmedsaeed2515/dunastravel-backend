@@ -176,7 +176,7 @@ describe('HotelsService', () => {
     await service.unarchiveAdmin(hotel.id);
     expect(prisma.hotel.update).toHaveBeenCalledWith({
       where: { id: hotel.id },
-      data: { status: 'DRAFT', isActive: false },
+      data: { status: 'PUBLISHED', isActive: true },
     });
 
     await service.softDeleteAdmin(hotel.id);

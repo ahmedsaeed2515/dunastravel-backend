@@ -308,6 +308,17 @@ export class HotelsService {
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+
+    // Public visibility is defined by status === 'PUBLISHED' AND isActive === true.
+    // The dashboard only exposes an Active/Archived toggle, so saving a hotel
+    // explicitly as PUBLISHED (while leaving isActive untouched) must not silently
+    // keep the record hidden from the public API. Archiving always wins.
+    if (data.status === 'PUBLISHED' && data.isActive === undefined) {
+      data.isActive = true;
+    }
+    if (data.status === 'ARCHIVED') {
+      data.isActive = false;
+    }
     if (dto.isGlobal !== undefined) {
       data.isGlobal = dto.isGlobal;
     } else if (!existingAmenities) {
@@ -315,6 +326,70 @@ export class HotelsService {
     }
     if (dto.tourId !== undefined) data.tourId = dto.tourId || null;
     return data as Prisma.HotelUncheckedCreateInput;
+  }
+
+  /**
+   * A hotel can only be publicly visible when it is PUBLISHED + active AND has at
+   * least one active room holding real inventory. The dashboard uses a single
+   * Active/Archived toggle, so saving a hotel while its rooms are still in draft
+   * would otherwise leave visitors looking at a "published" page with no bookable
+   * rooms. When the rules are not met we transparently demote the record to draft
+   * so what the admin sees matches what the public API serves.
+   */
+  private async withRoomDerivedStatus<T extends Record<string, unknown>>(
+    tx: any,
+    data: T,
+    hotelId: string,
+    existingRooms: Array<any>,
+    options?: {
+      keptRoomIds?: Set<string>;
+      pendingRooms?: Array<Record<string, unknown>>;
+    },
+  ): Promise<T> {
+    if (data.status !== 'PUBLISHED') return data;
+    if (!tx?.hotelRoom?.findFirst) return data;
+
+    try {
+      const activeRoom = await tx.hotelRoom.findFirst({
+        where: {
+          hotelId,
+          deletedAt: null,
+          isActive: true,
+          inventory: { gt: 0 },
+        },
+        select: { id: true },
+      });
+      if (activeRoom) return data;
+
+      // No bookable room in the database. Check whether the incoming payload adds
+      // one (rooms are written separately inside the same transaction).
+      const pendingRooms = options?.pendingRooms;
+      if (Array.isArray(pendingRooms) && pendingRooms.length > 0) {
+        const payloadHasBookableRoom = pendingRooms.some(
+          (room: any) =>
+            room?.isActive !== false && Number(room?.inventory) > 0,
+        );
+        return payloadHasBookableRoom
+          ? data
+          : { ...data, status: 'DRAFT', isActive: false };
+      }
+
+      // Kept rooms may still be updated later inside the transaction; if the update
+      // payload marks any of them active with stock, publishing is legitimate.
+      if (options?.keptRoomIds && options.keptRoomIds.size > 0) return data;
+
+      const hasLiveRooms = existingRooms.some((room) => !room.deletedAt);
+      if (hasLiveRooms) {
+        // Rooms exist but none are bookable yet: keep the hotel as a draft.
+        return { ...data, status: 'DRAFT', isActive: false };
+      }
+
+      // Hotel has never had rooms configured: allow publishing (rooms added later).
+      return data;
+    } catch {
+      // Never block a save because of the consistency probe.
+      return data;
+    }
   }
 
   private async heroUrls(hotels: Array<any>) {
@@ -373,6 +448,68 @@ export class HotelsService {
     }
 
     return { mediaMap, galleryByHotelId };
+  }
+
+  /**
+   * Resolve the hotel photo gallery.
+   *
+   * A gallery configured from the dashboard is persisted in
+   * `amenitiesJsonb.images`. When that key exists it is authoritative — even when
+   * it is an empty array, so that removing every photo actually clears the public
+   * gallery. Hotels that never had a gallery configured keep falling back to the
+   * media-library assets linked to them (legacy behaviour).
+   */
+  private resolveHotelGallery(
+    hotel: { id: string; amenitiesJsonb?: unknown },
+    galleryByHotelId: Map<
+      string,
+      Array<{ id: string; url: string; altText: string | null }>
+    >,
+  ): Array<{
+    id?: string;
+    url: string;
+    altText?: string | null;
+    sortOrder?: number;
+  }> {
+    const configured = (hotel.amenitiesJsonb as any)?.images;
+    if (Array.isArray(configured)) {
+      return configured
+        .map((image: any) => {
+          if (typeof image === 'string') {
+            const url = image.trim();
+            return url ? { url } : null;
+          }
+          if (
+            image &&
+            typeof image === 'object' &&
+            typeof image.url === 'string' &&
+            image.url.trim()
+          ) {
+            return { ...image, url: image.url.trim() };
+          }
+          return null;
+        })
+        .filter(
+          (
+            image,
+          ): image is {
+            id?: string;
+            url: string;
+            altText?: string | null;
+            sortOrder?: number;
+          } => Boolean(image),
+        );
+    }
+    return galleryByHotelId.get(hotel.id) || [];
+  }
+
+  /** The hero is derived from the first gallery photo, which may be a string or an object. */
+  private firstGalleryUrl(gallery: Array<unknown>): string | null {
+    const first = gallery[0];
+    if (!first) return null;
+    if (typeof first === 'string') return first.trim() || null;
+    const url = (first as { url?: unknown }).url;
+    return typeof url === 'string' && url.trim() ? url.trim() : null;
   }
 
   private roomView(room: {
@@ -485,12 +622,11 @@ export class HotelsService {
         ? mediaMap.get(hotel.heroMediaId)
         : undefined;
       const directHeroUrl = hotel.amenitiesJsonb?.heroImageUrl || null;
-      const hotelGallery =
-        galleryByHotelId.get(hotel.id) || hotel.amenitiesJsonb?.images || [];
+      const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
       const resolvedHeroUrl =
         hero?.url ||
         directHeroUrl ||
-        hotelGallery[0]?.url ||
+        this.firstGalleryUrl(hotelGallery) ||
         this.getFallbackHotelImage(
           hotel.destinationSlug,
           hotel.city,
@@ -639,14 +775,11 @@ export class HotelsService {
         ? mediaMap.get(hotel.heroMediaId)
         : undefined;
       const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-      const hotelGallery =
-        galleryByHotelId.get(hotel.id) ||
-        (hotel.amenitiesJsonb as any)?.images ||
-        [];
+      const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
       const resolvedHeroUrl =
         hero?.url ||
         directHeroUrl ||
-        hotelGallery[0]?.url ||
+        this.firstGalleryUrl(hotelGallery) ||
         this.getFallbackHotelImage(
           hotel.destinationSlug,
           hotel.city,
@@ -686,14 +819,11 @@ export class HotelsService {
       ? mediaMap.get(hotel.heroMediaId)
       : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-    const hotelGallery =
-      galleryByHotelId.get(hotel.id) ||
-      (hotel.amenitiesJsonb as any)?.images ||
-      [];
+    const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
     const resolvedHeroUrl =
       hero?.url ||
       directHeroUrl ||
-      hotelGallery[0]?.url ||
+      this.firstGalleryUrl(hotelGallery) ||
       this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
     return {
@@ -809,9 +939,22 @@ export class HotelsService {
             });
           }
 
+          const resolvedData = await this.withRoomDerivedStatus(
+            tx,
+            data,
+            id,
+            existingHotel.rooms || [],
+            {
+              keptRoomIds,
+              pendingRooms: dto.rooms as unknown as Array<
+                Record<string, unknown>
+              >,
+            },
+          );
+
           return tx.hotel.update({
             where: { id },
-            data,
+            data: resolvedData,
             include: {
               rooms: {
                 where: { deletedAt: null },
@@ -827,10 +970,20 @@ export class HotelsService {
         });
       }
 
+      const resolvedData = await this.withRoomDerivedStatus(
+        tx,
+        data,
+        id,
+        existingHotel.rooms || [],
+        {
+          pendingRooms: dto.rooms as unknown as Array<Record<string, unknown>>,
+        },
+      );
+
       return tx.hotel.update({
         where: { id },
         data: {
-          ...data,
+          ...resolvedData,
           ...(dto.rooms !== undefined
             ? {
                 rooms: {
@@ -984,7 +1137,8 @@ export class HotelsService {
     const publishableRoom = hotel.rooms.some(
       (room) => room.isActive && room.inventory > 0 && room.ratePerNight >= 0,
     );
-    if (!publishableRoom) {
+    const hasAnyRoom = hotel.rooms.length > 0;
+    if (!publishableRoom && hasAnyRoom) {
       throw new BadRequestException(
         'A published hotel requires at least one active room with inventory',
       );
@@ -997,6 +1151,8 @@ export class HotelsService {
 
   async unpublishAdmin(id: string) {
     await this.findOneAdmin(id);
+    // Demote to draft without touching room state, so the admin can later re-enable
+    // "Active & Bookable" from the hotel editor and get published again.
     return this.prisma.hotel.update({
       where: { id },
       data: { status: 'DRAFT', isActive: false },
@@ -1013,9 +1169,12 @@ export class HotelsService {
 
   async unarchiveAdmin(id: string) {
     await this.findOneAdmin(id);
+    // Unarchiving restores the hotel to the public catalog (mirrors the dashboard
+    // "restored and active" toast), while keeping the hotel record consistent with
+    // the publish rules.
     return this.prisma.hotel.update({
       where: { id },
-      data: { status: 'DRAFT', isActive: false },
+      data: { status: 'PUBLISHED', isActive: true },
     });
   }
 
@@ -1068,14 +1227,11 @@ export class HotelsService {
       ? mediaMap.get(hotel.heroMediaId)
       : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
-    const hotelGallery =
-      galleryByHotelId.get(hotel.id) ||
-      (hotel.amenitiesJsonb as any)?.images ||
-      [];
+    const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
     const resolvedHeroUrl =
       hero?.url ||
       directHeroUrl ||
-      hotelGallery[0]?.url ||
+      this.firstGalleryUrl(hotelGallery) ||
       this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
     return {
