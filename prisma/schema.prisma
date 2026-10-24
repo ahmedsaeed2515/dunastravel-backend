@@ -1105,6 +1105,8 @@ model HotelRoom {
   descriptionJsonb   Json?               @map("description_jsonb")
   ratePerNight       Decimal             @map("rate_per_night") @db.Decimal(10, 2)
   currency           String              @default("USD") @db.VarChar(10)
+  priceDisplayMode   String              @default("PRICE") @map("price_display_mode") @db.VarChar(20)
+  priceLabelJsonb    Json?               @map("price_label_jsonb")
   mealPlanJsonb      Json?               @map("meal_plan_jsonb")
   maxOccupancy       Int                 @map("max_occupancy")
   inventory          Int                 @default(0)

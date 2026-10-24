@@ -148,6 +148,108 @@ describe('HotelsService', () => {
     expect(res[0].heroImageAlt).toBe('Luxury Facade');
   });
 
+  it('prefers a direct hero URL over a stale linked media asset', async () => {
+    const hotelWithDirectHero = {
+      ...hotel,
+      heroMediaId: 'media-asset-uuid-1',
+      amenitiesJsonb: {
+        heroImageUrl: 'https://cdn.example.com/new-cover.jpg',
+      },
+    };
+
+    const prisma = {
+      hotel: { findMany: jest.fn().mockResolvedValue([hotelWithDirectHero]) },
+      mediaAsset: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'media-asset-uuid-1',
+            secureUrl: 'https://res.cloudinary.com/demo/stale.webp',
+            url: 'http://demo/stale.webp',
+            altText: 'Stale cover',
+          },
+        ]),
+      },
+    };
+    const service = new HotelsService(prisma as never);
+
+    const res = await service.findAllPublic('en');
+    expect(res[0].heroImageUrl).toBe('https://cdn.example.com/new-cover.jpg');
+  });
+
+  it('falls back to linked media when amenities.images is corrupted with nested empty arrays', async () => {
+    const hotelWithCorruptedGallery = {
+      ...hotel,
+      amenitiesJsonb: { images: [[]] },
+    };
+
+    const prisma = {
+      hotel: {
+        findMany: jest.fn().mockResolvedValue([hotelWithCorruptedGallery]),
+      },
+      mediaAsset: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'asset-1',
+            entityId: hotel.id,
+            secureUrl: 'https://cdn.example.com/gallery-1.jpg',
+            url: 'http://cdn/gallery-1.jpg',
+            altText: null,
+          },
+        ]),
+      },
+    };
+    const service = new HotelsService(prisma as never);
+
+    const res = await service.findAllPublic('en');
+    expect(res[0].images).toEqual([
+      {
+        id: 'asset-1',
+        url: 'https://cdn.example.com/gallery-1.jpg',
+        altText: null,
+      },
+    ]);
+  });
+
+  it('exposes the room price display mode and localized custom label on the public API', async () => {
+    const hotelWithRoomPricing = {
+      ...hotel,
+      rooms: [
+        {
+          id: 'room-1',
+          slug: 'royal-suite',
+          nameJsonb: { en: 'Royal Suite', ar: 'جناح ملكي' },
+          descriptionJsonb: null,
+          ratePerNight: 250,
+          currency: 'USD',
+          priceDisplayMode: 'CUSTOM_LABEL',
+          priceLabelJsonb: { en: 'Price on request', ar: 'السعر عند الطلب' },
+          mealPlanJsonb: null,
+          maxOccupancy: 2,
+          inventory: 3,
+          isActive: true,
+          seasonPricings: [],
+        },
+      ],
+    };
+
+    const prisma = {
+      hotel: { findMany: jest.fn().mockResolvedValue([hotelWithRoomPricing]) },
+      mediaAsset: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = new HotelsService(prisma as never);
+
+    const [en] = await service.findAllPublic('en');
+    expect(en.rooms[0]).toMatchObject({
+      slug: 'royal-suite',
+      priceDisplayMode: 'CUSTOM_LABEL',
+      priceLabel: 'Price on request',
+      priceLabelJsonb: { en: 'Price on request', ar: 'السعر عند الطلب' },
+    });
+
+    const [ar] = await service.findAllPublic('ar');
+    expect(ar.rooms[0].priceLabel).toBe('السعر عند الطلب');
+  });
+
   it('handles archive, unarchive, and soft delete lifecycle transitions', async () => {
     const prisma = {
       hotel: {

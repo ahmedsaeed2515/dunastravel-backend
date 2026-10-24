@@ -141,6 +141,15 @@ export class HotelRoomDto {
   currency?: string;
 
   @IsOptional()
+  @IsString()
+  @IsIn(['PRICE', 'HIDDEN', 'CUSTOM_LABEL'])
+  priceDisplayMode?: string;
+
+  @IsOptional()
+  @IsObject()
+  priceLabelJsonb?: Record<string, any>;
+
+  @IsOptional()
   @IsObject()
   mealPlanJsonb?: Record<string, string>;
 

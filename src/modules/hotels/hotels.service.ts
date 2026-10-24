@@ -106,6 +106,29 @@ export class HotelsService {
     return Array.from(bySeasonId.values());
   }
 
+  private normalizePriceDisplayMode(value?: string): string {
+    const mode = (value || '').trim().toUpperCase();
+    return ['PRICE', 'HIDDEN', 'CUSTOM_LABEL'].includes(mode) ? mode : 'PRICE';
+  }
+
+  private roomPriceLabel(
+    value?: Record<string, unknown> | null,
+  ): Prisma.InputJsonValue | Prisma.NullTypes.DbNull {
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      return Prisma.DbNull;
+    const entries = Object.entries(value).filter(
+      ([locale, text]) =>
+        SUPPORTED_LOCALES.includes(locale) && typeof text === 'string',
+    );
+    if (entries.length === 0) return Prisma.DbNull;
+    return Object.fromEntries(
+      entries.map(([locale, text]) => [
+        locale,
+        sanitizePlainText(text as string).slice(0, 120),
+      ]),
+    );
+  }
+
   private roomData(room: HotelRoomDto, currency: string) {
     const resolvedCurrency = room.currency ?? currency;
     const dedupedSeasonPricings = this.deduplicateSeasonPricings(
@@ -129,6 +152,16 @@ export class HotelsService {
         : undefined,
       ratePerNight: room.ratePerNight,
       currency: resolvedCurrency,
+      ...(room.priceDisplayMode !== undefined
+        ? {
+            priceDisplayMode: this.normalizePriceDisplayMode(
+              room.priceDisplayMode,
+            ),
+          }
+        : {}),
+      ...(room.priceLabelJsonb !== undefined
+        ? { priceLabelJsonb: this.roomPriceLabel(room.priceLabelJsonb) }
+        : {}),
       mealPlanJsonb: room.mealPlanJsonb
         ? typeof room.mealPlanJsonb === 'object' &&
           !Array.isArray(room.mealPlanJsonb)
@@ -473,7 +506,10 @@ export class HotelsService {
   }> {
     const configured = (hotel.amenitiesJsonb as any)?.images;
     if (Array.isArray(configured)) {
-      return configured
+      // Tolerate legacy/corrupted shapes such as `[[]]` by flattening nested
+      // arrays before validating each entry.
+      const flattened = configured.flat(Infinity);
+      const resolved = flattened
         .map((image: any) => {
           if (typeof image === 'string') {
             const url = image.trim();
@@ -499,6 +535,10 @@ export class HotelsService {
             sortOrder?: number;
           } => Boolean(image),
         );
+      // An explicitly empty array clears the gallery. Any other shape that
+      // contains no usable URL is treated as unconfigured so linked media
+      // assets can still supply the gallery.
+      if (resolved.length > 0 || configured.length === 0) return resolved;
     }
     return galleryByHotelId.get(hotel.id) || [];
   }
@@ -519,6 +559,8 @@ export class HotelsService {
     descriptionJsonb: Prisma.JsonValue | null;
     ratePerNight: Prisma.Decimal;
     currency: string;
+    priceDisplayMode?: string | null;
+    priceLabelJsonb?: Prisma.JsonValue | null;
     mealPlanJsonb: Prisma.JsonValue | null;
     maxOccupancy: number;
     inventory: number;
@@ -569,6 +611,10 @@ export class HotelsService {
       description: desc?.overview || room.descriptionJsonb,
       ratePerNight: Number(room.ratePerNight),
       currency: room.currency,
+      priceDisplayMode: this.normalizePriceDisplayMode(
+        room.priceDisplayMode ?? undefined,
+      ),
+      priceLabelJsonb: room.priceLabelJsonb ?? null,
       mealPlan: room.mealPlanJsonb,
       maxOccupancy: room.maxOccupancy,
       inventory: room.inventory,
@@ -607,6 +653,9 @@ export class HotelsService {
           mealPlan: room.mealPlanJsonb
             ? extractI18nFallback(room.mealPlanJsonb, locale)
             : null,
+          priceLabel: view.priceLabelJsonb
+            ? extractI18nFallback(view.priceLabelJsonb, locale) || null
+            : null,
           seasonPricings: view.seasonPricings.map((sp) => ({
             ...sp,
             seasonName: sp.seasonNameJsonb
@@ -623,9 +672,11 @@ export class HotelsService {
         : undefined;
       const directHeroUrl = hotel.amenitiesJsonb?.heroImageUrl || null;
       const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
+      // A direct hero URL configured in the dashboard is authoritative. A stale
+      // media-library link must never override the cover the admin just saved.
       const resolvedHeroUrl =
-        hero?.url ||
         directHeroUrl ||
+        hero?.url ||
         this.firstGalleryUrl(hotelGallery) ||
         this.getFallbackHotelImage(
           hotel.destinationSlug,
@@ -655,7 +706,7 @@ export class HotelsService {
         policies: hotel.policiesJsonb,
         heroMediaId: hotel.heroMediaId,
         heroImageUrl: resolvedHeroUrl,
-        heroImageAlt: hero?.altText ?? null,
+        heroImageAlt: directHeroUrl ? null : (hero?.altText ?? null),
         images: hotelGallery,
         pricePerNight: rates.length ? Math.min(...rates) : null,
         rooms,
@@ -776,9 +827,11 @@ export class HotelsService {
         : undefined;
       const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
       const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
+      // A direct hero URL configured in the dashboard is authoritative. A stale
+      // media-library link must never override the cover the admin just saved.
       const resolvedHeroUrl =
-        hero?.url ||
         directHeroUrl ||
+        hero?.url ||
         this.firstGalleryUrl(hotelGallery) ||
         this.getFallbackHotelImage(
           hotel.destinationSlug,
@@ -790,7 +843,7 @@ export class HotelsService {
         ...hotel,
         rating: hotel.rating === null ? null : Number(hotel.rating),
         heroImageUrl: resolvedHeroUrl,
-        heroImageAlt: hero?.altText ?? null,
+        heroImageAlt: directHeroUrl ? null : (hero?.altText ?? null),
         images: hotelGallery,
         rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
       };
@@ -820,9 +873,11 @@ export class HotelsService {
       : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
     const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
+    // A direct hero URL configured in the dashboard is authoritative. A stale
+    // media-library link must never override the cover the admin just saved.
     const resolvedHeroUrl =
-      hero?.url ||
       directHeroUrl ||
+      hero?.url ||
       this.firstGalleryUrl(hotelGallery) ||
       this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
@@ -830,7 +885,7 @@ export class HotelsService {
       ...hotel,
       rating: hotel.rating === null ? null : Number(hotel.rating),
       heroImageUrl: resolvedHeroUrl,
-      heroImageAlt: hero?.altText ?? null,
+      heroImageAlt: directHeroUrl ? null : (hero?.altText ?? null),
       images: hotelGallery,
       rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
     };
@@ -1228,9 +1283,11 @@ export class HotelsService {
       : undefined;
     const directHeroUrl = (hotel.amenitiesJsonb as any)?.heroImageUrl || null;
     const hotelGallery = this.resolveHotelGallery(hotel, galleryByHotelId);
+    // A direct hero URL configured in the dashboard is authoritative. A stale
+    // media-library link must never override the cover the admin just saved.
     const resolvedHeroUrl =
-      hero?.url ||
       directHeroUrl ||
+      hero?.url ||
       this.firstGalleryUrl(hotelGallery) ||
       this.getFallbackHotelImage(hotel.destinationSlug, hotel.city, hotel.slug);
 
@@ -1238,7 +1295,7 @@ export class HotelsService {
       ...hotel,
       rating: hotel.rating === null ? null : Number(hotel.rating),
       heroImageUrl: resolvedHeroUrl,
-      heroImageAlt: hero?.altText ?? null,
+      heroImageAlt: directHeroUrl ? null : (hero?.altText ?? null),
       images: hotelGallery,
       rooms: (hotel.rooms || []).map((room) => this.roomView(room)),
     };

@@ -389,6 +389,8 @@ export class ToursService {
                     descriptionJsonb: true,
                     ratePerNight: true,
                     currency: true,
+                    priceDisplayMode: true,
+                    priceLabelJsonb: true,
                     maxOccupancy: true,
                     isActive: true,
                     deletedAt: true,
@@ -468,6 +470,8 @@ export class ToursService {
                         descriptionJsonb: true,
                         ratePerNight: true,
                         currency: true,
+                        priceDisplayMode: true,
+                        priceLabelJsonb: true,
                         maxOccupancy: true,
                         isActive: true,
                         deletedAt: true,
@@ -555,6 +559,8 @@ export class ToursService {
                 descriptionJsonb: true,
                 ratePerNight: true,
                 currency: true,
+                priceDisplayMode: true,
+                priceLabelJsonb: true,
                 maxOccupancy: true,
                 isActive: true,
                 deletedAt: true,
@@ -750,6 +756,10 @@ export class ToursService {
                 capacity: validRoom.maxOccupancy ?? validRoom.capacity ?? 2,
                 basePriceUsd: new Prisma.Decimal(resolvedRoomRate).toFixed(2),
                 ratePerNight: resolvedRoomRate,
+                priceDisplayMode: validRoom.priceDisplayMode ?? 'PRICE',
+                priceLabel: validRoom.priceLabelJsonb
+                  ? extractI18n(validRoom.priceLabelJsonb, lang) || null
+                  : null,
                 currency: validRoom.currency ?? 'USD',
                 heroImageUrl: validRoom.heroImageUrl ?? roomDesc.image ?? null,
                 seasonPricings: (validRoom.seasonPricings || []).map(
@@ -877,6 +887,11 @@ export class ToursService {
               nameJsonb: r.nameJsonb,
               ratePerNight: rRate,
               ratePerNightUsd: rRate,
+              priceDisplayMode: r.priceDisplayMode ?? 'PRICE',
+              priceLabel: r.priceLabelJsonb
+                ? extractI18n(r.priceLabelJsonb, lang) || null
+                : null,
+              priceLabelJsonb: r.priceLabelJsonb ?? null,
               basePriceUsd: new Prisma.Decimal(rRate).toFixed(2),
               maxOccupancy: r.maxOccupancy ?? 2,
               capacity: r.maxOccupancy ?? 2,
@@ -907,7 +922,7 @@ export class ToursService {
       };
     }
 
-    const effectiveAccommodations = [...accommodations];
+    const effectiveAccommodations: any[] = [...accommodations];
     if (effectiveAccommodations.length === 0 && tripHotelResponse) {
       const primaryRoom = tripHotelResponse.rooms?.[0];
       effectiveAccommodations.push({
@@ -947,6 +962,8 @@ export class ToursService {
               capacity: primaryRoom.capacity,
               basePriceUsd: primaryRoom.basePriceUsd,
               ratePerNight: primaryRoom.ratePerNight,
+              priceDisplayMode: primaryRoom.priceDisplayMode,
+              priceLabel: primaryRoom.priceLabel,
               currency: 'USD',
               heroImageUrl: null,
               seasonPricings: primaryRoom.seasonPricings,
