@@ -200,6 +200,7 @@ describe('Bookings HTTP API Contract (Supertest)', () => {
       email: 'jane@example.com',
       phone: '+1234567890',
       language: 'en',
+      nationality: 'Egyptian',
     };
 
     it('rejects unauthenticated booking creation with 401 Unauthorized (AUTH-REQUIRED)', async () => {

@@ -179,14 +179,23 @@ export class CreateBookingDto {
   @IsObject()
   passengerNames?: Record<string, string>;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description:
-      'Nationality of the lead traveler. Required when type is "booking".',
+      'Nationality of the lead traveler. Conditionally required when type is "booking".',
     example: 'Egyptian',
+    required: false,
   })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
+  @ValidateIf(
+    (o: CreateBookingDto) =>
+      o.type === 'booking' ||
+      (o.nationality !== undefined && o.nationality !== null),
+  )
+  @IsNotEmpty({
+    message:
+      'NATIONALITY_REQUIRED: Nationality is required to complete the booking',
+  })
+  @IsString({ message: 'Nationality must be a string' })
+  @MaxLength(100, { message: 'Nationality cannot exceed 100 characters' })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
