@@ -790,6 +790,9 @@ export class BookingsService {
             const exchangeRateDateObj = breakdownResult.exchangeRateDate
               ? new Date(breakdownResult.exchangeRateDate)
               : new Date();
+            const exchangeRateDateStr =
+              breakdownResult.exchangeRateDate ||
+              exchangeRateDateObj.toISOString().slice(0, 10);
             const exchangeRateSourceStr =
               breakdownResult.exchangeRateSource || 'ECB';
 
@@ -828,7 +831,7 @@ export class BookingsService {
                 originalAmount,
                 originalCurrency,
                 exchangeRate: exchangeRateDecimal,
-                exchangeRateDate: exchangeRateDateObj.toISOString(),
+                exchangeRateDate: exchangeRateDateStr,
                 exchangeRateSource: exchangeRateSourceStr,
                 convertedAmount,
                 convertedCurrency,
@@ -971,7 +974,7 @@ export class BookingsService {
                     : finalTotalAmountUsd,
                 currency: bookingCurrency,
                 exchangeRate: exchangeRateDecimal,
-                exchangeRateDate: exchangeRateDateObj.toISOString(),
+                exchangeRateDate: exchangeRateDateStr,
                 snapshotJsonb:
                   invoiceSnapshot as unknown as Prisma.InputJsonValue,
               },
@@ -2070,6 +2073,7 @@ export class BookingsService {
           await tx.payment.update({
             where: { id: latestPayment.id },
             data: {
+              status: 'REFUNDED',
               isRefund: true,
               refundedAt: new Date(),
             },

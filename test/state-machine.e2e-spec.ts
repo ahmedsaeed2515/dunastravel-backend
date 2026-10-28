@@ -34,6 +34,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
 
   let hashToken: string;
   let accessToken: string;
+  let tourBasePrice: number;
 
   beforeAll(async () => {
     fetchSpy = jest
@@ -104,6 +105,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       where: { slug: testTourSlug },
     });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
+    tourBasePrice = Number(tour.basePriceUsd);
     const slot = await prisma.tourAvailability.upsert({
       where: {
         tourId_date: {
@@ -173,9 +175,11 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Matrix Tester',
         email: 'matrix@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -195,7 +199,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed',
-      order_amount: 5.0,
+      order_amount: tourBasePrice,
       order_currency: 'USD',
     };
     paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(
@@ -247,9 +251,11 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
         arrivalDate: testDate,
         adults: 2,
         children: 0,
+        currency: 'USD',
         fullName: 'Sweep Tester',
         email: 'sweep@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -294,7 +300,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Late payment',
-      order_amount: 10.0,
+      order_amount: tourBasePrice * 2,
       order_currency: 'USD',
     };
     latePaidPayload.signature = (
@@ -306,7 +312,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       data: {
         id: crypto.randomUUID(),
         bookingId: bookingId,
-        amount: new Prisma.Decimal(10.0),
+        amount: new Prisma.Decimal(tourBasePrice * 2),
         currency: 'USD',
         method: 'GETPAYIN',
         provider: 'GETPAYIN',
@@ -342,9 +348,11 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Active Session User',
         email: 'activesession@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
     const activeBookingId = (
@@ -356,7 +364,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       data: {
         id: crypto.randomUUID(),
         bookingId: activeBookingId,
-        amount: new Prisma.Decimal(5.0),
+        amount: new Prisma.Decimal(tourBasePrice),
         currency: 'USD',
         method: 'GETPAYIN',
         provider: 'GETPAYIN',
@@ -400,9 +408,11 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Refund Tester',
         email: 'refund@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -423,7 +433,7 @@ describe('Phase 4 State Machine Completeness (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed',
-      order_amount: 5.0,
+      order_amount: tourBasePrice,
       order_currency: 'USD',
     };
     paidPayload.signature = (paylinkClient.webhooks as any).computeSignature(

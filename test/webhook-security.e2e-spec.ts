@@ -30,6 +30,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
 
   let hashToken: string;
   let accessToken: string;
+  let tourBasePrice: number;
 
   beforeAll(async () => {
     fetchSpy = jest
@@ -99,6 +100,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       where: { slug: testTourSlug },
     });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
+    tourBasePrice = Number(tour.basePriceUsd);
     const slot = await prisma.tourAvailability.upsert({
       where: {
         tourId_date: {
@@ -196,9 +198,11 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Deduplication Tester',
         email: 'dedup@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -218,7 +222,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Payment completed successfully',
-      order_amount: 5.0,
+      order_amount: tourBasePrice,
       order_currency: 'USD',
     };
     webhookPayload.signature = (paylinkClient.webhooks as any).computeSignature(
@@ -290,9 +294,11 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Out Of Order Tester',
         email: 'ooo@dunastravel.com',
         phone: '+201000001234',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -330,7 +336,7 @@ describe('Phase 3 Webhook Security & Idempotency (E2E)', () => {
       invoice_status: 'PAID',
       success: 1,
       message: 'Late payment confirmation',
-      order_amount: 5.0,
+      order_amount: tourBasePrice,
       order_currency: 'USD',
     };
     latePaidPayload.signature = (

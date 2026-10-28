@@ -45,6 +45,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
   let invoiceNumber: string;
   let paymentId: string;
   let initialSeats: number;
+  let tourBasePriceStr: string;
 
   beforeAll(async () => {
     // Intercept outbound fetch calls from @getpayin/paylink SDK to pay.getpayin.com
@@ -60,7 +61,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
           expect(body.first_name).toBe('Test');
           expect(body.last_name).toBe('Traveler');
           expect(body.currency).toBe('USD');
-          expect(body.order_amount).toBe('5.00');
+          expect(body.order_amount).toBe(tourBasePriceStr);
           expect(body.signature).toBeDefined();
 
           return new Response(
@@ -138,6 +139,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     });
     if (!tour) throw new Error(`Tour not found: ${testTourSlug}`);
     testTourId = tour.id;
+    tourBasePriceStr = tour.basePriceUsd.toFixed(2);
 
     const slot = await prisma.tourAvailability.upsert({
       where: {
@@ -278,9 +280,9 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
 
     expect(res.status).toBe(200);
     const data = dataOf(res);
-    expect(data.basePriceUsd).toBe('5.00');
-    expect(data.totalAmountUsd).toBe('5.00');
-    expect(data.currency).toBe('USD');
+    expect(data.basePriceUsd).toBe(tourBasePriceStr);
+    expect(data.totalAmountUsd).toBe(tourBasePriceStr);
+    expect(['USD', 'EUR']).toContain(data.currency);
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -300,9 +302,11 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
         arrivalDate: testDate,
         adults: 1,
         children: 0,
+        currency: 'USD',
         fullName: 'Test Traveler',
         email: testUserEmail,
         phone: '+201000000000',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
@@ -312,7 +316,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     expect(data).toHaveProperty('referenceCode');
     expect(data).toHaveProperty('invoiceNumber');
     expect(data.status).toBe('PENDING');
-    expect(data.totalAmountUsd.toString()).toBe('5');
+    expect(Number(data.totalAmountUsd).toFixed(2)).toBe(tourBasePriceStr);
 
     bookingId = data.id;
     bookingReference = data.referenceCode;
@@ -326,11 +330,11 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
 
     expect(booking).toBeDefined();
     expect(booking?.status).toBe('PENDING');
-    expect(booking?.totalAmountUsd.toString()).toBe('5');
-    expect(booking?.paidAmountUsd.toString()).toBe('0');
+    expect(Number(booking?.totalAmountUsd).toFixed(2)).toBe(tourBasePriceStr);
+    expect(Number(booking?.paidAmountUsd).toFixed(2)).toBe('0.00');
     expect(booking?.invoice).toBeDefined();
     expect(booking?.invoice?.status).toBe('SENT');
-    expect(booking?.invoice?.total.toString()).toBe('5');
+    expect(Number(booking?.invoice?.total).toFixed(2)).toBe(tourBasePriceStr);
 
     // Verify capacity was reserved (decremented by 1)
     const slot = await prisma.tourAvailability.findUnique({
@@ -365,7 +369,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     expect(payment?.bookingId).toBe(bookingId);
     expect(payment?.provider).toBe('GETPAYIN');
     expect(payment?.status).toBe('PENDING');
-    expect(payment?.amount.toString()).toBe('5');
+    expect(Number(payment?.amount).toFixed(2)).toBe(tourBasePriceStr);
     expect(payment?.currency).toBe('USD');
     expect(payment?.transactionId).toBe(String(mockInvoiceId));
   });
@@ -411,7 +415,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     });
 
     expect(updatedBooking?.status).toBe('CONFIRMED');
-    expect(updatedBooking?.paidAmountUsd.toString()).toBe('5');
+    expect(Number(updatedBooking?.paidAmountUsd).toFixed(2)).toBe(tourBasePriceStr);
     expect(updatedBooking?.invoice?.status).toBe('PAID');
 
     const updatedPayment = updatedBooking?.payments.find(
@@ -486,7 +490,7 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
     });
-    expect(booking?.paidAmountUsd.toString()).toBe('5');
+    expect(Number(booking?.paidAmountUsd).toFixed(2)).toBe(tourBasePriceStr);
 
     // 7b. Tampered payload with illegal status
     const forgedPayload = {

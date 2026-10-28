@@ -1094,6 +1094,9 @@ export class PaymentsService {
           data: {
             providerStatus,
             lastProviderCheckAt: new Date(),
+            ...(checked.authCode
+              ? { providerAuthCode: checked.authCode }
+              : {}),
           },
         });
         await tx.processedWebhookEvent.create({

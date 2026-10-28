@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class PayLinkCallbackDto {
   @IsIn(['0', '1', 'true', 'false', 0, 1, true, false])
@@ -20,4 +20,9 @@ export class PayLinkCallbackDto {
   @IsNotEmpty()
   @MaxLength(512)
   signature!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  auth_code?: string;
 }

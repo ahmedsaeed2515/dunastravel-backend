@@ -184,6 +184,7 @@ describe('Phase 5 Redirect/Callback & Session Handling (E2E)', () => {
         fullName: 'Session Expiry Tester',
         email: 'session.expiry@dunastravel.com',
         phone: '+201000008899',
+        nationality: 'Egyptian',
         language: 'en',
       });
 
