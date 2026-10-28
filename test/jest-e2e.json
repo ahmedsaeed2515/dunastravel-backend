@@ -9,5 +9,6 @@
   "transformIgnorePatterns": [
     "/node_modules/(?!(@exodus|parse5|entities|@asamuzakjp)/)"
   ],
-  "testTimeout": 120000
+  "testTimeout": 120000,
+  "setupFilesAfterEnv": ["<rootDir>/setup-e2e.ts"]
 }

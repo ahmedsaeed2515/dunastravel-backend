@@ -3,7 +3,7 @@
  *
  * Fails closed. Strictly refuses Neon, shared, staging, or production database connections.
  * Requires host to be localhost/127.0.0.1, database name to match disposable pattern (*_test, *_disposable, dunastravel_test),
- * and DISPOSABLE_DB_CONFIRMED=true environment variable.
+ * DISPOSABLE_DB_CONFIRMED=true, and ALLOW_DISPOSABLE_DB_MUTATION=true.
  */
 
 export interface VerifiedDbTarget {
@@ -64,6 +64,15 @@ export function verifyAndAssertDisposableDb(): VerifiedDbTarget {
     if (!isConfirmed) {
       throw new Error(
         `[DISPOSABLE DB GUARD] REFUSED: DISPOSABLE_DB_CONFIRMED environment variable must be explicitly set to 'true'.`,
+      );
+    }
+
+    // 4. Verify Explicit Mutation Permission
+    const isMutationAllowed =
+      process.env.ALLOW_DISPOSABLE_DB_MUTATION === 'true';
+    if (!isMutationAllowed) {
+      throw new Error(
+        `[DISPOSABLE DB GUARD] REFUSED: ALLOW_DISPOSABLE_DB_MUTATION environment variable must be explicitly set to 'true' to permit mutating e2e tests.`,
       );
     }
 

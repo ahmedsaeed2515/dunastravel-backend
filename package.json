@@ -20,6 +20,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config test/jest-e2e.json",
+    "test:e2e:disposable": "node scripts/run-disposable-e2e.js",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "tours:import-ahmed": "ts-node -r tsconfig-paths/register scripts/import-ahmed-tours.ts",
