@@ -11,7 +11,10 @@ import { JsonLoggerService } from './common/logging/json-logger.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import * as Sentry from '@sentry/nestjs';
-import { isAllowedBrowserOrigin } from './common/security/allowed-origin.util';
+import {
+  isAllowedBrowserOrigin,
+  validateCorsConfiguration,
+} from './common/security/allowed-origin.util';
 
 async function bootstrap(): Promise<void> {
   if (process.env.SENTRY_DSN) {
@@ -41,6 +44,7 @@ async function bootstrap(): Promise<void> {
   });
 
   const configService = app.get(ConfigService);
+  validateCorsConfiguration(configService);
   const port = process.env.APP_PORT
     ? parseInt(process.env.APP_PORT, 10)
     : (configService.get<number>('port') ?? 5000);
