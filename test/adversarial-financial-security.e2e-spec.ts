@@ -14,6 +14,7 @@ import { PaylinkClient } from '@getpayin/paylink';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PAYMENT_EVENTS } from '../src/common/events/payment-events';
 import crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
 
 jest.mock('axios');
 jest.mock('@anthropic-ai/sdk');
@@ -150,6 +151,36 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
     });
     testSlotId = slot.id;
 
+    // Ensure test user exists
+    const passwordHash = await bcrypt.hash(testUserPassword, 10);
+    await prisma.user.upsert({
+      where: { email: testUserEmail },
+      update: {
+        passwordHash,
+        isVerified: true,
+        status: 'ACTIVE',
+      },
+      create: {
+        email: testUserEmail,
+        passwordHash,
+        name: 'Test Traveler',
+        role: 'USER',
+        status: 'ACTIVE',
+        isVerified: true,
+      },
+    });
+
+    // Ensure tour has basePriceUsd = 5.00
+    await prisma.tour.update({
+      where: { id: tour.id },
+      data: {
+        basePriceUsd: new Prisma.Decimal(5.0),
+        originalPrice: new Prisma.Decimal(5.0),
+        status: 'PUBLISHED',
+        isActive: true,
+      },
+    });
+
     // Login test user
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -207,6 +238,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'original@dunastravel.com',
         phone: '+201000000001',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect([200, 201]).toContain(res1.status);
@@ -229,6 +261,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'attacker@dunastravel.com',
         phone: '+201000000002',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     // Must be rejected with 422 Unprocessable Entity
@@ -288,6 +321,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'fractional@dunastravel.com',
         phone: '+201000000003',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect(bookingRes.status).toBe(201);
@@ -335,6 +369,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'bypass@dunastravel.com',
         phone: '+201000000004',
         language: 'en',
+        nationality: 'Egyptian',
         totalAmountUsd: '0.00',
         paidAmountUsd: '0.00',
         status: 'CONFIRMED',
@@ -389,6 +424,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
           email: `racer${i}@dunastravel.com`,
           phone: '+201000000005',
           language: 'en',
+          nationality: 'Egyptian',
         }),
     );
 
@@ -439,6 +475,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'floor@dunastravel.com',
         phone: '+201000000006',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     // Unlimited capacity booking succeeds
@@ -478,6 +515,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'replay@dunastravel.com',
         phone: '+201000000007',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
@@ -606,6 +644,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'entropy@dunastravel.com',
         phone: '+201000000008',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect(res.status).toBe(201);
@@ -643,6 +682,7 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
         email: 'sig@dunastravel.com',
         phone: '+201000000009',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;

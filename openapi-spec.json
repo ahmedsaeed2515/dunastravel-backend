@@ -19281,7 +19281,7 @@
           },
           "nationality": {
             "type": "string",
-            "description": "Nationality of the lead traveler. Required when type is \"booking\".",
+            "description": "Nationality of the lead traveler. Conditionally required when type is \"booking\".",
             "example": "Egyptian"
           },
           "fullName": {

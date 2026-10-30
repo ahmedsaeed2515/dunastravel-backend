@@ -11,6 +11,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PaylinkClient } from '@getpayin/paylink';
+import * as bcrypt from 'bcryptjs';
 
 jest.mock('axios');
 jest.mock('@anthropic-ai/sdk');
@@ -140,6 +141,36 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
     });
     testSlotId = slot.id;
 
+    // Ensure test user exists in test database
+    const passwordHash = await bcrypt.hash(testUserPassword, 10);
+    await prisma.user.upsert({
+      where: { email: testUserEmail },
+      update: {
+        passwordHash,
+        isVerified: true,
+        status: 'ACTIVE',
+      },
+      create: {
+        email: testUserEmail,
+        passwordHash,
+        name: 'Test Traveler',
+        role: 'USER',
+        status: 'ACTIVE',
+        isVerified: true,
+      },
+    });
+
+    // Ensure tour has basePriceUsd = 5.00
+    await prisma.tour.update({
+      where: { id: tour.id },
+      data: {
+        basePriceUsd: new Prisma.Decimal(5.0),
+        originalPrice: new Prisma.Decimal(5.0),
+        status: 'PUBLISHED',
+        isActive: true,
+      },
+    });
+
     // Login
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -190,6 +221,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'attacker@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
         totalAmountUsd: '0.01',
         price: '0.01',
       });
@@ -213,6 +245,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'pricedev@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect(res.status).toBe(201);
@@ -245,6 +278,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'gwmatch@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
@@ -284,6 +318,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'mismatch@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
@@ -354,6 +389,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'currmismatch@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
@@ -405,6 +441,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'authcapture@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     const bookingId = (bookingRes.body?.data || bookingRes.body).id;
@@ -503,6 +540,7 @@ describe('Phase 2 Financial Correctness (E2E)', () => {
         email: 'maxpromo@dunastravel.com',
         phone: '+201000001234',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect(res.status).toBe(201);

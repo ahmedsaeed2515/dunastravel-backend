@@ -8,6 +8,8 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 jest.mock('axios');
 jest.mock('@anthropic-ai/sdk');
@@ -46,6 +48,25 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
 
     await app.init();
 
+    // Ensure test user exists
+    const passwordHash = await bcrypt.hash('Password123!', 10);
+    await prisma.user.upsert({
+      where: { email: 'traveler.test@dunastravel.com' },
+      update: {
+        passwordHash,
+        isVerified: true,
+        status: 'ACTIVE',
+      },
+      create: {
+        email: 'traveler.test@dunastravel.com',
+        passwordHash,
+        name: 'Test Traveler',
+        role: 'USER',
+        status: 'ACTIVE',
+        isVerified: true,
+      },
+    });
+
     // Authenticate test user
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -66,6 +87,16 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
     });
     if (!tour) throw new Error('Cairo Express tour not found');
     testTourId = tour.id;
+
+    await prisma.tour.update({
+      where: { id: tour.id },
+      data: {
+        basePriceUsd: new Prisma.Decimal(5.0),
+        originalPrice: new Prisma.Decimal(5.0),
+        status: 'PUBLISHED',
+        isActive: true,
+      },
+    });
 
     // Create/upsert a dedicated isolated test slot with exactly 1 seat
     const slot = await prisma.tourAvailability.upsert({
@@ -142,6 +173,7 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
           email: `tester${i}@dunastravel.com`,
           phone: `+20100000000${i}`,
           language: 'en',
+          nationality: 'Egyptian',
         });
     });
 
@@ -179,6 +211,7 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
         email: 'closed@dunastravel.com',
         phone: '+201000000099',
         language: 'en',
+        nationality: 'Egyptian',
       });
 
     expect(closedRes.status).toBe(422);
@@ -211,6 +244,7 @@ describe('Phase 1 Concurrency & Data Integrity (E2E)', () => {
       email: 'idempotent@dunastravel.com',
       phone: '+201000009999',
       language: 'en',
+      nationality: 'Egyptian',
     };
 
     const [res1, res2] = await Promise.all([
