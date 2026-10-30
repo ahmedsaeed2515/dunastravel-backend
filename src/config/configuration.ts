@@ -1,5 +1,8 @@
+import { parsePortValue } from './listen-endpoint';
+
 export default () => ({
-  port: parseInt(process.env.PORT ?? '5000', 10),
+  // Holds either a numeric TCP port or an IISNode named-pipe path; never NaN.
+  port: parsePortValue(process.env.PORT, 5000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
   frontendUrl: process.env.FRONTEND_URL ?? 'https://www.dunastravel.com',

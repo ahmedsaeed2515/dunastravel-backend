@@ -1,4 +1,5 @@
 import * as Joi from 'joi';
+import { WINDOWS_NAMED_PIPE_PATTERN } from './listen-endpoint';
 
 const strongSecret = Joi.string()
   .min(48)
@@ -28,7 +29,19 @@ export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test', 'staging')
     .default('development'),
-  PORT: Joi.number().integer().positive().default(3000),
+  // Numeric TCP port on Linux/Vercel, or an IISNode named-pipe path on
+  // Windows/Plesk (`\\.\pipe\...`). The pipe value must survive untouched.
+  PORT: Joi.alternatives()
+    .try(
+      Joi.number().integer().positive().max(65535),
+      Joi.string()
+        .trim()
+        .pattern(WINDOWS_NAMED_PIPE_PATTERN)
+        .message(
+          'PORT must be a numeric TCP port (1-65535) or a Windows named-pipe path (e.g. \\\\.\\pipe\\iisnode)',
+        ),
+    )
+    .default(3000),
   FRONTEND_URL: Joi.string().uri().default('https://www.dunastravel.com'),
   CORS_ALLOWED_ORIGINS: Joi.string().default(
     'https://www.dunastravel.com,https://admin.dunastravel.com',

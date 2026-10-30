@@ -15,6 +15,10 @@ import {
   isAllowedBrowserOrigin,
   validateCorsConfiguration,
 } from './common/security/allowed-origin.util';
+import {
+  isWindowsNamedPipe,
+  resolveListenEndpoint,
+} from './config/listen-endpoint';
 
 async function bootstrap(): Promise<void> {
   if (process.env.SENTRY_DSN) {
@@ -45,9 +49,11 @@ async function bootstrap(): Promise<void> {
 
   const configService = app.get(ConfigService);
   validateCorsConfiguration(configService);
-  const port = process.env.APP_PORT
-    ? parseInt(process.env.APP_PORT, 10)
-    : (configService.get<number>('port') ?? 5000);
+  // IISNode on Windows/Plesk supplies a named pipe in PORT; keep it verbatim.
+  const listenEndpoint = resolveListenEndpoint({
+    appPort: process.env.APP_PORT,
+    configuredPort: configService.get<number | string>('port'),
+  });
   const frontendUrl = configService.get<string>('frontendUrl');
   const nodeEnv = configService.get<string>('nodeEnv');
 
@@ -149,8 +155,11 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
 
   // ─── Start Server ─────────────────────────────────────────────────────────
-  await app.listen(port);
-  logger.log(`🚀 Dunas Travel API → http://localhost:${port}/api`);
+  await app.listen(listenEndpoint);
+  const endpointLabel = isWindowsNamedPipe(listenEndpoint)
+    ? `named pipe ${listenEndpoint}`
+    : `http://localhost:${listenEndpoint}/api`;
+  logger.log(`🚀 Dunas Travel API → ${endpointLabel}`);
   logger.log(`🌍 Environment: ${nodeEnv}`);
   logger.log(`🔗 CORS Origin: ${frontendUrl}`);
 }

@@ -137,4 +137,53 @@ describe('Environment Validation Schema', () => {
       );
     }
   });
+
+  describe('PORT', () => {
+    const iisnodePipe = '\\\\.\\pipe\\iisnode-7f3a';
+
+    it.each([3000, '3000', 65535])('accepts numeric port %p', (PORT) => {
+      const { error, value } = envValidationSchema.validate({
+        NODE_ENV: 'development',
+        PORT,
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.PORT).toBe(Number(PORT));
+      expect(typeof value.PORT).toBe('number');
+    });
+
+    it('accepts an IISNode named-pipe PORT unchanged', () => {
+      const { error, value } = envValidationSchema.validate({
+        NODE_ENV: 'development',
+        PORT: iisnodePipe,
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.PORT).toBe(iisnodePipe);
+      expect(typeof value.PORT).toBe('string');
+    });
+
+    it.each([0, -1, 65536, 'not-a-port', '/tmp/app.sock'])(
+      'rejects invalid PORT %p',
+      (PORT) => {
+        const { error } = envValidationSchema.validate({
+          NODE_ENV: 'development',
+          PORT,
+        });
+
+        expect(
+          error?.details.some((detail) => detail.context?.key === 'PORT'),
+        ).toBe(true);
+      },
+    );
+
+    it('defaults to 3000 when PORT is missing', () => {
+      const { error, value } = envValidationSchema.validate({
+        NODE_ENV: 'development',
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.PORT).toBe(3000);
+    });
+  });
 });
