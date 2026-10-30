@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { join } from 'path';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -67,9 +68,14 @@ import { HttpCacheInterceptor } from './common/interceptors/http-cache.intercept
 @Module({
   controllers: [RootController],
   imports: [
-    // Config — global, validates env vars on startup
+    // Config - global, validates env vars on startup
     ConfigModule.forRoot({
       isGlobal: true,
+      // Resolve `.env` next to package.json regardless of the working
+      // directory. `__dirname` is `src/` in dev and `dist/` when compiled, so
+      // `..` reaches the backend root in both layouts. Existing process env
+      // vars keep precedence over the file (dotenv never overrides them).
+      envFilePath: join(__dirname, '..', '.env'),
       load: [configuration],
       validationSchema: envValidationSchema,
       validationOptions: {

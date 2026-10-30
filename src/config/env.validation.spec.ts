@@ -186,4 +186,69 @@ describe('Environment Validation Schema', () => {
       expect(value.PORT).toBe(3000);
     });
   });
+
+  describe('APP_PORT', () => {
+    it.each([4000, '4000'])('accepts numeric APP_PORT %p', (APP_PORT) => {
+      const { error, value } = envValidationSchema.validate({
+        NODE_ENV: 'development',
+        APP_PORT,
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.APP_PORT).toBe(4000);
+    });
+
+    it('treats an empty APP_PORT as unset', () => {
+      const { error, value } = envValidationSchema.validate({
+        NODE_ENV: 'development',
+        APP_PORT: '',
+      });
+
+      expect(error).toBeUndefined();
+      expect(value.APP_PORT).toBeUndefined();
+    });
+
+    it.each([0, -1, 65536, 'not-a-port', '\\\\.\\pipe\\iisnode-7f3a'])(
+      'rejects invalid APP_PORT %p',
+      (APP_PORT) => {
+        const { error } = envValidationSchema.validate({
+          NODE_ENV: 'development',
+          APP_PORT,
+        });
+
+        expect(
+          error?.details.some((detail) => detail.context?.key === 'APP_PORT'),
+        ).toBe(true);
+      },
+    );
+  });
+
+  it('reports every missing production secret with strict validation', () => {
+    const { error } = envValidationSchema.validate(
+      { NODE_ENV: 'production' },
+      { abortEarly: false },
+    );
+
+    expect(error).toBeDefined();
+
+    for (const key of [
+      'DATABASE_URL',
+      'REDIS_URL',
+      'JWT_SECRET',
+      'JWT_REFRESH_SECRET',
+      'GUEST_TOKEN_SECRET',
+      'PII_ENCRYPTION_KEY',
+      'RESEND_API_KEY',
+      'MAIL_FROM_ADDRESS',
+      'MAIL_FROM_NAME',
+      'MAIL_INTERNAL_ALERT_RECIPIENT',
+      'CLOUDINARY_CLOUD_NAME',
+      'CLOUDINARY_API_KEY',
+      'CLOUDINARY_API_SECRET',
+    ]) {
+      expect(error?.details.some((detail) => detail.context?.key === key)).toBe(
+        true,
+      );
+    }
+  });
 });

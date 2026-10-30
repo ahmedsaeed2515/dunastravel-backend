@@ -2,7 +2,7 @@ import configuration from './configuration';
 import {
   DEFAULT_LISTEN_PORT,
   isWindowsNamedPipe,
-  parsePortValue,
+  parseNumericPort,
   resolveListenEndpoint,
 } from './listen-endpoint';
 
@@ -23,51 +23,54 @@ describe('listen-endpoint', () => {
       expect(isWindowsNamedPipe('3000')).toBe(false);
       expect(isWindowsNamedPipe(3000)).toBe(false);
       expect(isWindowsNamedPipe('/tmp/app.sock')).toBe(false);
+      expect(isWindowsNamedPipe('\\\\.\\notapipe\\x')).toBe(false);
       expect(isWindowsNamedPipe(undefined)).toBe(false);
       expect(isWindowsNamedPipe('')).toBe(false);
     });
   });
 
-  describe('parsePortValue', () => {
-    it('returns numbers for numeric values', () => {
-      expect(parsePortValue('3000')).toBe(3000);
-      expect(parsePortValue(' 8080 ')).toBe(8080);
-      expect(parsePortValue(5001)).toBe(5001);
+  describe('parseNumericPort', () => {
+    it('returns validated numbers for numeric values', () => {
+      expect(parseNumericPort('3000')).toBe(3000);
+      expect(parseNumericPort(' 8080 ')).toBe(8080);
+      expect(parseNumericPort(5001)).toBe(5001);
+      expect(parseNumericPort('65535')).toBe(65535);
     });
 
-    it('preserves named-pipe paths unchanged', () => {
-      expect(parsePortValue(IISNODE_PIPE)).toBe(IISNODE_PIPE);
-      expect(parsePortValue(IISNODE_PIPE_QUERY)).toBe(IISNODE_PIPE_QUERY);
+    it('never coerces a named-pipe path', () => {
+      expect(parseNumericPort(IISNODE_PIPE)).toBeUndefined();
+      expect(parseNumericPort(IISNODE_PIPE_QUERY)).toBeUndefined();
     });
 
-    it('falls back to the default for empty or invalid values', () => {
-      expect(parsePortValue(undefined)).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue('')).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue('not-a-port')).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue('0')).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue('-1')).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue('70000')).toBe(DEFAULT_LISTEN_PORT);
-      expect(parsePortValue(null, 4000)).toBe(4000);
+    it('returns undefined for empty or invalid values', () => {
+      expect(parseNumericPort(undefined)).toBeUndefined();
+      expect(parseNumericPort(null)).toBeUndefined();
+      expect(parseNumericPort('')).toBeUndefined();
+      expect(parseNumericPort('   ')).toBeUndefined();
+      expect(parseNumericPort('not-a-port')).toBeUndefined();
+      expect(parseNumericPort('3000abc')).toBeUndefined();
+      expect(parseNumericPort('0')).toBeUndefined();
+      expect(parseNumericPort('-1')).toBeUndefined();
+      expect(parseNumericPort('70000')).toBeUndefined();
+      expect(parseNumericPort(3.5)).toBeUndefined();
     });
   });
 
   describe('resolveListenEndpoint', () => {
-    it('keeps APP_PORT precedence for numeric ports', () => {
+    it('returns the IISNode named pipe verbatim and never binds TCP', () => {
       expect(
-        resolveListenEndpoint({ appPort: '8080', configuredPort: 5000 }),
-      ).toBe(8080);
-    });
-
-    it('keeps APP_PORT precedence for named pipes', () => {
-      expect(
-        resolveListenEndpoint({ appPort: IISNODE_PIPE, configuredPort: 5000 }),
+        resolveListenEndpoint({
+          pipePath: IISNODE_PIPE,
+          appPort: '8080',
+          configuredPort: 5000,
+        }),
       ).toBe(IISNODE_PIPE);
     });
 
-    it('returns a configured named pipe untouched', () => {
-      expect(resolveListenEndpoint({ configuredPort: IISNODE_PIPE })).toBe(
-        IISNODE_PIPE,
-      );
+    it('keeps APP_PORT precedence for numeric deployments', () => {
+      expect(
+        resolveListenEndpoint({ appPort: '8080', configuredPort: 5000 }),
+      ).toBe(8080);
     });
 
     it('falls back to the configured numeric port', () => {
@@ -87,6 +90,7 @@ describe('listen-endpoint', () => {
 
   describe('configuration factory', () => {
     const originalPort = process.env.PORT;
+    const originalAppPort = process.env.APP_PORT;
 
     afterEach(() => {
       if (originalPort === undefined) {
@@ -94,28 +98,59 @@ describe('listen-endpoint', () => {
       } else {
         process.env.PORT = originalPort;
       }
+      if (originalAppPort === undefined) {
+        delete process.env.APP_PORT;
+      } else {
+        process.env.APP_PORT = originalAppPort;
+      }
     });
 
-    it('keeps an IISNode named pipe as a string (never parseInt)', () => {
+    it('keeps an IISNode named pipe out of the numeric port', () => {
       process.env.PORT = IISNODE_PIPE;
+      delete process.env.APP_PORT;
 
       const config = configuration();
 
-      expect(config.port).toBe(IISNODE_PIPE);
-      expect(typeof config.port).toBe('string');
+      expect(config.iisNodeNamedPipe).toBe(IISNODE_PIPE);
+      expect(config.port).toBe(DEFAULT_LISTEN_PORT);
+      expect(typeof config.port).toBe('number');
+    });
+
+    it('uses APP_PORT as the numeric fallback when PORT is a pipe', () => {
+      process.env.PORT = IISNODE_PIPE;
+      process.env.APP_PORT = '4000';
+
+      const config = configuration();
+
+      expect(config.iisNodeNamedPipe).toBe(IISNODE_PIPE);
+      expect(config.port).toBe(4000);
     });
 
     it('parses a numeric PORT', () => {
-      process.env.PORT = '4000';
+      process.env.PORT = '4100';
+      delete process.env.APP_PORT;
 
-      expect(configuration().port).toBe(4000);
-      expect(typeof configuration().port).toBe('number');
+      const config = configuration();
+
+      expect(config.port).toBe(4100);
+      expect(config.iisNodeNamedPipe).toBeUndefined();
+    });
+
+    it('keeps APP_PORT precedence for numeric deployments', () => {
+      process.env.PORT = '4100';
+      process.env.APP_PORT = '4200';
+
+      expect(configuration().port).toBe(4200);
     });
 
     it('falls back to 5000 when PORT is missing', () => {
       delete process.env.PORT;
+      delete process.env.APP_PORT;
 
-      expect(configuration().port).toBe(5000);
+      const config = configuration();
+
+      expect(config.port).toBe(DEFAULT_LISTEN_PORT);
+      expect(config.iisNodeNamedPipe).toBeUndefined();
     });
   });
 });

@@ -42,6 +42,9 @@ export const envValidationSchema = Joi.object({
         ),
     )
     .default(3000),
+  // Optional numeric TCP override, used as the local fallback when IISNode
+  // supplies PORT as a named pipe. Never accepts a pipe path.
+  APP_PORT: Joi.number().integer().positive().max(65535).empty('').optional(),
   FRONTEND_URL: Joi.string().uri().default('https://www.dunastravel.com'),
   CORS_ALLOWED_ORIGINS: Joi.string().default(
     'https://www.dunastravel.com,https://admin.dunastravel.com',
@@ -59,9 +62,18 @@ export const envValidationSchema = Joi.object({
       .uri()
       .default('postgresql://localhost:5432/dunastravel'),
   }),
-  REDIS_URL: Joi.string()
-    .uri({ scheme: ['redis', 'rediss'] })
-    .default('redis://localhost:6379'),
+  REDIS_URL: Joi.when('NODE_ENV', {
+    is: 'production',
+    // Auth lockout state, throttling and the shared cache all require Redis,
+    // so a missing value must fail validation instead of silently using
+    // localhost (which does not exist on Plesk).
+    then: Joi.string()
+      .uri({ scheme: ['redis', 'rediss'] })
+      .required(),
+    otherwise: Joi.string()
+      .uri({ scheme: ['redis', 'rediss'] })
+      .default('redis://localhost:6379'),
+  }),
 
   // Auth
   JWT_SECRET: Joi.when('NODE_ENV', {

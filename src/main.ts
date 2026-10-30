@@ -49,10 +49,12 @@ async function bootstrap(): Promise<void> {
 
   const configService = app.get(ConfigService);
   validateCorsConfiguration(configService);
-  // IISNode on Windows/Plesk supplies a named pipe in PORT; keep it verbatim.
+  // IISNode on Windows/Plesk supplies a named pipe in PORT; keep it verbatim
+  // and never bind an unrelated TCP port in that case.
   const listenEndpoint = resolveListenEndpoint({
+    pipePath: configService.get<string>('iisNodeNamedPipe'),
     appPort: process.env.APP_PORT,
-    configuredPort: configService.get<number | string>('port'),
+    configuredPort: configService.get<number>('port'),
   });
   const frontendUrl = configService.get<string>('frontendUrl');
   const nodeEnv = configService.get<string>('nodeEnv');
@@ -156,10 +158,12 @@ async function bootstrap(): Promise<void> {
 
   // ─── Start Server ─────────────────────────────────────────────────────────
   await app.listen(listenEndpoint);
-  const endpointLabel = isWindowsNamedPipe(listenEndpoint)
-    ? `named pipe ${listenEndpoint}`
-    : `http://localhost:${listenEndpoint}/api`;
-  logger.log(`🚀 Dunas Travel API → ${endpointLabel}`);
+  if (isWindowsNamedPipe(listenEndpoint)) {
+    // Do not log the pipe path: only the listener mode matters for diagnostics.
+    logger.log('🚀 Dunas Travel API → IISNode named pipe (no TCP port bound)');
+  } else {
+    logger.log(`🚀 Dunas Travel API → http://localhost:${listenEndpoint}/api`);
+  }
   logger.log(`🌍 Environment: ${nodeEnv}`);
   logger.log(`🔗 CORS Origin: ${frontendUrl}`);
 }

@@ -13,7 +13,7 @@ export const WINDOWS_NAMED_PIPE_PATTERN = /^\\\\[.?]\\pipe\\/;
 
 export const DEFAULT_LISTEN_PORT = 5000;
 
-export function isWindowsNamedPipe(value: unknown): value is string {
+export function isWindowsNamedPipe(value: unknown): boolean {
   return (
     typeof value === 'string' && WINDOWS_NAMED_PIPE_PATTERN.test(value.trim())
   );
@@ -24,65 +24,56 @@ export function isValidPortNumber(value: number): boolean {
 }
 
 /**
- * Converts a raw port env value into a listenable endpoint.
- * Named-pipe paths are preserved verbatim; numeric values become numbers.
+ * Parses a raw env value into a validated TCP port number.
+ * Named pipes and any non-numeric value return `undefined`; this function is
+ * never allowed to coerce a pipe path into `NaN`.
  */
-export function parsePortValue(
-  value: unknown,
-  fallback: number = DEFAULT_LISTEN_PORT,
-): number | string {
-  if (typeof value === 'string') {
+export function parseNumericPort(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return isValidPortNumber(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string' && !isWindowsNamedPipe(value)) {
     const trimmed = value.trim();
-    if (isWindowsNamedPipe(trimmed)) {
-      return trimmed;
-    }
-    if (trimmed === '') {
-      return fallback;
+    if (trimmed === '' || !/^\d+$/.test(trimmed)) {
+      return undefined;
     }
     const parsed = Number.parseInt(trimmed, 10);
-    return isValidPortNumber(parsed) ? parsed : fallback;
+    return isValidPortNumber(parsed) ? parsed : undefined;
   }
 
-  if (typeof value === 'number' && isValidPortNumber(value)) {
-    return value;
-  }
-
-  return fallback;
+  return undefined;
 }
 
 export interface ListenEndpointOptions {
-  /** Raw `process.env.APP_PORT` value (takes precedence when set/valid). */
-  appPort?: string | null;
-  /** Value resolved from the validated config (`port`). */
-  configuredPort?: string | number | null;
+  /** IISNode named-pipe path captured from `process.env.PORT`. */
+  pipePath?: string | null;
+  /** Raw `process.env.APP_PORT` value (numeric TCP override). */
+  appPort?: string | number | null;
+  /** Validated numeric port from the configuration factory. */
+  configuredPort?: number | null;
   /** Numeric fallback when nothing else is set. */
   fallback?: number;
 }
 
 /**
- * Resolves the final listen endpoint while preserving the historical
- * `APP_PORT` > configured `PORT` > fallback precedence. A named-pipe value in
- * either slot is returned untouched.
+ * Resolves the final listen endpoint:
+ * IISNode named pipe > `APP_PORT` > configured numeric port > fallback.
+ *
+ * A named pipe is returned verbatim so `app.listen()` binds the pipe IISNode
+ * owns instead of opening an unrelated TCP port.
  */
 export function resolveListenEndpoint({
+  pipePath,
   appPort,
   configuredPort,
   fallback = DEFAULT_LISTEN_PORT,
 }: ListenEndpointOptions): number | string {
-  if (
-    appPort !== undefined &&
-    appPort !== null &&
-    String(appPort).trim() !== ''
-  ) {
-    const rawAppPort = String(appPort).trim();
-    if (isWindowsNamedPipe(rawAppPort)) {
-      return rawAppPort;
-    }
-    const parsedAppPort = Number.parseInt(rawAppPort, 10);
-    if (isValidPortNumber(parsedAppPort)) {
-      return parsedAppPort;
-    }
+  if (pipePath && isWindowsNamedPipe(pipePath)) {
+    return pipePath.trim();
   }
 
-  return parsePortValue(configuredPort, fallback);
+  return (
+    parseNumericPort(appPort) ?? parseNumericPort(configuredPort) ?? fallback
+  );
 }
