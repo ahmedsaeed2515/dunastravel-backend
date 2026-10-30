@@ -20,7 +20,7 @@ export default () => {
       rawPort && isWindowsNamedPipe(rawPort) ? rawPort.trim() : undefined,
     nodeEnv: process.env.NODE_ENV ?? 'development',
     corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
-    frontendUrl: process.env.FRONTEND_URL ?? 'https://www.dunastravel.com',
+    frontendUrl: process.env.FRONTEND_URL ?? 'https://dunas-travel.com',
     trustProxyHops: parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10),
     database: {
       url: process.env.DATABASE_URL,
@@ -64,8 +64,7 @@ export default () => {
     payments: {
       provider: process.env.PAYMENT_PROVIDER ?? 'DISABLED',
       publicApiUrl:
-        process.env.PUBLIC_API_URL ??
-        'https://dunastravel-backend-seven.vercel.app',
+        process.env.PUBLIC_API_URL ?? 'https://api.dunas-travel.com',
     },
   };
 };

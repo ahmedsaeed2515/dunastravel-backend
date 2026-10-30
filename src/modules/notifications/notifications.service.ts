@@ -337,7 +337,7 @@ export class NotificationsService {
     name: string,
     otpCode: string,
   ): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://dunas-travel.com';
     const verifyUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&code=${otpCode}`;
 
     const template = await this.emailComposition.getTemplateFromDb(
@@ -486,7 +486,7 @@ export class NotificationsService {
     name: string,
     token: string,
   ): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://dunas-travel.com';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     const template = await this.emailComposition.getTemplateFromDb(

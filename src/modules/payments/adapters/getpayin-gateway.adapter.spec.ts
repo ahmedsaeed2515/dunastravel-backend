@@ -13,9 +13,9 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
     GETPAYIN_BASE_URL: 'https://pay.getpayin.com',
     GETPAYIN_AUTH_TOKEN: 'auth-token',
     GETPAYIN_HASH_TOKEN: 'hash-token',
-    GETPAYIN_REDIRECT_URL: 'https://www.dunastravel.com/payment/return',
+    GETPAYIN_REDIRECT_URL: 'https://dunas-travel.com/payment/return',
     GETPAYIN_WEBHOOK_URL:
-      'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
+      'https://api.dunas-travel.com/api/payments/webhook/getpayin',
     GETPAYIN_MAX_RETRIES: 0,
     GETPAYIN_TIMEOUT_MS: 5000,
   };
@@ -66,9 +66,9 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
             last_name: 'Saeed',
             order_amount: '250.00',
             currency: 'USD',
-            redirection_url: 'https://www.dunastravel.com/payment/return',
+            redirection_url: 'https://dunas-travel.com/payment/return',
             webhook_url:
-              'https://dunastravel-backend-seven.vercel.app/api/payments/webhook/getpayin',
+              'https://api.dunas-travel.com/api/payments/webhook/getpayin',
           }),
         );
         // BUG-4: order_details must be a valid JSON array of {label,value} objects

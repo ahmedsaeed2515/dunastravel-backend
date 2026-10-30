@@ -45,13 +45,13 @@ export const envValidationSchema = Joi.object({
   // Optional numeric TCP override, used as the local fallback when IISNode
   // supplies PORT as a named pipe. Never accepts a pipe path.
   APP_PORT: Joi.number().integer().positive().max(65535).empty('').optional(),
-  FRONTEND_URL: Joi.string().uri().default('https://www.dunastravel.com'),
+  FRONTEND_URL: Joi.string().uri().default('https://dunas-travel.com'),
   CORS_ALLOWED_ORIGINS: Joi.string().default(
-    'https://www.dunastravel.com,https://admin.dunastravel.com',
+    'https://dunas-travel.com,https://www.dunas-travel.com,https://stage.dunas-travel.com,https://dashboard.dunas-travel.com',
   ),
   ADMIN_DASHBOARD_BASE_URL: Joi.string()
     .uri()
-    .default('https://admin.dunastravel.com'),
+    .default('https://dashboard.dunas-travel.com'),
   TRUST_PROXY_HOPS: Joi.number().integer().min(0).max(3).default(0),
 
   // DB
@@ -206,7 +206,7 @@ export const envValidationSchema = Joi.object({
     .default('DISABLED'),
   PUBLIC_API_URL: Joi.string()
     .uri({ scheme: ['http', 'https'] })
-    .default('https://dunastravel-backend-seven.vercel.app'),
+    .default('https://api.dunas-travel.com'),
   GETPAYIN_MODE: Joi.string().valid('sandbox', 'production').default('sandbox'),
   GETPAYIN_BASE_URL: Joi.string()
     .uri({ scheme: ['https'] })

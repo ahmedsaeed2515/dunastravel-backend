@@ -177,7 +177,7 @@ export class AdminTemplatesService {
     const defaultVariables: Record<string, string> = {
       name: 'Valued Guest',
       otpCode: '849201',
-      verifyUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?email=${encodeURIComponent(dto.recipientEmail)}`,
+      verifyUrl: `${process.env.FRONTEND_URL || 'https://dunas-travel.com'}/verify-email?email=${encodeURIComponent(dto.recipientEmail)}`,
       bookingRef: 'BKG-DUNAS-7890',
       tourTitle: 'Pharaohs & Nile Exclusive Cruise',
       date: new Date().toLocaleDateString(),
