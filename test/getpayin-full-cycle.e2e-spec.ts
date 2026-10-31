@@ -415,7 +415,9 @@ describe('GetPayIn Complete E2E Cycle (Login -> Tour Booking -> Payment -> Webho
     });
 
     expect(updatedBooking?.status).toBe('CONFIRMED');
-    expect(Number(updatedBooking?.paidAmountUsd).toFixed(2)).toBe(tourBasePriceStr);
+    expect(Number(updatedBooking?.paidAmountUsd).toFixed(2)).toBe(
+      tourBasePriceStr,
+    );
     expect(updatedBooking?.invoice?.status).toBe('PAID');
 
     const updatedPayment = updatedBooking?.payments.find(

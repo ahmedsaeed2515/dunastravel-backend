@@ -31,6 +31,7 @@ const HTML_ALLOWLIST: sanitizeHtml.IOptions = {
 };
 
 const EMAIL_HTML_ALLOWLIST: sanitizeHtml.IOptions = {
+  allowVulnerableTags: true, // Needed solely for <style> tag preservation in responsive email clients
   allowedTags: [
     'html',
     'head',
@@ -63,18 +64,88 @@ const EMAIL_HTML_ALLOWLIST: sanitizeHtml.IOptions = {
     'td',
     'a',
     'img',
+    'style',
   ],
   allowedAttributes: {
-    a: ['href', 'title', 'target', 'rel'],
-    img: ['src', 'alt', 'width', 'height', 'align', 'title'],
-    td: ['colspan', 'rowspan', 'align', 'width'],
-    th: ['colspan', 'rowspan', 'align', 'width'],
-    table: ['width', 'align'],
-    '*': ['title', 'align', 'width', 'height'],
+    html: ['lang', 'dir'],
+    meta: ['charset', 'name', 'content'],
+    a: ['href', 'title', 'target', 'rel', 'style'],
+    img: ['src', 'alt', 'width', 'height', 'align', 'title', 'style'],
+    td: ['colspan', 'rowspan', 'align', 'width', 'style'],
+    th: ['colspan', 'rowspan', 'align', 'width', 'style'],
+    table: ['width', 'align', 'cellpadding', 'cellspacing', 'border', 'style'],
+    div: ['style', 'class', 'dir', 'align'],
+    span: ['style', 'class'],
+    p: ['style', 'class', 'dir', 'align'],
+    '*': ['title', 'align', 'width', 'height', 'style', 'dir', 'lang'],
   },
-  allowedSchemes: ['http', 'https', 'mailto', 'tel', 'data'],
+  allowedStyles: {
+    '*': {
+      color: [/.*/],
+      background: [/.*/],
+      'background-color': [/.*/],
+      'font-size': [/.*/],
+      'font-family': [/.*/],
+      'font-weight': [/.*/],
+      'text-align': [/.*/],
+      padding: [/.*/],
+      'padding-top': [/.*/],
+      'padding-bottom': [/.*/],
+      'padding-left': [/.*/],
+      'padding-right': [/.*/],
+      margin: [/.*/],
+      border: [/.*/],
+      'border-radius': [/.*/],
+      'line-height': [/.*/],
+      'max-width': [/.*/],
+      width: [/.*/],
+      display: [/.*/],
+      'text-decoration': [/.*/],
+    },
+  },
+  // Strict scheme restrictions: data: is permitted ONLY on <img> tags, never on <a> links
+  allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+  allowedSchemesByTag: {
+    img: ['http', 'https', 'data'],
+  },
   disallowedTagsMode: 'discard',
 };
+
+/**
+ * Strips dangerous CSS vectors from style blocks:
+ * - @import (remote style injection)
+ * - expression() (IE dynamic script execution)
+ * - behavior: (IE HTC script execution)
+ * - -moz-binding (Firefox XBL script execution)
+ * - javascript:/vbscript:/data: in url(...)
+ */
+export function sanitizeCssContent(css: string): string {
+  if (!css) return '';
+  return css
+    .replace(/@import\s+[^;]+;?/gi, '')
+    .replace(/expression\s*\([^)]*\)/gi, '')
+    .replace(/behavior\s*:[^;]+;?/gi, '')
+    .replace(/-moz-binding\s*:[^;]+;?/gi, '')
+    .replace(
+      /url\s*\(\s*(['"]?)\s*(?:javascript|vbscript|data):.*?\1\s*\)/gi,
+      '',
+    )
+    .replace(/<\/style/gi, '<\\/style');
+}
+
+/**
+ * Sanitizes email subjects to prevent CRLF / header injection attacks.
+ */
+export function sanitizeSubject(subject: string | null | undefined): string {
+  if (!subject) return '';
+  return (
+    subject
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\r\n\x00-\x1F\x7F]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
 
 /**
  * Sanitizes rich text with a strict allowlist. Built on `sanitize-html`
@@ -96,7 +167,16 @@ export function sanitizePlainText(input: string | null | undefined): string {
 
 export function sanitizeEmailHtml(input: string | null | undefined): string {
   if (!input) return '';
-  return sanitizeHtml(input, EMAIL_HTML_ALLOWLIST).trim();
+
+  // Clean style blocks to eliminate CSS script execution vectors
+  const preProcessed = input.replace(
+    /<style\b[^>]*>([\s\S]*?)<\/style>/gi,
+    (_, css) => {
+      return `<style>${sanitizeCssContent(css)}</style>`;
+    },
+  );
+
+  return sanitizeHtml(preProcessed, EMAIL_HTML_ALLOWLIST).trim();
 }
 
 export function sanitizeEmailTemplateHtml(

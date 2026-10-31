@@ -594,6 +594,7 @@ export class AdminService {
     referenceCode: string,
     dto: {
       amount: number;
+      currency?: string;
       method?: string;
       transactionId?: string;
       notes?: string;
@@ -608,7 +609,7 @@ export class AdminService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       const [lockedBooking] = await tx.$queryRaw<any[]>`
-        SELECT id, "total_amount_usd" AS "totalAmountUsd", "paid_amount_usd" AS "paidAmountUsd", status
+        SELECT id, "total_amount_usd" AS "totalAmountUsd", "paid_amount_usd" AS "paidAmountUsd", "currency", "original_amount" AS "originalAmount", status
         FROM bookings
         WHERE reference_code = ${referenceCode} AND deleted_at IS NULL
         FOR UPDATE
@@ -624,24 +625,51 @@ export class AdminService {
         );
       }
 
-      const total = new Prisma.Decimal(lockedBooking.totalAmountUsd);
-      const paid = new Prisma.Decimal(lockedBooking.paidAmountUsd ?? 0);
-      const newPaidAmount = paid.plus(paymentAmount);
-
-      if (newPaidAmount.gt(total)) {
+      const bookingCurrency = (lockedBooking.currency || 'USD').toUpperCase();
+      if (dto.currency && dto.currency.toUpperCase() !== bookingCurrency) {
         throw new BadRequestException(
-          `Total paid amount ($${newPaidAmount.toFixed(2)}) cannot exceed booking total ($${total.toFixed(2)})`,
+          'Payment currency (' +
+            dto.currency.toUpperCase() +
+            ') does not match booking currency (' +
+            bookingCurrency +
+            ')',
         );
       }
 
-      const isFullyPaid = newPaidAmount.equals(total);
+      const isEur = bookingCurrency === 'EUR';
+      const currencySymbol = isEur
+        ? '€'
+        : bookingCurrency === 'EGP'
+          ? 'EGP '
+          : String.fromCharCode(36);
+      const authoritativeTotal =
+        isEur && lockedBooking.originalAmount
+          ? new Prisma.Decimal(lockedBooking.originalAmount)
+          : new Prisma.Decimal(lockedBooking.totalAmountUsd);
+
+      const paid = new Prisma.Decimal(lockedBooking.paidAmountUsd ?? 0);
+      const newPaidAmount = paid.plus(paymentAmount);
+
+      if (newPaidAmount.gt(authoritativeTotal)) {
+        throw new BadRequestException(
+          'Total paid amount (' +
+            currencySymbol +
+            newPaidAmount.toFixed(2) +
+            ') cannot exceed booking total (' +
+            currencySymbol +
+            authoritativeTotal.toFixed(2) +
+            ')',
+        );
+      }
+
+      const isFullyPaid = newPaidAmount.equals(authoritativeTotal);
       const targetStatus = isFullyPaid ? 'CONFIRMED' : 'PARTIALLY_PAID';
 
       const payment = await tx.payment.create({
         data: {
           bookingId: lockedBooking.id,
           amount: paymentAmount,
-          currency: 'USD',
+          currency: bookingCurrency,
           method: dto.method || 'CASH',
           provider: 'MANUAL_ADMIN',
           providerStatus: 'PAID',
@@ -693,7 +721,7 @@ export class AdminService {
         success: true,
         payment,
         newPaidAmount: newPaidAmount.toFixed(2),
-        balanceDue: total.minus(newPaidAmount).toFixed(2),
+        balanceDue: authoritativeTotal.minus(newPaidAmount).toFixed(2),
         status: targetStatus,
         bookingId: lockedBooking.id,
       };

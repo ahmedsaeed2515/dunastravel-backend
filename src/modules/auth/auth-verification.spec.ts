@@ -140,6 +140,7 @@ describe('AuthService - Email Verification & Hardening', () => {
         'jane@example.com',
         'Jane Traveler',
         expect.stringMatching(/^\d{6}$/),
+        'en',
       );
       expect(result.isVerified).toBe(false);
     });
@@ -316,6 +317,7 @@ describe('AuthService - Email Verification & Hardening', () => {
         'user@example.com',
         'Jane Traveler',
         expect.stringMatching(/^\d{6}$/),
+        'en',
       );
     });
   });

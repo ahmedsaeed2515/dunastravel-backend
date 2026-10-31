@@ -1098,6 +1098,7 @@ export function sanitizeApiKey(apiKey: string): string {
   let cleaned = apiKey.trim();
   // Strip zero-width, non-printable control characters, and BOM
   cleaned = cleaned
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u200B-\u200D\uFEFF\x00-\x1F\x7F-\x9F]/g, '')
     .trim();
 

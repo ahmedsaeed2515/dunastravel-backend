@@ -145,11 +145,13 @@ export class WalletTransactionQueryFilters {
 export class ListWalletsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   page?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   limit?: number;
 

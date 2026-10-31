@@ -2157,9 +2157,9 @@ export class MediaService {
       const sourceUrl = asset.secureUrl || asset.url;
 
       if (sourceUrl.includes('/image/upload/')) {
-        if (/\/image\/upload\/(?:[^\/]+\/)?(v\d+\/.+)/.test(sourceUrl)) {
+        if (/\/image\/upload\/(?:[^/]+\/)?(v\d+\/.+)/.test(sourceUrl)) {
           optimizedUrl = sourceUrl.replace(
-            /\/image\/upload\/(?:[^\/]+\/)?(v\d+\/.+)/,
+            /\/image\/upload\/(?:[^/]+\/)?(v\d+\/.+)/,
             (_match, rest) => {
               const cleanRest =
                 targetFormat === 'auto'

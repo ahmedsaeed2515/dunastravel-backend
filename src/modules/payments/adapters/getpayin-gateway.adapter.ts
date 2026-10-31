@@ -48,6 +48,7 @@ const PAYLINK_EVENTS = new Map<
 @Injectable()
 export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
   private readonly logger = new Logger(GetPayInGatewayAdapter.name);
+  private credentialState: 'UNVERIFIED' | 'VALID' | 'INVALID' = 'UNVERIFIED';
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -75,15 +76,30 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
         ? 'production'
         : 'sandbox';
 
+    const credentialStatus = !enabled
+      ? 'DISABLED'
+      : missingConfiguration.length > 0
+        ? 'MISSING'
+        : this.credentialState === 'INVALID'
+          ? 'INVALID'
+          : this.credentialState === 'VALID'
+            ? 'VERIFIED'
+            : 'UNVERIFIED';
+
     return {
       provider: this.getProviderName(),
       state: !enabled
         ? 'DISABLED'
         : missingConfiguration.length > 0
           ? 'CONFIG_INCOMPLETE'
-          : mode === 'production'
-            ? 'LIVE_CONFIGURED'
-            : 'CONFIGURED',
+          : this.credentialState === 'VALID'
+            ? mode === 'production'
+              ? 'LIVE_VERIFIED'
+              : 'SANDBOX_VERIFIED'
+            : mode === 'production'
+              ? 'LIVE_CONFIGURED'
+              : 'CONFIGURED',
+      credentialStatus,
       enabled,
       configured: enabled && missingConfiguration.length === 0,
       mode,
@@ -148,6 +164,7 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
       );
     }
 
+    this.credentialState = 'VALID';
     return {
       url: checkoutUrl.toString(),
       providerInvoiceId: String(checkout.invoiceId),
@@ -370,20 +387,43 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
     } catch (error) {
       if (error instanceof PaylinkConnectionError) {
         this.logger.error(
-          `GATEWAY OUTAGE ALERT: PayLink connection failure or timeout: ${error.message}`,
+          '[PaymentGateway] provider=GETPAYIN category=CONNECTION_ERROR message="PayLink connection failure or timeout"',
         );
-        throw new ServiceUnavailableException(
-          'PayLink is temporarily unavailable',
-        );
+        throw new ServiceUnavailableException({
+          code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+          message: 'Payment provider is temporarily unavailable',
+        });
       }
       if (error instanceof PaylinkApiError) {
-        if (error.status === 401 || error.status === 403) {
+        const rawMessage = (error.message || '').toLowerCase();
+        const errorsStr = JSON.stringify(error.errors || '').toLowerCase();
+        const rawStr = JSON.stringify(error.raw || '').toLowerCase();
+        const isAuthError =
+          error.status === 401 ||
+          error.status === 403 ||
+          ((error.status === 400 || error.status === 422) &&
+            (rawMessage.includes('token invalid') ||
+              rawMessage.includes('public token') ||
+              rawMessage.includes('invalid token') ||
+              rawMessage.includes('authentication') ||
+              rawMessage.includes('unauthorized') ||
+              errorsStr.includes('token invalid') ||
+              errorsStr.includes('public token') ||
+              errorsStr.includes('invalid token') ||
+              errorsStr.includes('authentication') ||
+              errorsStr.includes('unauthorized') ||
+              rawStr.includes('token invalid') ||
+              rawStr.includes('public token')));
+
+        if (isAuthError) {
+          this.credentialState = 'INVALID';
           this.logger.error(
-            `PayLink authentication/credential error: status=${error.status} message=${error.message}`,
+            `[PaymentGateway] provider=GETPAYIN status=${error.status} category=AUTHENTICATION_FAILED message="Payment provider credential rejected"`,
           );
-          throw new ServiceUnavailableException(
-            'PayLink authentication or configuration failed',
-          );
+          throw new ServiceUnavailableException({
+            code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+            message: 'Payment provider is temporarily unavailable',
+          });
         }
         if (error.status === 400 || error.status === 422) {
           throw new BadRequestException(
@@ -391,15 +431,21 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
           );
         }
         if (error.status === 429) {
-          throw new ServiceUnavailableException(
-            'PayLink rate limit exceeded; please retry shortly',
+          this.logger.warn(
+            '[PaymentGateway] provider=GETPAYIN status=429 category=RATE_LIMITED message="Rate limit exceeded"',
           );
+          throw new ServiceUnavailableException({
+            code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+            message: 'Payment provider is temporarily unavailable',
+          });
         }
-        throw new ServiceUnavailableException(
-          error.isIdempotencyConflict
-            ? 'PayLink rejected conflicting idempotency data'
-            : 'PayLink rejected the payment operation',
+        this.logger.error(
+          `[PaymentGateway] provider=GETPAYIN status=${error.status} category=UPSTREAM_ERROR`,
         );
+        throw new ServiceUnavailableException({
+          code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+          message: 'Payment provider is temporarily unavailable',
+        });
       }
       throw error;
     }

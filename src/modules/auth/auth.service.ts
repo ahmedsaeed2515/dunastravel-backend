@@ -133,6 +133,7 @@ export class AuthService {
           user.email,
           user.name,
           otpCode,
+          (user.preferredLanguage as any) || 'en',
         );
       } catch (error: any) {
         this.logger.error(
@@ -345,6 +346,7 @@ export class AuthService {
         user.email,
         user.name,
         resetToken,
+        (user.preferredLanguage as any) || 'en',
       );
     } catch (error: any) {
       this.logger.error(
@@ -700,6 +702,7 @@ export class AuthService {
         user.email,
         user.name,
         otpCode,
+        (user.preferredLanguage as any) || 'en',
       );
     } catch (error: any) {
       this.logger.error(

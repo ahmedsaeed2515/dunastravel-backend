@@ -152,15 +152,13 @@ export const envValidationSchema = Joi.object({
 
   MAIL_TRANSPORT: Joi.when('NODE_ENV', {
     is: 'production',
-    then: Joi.string().valid('resend').default('resend'),
-    otherwise: Joi.string().valid('resend', 'mock').default('mock'),
+    then: Joi.string().valid('brevo').default('brevo'),
+    otherwise: Joi.string().valid('brevo', 'mock').default('mock'),
   }),
 
-  RESEND_API_KEY: Joi.when('NODE_ENV', {
+  BREVO_API_KEY: Joi.when('NODE_ENV', {
     is: 'production',
-    then: Joi.string()
-      .pattern(/^re_[a-zA-Z0-9_]{8,}$/)
-      .required(),
+    then: Joi.string().min(16).required(),
     otherwise: Joi.string().optional().allow(''),
   }),
   MAIL_FROM_ADDRESS: Joi.when('NODE_ENV', {

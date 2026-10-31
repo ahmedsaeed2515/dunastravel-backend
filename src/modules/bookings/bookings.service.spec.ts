@@ -5,6 +5,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
@@ -23,6 +24,9 @@ import * as crypto from 'crypto';
 describe('BookingsService', () => {
   let service: BookingsService;
   let prisma: PrismaService;
+  let pricingService: PricingService;
+  let availabilityService: AvailabilityService;
+  let commissionsService: CommissionsService;
 
   const TEST_GUEST_SECRET =
     'super-secret-guest-token-key-that-is-at-least-32-chars-long';
@@ -273,6 +277,9 @@ describe('BookingsService', () => {
 
     service = module.get<BookingsService>(BookingsService);
     prisma = module.get<PrismaService>(PrismaService);
+    pricingService = module.get<PricingService>(PricingService);
+    availabilityService = module.get<AvailabilityService>(AvailabilityService);
+    commissionsService = module.get<CommissionsService>(CommissionsService);
 
     jest
       .spyOn(service, 'generateUniqueReferenceCode')
@@ -328,6 +335,90 @@ describe('BookingsService', () => {
       }>;
       const createdData = firstCall[0].data;
       expect(createdData.totalAmountUsd.toString()).toBe('250');
+    });
+
+    it('requires payment for a priced EUR booking and preserves the EUR snapshot', async () => {
+      jest.spyOn(pricingService, 'calculatePrice').mockResolvedValue({
+        basePriceUsd: '200.00',
+        adultTotalUsd: '200.00',
+        childTotalUsd: '0.00',
+        seasonalAdjustmentUsd: '0.00',
+        discountAmountUsd: '0.00',
+        taxAmountUsd: '0.00',
+        subtotalUsd: '200.00',
+        totalAmountUsd: '200.00',
+        totalAmountEur: '200.00',
+        authoritativeAmount: '200.00',
+        authoritativeCurrency: 'EUR',
+        exchangeRate: '1.000000',
+        exchangeRateDate: '2027-01-01',
+        exchangeRateSource: 'TEST',
+        currency: 'EUR',
+        promoValid: true,
+        promoMessage: null,
+        discounts: [],
+      });
+      mockTx.booking.create.mockResolvedValueOnce({
+        ...mockBookingResult,
+        totalAmountUsd: new Prisma.Decimal(200),
+        currency: 'EUR',
+        originalAmount: new Prisma.Decimal(200),
+        originalCurrency: 'EUR',
+      });
+
+      const result = await service.createBooking(
+        { ...baseDto, currency: 'EUR' },
+        'user-1',
+        'test-idem-eur',
+      );
+
+      expect(result.paymentRequired).toBe(true);
+      expect(result.currency).toBe('EUR');
+      expect(result.originalCurrency).toBe('EUR');
+    });
+
+    it('does not require payment for a complimentary zero-price booking', async () => {
+      jest.spyOn(pricingService, 'calculatePrice').mockResolvedValue({
+        basePriceUsd: '0.00',
+        adultTotalUsd: '0.00',
+        childTotalUsd: '0.00',
+        seasonalAdjustmentUsd: '0.00',
+        discountAmountUsd: '0.00',
+        taxAmountUsd: '0.00',
+        subtotalUsd: '0.00',
+        totalAmountUsd: '0.00',
+        totalAmountEur: '0.00',
+        authoritativeAmount: '0.00',
+        authoritativeCurrency: 'USD',
+        exchangeRate: '1.000000',
+        exchangeRateDate: '2027-01-01',
+        exchangeRateSource: 'TEST',
+        currency: 'USD',
+        promoValid: true,
+        promoMessage: null,
+        discounts: [],
+      });
+      mockTx.booking.create.mockResolvedValueOnce({
+        ...mockBookingResult,
+        totalAmountUsd: new Prisma.Decimal(0),
+        currency: 'USD',
+      });
+
+      const result = await service.createBooking(
+        { ...baseDto },
+        'user-1',
+        'test-idem-free',
+      );
+
+      expect(result.totalAmountUsd).toBe('0');
+      expect(result.paymentRequired).toBe(false);
+      expect(mockTx.bookingActivityLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'BOOKING_CREATED_CUSTOM_QUOTE',
+          }),
+        }),
+      );
     });
 
     it('should allow guest booking creation with null userId and guestToken', async () => {
@@ -643,6 +734,116 @@ describe('BookingsService', () => {
       } finally {
         jest.useRealTimers();
       }
+    });
+  });
+
+  describe('cancelWithRefund', () => {
+    const mockPaidBooking = {
+      id: 'booking-paid-1',
+      referenceCode: 'BKG-REFUND-1',
+      status: 'PAID',
+      paidAmountUsd: new Prisma.Decimal(500),
+      totalAmountUsd: new Prisma.Decimal(500),
+      availabilityId: 'avail-slot-1',
+      adults: 2,
+      children: 0,
+      payments: [
+        {
+          id: 'pay-1',
+          amount: new Prisma.Decimal(500),
+          currency: 'USD',
+          status: 'CAPTURED',
+          createdAt: new Date(),
+        },
+      ],
+    };
+
+    it('rejects non-admin or agent actor from issuing refund cancellation', async () => {
+      await expect(
+        service.cancelWithRefund(
+          'BKG-REFUND-1',
+          { id: 'agent-1', role: 'AGENT' },
+          'Customer request',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException if booking does not exist', async () => {
+      jest.spyOn(prisma.booking, 'findFirst').mockResolvedValue(null);
+
+      await expect(
+        service.cancelWithRefund(
+          'BKG-NONEXISTENT',
+          { id: 'admin-1', role: 'ADMIN' },
+          'Customer request',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('cancels booking, releases capacity, creates refund record, and reverses commissions', async () => {
+      jest
+        .spyOn(prisma.booking, 'findFirst')
+        .mockResolvedValue(mockPaidBooking as any);
+
+      const txMock = {
+        booking: { update: jest.fn().mockResolvedValue({}) },
+        refundRecord: { create: jest.fn().mockResolvedValue({}) },
+        payment: { update: jest.fn().mockResolvedValue({}) },
+        auditLog: { create: jest.fn().mockResolvedValue({}) },
+      };
+
+      jest.spyOn(prisma, '$transaction').mockImplementation(async (cb: any) => {
+        return cb(txMock);
+      });
+
+      const releaseCapacitySpy = jest
+        .spyOn(availabilityService, 'releaseCapacity')
+        .mockResolvedValue();
+
+      const reverseCommissionSpy = jest
+        .spyOn(commissionsService, 'reverseCommissionForBooking')
+        .mockResolvedValue(null);
+
+      const result = await service.cancelWithRefund(
+        'BKG-REFUND-1',
+        { id: 'admin-1', role: 'ADMIN' },
+        'Requested by customer',
+      );
+
+      expect(result).toEqual({ success: true });
+      expect(txMock.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: mockPaidBooking.id },
+          data: expect.objectContaining({
+            status: 'CANCELLED',
+            cancellationReason: 'Requested by customer',
+          }),
+        }),
+      );
+      expect(releaseCapacitySpy).toHaveBeenCalledWith(
+        txMock,
+        'avail-slot-1',
+        2,
+      );
+      expect(txMock.refundRecord.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            paymentId: 'pay-1',
+            status: 'COMPLETED',
+            actorId: 'admin-1',
+          }),
+        }),
+      );
+      expect(txMock.payment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pay-1' },
+          data: expect.objectContaining({
+            status: 'REFUNDED',
+            isRefund: true,
+          }),
+        }),
+      );
+      expect(reverseCommissionSpy).toHaveBeenCalledWith(mockPaidBooking.id);
     });
   });
 });

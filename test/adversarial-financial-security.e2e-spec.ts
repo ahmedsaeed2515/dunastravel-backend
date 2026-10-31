@@ -69,7 +69,9 @@ describe('Phase 3 Fresh Adversarial Financial & Security Tests (E2E)', () => {
           try {
             const body = JSON.parse(String(init?.body || '{}'));
             if (body.invoice_id) invoiceId = Number(body.invoice_id);
-          } catch {}
+          } catch (_e) {
+            /* ignore */
+          }
           return new Response(
             JSON.stringify({
               success: true,

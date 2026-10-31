@@ -30,6 +30,7 @@ import {
   extractDesignConfigFromHtml,
   EmailDesignConfig,
 } from './template-compiler.util';
+import { redactEmailAddress } from '../../../common/utils/currency-formatter.util';
 
 @Injectable()
 export class AdminTemplatesService {
@@ -171,7 +172,7 @@ export class AdminTemplatesService {
 
   async sendTestEmail(dto: SendTestEmailDto, adminUserId: string) {
     this.logger.log(
-      `Admin ${adminUserId} sending a test email to ${dto.recipientEmail}`,
+      `Admin ${adminUserId} sending a test email to ${redactEmailAddress(dto.recipientEmail)}`,
     );
 
     const defaultVariables: Record<string, string> = {
@@ -227,8 +228,14 @@ export class AdminTemplatesService {
 
     switch (dto.recipientGroup) {
       case BroadcastAudience.ALL_USERS:
+        // Rule: Never treat ALL_USERS as marketing consent.
+        // Enforce marketingConsent: true for mass marketing broadcasts.
         recipients = await this.prisma.user.findMany({
-          where: { status: 'ACTIVE', deletedAt: null },
+          where: {
+            status: 'ACTIVE',
+            marketingConsent: true,
+            deletedAt: null,
+          },
           select: { email: true, name: true },
         });
         break;
@@ -277,6 +284,23 @@ export class AdminTemplatesService {
     const rawSubject = this.sanitizeSubject(dto.subject);
     const rawHtml = sanitizeEmailTemplateHtml(dto.bodyHtml);
 
+    // Audit initiating admin
+    if (this.prisma?.auditLog) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId: adminUserId,
+            actorRole: 'ADMIN',
+            action: 'BROADCAST_CAMPAIGN_DISPATCHED',
+            entityType: 'CAMPAIGN',
+            entityId: campaignId,
+          },
+        });
+      } catch (_err) {
+        // Safe non-blocking audit
+      }
+    }
+
     let sentCount = 0;
     let failedCount = 0;
 
@@ -302,11 +326,17 @@ export class AdminTemplatesService {
               personalizedSubject = personalizedSubject.replace(regex, val);
             }
 
+            const unsubUrl = `${process.env.FRONTEND_URL || 'https://dunas-travel.com'}/unsubscribe?email=${encodeURIComponent(r.email)}`;
+            const footerHtml = `<div style="text-align:center;font-size:11px;color:#888;margin-top:20px;border-top:1px solid #ddd;padding-top:10px;"><p>You received this email because you opted in to Dunas Travel updates. <a href="${unsubUrl}">Unsubscribe</a></p></div>`;
+
             const payload = {
               to: r.email,
               subject: personalizedSubject,
-              html: sanitizeEmailHtml(personalizedHtml),
+              html: sanitizeEmailHtml(personalizedHtml + footerHtml),
               text: sanitizePlainText(personalizedHtml).slice(0, 50_000),
+              headers: {
+                'List-Unsubscribe': `<${unsubUrl}>`,
+              },
               tags: {
                 campaignId,
                 campaignName: dto.campaignName || 'Broadcast',
@@ -326,7 +356,9 @@ export class AdminTemplatesService {
               failedCount++;
             }
           } catch (err) {
-            this.logger.error(`Broadcast failed for ${r.email}: ${err}`);
+            this.logger.error(
+              `Broadcast failed for ${redactEmailAddress(r.email)}: ${err}`,
+            );
             failedCount++;
           }
         }),

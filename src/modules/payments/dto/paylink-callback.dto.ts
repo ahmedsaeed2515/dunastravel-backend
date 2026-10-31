@@ -1,4 +1,10 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class PayLinkCallbackDto {
   @IsIn(['0', '1', 'true', 'false', 0, 1, true, false])

@@ -217,6 +217,9 @@ export class PaymentsService {
           fullName: booking.billingInfo.fullName,
           email: booking.billingInfo.email,
           phone: booking.billingInfo.phone,
+          address: booking.billingInfo.address || undefined,
+          city: booking.billingInfo.city || undefined,
+          country: booking.billingInfo.country || undefined,
         },
         idempotencyKey: checkoutIdempotencyKey,
       });
@@ -518,15 +521,19 @@ export class PaymentsService {
         targetAmount = matchedPayment.amount.toNumber();
       }
 
-      if (
-        matchedPayment.booking?.invoice &&
-        !matchedPayment.booking.invoice.total.equals(
-          matchedPayment.booking.totalAmountUsd,
-        )
-      ) {
-        throw new UnprocessableEntityException(
-          'Invoice total does not match booking total amount',
-        );
+      if (matchedPayment.booking?.invoice) {
+        const expectedInvoiceTotal =
+          matchedPayment.booking.currency === 'EUR' &&
+          matchedPayment.booking.originalAmount
+            ? matchedPayment.booking.originalAmount
+            : matchedPayment.booking.totalAmountUsd;
+        if (
+          !matchedPayment.booking.invoice.total.equals(expectedInvoiceTotal)
+        ) {
+          throw new UnprocessableEntityException(
+            'Invoice total does not match booking total amount',
+          );
+        }
       }
     } else {
       targetAmount = matchedPayment.amount.toNumber();
@@ -680,7 +687,7 @@ export class PaymentsService {
       paymentId: targetPaymentId,
       bookingId: targetBookingId,
       amountUsd: targetAmount,
-      transactionId: targetPaymentId,
+      transactionId: payload.providerInvoiceId,
       gateway: provider,
     });
 
@@ -829,6 +836,18 @@ export class PaymentsService {
         'Webhook amount or currency does not match the expected payment',
       );
     }
+    const expectedPaymentTotal =
+      booking.currency === 'EUR' && booking.originalAmount
+        ? booking.originalAmount
+        : booking.totalAmountUsd;
+    if (
+      booking.invoice?.total &&
+      !booking.invoice.total.equals(expectedPaymentTotal)
+    ) {
+      throw new UnprocessableEntityException(
+        'Invoice total does not match booking total amount',
+      );
+    }
 
     const paymentEntity = new PaymentEntity(
       existingPayment.id,
@@ -862,22 +881,29 @@ export class PaymentsService {
         sum.plus(p.amount),
       new Prisma.Decimal(0),
     );
-    if (totalCaptured.gt(booking.totalAmountUsd)) {
+    if (totalCaptured.gt(expectedPaymentTotal)) {
       throw new UnprocessableEntityException(
         'Captured payments exceed the booking total',
       );
     }
     // A verified payment confirms a booking; it never means the travel has
     // been completed. Payment status remains on the Payment record.
-    const newStatus = totalCaptured.equals(booking.totalAmountUsd)
+    const newStatus = totalCaptured.equals(expectedPaymentTotal)
       ? 'CONFIRMED'
       : 'PARTIALLY_PAID';
+    const paidAmountUsd =
+      booking.currency === 'EUR'
+        ? totalCaptured
+            .div(expectedPaymentTotal)
+            .mul(booking.totalAmountUsd)
+            .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+        : totalCaptured;
 
     await tx.booking.update({
       where: { id: bookingId },
       data: {
         status: newStatus,
-        paidAmountUsd: totalCaptured,
+        paidAmountUsd,
       },
     });
 
@@ -1094,9 +1120,7 @@ export class PaymentsService {
           data: {
             providerStatus,
             lastProviderCheckAt: new Date(),
-            ...(checked.authCode
-              ? { providerAuthCode: checked.authCode }
-              : {}),
+            ...(checked.authCode ? { providerAuthCode: checked.authCode } : {}),
           },
         });
         await tx.processedWebhookEvent.create({

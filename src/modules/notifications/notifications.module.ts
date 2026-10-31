@@ -4,7 +4,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailCompositionService } from './services/email-composition.service';
 import { EmailDeliveryService } from './services/email-delivery.service';
-import { ResendEmailProvider } from './providers/resend-email.provider';
+import { EmailRetrySchedulerService } from './services/email-retry-scheduler.service';
+import { EmailSuppressionService } from './services/email-suppression.service';
+import { TemplateRegistryService } from './templates/template-registry.service';
+import { BrevoEmailProvider } from './providers/brevo-email.provider';
 import { MockEmailProvider } from './providers/mock-email.provider';
 import { EMAIL_PROVIDER_TOKEN } from './providers/email-provider.interface';
 import { InquiryCreatedListener } from './listeners/inquiry-created.listener';
@@ -15,15 +18,15 @@ import { ReviewCreatedListener } from './listeners/review-created.listener';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { CommissionsModule } from '../commissions/commissions.module';
-
 import { InAppNotificationsModule } from '../in-app-notifications/in-app-notifications.module';
+import configuration from '../../config/configuration';
 
 const EmailProviderFactory = {
   provide: EMAIL_PROVIDER_TOKEN,
   useFactory: (configService: ConfigService) => {
     const transport = configService.get<string>('mail.transport');
-    if (transport === 'resend') {
-      return new ResendEmailProvider(configService);
+    if (transport === 'brevo') {
+      return new BrevoEmailProvider(configService);
     }
     if (process.env.NODE_ENV === 'production') {
       throw new ServiceUnavailableException(
@@ -34,8 +37,6 @@ const EmailProviderFactory = {
   },
   inject: [ConfigService],
 };
-
-import configuration from '../../config/configuration';
 
 @Module({
   imports: [
@@ -48,8 +49,11 @@ import configuration from '../../config/configuration';
   controllers: [NotificationsController],
   providers: [
     EmailProviderFactory,
+    TemplateRegistryService,
+    EmailSuppressionService,
     EmailCompositionService,
     EmailDeliveryService,
+    EmailRetrySchedulerService,
     NotificationsService,
     InquiryCreatedListener,
     ContactCreatedListener,
@@ -57,6 +61,12 @@ import configuration from '../../config/configuration';
     PaymentEventsListener,
     ReviewCreatedListener,
   ],
-  exports: [NotificationsService, EmailDeliveryService],
+  exports: [
+    NotificationsService,
+    EmailDeliveryService,
+    TemplateRegistryService,
+    EmailSuppressionService,
+    EmailCompositionService,
+  ],
 })
 export class NotificationsModule {}

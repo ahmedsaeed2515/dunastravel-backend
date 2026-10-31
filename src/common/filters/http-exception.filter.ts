@@ -22,10 +22,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let message: string | string[] = exception.message;
     let error = exception.name;
+    let explicitCode: string | undefined;
     let errors: Record<string, string[] | string> | undefined;
 
     if (exceptionResponse && typeof exceptionResponse === 'object') {
       const resObj = exceptionResponse as Record<string, unknown>;
+      if ('code' in resObj && typeof resObj.code === 'string') {
+        explicitCode = resObj.code;
+      }
       if ('message' in resObj) {
         message = resObj.message as string | string[];
       }
@@ -41,7 +45,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    if (status >= 500) {
+    if (status === 500) {
+      message = 'An unexpected server error occurred';
+      error = 'Internal Server Error';
+    } else if (status === 503) {
+      error = 'Service Unavailable';
+      if (!explicitCode && (!message || message === exception.message)) {
+        message = 'Service temporarily unavailable';
+      }
+    } else if (status > 500) {
       message = 'An unexpected server error occurred';
       error = 'Internal Server Error';
     }
@@ -50,9 +62,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       success: false,
       statusCode: status,
       code:
-        (status === 400 || status === 422) && Array.isArray(message)
+        explicitCode ||
+        ((status === 400 || status === 422) && Array.isArray(message)
           ? 'VALIDATION_FAILED'
-          : `HTTP_${status}`,
+          : `HTTP_${status}`),
       message,
       error,
       ...(errors ? { errors } : {}),

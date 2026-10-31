@@ -56,10 +56,10 @@ export class AdminReportsService {
 
     const truncSql =
       trunc === 'day'
-        ? Prisma.sql`DATE_TRUNC('day', p."paid_at")`
+        ? Prisma.sql`DATE_TRUNC('day', b."created_at")`
         : trunc === 'week'
-          ? Prisma.sql`DATE_TRUNC('week', p."paid_at")`
-          : Prisma.sql`DATE_TRUNC('month', p."paid_at")`;
+          ? Prisma.sql`DATE_TRUNC('week', b."created_at")`
+          : Prisma.sql`DATE_TRUNC('month', b."created_at")`;
 
     const rows = await this.prisma.$queryRaw<
       Array<{

@@ -26,14 +26,8 @@ export class ResponseInvariantNormalizer {
     locale: string = 'en',
   ): GuiderOrchestratorResponse {
     const isArabic = (locale || '').startsWith('ar');
-    let {
-      responseType,
-      intent,
-      message,
-      recommendations,
-      leadCapture,
-      actions,
-    } = response;
+    let { responseType, intent, leadCapture } = response;
+    const { message, recommendations, actions } = response;
 
     let tours = Array.isArray(recommendations?.tours)
       ? [...recommendations.tours]

@@ -291,4 +291,171 @@ describe('GetPayInGatewayAdapter (real PayLink contract)', () => {
       'Online payment gateway refunds are disabled. All refunds are processed offline directly by company finance.',
     );
   });
+
+  it('classifies PayLink 422 public token failure as ServiceUnavailableException and updates readiness to INVALID', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(async () => {
+      await Promise.resolve();
+      return new Response(
+        JSON.stringify({
+          message: 'Public token invalid.',
+          errors: { token: ['Public token invalid.'] },
+        }),
+        { status: 422, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    let caughtError: any;
+    try {
+      await adapter.createSession({
+        paymentId: 'p1',
+        bookingId: 'b1',
+        referenceCode: 'BKG-1',
+        amount: '100.00',
+        currency: 'USD',
+        customer: {
+          fullName: 'John Doe',
+          email: 'guest@example.com',
+          phone: '+201000000000',
+        },
+        idempotencyKey: 'checkout:p1',
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(ServiceUnavailableException);
+    expect(caughtError.getResponse()).toEqual({
+      code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+      message: 'Payment provider is temporarily unavailable',
+    });
+    // Check readiness reflects INVALID
+    expect(adapter.getReadiness().credentialStatus).toBe('INVALID');
+  });
+
+  it('classifies PayLink 401/403 expired or revoked token as ServiceUnavailableException without leaking credentials', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(async () => {
+      await Promise.resolve();
+      return new Response(JSON.stringify({ message: 'Unauthorized API key' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    let caughtError: any;
+    try {
+      await adapter.createSession({
+        paymentId: 'p1',
+        bookingId: 'b1',
+        referenceCode: 'BKG-1',
+        amount: '100.00',
+        currency: 'USD',
+        customer: {
+          fullName: 'John Doe',
+          email: 'guest@example.com',
+          phone: '+201000000000',
+        },
+        idempotencyKey: 'checkout:p1',
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(ServiceUnavailableException);
+    const res = caughtError.getResponse();
+    expect(res).toEqual({
+      code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+      message: 'Payment provider is temporarily unavailable',
+    });
+    // Ensure no secret or token is leaked
+    const serialized = JSON.stringify(res);
+    expect(serialized).not.toContain('auth-token');
+    expect(serialized).not.toContain('hash-token');
+    expect(adapter.getReadiness().credentialStatus).toBe('INVALID');
+  });
+
+  it('preserves BadRequestException for normal non-auth parameter 422 errors', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(async () => {
+      await Promise.resolve();
+      return new Response(
+        JSON.stringify({
+          message: 'Invalid phone number format',
+          errors: { phone: ['Phone number must include country code'] },
+        }),
+        { status: 422, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const adapter = new GetPayInGatewayAdapter(config());
+
+    await expect(
+      adapter.createSession({
+        paymentId: 'p1',
+        bookingId: 'b1',
+        referenceCode: 'BKG-1',
+        amount: '100.00',
+        currency: 'USD',
+        customer: {
+          fullName: 'John Doe',
+          email: 'guest@example.com',
+          phone: '+201000000000',
+        },
+        idempotencyKey: 'checkout:p1',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('accurately distinguishes readiness states: DISABLED, MISSING, UNVERIFIED, and VERIFIED', async () => {
+    // 1. DISABLED
+    const disabledAdapter = new GetPayInGatewayAdapter(
+      config({ 'payments.provider': 'MOCK' }),
+    );
+    expect(disabledAdapter.getReadiness().credentialStatus).toBe('DISABLED');
+    expect(disabledAdapter.getReadiness().state).toBe('DISABLED');
+
+    // 2. MISSING
+    const missingAdapter = new GetPayInGatewayAdapter(
+      config({ GETPAYIN_AUTH_TOKEN: '' }),
+    );
+    expect(missingAdapter.getReadiness().credentialStatus).toBe('MISSING');
+    expect(missingAdapter.getReadiness().state).toBe('CONFIG_INCOMPLETE');
+
+    // 3. UNVERIFIED
+    const unverifiedAdapter = new GetPayInGatewayAdapter(config());
+    expect(unverifiedAdapter.getReadiness().credentialStatus).toBe(
+      'UNVERIFIED',
+    );
+    expect(unverifiedAdapter.getReadiness().state).toBe('CONFIGURED');
+
+    // 4. VERIFIED after successful createSession
+    jest.spyOn(global, 'fetch').mockImplementation(async () => {
+      await Promise.resolve();
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            checkout_url: 'https://pay.getpayin.com/checkout/inv-123',
+            invoice_id: 12345,
+            expires_at: '2026-10-31T23:59:59.000Z',
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    await unverifiedAdapter.createSession({
+      paymentId: 'p1',
+      bookingId: 'b1',
+      referenceCode: 'BKG-1',
+      amount: '100.00',
+      currency: 'USD',
+      customer: {
+        fullName: 'John Doe',
+        email: 'guest@example.com',
+        phone: '+201000000000',
+      },
+      idempotencyKey: 'checkout:p1',
+    });
+    expect(unverifiedAdapter.getReadiness().credentialStatus).toBe('VERIFIED');
+    expect(unverifiedAdapter.getReadiness().state).toBe('SANDBOX_VERIFIED');
+  });
 });

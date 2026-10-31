@@ -33,6 +33,8 @@ export interface PaymentGatewayReadiness {
     | 'SANDBOX_VERIFIED'
     | 'LIVE_CONFIGURED'
     | 'LIVE_VERIFIED';
+  credentialStatus?:
+    'DISABLED' | 'MISSING' | 'INVALID' | 'UNVERIFIED' | 'VERIFIED';
   enabled: boolean;
   configured: boolean;
   mode: 'disabled' | 'sandbox' | 'production' | 'local';

@@ -49,13 +49,14 @@ export default () => {
       apiKey: process.env.ANTHROPIC_API_KEY,
     },
     mail: {
-      apiKey: process.env.RESEND_API_KEY,
+      apiKey: process.env.BREVO_API_KEY,
+      brevoApiKey: process.env.BREVO_API_KEY,
       fromAddress: process.env.MAIL_FROM_ADDRESS,
       fromName: process.env.MAIL_FROM_NAME,
       internalAlertRecipient: process.env.MAIL_INTERNAL_ALERT_RECIPIENT,
       transport:
         process.env.MAIL_TRANSPORT ||
-        (process.env.NODE_ENV === 'production' ? 'resend' : 'mock'),
+        (process.env.NODE_ENV === 'production' ? 'brevo' : 'mock'),
       adminDashboardBaseUrl: process.env.ADMIN_DASHBOARD_BASE_URL,
     },
     currency: {

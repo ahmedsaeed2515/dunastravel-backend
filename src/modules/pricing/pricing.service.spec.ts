@@ -82,6 +82,26 @@ describe('PricingService Unit Tests', () => {
       expect(res.totalAmountUsd).toBe('0.00');
     });
 
+    it('calculates an EUR-priced tour in EUR while exposing the USD equivalent', async () => {
+      prismaMock.tour.findUnique.mockResolvedValue({
+        ...mockTour,
+        currency: 'EUR',
+        basePriceUsd: new Prisma.Decimal(100),
+      });
+
+      const res = await service.calculatePrice({
+        tourId: 'tour-100',
+        date: '2027-06-15',
+        adults: 2,
+      });
+
+      expect(res.currency).toBe('EUR');
+      expect(res.authoritativeCurrency).toBe('EUR');
+      expect(res.authoritativeAmount).toBe('200.00');
+      expect(res.totalAmountEur).toBe('200.00');
+      expect(Number(res.totalAmountUsd)).toBeGreaterThan(200);
+    });
+
     it('handles invalid promo code gracefully in preview mode without throwing (promoValid: false)', async () => {
       prismaMock.promotion.findFirst.mockResolvedValue(null);
 

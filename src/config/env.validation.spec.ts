@@ -23,8 +23,8 @@ describe('Environment Validation Schema', () => {
       REQUEST_TIMEOUT_MS: '30000',
       THROTTLE_TTL: '60000',
       THROTTLE_LIMIT: '100',
-      MAIL_TRANSPORT: 'resend',
-      RESEND_API_KEY: 're_12345678901234567890',
+      MAIL_TRANSPORT: 'brevo',
+      BREVO_API_KEY: 'xkeysib-mock-1234567890123456',
       MAIL_FROM_ADDRESS: 'test@test.com',
       MAIL_FROM_NAME: 'Test',
       MAIL_INTERNAL_ALERT_RECIPIENT: 'alert@test.com',
@@ -79,8 +79,8 @@ describe('Environment Validation Schema', () => {
       CLOUDINARY_CLOUD_NAME: 'test',
       CLOUDINARY_API_KEY: 'test',
       CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
-      MAIL_TRANSPORT: 'resend',
-      RESEND_API_KEY: 're_12345678901234567890',
+      MAIL_TRANSPORT: 'brevo',
+      BREVO_API_KEY: 'xkeysib-mock-1234567890123456',
       MAIL_FROM_ADDRESS: 'test@test.com',
     };
 
@@ -122,12 +122,12 @@ describe('Environment Validation Schema', () => {
 
   it('should require the real mail configuration in production', () => {
     const { error } = envValidationSchema.validate(
-      { NODE_ENV: 'production', MAIL_TRANSPORT: 'resend' },
+      { NODE_ENV: 'production', MAIL_TRANSPORT: 'brevo' },
       { abortEarly: false },
     );
 
     for (const key of [
-      'RESEND_API_KEY',
+      'BREVO_API_KEY',
       'MAIL_FROM_ADDRESS',
       'MAIL_FROM_NAME',
       'MAIL_INTERNAL_ALERT_RECIPIENT',
@@ -238,7 +238,7 @@ describe('Environment Validation Schema', () => {
       'JWT_REFRESH_SECRET',
       'GUEST_TOKEN_SECRET',
       'PII_ENCRYPTION_KEY',
-      'RESEND_API_KEY',
+      'BREVO_API_KEY',
       'MAIL_FROM_ADDRESS',
       'MAIL_FROM_NAME',
       'MAIL_INTERNAL_ALERT_RECIPIENT',

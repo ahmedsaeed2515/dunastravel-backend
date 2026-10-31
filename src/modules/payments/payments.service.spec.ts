@@ -474,6 +474,69 @@ describe('PaymentsService', () => {
   });
 
   describe('handleWebhook', () => {
+    it('captures EUR payments against the invoice currency and records the USD equivalent', async () => {
+      const capturePayment = Reflect.get(
+        service,
+        'handleSuccessfulPaymentTx',
+      ) as (
+        tx: PrismaService,
+        bookingId: string,
+        amount: number,
+        transactionId: string,
+        currency: string,
+      ) => Promise<void>;
+      const capture = capturePayment.bind(service);
+      const transaction = prisma;
+      const booking = {
+        id: 'bkg-eur',
+        status: 'PENDING',
+        currency: 'EUR',
+        originalAmount: new Prisma.Decimal('120.00'),
+        totalAmountUsd: new Prisma.Decimal('130.00'),
+        invoice: {
+          id: 'invoice-eur',
+          total: new Prisma.Decimal('120.00'),
+          status: 'SENT',
+        },
+      };
+
+      jest
+        .spyOn(prisma.booking, 'findUnique')
+        .mockResolvedValue(booking as never);
+      jest.spyOn(prisma.payment, 'findFirst').mockResolvedValue({
+        id: 'payment-eur',
+        bookingId: 'bkg-eur',
+        amount: new Prisma.Decimal('120.00'),
+        currency: 'EUR',
+        method: 'GETPAYIN',
+        transactionId: '40508',
+        status: 'PENDING',
+        isRefund: false,
+        createdAt: new Date(),
+      } as never);
+      jest.spyOn(prisma.payment, 'update').mockResolvedValue({
+        id: 'payment-eur',
+        amount: new Prisma.Decimal('120.00'),
+      } as never);
+      jest
+        .spyOn(prisma.payment, 'findMany')
+        .mockResolvedValue([{ amount: new Prisma.Decimal('120.00') }] as never);
+
+      await expect(
+        capture(transaction, 'bkg-eur', 120, '40508', 'EUR'),
+      ).resolves.toBeUndefined();
+
+      expect(prisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'bkg-eur' },
+          data: expect.objectContaining({
+            status: 'CONFIRMED',
+            paidAmountUsd: new Prisma.Decimal('130.00'),
+          }),
+        }),
+      );
+    });
+
     it('rejects a webhook route that does not match the active provider', async () => {
       const reqMock = { headers: {} } as unknown as import('express').Request;
 

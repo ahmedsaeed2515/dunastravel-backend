@@ -17730,6 +17730,11 @@
           },
           "notes": {
             "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD",
+            "description": "Currency (optional; if provided, must match booking currency)"
           }
         },
         "required": [

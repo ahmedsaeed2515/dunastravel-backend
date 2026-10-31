@@ -87,3 +87,22 @@ docker-compose logs api | jq .
 ## Advanced Topics
 - **Redis / Cache**: The current configuration is stateless aside from database interactions. Caching is not implemented by default as the read-path queries are sufficiently optimized for the target scale.
 - **Prometheus/Grafana**: Not implemented in this phase. The application architecture supports adding a `/metrics` endpoint later via `@willsoto/nestjs-prometheus`.
+
+## IIS / Plesk Web Server Configuration
+
+When deploying behind IIS or Plesk on Windows Server, IIS intercepts 4xx and 5xx error responses by default and replaces them with its generic HTML error templates.
+
+To ensure all NestJS JSON error payloads (`message`, `code`, `errors`) are passed through intact to clients, the `web.config` file included in the root of the backend repository must be deployed with:
+
+```xml
+<configuration>
+  <system.webServer>
+    <httpErrors existingResponse="PassThrough" />
+  </system.webServer>
+</configuration>
+```
+
+This setting ensures:
+- Statuses 400, 401, 403, 404, 409, 422, 429, 500, and 503 remain structured JSON (`application/json`).
+- Error codes like `VALIDATION_FAILED` and `PAYMENT_PROVIDER_UNAVAILABLE` are preserved.
+- Existing URL rewrite, iisnode, or reverse proxy settings remain unaffected.

@@ -46,4 +46,13 @@ export class RecordManualBookingPaymentDto {
   @IsString()
   @MaxLength(1000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: 'USD',
+    description:
+      'Currency (optional; if provided, must match booking currency)',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

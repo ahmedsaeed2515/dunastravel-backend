@@ -53,7 +53,7 @@ export class CreateContactSubmissionDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^[\d\s\-\+\(\)]+$/, {
+  @Matches(/^[\d\s-+()]+$/, {
     message: 'phone must contain only valid formatting characters',
   })
   @MaxLength(30)

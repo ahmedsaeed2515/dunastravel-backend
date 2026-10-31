@@ -1877,7 +1877,7 @@ export class UserService {
       (b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED',
     ).length;
     const totalSpent = user.bookings
-      .filter((b) => b.status !== 'CANCELLED')
+      .filter((b) => ['CONFIRMED', 'PAID', 'COMPLETED'].includes(b.status))
       .reduce((sum, b) => sum + Number(b.totalAmountUsd || 0), 0);
 
     const lastActiveTimestamp =

@@ -38,7 +38,9 @@ export function injectInterceptor(instance: AxiosInstance) {
       if (error.response) {
         logTraffic(error.response);
       }
-      return Promise.reject(error);
+      return Promise.reject(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     },
   );
 }

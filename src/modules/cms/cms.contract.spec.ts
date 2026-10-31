@@ -4,8 +4,7 @@ import request from 'supertest';
 
 import { CmsModule } from './cms.module';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PrismaModule } from '../../prisma/prisma.module';
-import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheModule } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CmsBlockStatus } from '@prisma/client';
@@ -85,9 +84,28 @@ describe('CMS HTTP Contract Spec', () => {
     expect(block.key).toBe('homepage.hero');
   });
 
+  it('GET /api/cms/blocks/:key returns public CMS block using alias path', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/cms/blocks/homepage.hero')
+      .expect(200);
+
+    const block = res.body.data || res.body;
+    expect(block.key).toBe('homepage.hero');
+  });
+
   it('GET /api/admin/cms-blocks returns admin list', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/cms-blocks')
+      .expect(200);
+
+    const items = res.body.data?.items || res.body.data;
+    expect(items).toBeDefined();
+    expect(items[0].key).toBe('homepage.hero');
+  });
+
+  it('GET /api/admin/cms returns admin list using alias path', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/cms')
       .expect(200);
 
     const items = res.body.data?.items || res.body.data;
@@ -101,6 +119,16 @@ describe('CMS HTTP Contract Spec', () => {
       .send({
         content: { en: 'Updated Banner' },
       })
+      .expect(200);
+
+    const block = res.body.data || res.body;
+    expect(block.key).toBe('homepage.hero');
+  });
+
+  it('PATCH /api/admin/cms/:key updates CMS block using alias path', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/admin/cms/homepage.hero')
+      .send({ content: { en: 'Patched Banner' } })
       .expect(200);
 
     const block = res.body.data || res.body;

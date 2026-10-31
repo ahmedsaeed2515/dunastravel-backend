@@ -2,28 +2,37 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { BookingCreatedListener } from './booking-created.listener';
 import { PrismaService } from '../../../prisma/prisma.service';
-import {
-  IEmailProvider,
-  EMAIL_PROVIDER_TOKEN,
-} from '../providers/email-provider.interface';
 import { BookingCreatedPayload } from '../interfaces/booking-created-payload.interface';
-import { NotificationDeliveryStatus } from '../types';
-
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
+import { EmailDeliveryService } from '../services/email-delivery.service';
+import { TemplateRegistryService } from '../templates/template-registry.service';
+import { NotificationType } from '../types';
+import { EmailEventType } from '../types/canonical-notification.types';
 
 describe('BookingCreatedListener', () => {
   let listener: BookingCreatedListener;
-  let emailProvider: jest.Mocked<IEmailProvider>;
+  let deliveryService: { deliver: jest.Mock };
+  let templateRegistry: { renderTemplate: jest.Mock };
   let prismaService: Record<string, any>;
 
   beforeEach(async () => {
-    emailProvider = {
-      send: jest
-        .fn()
-        .mockResolvedValue({ status: 'SUCCESS', providerMessageId: '123' }),
+    deliveryService = {
+      deliver: jest.fn().mockResolvedValue(true),
+    };
+
+    templateRegistry = {
+      renderTemplate: jest.fn().mockReturnValue({
+        subject: 'Test Subject',
+        html: '<p>Test Html</p>',
+        text: 'Test Text',
+        locale: 'en',
+      }),
     };
 
     prismaService = {
+      booking: {
+        findFirst: jest.fn(),
+      },
       notificationDeliveryLog: {
         create: jest.fn().mockResolvedValue({ id: 'log-1' }),
         update: jest.fn().mockResolvedValue({}),
@@ -33,7 +42,8 @@ describe('BookingCreatedListener', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingCreatedListener,
-        { provide: EMAIL_PROVIDER_TOKEN, useValue: emailProvider },
+        { provide: EmailDeliveryService, useValue: deliveryService },
+        { provide: TemplateRegistryService, useValue: templateRegistry },
         { provide: PrismaService, useValue: prismaService },
         {
           provide: ConfigService,
@@ -56,7 +66,6 @@ describe('BookingCreatedListener', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    jest.restoreAllMocks();
   });
 
   const validPayload: BookingCreatedPayload = {
@@ -72,36 +81,25 @@ describe('BookingCreatedListener', () => {
     infants: 0,
   };
 
-  it('should trigger customer email and sales team email sends', async () => {
+  it('should trigger customer email and sales team email sends via EmailDeliveryService', async () => {
     await listener.handleBookingCreatedEvent(validPayload);
-    expect(emailProvider.send).toHaveBeenCalledTimes(2);
-  });
+    expect(deliveryService.deliver).toHaveBeenCalledTimes(2);
 
-  it('should write two NotificationDeliveryLog records', async () => {
-    await listener.handleBookingCreatedEvent(validPayload);
-    expect(prismaService.notificationDeliveryLog.create).toHaveBeenCalledTimes(
-      2,
-    );
-  });
-
-  it('should retry up to max attempts on failure and write EXHAUSTED/FAILED', async () => {
-    emailProvider.send.mockRejectedValue(new Error('Simulated failure'));
-
-    // speed up the test by mocking setTimeout
-    jest.spyOn(global, 'setTimeout').mockImplementation((cb: any) => {
-      cb();
-      return {} as any;
-    });
-
-    await listener.handleBookingCreatedEvent(validPayload);
-
-    // 2 emails * 3 retries = 6 calls
-    expect(emailProvider.send).toHaveBeenCalledTimes(6);
-    expect(prismaService.notificationDeliveryLog.update).toHaveBeenCalledWith(
+    expect(deliveryService.deliver).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          status: NotificationDeliveryStatus.EXHAUSTED,
-        }),
+        eventType: EmailEventType.BOOKING_CREATED,
+        notificationType: NotificationType.CUSTOMER_ACKNOWLEDGMENT,
+        originReferenceCode: 'BK-111',
+        originEntityType: 'BOOKING',
+      }),
+    );
+
+    expect(deliveryService.deliver).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: EmailEventType.BOOKING_CREATED,
+        notificationType: NotificationType.INTERNAL_SALES_ALERT,
+        originReferenceCode: 'BK-111',
+        originEntityType: 'BOOKING',
       }),
     );
   });
@@ -109,12 +107,64 @@ describe('BookingCreatedListener', () => {
   it('should log error and return without sending if customerEmail is missing', async () => {
     const invalid = { ...validPayload, customerEmail: '' };
     await listener.handleBookingCreatedEvent(invalid);
-    expect(emailProvider.send).not.toHaveBeenCalled();
+    expect(deliveryService.deliver).not.toHaveBeenCalled();
   });
 
   it('should log error and return without sending if referenceCode is missing', async () => {
     const invalid = { ...validPayload, referenceCode: '' };
     await listener.handleBookingCreatedEvent(invalid);
-    expect(emailProvider.send).not.toHaveBeenCalled();
+    expect(deliveryService.deliver).not.toHaveBeenCalled();
+  });
+
+  it('should handle booking.confirmed via EmailDeliveryService with authoritative data', async () => {
+    prismaService.booking.findFirst.mockResolvedValue({
+      id: 'b-123',
+      referenceCode: 'BK-CONFIRMED',
+      currency: 'USD',
+      totalAmountUsd: 1500,
+      language: 'en',
+      arrivalDate: new Date('2026-12-01'),
+      user: { email: 'client@example.com', name: 'Client' },
+      tour: { titleJsonb: { en: 'Grand Nile Journey' } },
+      invoice: { invoiceNumber: 'INV-999' },
+    });
+
+    await listener.handleBookingConfirmedEvent({
+      referenceCode: 'BK-CONFIRMED',
+    });
+
+    expect(deliveryService.deliver).toHaveBeenCalledTimes(1);
+    expect(deliveryService.deliver).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: EmailEventType.BOOKING_CONFIRMED,
+        originReferenceCode: 'BK-CONFIRMED',
+        originEntityType: 'BOOKING',
+      }),
+    );
+  });
+
+  it('should handle booking.cancelled via EmailDeliveryService', async () => {
+    prismaService.booking.findFirst.mockResolvedValue({
+      id: 'b-123',
+      referenceCode: 'BK-CANCELLED',
+      paidAmountUsd: 500,
+      language: 'en',
+      user: { email: 'client@example.com', name: 'Client' },
+      tour: { titleJsonb: { en: 'Grand Nile Journey' } },
+    });
+
+    await listener.handleBookingCancelledEvent({
+      referenceCode: 'BK-CANCELLED',
+      reason: 'Change of plans',
+    });
+
+    expect(deliveryService.deliver).toHaveBeenCalledTimes(1);
+    expect(deliveryService.deliver).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: EmailEventType.BOOKING_CANCELLED_AFTER_PAYMENT,
+        originReferenceCode: 'BK-CANCELLED',
+        originEntityType: 'BOOKING',
+      }),
+    );
   });
 });

@@ -7,6 +7,9 @@ export interface EmailPayload {
   replyTo?: string;
   tags?: Record<string, string>;
   idempotencyKey?: string;
+  headers?: Record<string, string>;
+  metadata?: Record<string, any>;
+  locale?: string;
 }
 
 export interface EmailResult {
@@ -14,4 +17,5 @@ export interface EmailResult {
   providerMessageId?: string;
   providerError?: string;
   sentAt: Date;
+  success?: boolean;
 }

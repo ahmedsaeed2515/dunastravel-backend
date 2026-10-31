@@ -308,6 +308,7 @@ describe('AuthService', () => {
         'test@test.com',
         'Test User',
         expect.stringMatching(/^\d{6}$/),
+        'en',
       );
     });
 

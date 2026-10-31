@@ -1,35 +1,39 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { BOOKING_EVENTS } from '../../../common/events';
 import { BookingCreatedPayload } from '../interfaces/booking-created-payload.interface';
-import {
-  IEmailProvider,
-  EMAIL_PROVIDER_TOKEN,
-} from '../providers/email-provider.interface';
-import { NotificationType, NotificationDeliveryStatus } from '../types';
+import { NotificationType } from '../types';
 import { renderBookingCustomerConfirmation } from '../templates/booking-confirmation.template';
 import { renderBookingInternalAlert } from '../templates/booking-alert.template';
-import { EmailPayload } from '../types/email-payload.type';
-
 import { InAppNotificationsService } from '../../in-app-notifications/in-app-notifications.service';
 import {
   InAppNotificationCategory,
   InAppNotificationPriority,
 } from '@prisma/client';
+import { EmailDeliveryService } from '../services/email-delivery.service';
+import { TemplateRegistryService } from '../templates/template-registry.service';
+import {
+  EmailEventType,
+  SupportedLocale,
+} from '../types/canonical-notification.types';
+import {
+  formatFinancialAmount,
+  redactEmailAddress,
+} from '../../../common/utils/currency-formatter.util';
 
 @Injectable()
 export class BookingCreatedListener {
   private readonly logger = new Logger(BookingCreatedListener.name);
-  private readonly MAX_RETRIES = 3;
 
   constructor(
-    @Inject(EMAIL_PROVIDER_TOKEN)
-    private readonly emailProvider: IEmailProvider,
+    private readonly deliveryService: EmailDeliveryService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly inAppNotifications: InAppNotificationsService,
+    @Optional()
+    private readonly templateRegistry?: TemplateRegistryService,
   ) {}
 
   @OnEvent(BOOKING_EVENTS.CREATED, { async: true })
@@ -66,7 +70,7 @@ export class BookingCreatedListener {
         adminDashboardUrl,
       );
 
-      // 1. Create In-App Notifications for Admins & Customer
+      // In-App Notifications
       await this.inAppNotifications.notifyAdmins({
         category: InAppNotificationCategory.BOOKING,
         priority: InAppNotificationPriority.HIGH,
@@ -96,19 +100,25 @@ export class BookingCreatedListener {
         });
       }
 
+      this.logger.log(
+        `Dispatching booking created notifications for referenceCode: ${payload.referenceCode} to customer (${redactEmailAddress(payload.customerEmail)}) and sales team`,
+      );
+
       await Promise.all([
-        this.deliverWithRetry(
-          NotificationType.CUSTOMER_ACKNOWLEDGMENT,
-          payload.referenceCode,
-          customerPayload,
-          'customer',
-        ),
-        this.deliverWithRetry(
-          NotificationType.INTERNAL_SALES_ALERT,
-          payload.referenceCode,
-          salesPayload,
-          'sales team',
-        ),
+        this.deliveryService.deliver({
+          eventType: EmailEventType.BOOKING_CREATED,
+          notificationType: NotificationType.CUSTOMER_ACKNOWLEDGMENT,
+          originReferenceCode: payload.referenceCode,
+          originEntityType: 'BOOKING',
+          payload: customerPayload,
+        }),
+        this.deliveryService.deliver({
+          eventType: EmailEventType.BOOKING_CREATED,
+          notificationType: NotificationType.INTERNAL_SALES_ALERT,
+          originReferenceCode: payload.referenceCode,
+          originEntityType: 'BOOKING',
+          payload: salesPayload,
+        }),
       ]);
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -119,88 +129,158 @@ export class BookingCreatedListener {
     }
   }
 
-  private async deliverWithRetry(
-    notificationType: NotificationType,
-    referenceCode: string,
-    payload: EmailPayload,
-    recipientType: string,
-  ): Promise<void> {
-    if (recipientType === 'customer') {
-      this.logger.log(
-        `Sending booking confirmation to customer: ${payload.to} for booking: ${referenceCode}`,
-      );
-    } else {
-      this.logger.log(
-        `Sending booking alert to sales team for booking: ${referenceCode}`,
-      );
-    }
+  @OnEvent(BOOKING_EVENTS.CONFIRMED, { async: true })
+  async handleBookingConfirmedEvent(payload: {
+    bookingId?: string;
+    referenceCode?: string;
+    customerEmail?: string;
+  }) {
+    if (!payload?.referenceCode && !payload?.bookingId) return;
 
-    this.logger.debug(`Writing PENDING log for ${referenceCode}`);
-    const logRecord = await this.prisma.notificationDeliveryLog.create({
-      data: {
-        notificationType: notificationType as any,
-        originReferenceCode: referenceCode,
-        originEntityType: 'BOOKING',
-        recipientEmail: payload.to,
-        status: NotificationDeliveryStatus.PENDING,
-      },
-    });
+    try {
+      const booking = await this.prisma.booking.findFirst({
+        where: payload.referenceCode
+          ? { referenceCode: payload.referenceCode }
+          : { id: payload.bookingId },
+        include: { user: true, tour: true, billingInfo: true, invoice: true },
+      });
 
-    let attempts = 0;
-    let success = false;
+      if (!booking) return;
 
-    while (attempts < this.MAX_RETRIES && !success) {
-      attempts++;
-      try {
-        const result = await this.emailProvider.send(payload);
-        if (result.status === 'SUCCESS') {
-          success = true;
-          this.logger.debug(`Writing SENT log for ${referenceCode}`);
-          await this.prisma.notificationDeliveryLog.update({
-            where: { id: logRecord.id },
-            data: {
-              status: NotificationDeliveryStatus.SENT,
-              attempts,
-              lastAttemptAt: new Date(),
-              providerResponseId: result.providerMessageId,
-            },
-          });
-          this.logger.log(
-            `Booking confirmation delivered successfully for: ${referenceCode}, recipient: ${recipientType}`,
-          );
-        } else {
-          throw new Error(result.providerError || 'Unknown provider error');
-        }
-      } catch (error: unknown) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        this.logger.warn(
-          `Booking confirmation delivery attempt ${attempts}/${this.MAX_RETRIES} failed for: ${referenceCode}, recipient: ${recipientType}, error: ${err.message}`,
+      const customerEmail =
+        booking.billingInfo?.email ||
+        booking.user?.email ||
+        payload.customerEmail;
+      if (!customerEmail) return;
+
+      const customerName =
+        booking.billingInfo?.fullName ||
+        booking.user?.name ||
+        'Valued Traveler';
+      const tourTitle =
+        (booking.tour?.titleJsonb as any)?.en ||
+        booking.tour?.slug ||
+        'Luxury Journey';
+      const locale: SupportedLocale =
+        (booking.language as SupportedLocale) ||
+        (booking.user?.preferredLanguage as SupportedLocale) ||
+        'en';
+      const currency = (booking.currency || 'USD').toUpperCase();
+      const amount =
+        currency === 'EUR' && booking.originalAmount
+          ? booking.originalAmount
+          : booking.totalAmountUsd;
+
+      const formattedAmount = formatFinancialAmount(amount, currency, locale);
+      const travelDate = booking.arrivalDate
+        ? new Date(booking.arrivalDate).toLocaleDateString()
+        : 'TBD';
+
+      if (this.templateRegistry && this.deliveryService) {
+        const rendered = this.templateRegistry.renderTemplate(
+          EmailEventType.BOOKING_CONFIRMED,
+          locale,
+          {
+            customerName,
+            referenceCode: booking.referenceCode,
+            tourTitle,
+            formattedAmount,
+            travelDate,
+            invoiceNumber: booking.invoice?.invoiceNumber || '',
+          },
         );
 
-        const isExhausted = attempts >= this.MAX_RETRIES;
-        this.logger.debug(
-          `Writing ${isExhausted ? 'EXHAUSTED' : 'FAILED'} log for ${referenceCode}`,
-        );
-        await this.prisma.notificationDeliveryLog.update({
-          where: { id: logRecord.id },
-          data: {
-            status: isExhausted
-              ? NotificationDeliveryStatus.EXHAUSTED
-              : NotificationDeliveryStatus.FAILED,
-            attempts,
-            lastAttemptAt: new Date(),
-            failureReason: err.message,
+        await this.deliveryService.deliver({
+          eventType: EmailEventType.BOOKING_CONFIRMED,
+          notificationType: NotificationType.CUSTOMER_ACKNOWLEDGMENT,
+          originReferenceCode: booking.referenceCode,
+          originEntityType: 'BOOKING',
+          payload: {
+            to: customerEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+            locale: rendered.locale,
           },
         });
-
-        if (isExhausted) {
-          this.logger.error(
-            `Booking confirmation permanently failed for: ${referenceCode}, recipient: ${recipientType}`,
-          );
-        } else {
-          await new Promise((res) => setTimeout(res, 1000 * attempts));
-        }
       }
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to handle booking.confirmed event: ${err?.message || err}`,
+      );
+    }
+  }
+
+  @OnEvent(BOOKING_EVENTS.CANCELLED, { async: true })
+  async handleBookingCancelledEvent(payload: {
+    bookingId?: string;
+    referenceCode?: string;
+    reason?: string;
+  }) {
+    if (!payload?.referenceCode && !payload?.bookingId) return;
+
+    try {
+      const booking = await this.prisma.booking.findFirst({
+        where: payload.referenceCode
+          ? { referenceCode: payload.referenceCode }
+          : { id: payload.bookingId },
+        include: { user: true, tour: true, billingInfo: true },
+      });
+
+      if (!booking) return;
+
+      const customerEmail = booking.billingInfo?.email || booking.user?.email;
+      if (!customerEmail) return;
+
+      const customerName =
+        booking.billingInfo?.fullName ||
+        booking.user?.name ||
+        'Valued Traveler';
+      const tourTitle =
+        (booking.tour?.titleJsonb as any)?.en ||
+        booking.tour?.slug ||
+        'Luxury Journey';
+      const locale: SupportedLocale =
+        (booking.language as SupportedLocale) ||
+        (booking.user?.preferredLanguage as SupportedLocale) ||
+        'en';
+
+      const wasPaid = Number(booking.paidAmountUsd) > 0;
+      const eventType = wasPaid
+        ? EmailEventType.BOOKING_CANCELLED_AFTER_PAYMENT
+        : EmailEventType.BOOKING_CANCELLED_BEFORE_PAYMENT;
+
+      if (this.templateRegistry && this.deliveryService) {
+        const rendered = this.templateRegistry.renderTemplate(
+          eventType,
+          locale,
+          {
+            customerName,
+            referenceCode: booking.referenceCode,
+            tourTitle,
+            status: 'CANCELLED',
+            reason: payload.reason || 'Booking cancelled',
+          },
+        );
+
+        await this.deliveryService.deliver({
+          eventType,
+          notificationType: NotificationType.CUSTOMER_ACKNOWLEDGMENT,
+          originReferenceCode: booking.referenceCode,
+          originEntityType: 'BOOKING',
+          payload: {
+            to: customerEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+            locale: rendered.locale,
+          },
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to handle booking.cancelled event: ${err?.message || err}`,
+      );
     }
   }
 }
