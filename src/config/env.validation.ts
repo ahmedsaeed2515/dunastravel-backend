@@ -152,15 +152,16 @@ export const envValidationSchema = Joi.object({
 
   MAIL_TRANSPORT: Joi.when('NODE_ENV', {
     is: 'production',
-    then: Joi.string().valid('brevo').default('brevo'),
-    otherwise: Joi.string().valid('brevo', 'mock').default('mock'),
+    // `resend` is accepted as a legacy alias so deployments that still pin the
+    // old transport name keep booting; the runtime always uses Brevo.
+    then: Joi.string().valid('brevo', 'resend').default('brevo'),
+    otherwise: Joi.string().valid('brevo', 'resend', 'mock').default('mock'),
   }),
 
-  BREVO_API_KEY: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(16).required(),
-    otherwise: Joi.string().optional().allow(''),
-  }),
+  // Email credentials are intentionally optional at boot. Missing credentials
+  // must degrade email delivery (fail closed on send) instead of taking the
+  // whole API down — login and every other endpoint stay available.
+  BREVO_API_KEY: Joi.string().min(16).optional().allow(''),
   MAIL_FROM_ADDRESS: Joi.when('NODE_ENV', {
     is: 'production',
     then: Joi.string().email().required(),

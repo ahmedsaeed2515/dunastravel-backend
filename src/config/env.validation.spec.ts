@@ -120,14 +120,13 @@ describe('Environment Validation Schema', () => {
     expect(invalid.error).toBeDefined();
   });
 
-  it('should require the real mail configuration in production', () => {
+  it('should require the sender identity in production', () => {
     const { error } = envValidationSchema.validate(
       { NODE_ENV: 'production', MAIL_TRANSPORT: 'brevo' },
       { abortEarly: false },
     );
 
     for (const key of [
-      'BREVO_API_KEY',
       'MAIL_FROM_ADDRESS',
       'MAIL_FROM_NAME',
       'MAIL_INTERNAL_ALERT_RECIPIENT',
@@ -136,6 +135,33 @@ describe('Environment Validation Schema', () => {
         true,
       );
     }
+  });
+
+  it('allows production to boot without BREVO_API_KEY (email degrades, API stays up)', () => {
+    const { error } = envValidationSchema.validate(
+      {
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:password@localhost:5432/db',
+        REDIS_URL: 'rediss://default:redis-password@redis.example.test:6379',
+        JWT_SECRET:
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        JWT_REFRESH_SECRET:
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+        GUEST_TOKEN_SECRET:
+          '89abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+        PII_ENCRYPTION_KEY:
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        MAIL_FROM_ADDRESS: 'test@test.com',
+        MAIL_FROM_NAME: 'Test',
+        MAIL_INTERNAL_ALERT_RECIPIENT: 'alert@test.com',
+        CLOUDINARY_CLOUD_NAME: 'test',
+        CLOUDINARY_API_KEY: 'test',
+        CLOUDINARY_API_SECRET: 'cloudinary-secret-value-123456',
+      },
+      { abortEarly: false },
+    );
+
+    expect(error).toBeUndefined();
   });
 
   describe('PORT', () => {
@@ -238,7 +264,6 @@ describe('Environment Validation Schema', () => {
       'JWT_REFRESH_SECRET',
       'GUEST_TOKEN_SECRET',
       'PII_ENCRYPTION_KEY',
-      'BREVO_API_KEY',
       'MAIL_FROM_ADDRESS',
       'MAIL_FROM_NAME',
       'MAIL_INTERNAL_ALERT_RECIPIENT',

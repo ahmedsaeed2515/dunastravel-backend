@@ -2,9 +2,7 @@ import * as Joi from 'joi';
 import { registerAs } from '@nestjs/config';
 
 export const mailConfigSchema = {
-  RESEND_API_KEY: Joi.string()
-    .pattern(/^re_[a-zA-Z0-9_]{8,}$/)
-    .required(),
+  BREVO_API_KEY: Joi.string().min(16).optional().allow(''),
   MAIL_FROM_ADDRESS: Joi.string().email().required(),
   MAIL_FROM_NAME: Joi.string().max(100).required(),
   MAIL_INTERNAL_ALERT_RECIPIENT: Joi.string().email().required(),
