@@ -54,6 +54,9 @@ export default () => {
       fromAddress: process.env.MAIL_FROM_ADDRESS,
       fromName: process.env.MAIL_FROM_NAME,
       internalAlertRecipient: process.env.MAIL_INTERNAL_ALERT_RECIPIENT,
+      salesEmail: process.env.SALES_EMAIL,
+      paymentsAlertEmail: process.env.PAYMENTS_ALERT_EMAIL,
+      supportAlertEmail: process.env.SUPPORT_ALERT_EMAIL,
       transport:
         process.env.MAIL_TRANSPORT ||
         (process.env.NODE_ENV === 'production' ? 'brevo' : 'mock'),

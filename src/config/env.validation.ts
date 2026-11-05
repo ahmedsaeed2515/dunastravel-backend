@@ -177,6 +177,11 @@ export const envValidationSchema = Joi.object({
     then: Joi.string().email().required(),
     otherwise: Joi.string().optional().allow(''),
   }),
+  SALES_EMAIL: Joi.string().email().optional().allow(''),
+  PAYMENTS_ALERT_EMAIL: Joi.string().email().optional().allow(''),
+  SUPPORT_ALERT_EMAIL: Joi.string().email().optional().allow(''),
+  ADMIN_ALERT_EMAIL: Joi.string().email().optional().allow(''),
+  FROM_EMAIL: Joi.string().email().optional().allow(''),
 
   // Media (Cloudinary)
   CLOUDINARY_CLOUD_NAME: Joi.when('NODE_ENV', {

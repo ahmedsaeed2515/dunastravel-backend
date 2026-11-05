@@ -262,7 +262,10 @@ export class PaymentEventsListener {
     // Internal sales alert
     const internalAlertSubject = `[PAYMENT] Booking #${booking.referenceCode} Paid - ${formattedAmount}`;
     const internalSalesEmail =
-      process.env.SALES_EMAIL || 'sales@dunastravel.com';
+      process.env.PAYMENTS_ALERT_EMAIL ||
+      process.env.MAIL_INTERNAL_ALERT_RECIPIENT ||
+      process.env.SALES_EMAIL ||
+      'booking.online@dunas-travel.com';
 
     await this.deliveryService.deliver({
       eventType: EmailEventType.PAYMENT_SUCCEEDED,

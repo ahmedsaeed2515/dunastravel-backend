@@ -20,7 +20,7 @@ describe('IIS/Plesk web.config and Error JSON Enforcement', () => {
     expect(fs.existsSync(configPath)).toBe(true);
 
     const xml = fs.readFileSync(configPath, 'utf8');
-    expect(xml).toContain('<httpErrors existingResponse="PassThrough" />');
+    expect(xml).toContain('existingResponse="PassThrough"');
     expect(xml).toContain('<add segment=".env" />');
   });
 

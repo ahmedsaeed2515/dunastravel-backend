@@ -25,6 +25,8 @@ import { Prisma } from '@prisma/client';
 export class EmailCompositionService {
   private readonly logger = new Logger(EmailCompositionService.name);
   private readonly internalSalesEmail: string;
+  private readonly internalSupportEmail: string;
+  private readonly internalPaymentsEmail: string;
   private readonly adminDashboardUrl: string;
 
   constructor(
@@ -34,9 +36,19 @@ export class EmailCompositionService {
     private readonly templateRegistry: TemplateRegistryService,
   ) {
     this.internalSalesEmail =
-      this.configService.get<string>('mail.internalAlertRecipient') ||
+      this.configService.get<string>('mail.salesEmail') ||
       process.env.SALES_EMAIL ||
-      'sales@dunastravel.com';
+      this.configService.get<string>('mail.internalAlertRecipient') ||
+      process.env.MAIL_INTERNAL_ALERT_RECIPIENT ||
+      'booking.online@dunas-travel.com';
+    this.internalSupportEmail =
+      this.configService.get<string>('mail.supportAlertEmail') ||
+      process.env.SUPPORT_ALERT_EMAIL ||
+      this.internalSalesEmail;
+    this.internalPaymentsEmail =
+      this.configService.get<string>('mail.paymentsAlertEmail') ||
+      process.env.PAYMENTS_ALERT_EMAIL ||
+      this.internalSalesEmail;
     this.adminDashboardUrl =
       this.configService.get<string>('mail.adminDashboardBaseUrl') ||
       process.env.ADMIN_URL ||
@@ -206,7 +218,7 @@ export class EmailCompositionService {
     );
 
     return {
-      to: this.internalSalesEmail,
+      to: this.internalSupportEmail,
       subject: `[CONTACT ALERT] New message from ${payload.firstName} ${payload.lastName} (Ref: ${payload.referenceCode})`,
       html: rendered.html,
       text: rendered.text,

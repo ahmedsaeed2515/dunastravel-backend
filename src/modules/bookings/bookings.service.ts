@@ -700,6 +700,14 @@ export class BookingsService {
               breakdownResult.totalAmountUsd,
             );
 
+            if (finalTotalAmountUsd.lte(0)) {
+              throw new UnprocessableEntityException(
+                dto.language === 'ar'
+                  ? 'خطأ في تسعير الرحلة: لا يمكن إتمام الحجز نظراً لأن سعر الرحلة (.00). يرجى مراجعة إدارة الموقع أو التواصل مع الدعم.'
+                  : 'Pricing error: Tour price is invalid (.00). The booking cannot be processed. Please contact support.',
+              );
+            }
+
             // 4. Acquire promotion quota conditionally inside transaction
             let promoToRedeem: { id: string; discount: Prisma.Decimal } | null =
               null;

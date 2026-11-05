@@ -11,6 +11,7 @@ import { AdminAgenciesModule } from './admin-agencies/admin-agencies.module';
 import { AdminCurrenciesModule } from './admin-currencies/admin-currencies.module';
 import { AdminReportsModule } from './admin-reports/admin-reports.module';
 import { AdminFinanceModule } from './admin-finance/admin-finance.module';
+import { AdminCommunicationsModule } from './admin-communications/admin-communications.module';
 import { ContactSubmissionsModule } from '../contact-submissions/contact-submissions.module';
 import { HotelsModule } from '../hotels/hotels.module';
 
@@ -32,6 +33,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     AdminPromotionsModule,
     AdminReportsModule,
     AdminFinanceModule,
+    AdminCommunicationsModule,
   ],
 
   controllers: [AdminController],

@@ -7281,6 +7281,435 @@
         ]
       }
     },
+    "/api/admin/communications/logs/metrics": {
+      "get": {
+        "operationId": "NotificationsController_getMetrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get global communication delivery metrics",
+        "tags": [
+          "Admin - Communications & Notifications"
+        ]
+      }
+    },
+    "/api/admin/communications/logs": {
+      "get": {
+        "operationId": "NotificationsController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          },
+          {
+            "name": "notificationType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          },
+          {
+            "name": "recipientEmail",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List notification delivery logs with pagination",
+        "tags": [
+          "Admin - Communications & Notifications"
+        ]
+      }
+    },
+    "/api/admin/communications/logs/{id}/retry": {
+      "post": {
+        "operationId": "NotificationsController_retryNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retry was accepted by the notification service."
+          },
+          "403": {
+            "description": "Requires ADMIN or SUPER_ADMIN role."
+          },
+          "404": {
+            "description": "Notification delivery log not found."
+          },
+          "429": {
+            "description": "Retry throttle exceeded."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Manually retry a failed notification",
+        "tags": [
+          "Admin - Communications & Notifications"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/presets": {
+      "get": {
+        "operationId": "AdminTemplatesController_getPresets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get built-in luxury email template presets",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/test-send": {
+      "post": {
+        "operationId": "AdminTemplatesController_sendTestEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTestEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a test email with sample variables",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/broadcast": {
+      "post": {
+        "operationId": "AdminTemplatesController_broadcastCampaign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastCampaignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Broadcast an email campaign to audience",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates": {
+      "get": {
+        "operationId": "AdminTemplatesController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all email templates",
+        "tags": [
+          "Admin Templates"
+        ]
+      },
+      "post": {
+        "operationId": "AdminTemplatesController_createTemplate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEmailTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new email template",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/admin/communications/templates/{id}": {
+      "get": {
+        "operationId": "AdminTemplatesController_getTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a specific email template",
+        "tags": [
+          "Admin Templates"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminTemplatesController_updateTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing email template",
+        "tags": [
+          "Admin Templates"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminTemplatesController_deleteTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an email template",
+        "tags": [
+          "Admin Templates"
+        ]
+      }
+    },
+    "/api/in-app-notifications": {
+      "get": {
+        "operationId": "InAppNotificationsController_getMyNotifications",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated notifications list with unreadCount"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current user in-app notifications",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/unread-count": {
+      "get": {
+        "operationId": "InAppNotificationsController_getUnreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Unread count object"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get unread notification count",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/read-all": {
+      "patch": {
+        "operationId": "InAppNotificationsController_markAllAsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Count of notifications marked read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all notifications as read",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
+    "/api/in-app-notifications/{id}/read": {
+      "patch": {
+        "operationId": "InAppNotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated notification object"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a single notification as read",
+        "tags": [
+          "In-App Notifications"
+        ]
+      }
+    },
     "/api/auth/config": {
       "get": {
         "operationId": "AuthController_getAuthConfig",
@@ -8464,214 +8893,6 @@
         "summary": "Soft delete a user.",
         "tags": [
           "Admin Users & CRM"
-        ]
-      }
-    },
-    "/api/admin/communications/logs/metrics": {
-      "get": {
-        "operationId": "NotificationsController_getMetrics",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get global communication delivery metrics",
-        "tags": [
-          "Admin - Communications & Notifications"
-        ]
-      }
-    },
-    "/api/admin/communications/logs": {
-      "get": {
-        "operationId": "NotificationsController_findAll",
-        "parameters": [
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/Object"
-            }
-          },
-          {
-            "name": "notificationType",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/Object"
-            }
-          },
-          {
-            "name": "recipientEmail",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List notification delivery logs with pagination",
-        "tags": [
-          "Admin - Communications & Notifications"
-        ]
-      }
-    },
-    "/api/admin/communications/logs/{id}/retry": {
-      "post": {
-        "operationId": "NotificationsController_retryNotification",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Retry was accepted by the notification service."
-          },
-          "403": {
-            "description": "Requires ADMIN or SUPER_ADMIN role."
-          },
-          "404": {
-            "description": "Notification delivery log not found."
-          },
-          "429": {
-            "description": "Retry throttle exceeded."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Manually retry a failed notification",
-        "tags": [
-          "Admin - Communications & Notifications"
-        ]
-      }
-    },
-    "/api/in-app-notifications": {
-      "get": {
-        "operationId": "InAppNotificationsController_getMyNotifications",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Paginated notifications list with unreadCount"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get current user in-app notifications",
-        "tags": [
-          "In-App Notifications"
-        ]
-      }
-    },
-    "/api/in-app-notifications/unread-count": {
-      "get": {
-        "operationId": "InAppNotificationsController_getUnreadCount",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Unread count object"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get unread notification count",
-        "tags": [
-          "In-App Notifications"
-        ]
-      }
-    },
-    "/api/in-app-notifications/read-all": {
-      "patch": {
-        "operationId": "InAppNotificationsController_markAllAsRead",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Count of notifications marked read"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Mark all notifications as read",
-        "tags": [
-          "In-App Notifications"
-        ]
-      }
-    },
-    "/api/in-app-notifications/{id}/read": {
-      "patch": {
-        "operationId": "InAppNotificationsController_markAsRead",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated notification object"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Mark a single notification as read",
-        "tags": [
-          "In-App Notifications"
         ]
       }
     },
@@ -13331,227 +13552,6 @@
         "summary": "Validate a promotion code",
         "tags": [
           "Promotions"
-        ]
-      }
-    },
-    "/api/admin/communications/templates/presets": {
-      "get": {
-        "operationId": "AdminTemplatesController_getPresets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get built-in luxury email template presets",
-        "tags": [
-          "Admin Templates"
-        ]
-      }
-    },
-    "/api/admin/communications/templates": {
-      "get": {
-        "operationId": "AdminTemplatesController_listTemplates",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List all email templates",
-        "tags": [
-          "Admin Templates"
-        ]
-      },
-      "post": {
-        "operationId": "AdminTemplatesController_createTemplate",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEmailTemplateDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create a new email template",
-        "tags": [
-          "Admin Templates"
-        ]
-      }
-    },
-    "/api/admin/communications/templates/test-send": {
-      "post": {
-        "operationId": "AdminTemplatesController_sendTestEmail",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendTestEmailDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Send a test email with sample variables",
-        "tags": [
-          "Admin Templates"
-        ]
-      }
-    },
-    "/api/admin/communications/templates/broadcast": {
-      "post": {
-        "operationId": "AdminTemplatesController_broadcastCampaign",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BroadcastCampaignDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Broadcast an email campaign to audience",
-        "tags": [
-          "Admin Templates"
-        ]
-      }
-    },
-    "/api/admin/communications/templates/{id}": {
-      "get": {
-        "operationId": "AdminTemplatesController_getTemplate",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get a specific email template",
-        "tags": [
-          "Admin Templates"
-        ]
-      },
-      "patch": {
-        "operationId": "AdminTemplatesController_updateTemplate",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEmailTemplateDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update an existing email template",
-        "tags": [
-          "Admin Templates"
-        ]
-      },
-      "delete": {
-        "operationId": "AdminTemplatesController_deleteTemplate",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Delete an email template",
-        "tags": [
-          "Admin Templates"
         ]
       }
     },
@@ -19557,6 +19557,128 @@
         "type": "object",
         "properties": {}
       },
+      "SendTestEmailDto": {
+        "type": "object",
+        "properties": {
+          "recipientEmail": {
+            "type": "string",
+            "description": "Target email address for test"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject of the email"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the email"
+          },
+          "sampleVariables": {
+            "type": "object",
+            "description": "Sample variables to replace during preview"
+          }
+        },
+        "required": [
+          "recipientEmail",
+          "subject",
+          "bodyHtml"
+        ]
+      },
+      "BroadcastCampaignDto": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Campaign subject line"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the campaign"
+          },
+          "recipientGroup": {
+            "type": "string",
+            "enum": [
+              "ALL_USERS",
+              "VERIFIED_CUSTOMERS",
+              "MARKETING_OPT_IN",
+              "CUSTOM_LIST"
+            ],
+            "description": "Audience group to receive the broadcast"
+          },
+          "customEmails": {
+            "description": "List of specific email addresses if recipientGroup is CUSTOM_LIST",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "campaignName": {
+            "type": "string",
+            "description": "Optional campaign identifier or title"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "Originating template ID"
+          }
+        },
+        "required": [
+          "subject",
+          "bodyHtml",
+          "recipientGroup"
+        ]
+      },
+      "CreateEmailTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique name of the template"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject line"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the template"
+          },
+          "variables": {
+            "description": "JSON array of variable names",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "subject",
+          "bodyHtml"
+        ]
+      },
+      "UpdateEmailTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique name of the template"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject line"
+          },
+          "bodyHtml": {
+            "type": "string",
+            "description": "HTML body of the template"
+          },
+          "variables": {
+            "description": "JSON array of variable names",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
@@ -22265,128 +22387,6 @@
         "required": [
           "promoCode"
         ]
-      },
-      "SendTestEmailDto": {
-        "type": "object",
-        "properties": {
-          "recipientEmail": {
-            "type": "string",
-            "description": "Target email address for test"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Subject of the email"
-          },
-          "bodyHtml": {
-            "type": "string",
-            "description": "HTML body of the email"
-          },
-          "sampleVariables": {
-            "type": "object",
-            "description": "Sample variables to replace during preview"
-          }
-        },
-        "required": [
-          "recipientEmail",
-          "subject",
-          "bodyHtml"
-        ]
-      },
-      "BroadcastCampaignDto": {
-        "type": "object",
-        "properties": {
-          "subject": {
-            "type": "string",
-            "description": "Campaign subject line"
-          },
-          "bodyHtml": {
-            "type": "string",
-            "description": "HTML body of the campaign"
-          },
-          "recipientGroup": {
-            "type": "string",
-            "enum": [
-              "ALL_USERS",
-              "VERIFIED_CUSTOMERS",
-              "MARKETING_OPT_IN",
-              "CUSTOM_LIST"
-            ],
-            "description": "Audience group to receive the broadcast"
-          },
-          "customEmails": {
-            "description": "List of specific email addresses if recipientGroup is CUSTOM_LIST",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "campaignName": {
-            "type": "string",
-            "description": "Optional campaign identifier or title"
-          },
-          "templateId": {
-            "type": "string",
-            "description": "Originating template ID"
-          }
-        },
-        "required": [
-          "subject",
-          "bodyHtml",
-          "recipientGroup"
-        ]
-      },
-      "CreateEmailTemplateDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Unique name of the template"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Subject line"
-          },
-          "bodyHtml": {
-            "type": "string",
-            "description": "HTML body of the template"
-          },
-          "variables": {
-            "description": "JSON array of variable names",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "name",
-          "subject",
-          "bodyHtml"
-        ]
-      },
-      "UpdateEmailTemplateDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Unique name of the template"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Subject line"
-          },
-          "bodyHtml": {
-            "type": "string",
-            "description": "HTML body of the template"
-          },
-          "variables": {
-            "description": "JSON array of variable names",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
       },
       "CmsCatalogItemDto": {
         "type": "object",

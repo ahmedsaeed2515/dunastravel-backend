@@ -377,7 +377,7 @@ describe('BookingsService', () => {
       expect(result.originalCurrency).toBe('EUR');
     });
 
-    it('does not require payment for a complimentary zero-price booking', async () => {
+    it('rejects zero-price booking with UnprocessableEntityException', async () => {
       jest.spyOn(pricingService, 'calculatePrice').mockResolvedValue({
         basePriceUsd: '0.00',
         adultTotalUsd: '0.00',
@@ -398,27 +398,10 @@ describe('BookingsService', () => {
         promoMessage: null,
         discounts: [],
       });
-      mockTx.booking.create.mockResolvedValueOnce({
-        ...mockBookingResult,
-        totalAmountUsd: new Prisma.Decimal(0),
-        currency: 'USD',
-      });
 
-      const result = await service.createBooking(
-        { ...baseDto },
-        'user-1',
-        'test-idem-free',
-      );
-
-      expect(result.totalAmountUsd).toBe('0');
-      expect(result.paymentRequired).toBe(false);
-      expect(mockTx.bookingActivityLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            action: 'BOOKING_CREATED_CUSTOM_QUOTE',
-          }),
-        }),
-      );
+      await expect(
+        service.createBooking({ ...baseDto }, 'user-1', 'test-idem-free'),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
     it('should allow guest booking creation with null userId and guestToken', async () => {

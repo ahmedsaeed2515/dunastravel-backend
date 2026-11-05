@@ -34,6 +34,7 @@ const PAYLINK_EVENTS = new Map<
 >([
   ['invoice.paid', { statuses: ['PAID'], mapped: 'COMPLETED' }],
   ['invoice.not_paid', { statuses: ['UNPAID'], mapped: 'FAILED' }],
+  ['invoice.authorized', { statuses: ['AUTHORIZED'], mapped: 'AUTHORIZED' }],
   ['invoice.voided', { statuses: ['VOIDED'], mapped: 'VOIDED' }],
   [
     'invoice.refunded',
@@ -112,9 +113,9 @@ export class GetPayInGatewayAdapter implements IPaymentGatewayPort {
     input: CreateCheckoutSessionData,
   ): Promise<CheckoutSessionData> {
     this.assertConfigured();
-    const [firstName, ...lastNameParts] = input.customer.fullName
-      .trim()
-      .split(/\s+/);
+    const trimmedName =
+      (input.customer.fullName || '').trim() || 'Guest Traveler';
+    const [firstName, ...lastNameParts] = trimmedName.split(/\s+/);
     const lastName = lastNameParts.join(' ') || firstName;
     const country = input.customer.country?.trim().toUpperCase();
     const hasCountry = Boolean(country && /^[A-Z]{2}$/.test(country));

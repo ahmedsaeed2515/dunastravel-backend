@@ -52,14 +52,16 @@ export interface WebhookPayload {
     | 'VOIDED'
     | 'REFUNDED'
     | 'PARTIALLY_REFUNDED'
-    | 'REVERSED';
+    | 'REVERSED'
+    | 'AUTHORIZED';
   status:
     | 'COMPLETED'
     | 'FAILED'
     | 'VOIDED'
     | 'REFUNDED'
     | 'PARTIALLY_REFUNDED'
-    | 'REVERSED';
+    | 'REVERSED'
+    | 'AUTHORIZED';
   rawEvent: Record<string, unknown>;
 }
 
