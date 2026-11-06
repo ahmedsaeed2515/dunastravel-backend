@@ -14,7 +14,7 @@ import { AdminFinanceModule } from './admin-finance/admin-finance.module';
 import { AdminCommunicationsModule } from './admin-communications/admin-communications.module';
 import { ContactSubmissionsModule } from '../contact-submissions/contact-submissions.module';
 import { HotelsModule } from '../hotels/hotels.module';
-
+import { TransportPricingModule } from '../transport-pricing/transport-pricing.module';
 import { CurrencyModule } from '../currency/currency.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 
@@ -23,6 +23,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     PrismaModule,
     CurrencyModule,
     HotelsModule,
+    TransportPricingModule,
     AdminTailorMadeModule,
     AdminInvoicesModule,
     AdminWalletsModule,

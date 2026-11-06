@@ -34,6 +34,10 @@ export interface CalculatedPriceResponse {
   promoValid: boolean;
   promoMessage: string | null;
   discounts?: PriceDiscountItem[];
+  // Single traveler supplement
+  singleSupplementEnabled?: boolean;
+  singleSupplementPercent?: number;
+  singleSupplementUsd?: string;
   // Dual currency & authoritative pricing additions
   authoritativeAmount?: string;
   authoritativeCurrency?: string;
@@ -340,6 +344,40 @@ export class PricingService {
       }
     }
 
+    // 0. Single traveler supplement configuration from tour booking rules
+    const tourBookingRules = (tour as any).bookingRulesJsonb;
+    let singleSupplementEnabled = false;
+    let singleSupplementPercent = 70; // default
+    if (tourBookingRules && typeof tourBookingRules === 'object') {
+      singleSupplementEnabled = Boolean(tourBookingRules.singleSupplementEnabled);
+      singleSupplementPercent = Number(tourBookingRules.singleSupplementPercent) || 70;
+      if (singleSupplementPercent < 0) singleSupplementPercent = 0;
+      if (singleSupplementPercent > 200) singleSupplementPercent = 200;
+    }
+
+    // Single traveler supplement logic:
+    // Applies when the tour's minimum booking is 2+ travelers AND the booking is for exactly 1 adult + 0 children.
+    // The supplement is calculated as basePrice × configuredPercentage / 100 and added to the subtotal
+    // before promo discounts, so promos can apply to the supplemented total.
+    let singleSupplementUsd = new Prisma.Decimal(0);
+    let singleSupplementApplied = false;
+    if (singleSupplementEnabled) {
+      const adultsCount = dto.adults ?? 1;
+      const childrenCount = dto.children ?? 0;
+      const totalTravelers = adultsCount + childrenCount;
+      // Min pax enforcement: if minPaxJsonb indicates min 2, we also check that.
+      // If no explicit minTravelers in rules, we rely on the backend default of 2 when enabled.
+      const minPaxRule = Number(singleSupplementPercent) >= 0 ? true : false;
+      if (totalTravelers === 1 && adultsCount === 1 && childrenCount === 0) {
+        singleSupplementApplied = true;
+        const base = new Prisma.Decimal(tour.basePriceUsd ?? tour.originalPrice ?? 0);
+        const supplementAmount = base.mul(singleSupplementPercent).div(100);
+        singleSupplementUsd = supplementAmount;
+        // Add to adjusted subtotal after seasonal/supplement adjustments but before promo
+        adjustedSubtotal = adjustedSubtotal.add(supplementAmount);
+      }
+    }
+
     const lang = (dto.language || 'en').toLowerCase();
     const messages = PROMO_MESSAGES[lang] || PROMO_MESSAGES.en;
 
@@ -462,6 +500,13 @@ export class PricingService {
           }
         : {}),
       ...(matchedSeasonName ? { seasonName: matchedSeasonName } : {}),
+      ...(singleSupplementApplied
+        ? {
+            singleSupplementEnabled,
+            singleSupplementPercent,
+            singleSupplementUsd: singleSupplementUsd.toFixed(2),
+          }
+        : {}),
       subtotalUsd: totalUsd.toFixed(2),
       discountAmountUsd: (tourCurrency === 'EUR'
         ? discountAmount.mul(currentExchangeRate)

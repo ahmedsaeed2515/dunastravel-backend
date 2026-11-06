@@ -267,6 +267,7 @@ export class ToursService {
               highlightsJsonb: true,
               includedServicesJsonb: true,
               excludedServicesJsonb: true,
+              notesJsonb: true,
               country: true,
               city: true,
               languages: true,
@@ -319,6 +320,11 @@ export class ToursService {
               record.excludedServicesJsonb,
               query.lang,
             ),
+            notes: extractI18nList(
+              (record as any).notesJsonb,
+              query.lang,
+            ),
+            notesJsonb: (record as any).notesJsonb ?? null,
             heroImage: heroUrl,
             heroImageUrl: heroUrl,
             images: record.images.map((img) => img.imageUrl),
@@ -1056,6 +1062,8 @@ export class ToursService {
         : null,
       includedServices: extractI18nList(tour.includedServicesJsonb, lang),
       excludedServices: extractI18nList(tour.excludedServicesJsonb, lang),
+      notes: extractI18nList((tour as any).notesJsonb, lang),
+      notesJsonb: (tour as any).notesJsonb ?? null,
       hotelInfo,
       seasonPricing: tour.seasonPricingJsonb
         ? extractStructuredI18n(tour.seasonPricingJsonb, lang)

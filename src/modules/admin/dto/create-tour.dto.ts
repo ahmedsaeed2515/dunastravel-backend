@@ -626,6 +626,11 @@ export class CreateTourDto {
   @IsObject()
   importantNotesJsonb?: Record<string, any>;
 
+  @ApiPropertyOptional({ description: 'Tour Notes JSONB' })
+  @IsOptional()
+  @IsObject()
+  notesJsonb?: Record<string, any>;
+
   @ApiPropertyOptional({ description: 'Operating Days JSONB' })
   @IsOptional()
   @IsObject()

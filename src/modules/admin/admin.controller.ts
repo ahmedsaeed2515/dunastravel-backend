@@ -8,6 +8,7 @@ import {
   Query,
   Param,
   Body,
+  Req,
   UseGuards,
   ParseUUIDPipe,
   Headers,
@@ -62,6 +63,7 @@ import { RecordManualBookingPaymentDto } from './dto/record-manual-booking-payme
 import { BookingsService } from '../bookings/bookings.service';
 import { HotelsService } from '../hotels/hotels.service';
 import { CreateHotelDto, UpsertTripHotelDto } from '../hotels/dto/hotel.dto';
+import { TransportPricingService } from '../transport-pricing/transport-pricing.service';
 import { ParseBookingRefPipe, ParseUuidOrSlugPipe } from '../../common/pipes';
 
 @ApiTags('Admin')
@@ -76,6 +78,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly bookingsService: BookingsService,
     private readonly hotelsService: HotelsService,
+    private readonly transportPricingService: TransportPricingService,
   ) {}
 
   @Get('bookings')
@@ -748,5 +751,34 @@ export class AdminController {
   @ApiParam({ name: 'slug', type: 'string' })
   async deleteTourTripHotel(@Param('slug', ParseUuidOrSlugPipe) slug: string) {
     return this.hotelsService.deleteTripHotel(slug);
+  }
+
+  // ─── Transport / Vehicle Pricing ───────────────────────────────────────────
+
+  @Get('tours/:slug/transport-pricing')
+  @ApiOperation({ summary: 'Get transport pricing rows for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async getTourTransportPricing(@Param('slug') slug: string) {
+    return this.transportPricingService.findByTourSlug(slug);
+  }
+
+  @Post('tours/:slug/transport-pricing')
+  @ApiOperation({ summary: 'Upsert all transport pricing rows for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async upsertTourTransportPricing(
+    @Param('slug') slug: string,
+    @Req() req: any,
+  ) {
+    const raw = req.body;
+    const items = Array.isArray(raw) ? raw : (raw?.items ?? raw?.pricing ?? []);
+    return this.transportPricingService.upsertByTourSlug(slug, items);
+  }
+
+  @Delete('tours/:slug/transport-pricing')
+  @ApiOperation({ summary: 'Delete all transport pricing rows for a tour.' })
+  @ApiParam({ name: 'slug', type: 'string' })
+  async deleteTourTransportPricing(@Param('slug') slug: string) {
+    await this.transportPricingService.deleteByTourSlug(slug);
+    return { success: true };
   }
 }

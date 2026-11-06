@@ -254,6 +254,7 @@ model Tour {
   status                  String                @default("DRAFT") @db.VarChar(50)
   tags                    String[]              @default([])
   termsJsonb              Json?                 @map("terms_jsonb")
+  notesJsonb              Json?                 @map("notes_jsonb")
   transportationJsonb     Json?                 @map("transportation_jsonb")
   routeMapJsonb           Json?                 @map("route_map_jsonb")
   priceDisplayMode        String                @default("PRICE") @map("price_display_mode") @db.VarChar(20)
@@ -270,6 +271,7 @@ model Tour {
   journeyRoutes           JourneyRoute[]
   accommodations          TripAccommodation[]
   tripHotel               Hotel?                @relation("TourTripHotel")
+  transportPricings       TransportPricing[]    @relation("TourTransportPricing")
 
   @@index([isActive])
   @@index([category])
@@ -429,6 +431,7 @@ model Booking {
 
   availabilityId String?           @map("availability_id")
   availability   TourAvailability? @relation(fields: [availabilityId], references: [id])
+  transportPricings TransportPricing[] @relation("BookingTransportPricing")
 
   @@index([userId])
   @@index([assigneeId])
@@ -970,6 +973,27 @@ model Promotion {
   @@index([code])
   @@index([isActive])
   @@map("promotions")
+}
+
+model TransportPricing {
+  id               String     @id @default(uuid())
+  tourId           String?    @map("tour_id")
+  bookingId        String?    @map("booking_id")
+  category         String     @map("category")      // e.g., "transfer", "transportation"
+  passengerRange   String     @map("passenger_range")  // e.g., "2-4", "5-7", "8-14"
+  priceUsd         Decimal    @map("price_usd")      @db.Decimal(10, 2)
+  currency         String     @default("USD") @map("currency") @db.VarChar(10)
+  isActive         Boolean    @default(true) @map("is_active") @db.Boolean
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  tour             Tour?      @relation("TourTransportPricing", fields: [tourId], references: [id], onDelete: SetNull)
+  booking          Booking?   @relation("BookingTransportPricing", fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@unique([tourId, bookingId, category, passengerRange])
+  @@index([tourId])
+  @@index([bookingId])
+  @@map("transport_pricing")
 }
 
 model CmsBlock {

@@ -40,6 +40,8 @@ export interface TourSummaryResponse {
   highlights: string[];
   includedServices?: string[];
   excludedServices?: string[];
+  notes?: string[];
+  notesJsonb?: unknown | null;
   heroImage: string | null;
   heroImageUrl?: string | null;
   images?: string[];
@@ -136,6 +138,8 @@ export interface TourDetailResponse {
   cancellationPolicy: string | null;
   includedServices: string[];
   excludedServices: string[];
+  notes: string[];
+  notesJsonb?: unknown | null;
   hotelInfo: unknown | null;
   seasonPricing: unknown | null;
   transportation: unknown | null;

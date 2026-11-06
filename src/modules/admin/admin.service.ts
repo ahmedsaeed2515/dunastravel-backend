@@ -2349,6 +2349,8 @@ export class AdminService {
               },
             },
           },
+          bookingRulesJsonb: true,
+          minPaxJsonb: true,
         },
       }),
     ]);
@@ -2379,6 +2381,7 @@ export class AdminService {
       highlightsJsonb: (t as any).highlightsJsonb ?? [],
       includedServicesJsonb: (t as any).includedServicesJsonb ?? [],
       excludedServicesJsonb: (t as any).excludedServicesJsonb ?? [],
+      notesJsonb: (t as any).notesJsonb ?? [],
       departureInfoJsonb: (t as any).departureInfoJsonb ?? null,
       hotelInfoJsonb: (t as any).hotelInfoJsonb ?? null,
       seasonPricingJsonb: (t as any).seasonPricingJsonb ?? [],
@@ -3462,6 +3465,11 @@ export class AdminService {
     if (data.exclusionJsonb && !data.excludedServicesJsonb) {
       result.excludedServicesJsonb = data.exclusionJsonb;
     }
+    if (data.notesJsonb) {
+      result.notesJsonb = data.notesJsonb;
+    } else if (data.importantNotesJsonb) {
+      result.notesJsonb = data.importantNotesJsonb;
+    }
     if (data.importantNotesJsonb && !data.termsJsonb) {
       result.termsJsonb = data.importantNotesJsonb;
     }
@@ -3525,6 +3533,7 @@ export class AdminService {
       'sourceCodeJsonb',
       'includedServicesJsonb',
       'excludedServicesJsonb',
+      'notesJsonb',
       'hotelInfoJsonb',
       'transportationJsonb',
       'cancellationPolicyJsonb',
