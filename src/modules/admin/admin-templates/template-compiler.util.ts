@@ -104,7 +104,7 @@ export const EMAIL_PRESETS: Record<
       },
       socialLinks: {
         instagram: 'https://instagram.com/dunastravel',
-        whatsapp: 'https://wa.me/201000000000',
+        whatsapp: 'https://wa.me/201149401111',
       },
     },
   },

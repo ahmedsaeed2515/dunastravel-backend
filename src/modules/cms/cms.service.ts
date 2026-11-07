@@ -525,7 +525,7 @@ export class CmsService {
           es: '© 2026 Dunas Travel. Todos los derechos reservados. Licencia de Turismo #1882.',
         },
         supportEmail: 'concierge@dunastravel.com',
-        vipWhatsapp: '+20 100 000 0000',
+        vipWhatsapp: '+20 114 940 1111',
         phone: '+20 2 2700 0000',
         address: {
           en: 'Dunas Luxury Tower, El-Nile Corniche, Cairo, Egypt',
@@ -544,7 +544,7 @@ export class CmsService {
           en: 'Cairo, Egypt',
           ar: 'القاهرة، مصر',
         },
-        hotline: '+20 100 000 0000',
+        hotline: '+20 114 940 1111',
         email: 'info@dunastravel.com',
       },
     };
